@@ -24,9 +24,9 @@ const SUGGESTED: Prov = { review_status: "suggested", created_by_kind: "model", 
 /** Bulk inserts send the union of keys, so every row must carry the provenance columns explicitly. */
 const P = (r: Prov) => ({ review_status: "confirmed" as const, created_by_kind: "lawyer" as const, source_kind: "manual" as const, source_quote: null, ...r });
 
-function must<X>(r: { data: X | null; error: { message: string } | null }, what: string): X {
+function must<R extends { data: unknown; error: { message: string } | null }>(r: R, what: string): NonNullable<R["data"]> {
   if (r.error || r.data === null) throw new Error(`${what}: ${r.error?.message ?? "no data"}`);
-  return r.data;
+  return r.data as NonNullable<R["data"]>;
 }
 
 // ---------- cleanup ----------
