@@ -42,14 +42,14 @@ export function UploadDocument({ caseId, threadId, compact = false }: { caseId?:
         {pending ? "جارٍ القراءة…" : "رفع مستند"}
       </Button>
       {pending && name ? (
-        <p className="text-sm text-ink-2" role="status">
+        <p className="text-callout text-ink-2" role="status">
           جارٍ رفع «{name}» وقراءة صفحاته. قد يستغرق ذلك دقيقة للمستندات الطويلة.
         </p>
       ) : null}
-      {error ? <p className="text-sm text-danger" role="alert">{error}</p> : null}
-      {warning && !pending ? <p className="text-sm text-brass" role="status">{warning}</p> : null}
+      {error ? <p className="text-callout text-danger" role="alert">{error}</p> : null}
+      {warning && !pending ? <p className="text-callout text-brass" role="status">{warning}</p> : null}
       {done && !pending ? (
-        <p className="text-sm text-ok" role="status">
+        <p className="text-callout text-ok" role="status">
           {done.proposal ? "تمت القراءة. المقترحات بانتظار مراجعتك في محادثة الدعوى." : "تمت القراءة وحُفظ النص."}
         </p>
       ) : null}

@@ -27,11 +27,11 @@ export function InlineEdit({
     return (
       <span className="inline-flex flex-wrap items-baseline gap-x-2">
         <span>{display}</span>
-        <button type="button" onClick={() => setOpen(true)} className="text-xs text-accent hover:underline">{label}</button>
+        <button type="button" onClick={() => setOpen(true)} className="text-caption text-accent hover:underline">{label}</button>
       </span>
     );
   }
-  const field = "w-full rounded-lg border border-line-strong bg-surface px-3 py-2 text-[15px] text-ink";
+  const field = "w-full rounded-[var(--radius-sm)] border border-line bg-surface-2 px-3 py-2 text-[15px] text-ink";
   return (
     <form action={formAction} className="mt-1 flex w-full flex-col gap-2">
       {Object.entries(hidden).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
@@ -44,8 +44,8 @@ export function InlineEdit({
       ) : (
         <input name="value" defaultValue={initial} className={field} placeholder={placeholder} autoFocus />
       )}
-      {hint ? <p className="text-xs text-ink-3">{hint}</p> : null}
-      {state?.error ? <p className="text-sm text-danger">{state.error}</p> : null}
+      {hint ? <p className="text-caption text-ink-3">{hint}</p> : null}
+      {state?.error ? <p className="text-callout text-danger">{state.error}</p> : null}
       <div className="flex gap-2">
         <Button size="sm" disabled={pending}>{pending ? "جارٍ الحفظ…" : "حفظ"}</Button>
         <Button size="sm" type="button" variant="ghost" onClick={() => setOpen(false)}>إلغاء</Button>
