@@ -38,6 +38,13 @@ export function resolveRef(v: string | undefined, refs: RefMap): string | undefi
   return v;
 }
 
+/** «7» → «الدائرة 7» (a bare number is how lawyers often say the circuit; the word is not a guess). */
+function circuitText(v: string | undefined | null) {
+  if (!v) return v ?? null;
+  const t = v.trim();
+  return /^[0-9٠-٩]+(\s|$)/.test(t) ? `الدائرة ${t}` : t;
+}
+
 function date(v: string | undefined) {
   const p = parseDmy(v);
   return p ? { iso: p.iso, precision: p.precision } : null;
@@ -79,7 +86,7 @@ export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Prov
       const row = must(await db.from("cases").insert({
         client_id: resolveRef(x.client, refs) ?? null,
         title: x.title ?? null, case_number: x.case_number ?? null, case_year: x.case_year ?? null,
-        court: x.court ?? null, circuit: x.circuit ?? null, case_type: x.case_type ?? null,
+        court: x.court ?? null, circuit: circuitText(x.circuit), case_type: x.case_type ?? null,
         stage: x.stage, previous_stage_case_id: resolveRef(x.previous_stage_case, refs) ?? null,
         client_role: x.client_role ?? null,
         facts_date: fd?.iso ?? null, facts_date_precision: fd?.precision ?? "unknown",
@@ -98,6 +105,7 @@ export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Prov
         if (x[k] !== undefined) (patch as Record<string, unknown>)[k] = x[k];
       }
       if (fd) { patch.facts_date = fd.iso; patch.facts_date_precision = fd.precision; }
+      if (x.circuit !== undefined) patch.circuit = circuitText(x.circuit);
       must(await db.from("cases").update(patch).eq("id", id).select("id").single());
       return { id };
     }

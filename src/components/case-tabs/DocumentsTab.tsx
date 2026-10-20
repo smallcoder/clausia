@@ -42,7 +42,7 @@ export async function DocumentsTab({ caseId }: { caseId: string }) {
       </Card>
 
       <section>
-        <SectionTitle>المستندات{docs?.length ? <span className="num font-normal text-ink-3"> ({docs.length})</span> : null}</SectionTitle>
+        <SectionTitle>المستندات{docs?.length ? <>{" "}<span className="num font-normal text-ink-3">({docs.length})</span></> : null}</SectionTitle>
         {!docs?.length ? (
           <EmptyState title="لا توجد مستندات في هذه الدعوى بعد" hint="ارفع أول مستند وسيقرأه المساعد صفحة صفحة." />
         ) : (

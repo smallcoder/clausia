@@ -38,3 +38,75 @@ thread 9146a145-2a51-499c-acf5-4e1d13d34d20
    المساعد (2 جولة، 9827ms): تم اقتراح إضافة الدفع التالي للخصم: - **نوع الدفع:** دفع شكلي - **الطرف:** الخصم (شركة النيل للمقاولات) - **مضمون الدفع:** عدم اختصاص المحكمة محليًا يرجى مراجعة البطاقة وتأكيد الحفظ.
    - op1 add_argument {"case":"e663e9d6-4785-4bf4-a69e-d5280352b9ab","kind":"دفع شكلي","side":"opponent","text":"عدم اختصاص المحكمة محليًا","quote":"الشركة دفعت بعدم اختصاص المحكمة محليًا."} → confirmed
 [llm] chat gemini-3.8-flash in=9206 out=272 $0.00792 3373ms
+[llm] chat gemini-3.8-flash in=9551 out=55 $0.00737 2249ms
+#8 المحامي: أول جلسة كانت يوم 1/10/2026 للإعلان.
+   المساعد (2 جولة، 8326ms): تم اقتراح إضافة الجلسة إلى ملف الدعوى: - **تاريخ الجلسة:** 1/10/2026 - **الغرض منها:** للإعلان يرجى مراجعة البطاقة وتأكيد الحفظ.
+   - op1 add_hearing {"ref":"h1","case":"e663e9d6-4785-4bf4-a69e-d5280352b9ab","date":"1/10/2026","quote":"أول جلسة كانت يوم 1/10/2026 للإعلان.","purpose":"للإعلان"} → confirmed
+[llm] chat gemini-3.8-flash in=9699 out=531 $0.00927 5623ms
+[llm] chat gemini-3.8-flash in=10299 out=82 $0.00803 2819ms
+#9 المحامي: الجلسة اتأجلت لـ 15/12/2026 لتقديم مستندات
+   المساعد (2 جولة، 11545ms): تم اقتراح تسجيل قرار جلسة 1/10/2026: - **القرار:** تأجيل - **تاريخ الجلسة القادمة:** 15/12/2026 - **المطلوب للجلسة القادمة:** لتقديم مستندات يرجى مراجعة البطاقة وتأكيد الحفظ.
+   - op1 record_decision {"quote":"الجلسة اتأجلت لـ 15/12/2026 لتقديم مستندات","hearing":"de5f0508-fbae-4fb0-bb91-09336e4c3408","decision":"postponed","next_date":"15/12/2026","decision_text":"تأجيل لتقديم مستندات","next_requirements":"تقديم مستندات"} → confirmed
+[llm] chat gemini-3.8-flash in=10592 out=3460 $0.02092 27275ms
+[llm] chat gemini-3.8-flash in=14249 out=152 $0.01126 3522ms
+#10 المحامي: تحديث: في جلسة 15/12/2026 صدر حكم ابتدائي لصالحنا بإلزام الشركة بإتمام التشطيب، وآخر ميعاد للاستئناف 24/1/2027.
+   المساعد (2 جولة، 34428ms): تم اقتراح تسجيل الحكم وتحديث حالة الدعوى بالبيانات التالية: 1. **قرار جلسة 15/12/2026:** صدور حكم في الدعوى. 2. **بيانات الحكم:** - **تاريخ الحكم:** 15/12/2026 - **المنطوق:** إلزام الشركة بإتمام التشطيب - **النتيجة:** لص
+   - op1 record_decision {"quote":"في جلسة 15/12/2026 صدر حكم ابتدائي لصالحنا بإلزام الشركة بإتمام التشطيب","hearing":"1ee308a7-a7eb-4175-9708-50a16fbb9c60","decision":"judgment","decision_text":"حكم لصالحنا بإلزام الشركة بإتمام التشطيب"} → confirmed
+   - op2 add_judgment {"case":"e663e9d6-4785-4bf4-a69e-d5280352b9ab","date":"15/12/2026","kind":"final","quote":"صدر حكم ابتدائي لصالحنا بإلزام الشركة بإتمام التشطيب، وآخر ميعاد للاستئناف 24/1/2027.","hearing":"1ee308a7-a7eb-4175-9708-50a16fbb9c60","outcome":"لصالحنا","operative_text":"إلزام الشركة بإتمام التشطيب","appeal_deadline":"24/1/2027"} → confirmed
+   - op3 update_case {"case":"e663e9d6-4785-4bf4-a69e-d5280352b9ab","quote":"في جلسة 15/12/2026 صدر حكم ابتدائي لصالحنا بإلزام الشركة بإتمام التشطيب","status":"judged"} → confirmed
+
+--- records ---
+client: {
+  name: 'عادل منصور التجريبي',
+  phone: '01000000017',
+  source_kind: 'chat',
+  created_by_kind: 'model'
+}
+PASS  client with name + phone
+case: {
+  number: '4521',
+  year: 2026,
+  court: 'محكمة جنوب الجيزة الابتدائية',
+  circuit: '7',
+  type: 'مدني كلي',
+  client_role: 'plaintiff',
+  client_id: '2a5b9845-936a-4051-997f-99bf0365bf23'
+}
+PASS  case number 4521 / year 2026
+PASS  court جنوب الجيزة
+PASS  circuit 7
+PASS  case linked to the client
+parties: [ 'شركة النيل التجريبية للمقاولات [defendant]' ]
+facts: [
+  '2024-03-12 day «12/3/2024» شراء الموكل شقة من الشركة بموجب عقد بيع مع سداد الثمن بالكامل',
+  '2025-01-01 year «أوائل 2025» تسليم الشركة الشقة ناقصة التشطيب للموكل'
+]
+requests: [
+  'أصلي: إلزام الشركة بإتمام أعمال التشطيب',
+  'احتياطي: إلزام الشركة بتعويض قدره 200 ألف جنيه'
+]
+arguments: [ 'opponent دفع شكلي: عدم اختصاص المحكمة محليًا' ]
+hearings: [
+  '2026-10-01 postponed next=1ee308a7-a7eb-4175-9708-50a16fbb9c60 تقديم مستندات',
+  '2026-12-15 judgment next=- '
+]
+judgments: [ '2026-12-15 final deadline=2027-01-24 إلزام الشركة بإتمام التشطيب' ]
+PASS  opponent party, role defendant
+PASS  fact 12/3/2024 (day precision)
+PASS  fact «أوائل 2025» (year precision + date_text)
+PASS  unclear date («من حوالي كام شهر») not turned into a date
+PASS  assistant asked about the unclear date
+PASS  client requests saved
+PASS  opponent defence saved
+PASS  hearing 1/10/2026
+PASS  postponed → next hearing 15/12/2026 created and linked
+PASS  exactly two hearings (no duplicate next hearing)
+PASS  judgment with the stated appeal deadline 24/1/2027
+PASS  provenance on all 11 items: source_kind chat, created_by_kind model, source_message_id = a lawyer message of this thread
+PASS  every item keeps its quote
+quotes unverified: 0 of 13 ops
+case page: /cases/e663e9d6-4785-4bf4-a69e-d5280352b9ab
+
+LLM calls: 21 (failed 0) · tokens in 164702 / out 7907 · cost $0.1532 per intake · model latency total 94.1s, avg 4483ms
+
+all checks passed
