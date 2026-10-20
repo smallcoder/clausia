@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.18"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       case_arguments: {
@@ -826,6 +851,16 @@ export type Database = {
           created_by: string | null
           created_by_kind: Database["public"]["Enums"]["actor_kind"]
           decided_at: string | null
+          decision_created_by_kind:
+            | Database["public"]["Enums"]["actor_kind"]
+            | null
+          decision_source_document_id: string | null
+          decision_source_kind:
+            | Database["public"]["Enums"]["source_kind"]
+            | null
+          decision_source_message_id: string | null
+          decision_source_page: number | null
+          decision_source_quote: string | null
           decision_text: string | null
           decision_type: Database["public"]["Enums"]["hearing_decision"] | null
           hearing_date: string
@@ -848,6 +883,16 @@ export type Database = {
           created_by?: string | null
           created_by_kind?: Database["public"]["Enums"]["actor_kind"]
           decided_at?: string | null
+          decision_created_by_kind?:
+            | Database["public"]["Enums"]["actor_kind"]
+            | null
+          decision_source_document_id?: string | null
+          decision_source_kind?:
+            | Database["public"]["Enums"]["source_kind"]
+            | null
+          decision_source_message_id?: string | null
+          decision_source_page?: number | null
+          decision_source_quote?: string | null
           decision_text?: string | null
           decision_type?: Database["public"]["Enums"]["hearing_decision"] | null
           hearing_date: string
@@ -870,6 +915,16 @@ export type Database = {
           created_by?: string | null
           created_by_kind?: Database["public"]["Enums"]["actor_kind"]
           decided_at?: string | null
+          decision_created_by_kind?:
+            | Database["public"]["Enums"]["actor_kind"]
+            | null
+          decision_source_document_id?: string | null
+          decision_source_kind?:
+            | Database["public"]["Enums"]["source_kind"]
+            | null
+          decision_source_message_id?: string | null
+          decision_source_page?: number | null
+          decision_source_quote?: string | null
           decision_text?: string | null
           decision_type?: Database["public"]["Enums"]["hearing_decision"] | null
           hearing_date?: string
@@ -892,6 +947,20 @@ export type Database = {
             columns: ["case_id"]
             isOneToOne: false
             referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hearings_decision_source_document_id_fkey"
+            columns: ["decision_source_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hearings_decision_source_message_id_fkey"
+            columns: ["decision_source_message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
             referencedColumns: ["id"]
           },
           {
@@ -1424,6 +1493,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       actor_kind: ["lawyer", "model"],

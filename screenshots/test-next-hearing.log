@@ -1,0 +1,25 @@
+PASS  add_hearing creates the hearing
+PASS  postponed without next_date is refused
+PASS  next_date before the hearing date is refused
+PASS  next_date equal to the hearing date is refused
+PASS  unclear next_date is refused
+PASS  refusals left one undecided hearing
+PASS  a new hearing exists on 15/11/2026
+PASS  new.previous_hearing_id = old
+PASS  old.next_hearing_id = new
+PASS  rpc returns next_hearing_id
+PASS  decision saved on old (type, text, requirements)
+PASS  new hearing is undecided, purpose = requirements
+PASS  caseHearings fills next_date / previous_date
+PASS  hearingsInRange returns both hearings
+PASS  hearingsInRange joins court and client name
+PASS  hearingsInRange fills next_date on the postponed one
+PASS  undecidedPastHearings includes a past undecided hearing
+PASS  undecidedPastHearings excludes future hearings
+PASS  other office sees none of the case's hearings
+PASS  other office cannot record a decision
+PASS  reserved_for_judgment sets case status
+PASS  cleanup: temp case deleted
+PASS  cleanup: temp client deleted
+
+all checks passed

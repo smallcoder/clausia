@@ -46,7 +46,7 @@ export interface Proposal {
 export function normalizeForMatch(s: string): string {
   return normalizeDigits(s)
     .replace(/[ً-ْـ]/g, "")
-    .replace(/[إأآٱ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه")
+    .replace(/[إأآٱ]/g, "ا").replace(/[ىی]/g, "ي").replace(/ک/g, "ك").replace(/ة/g, "ه")
     .replace(/[^\p{L}\p{N}]+/gu, "")
     .toLowerCase();
 }

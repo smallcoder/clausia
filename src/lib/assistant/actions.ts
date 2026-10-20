@@ -48,3 +48,19 @@ export async function newThreadAction() {
   const id = await createGeneralThread(db);
   redirect(`/chat/${id}`);
 }
+
+/** Chat home: the first message starts a new general thread (new client / case), then opens it. */
+export async function startChatAction(_: { error?: string } | null, form: FormData): Promise<{ error?: string } | null> {
+  const text = String(form.get("text") ?? "").trim();
+  if (!text) return { error: "اكتب رسالتك أولًا" };
+  const db = await createClient();
+  const s = await getSession(db);
+  if (!s) return { error: "انتهت الجلسة، سجّل الدخول من جديد" };
+  const id = await createGeneralThread(db, text.replace(/\s+/g, " ").slice(0, 60));
+  try {
+    await runAssistantTurn(db, { threadId: id, userText: text.slice(0, 8000), userId: s.user.id, officeId: s.officeId });
+  } catch {
+    // the thread page shows the saved message and lets the lawyer retry
+  }
+  redirect(`/chat/${id}`);
+}

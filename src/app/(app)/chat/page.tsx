@@ -1,6 +1,7 @@
 // Chat home: start a general conversation (new client / case) or continue a recent one.
 import Link from "next/link";
-import { Badge, Button, Card, EmptyState, PageHeader } from "@/components/ui";
+import { StartChat } from "@/components/chat/StartChat";
+import { Badge, Button, Card, EmptyState, PageHeader, SectionTitle } from "@/components/ui";
 import { newThreadAction } from "@/lib/assistant/actions";
 import { formatDmy } from "@/lib/dates";
 import { caseLabel } from "@/lib/labels";
@@ -39,8 +40,10 @@ export default async function ChatHome() {
       <PageHeader
         title="المساعد"
         subtitle="املأ ملف الدعوى بالمحادثة. كل ما يقترحه المساعد يُعرض عليك للتأكيد قبل الحفظ."
-        actions={<form action={newThreadAction}><Button type="submit">محادثة جديدة</Button></form>}
+        actions={<form action={newThreadAction}><Button type="submit" variant="secondary">محادثة فارغة</Button></form>}
       />
+      <StartChat />
+      {rows.length ? <SectionTitle>محادثات سابقة</SectionTitle> : null}
       {rows.length === 0 ? (
         <EmptyState title="لا توجد محادثات بعد" hint="ابدأ محادثة جديدة واكتب ما تعرفه عن موكل أو دعوى." />
       ) : (
