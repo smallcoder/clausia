@@ -70,11 +70,11 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
       </form>
 
       <div className="mb-6 space-y-2">
-        <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 py-1 lg:mx-0 lg:px-0">
+        <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 py-1 after:block after:w-2 after:shrink-0 after:content-[''] lg:mx-0 lg:px-0 lg:after:hidden">
           <Chip active={!sp.stage} to={href(sp, { stage: undefined })}>كل الدرجات</Chip>
           {Object.entries(STAGE).map(([k, v]) => <Chip key={k} active={sp.stage === k} to={href(sp, { stage: k })}>{v}</Chip>)}
         </div>
-        <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 py-1 lg:mx-0 lg:px-0">
+        <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 py-1 after:block after:w-2 after:shrink-0 after:content-[''] lg:mx-0 lg:px-0 lg:after:hidden">
           <Chip active={!sp.status} to={href(sp, { status: undefined })}>كل الحالات</Chip>
           {Object.entries(CASE_STATUS).map(([k, v]) => <Chip key={k} active={sp.status === k} to={href(sp, { status: k })}>{v}</Chip>)}
         </div>
