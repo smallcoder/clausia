@@ -62,7 +62,7 @@ export function AppNav({ officeName, userLabel }: { officeName: string; userLabe
           const Icon = it.icon;
           return (
             <Link key={it.href} href={it.href} aria-current={on ? "page" : undefined}
-              className={cx("flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 pt-1.5 text-[11px] transition-colors", on ? "font-semibold text-accent" : "text-ink-3")}>
+              className={cx("flex h-16 flex-1 flex-col items-center justify-center gap-0.5 pt-1.5 text-[11px] transition-colors", on ? "font-semibold text-accent" : "text-ink-3")}>
               <Icon aria-hidden size={24} strokeWidth={on ? 1.9 : 1.5} />
               {it.label}
             </Link>
