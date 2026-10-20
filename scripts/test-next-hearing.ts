@@ -62,6 +62,16 @@ async function main() {
     check("new hearing is undecided, purpose = requirements", nw?.decision_type === null && nw?.purpose === "تقديم أصل العقد");
     check("caseHearings fills next_date / previous_date", old?.next_date === "2026-11-15" && nw?.previous_date === "2026-11-01");
 
+    // another office cannot see or decide these hearings (RLS)
+    if (process.env.OTHER_EMAIL && process.env.OTHER_PASSWORD) {
+      const other = createClient<Database>(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, { auth: { persistSession: false } });
+      await other.auth.signInWithPassword({ email: process.env.OTHER_EMAIL, password: process.env.OTHER_PASSWORD });
+      const odb = other as unknown as Db;
+      check("other office sees none of the case's hearings", (await caseHearings(odb, caseId)).length === 0);
+      const e5 = await refused(() => applyOp(odb, "record_decision", { hearing: nw!.id, decision: "struck_off", quote: "x" }, MANUAL));
+      check("other office cannot record a decision", !!e5, e5 ?? "accepted");
+    }
+
     // reserved_for_judgment on the new hearing → case status
     await applyOp(db, "record_decision", { hearing: nw!.id, decision: "reserved_for_judgment", decision_text: "حجز للحكم لجلسة 20/12/2026", quote: "حجز للحكم" }, MANUAL);
     const { data: c } = await sb.from("cases").select("status").eq("id", caseId).single();
