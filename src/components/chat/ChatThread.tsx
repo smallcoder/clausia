@@ -155,7 +155,7 @@ export function ChatThread({ threadId, caseId, items, lookup }: { threadId: stri
             <textarea ref={boxRef} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={onKey} rows={1} placeholder="اكتب للمساعد…" aria-label="رسالة للمساعد"
               className="max-h-40 min-h-11 flex-1 resize-none rounded-[22px] border border-hairline bg-surface px-4 py-2.5 text-body leading-6 text-ink shadow-1 placeholder:text-ink-3 focus:border-accent focus:outline-none [field-sizing:content]" />
             <button type="button" onClick={send} disabled={!text.trim() || sending}
-              className="h-11 shrink-0 rounded-full bg-accent px-5 text-body font-semibold text-accent-ink transition hover:opacity-90 disabled:opacity-40">
+              className="h-11 shrink-0 rounded-[var(--radius-sm)] bg-accent px-5 text-body font-semibold text-accent-ink transition hover:opacity-90 disabled:opacity-40">
               إرسال
             </button>
           </div>
