@@ -92,7 +92,7 @@ export const EXTRACT_SYSTEM = [
   "الطلبات (requests): الطلبات الختامية لكاتب المستند كما وردت (kind: أصلي / احتياطي / مستعجل إن ذُكر). لا تجعل طلبات الحضور أو الأجل في محضر الجلسة طلبات؛ ضعها في decision_text أو الوقائع.",
   "الدفوع (arguments): الدفوع والدفاع الوارد في المستند. side = opponent إن كان المستند من الخصم (مثل مذكرة دفاع المدعى عليه)، وours إن كان من جانبنا؛ إن لم يتضح فاجعلها opponent. kind: دفع شكلي / دفع موضوعي / دفاع.",
   "الجلسات (hearings): كل جلسة مذكور تاريخها، وقرارها إن ذُكر (postponed للتأجيل مع next_date تاريخ الجلسة التالية، وغير ذلك)، وسبب القرار أو المطلوب في decision_text / next_requirements.",
-  "doc_type: claim_sheet صحيفة دعوى، opponent_memo مذكرة الخصم، our_memo مذكرتنا، judgment حكم أو محضر جلسة بقرار، contract عقد، وهكذا. title: عنوان المستند كما ورد.",
+  "doc_type: claim_sheet صحيفة دعوى، opponent_memo مذكرة الخصم، our_memo مذكرتنا، judgment حكم فقط، contract عقد، وهكذا. محضر الجلسة أو قرار التأجيل ليس حكمًا: اجعل doc_type = other وtitle = «محضر جلسة». title: عنوان المستند كما ورد.",
 ].join("\n");
 
 // ---------- helpers ----------
@@ -102,10 +102,11 @@ function toBase64(buf: Uint8Array): string {
 }
 
 /** Split into one LlmImage per page: PDFs → 1-page PDFs; images → the image itself. */
-export async function splitPages(bytes: Uint8Array, mime: string): Promise<LlmImage[]> {
-  if (mime !== "application/pdf") return [{ mime, base64: toBase64(bytes) }];
+export async function splitPages(bytes: Uint8Array, mime: string): Promise<{ files: LlmImage[]; total: number }> {
+  if (mime !== "application/pdf") return { files: [{ mime, base64: toBase64(bytes) }], total: 1 };
   const src = await PDFDocument.load(bytes, { ignoreEncryption: true });
-  const n = Math.min(src.getPageCount(), MAX_PAGES);
+  const total = src.getPageCount();
+  const n = Math.min(total, MAX_PAGES);
   const out: LlmImage[] = [];
   for (let i = 0; i < n; i++) {
     const one = await PDFDocument.create();
@@ -113,18 +114,20 @@ export async function splitPages(bytes: Uint8Array, mime: string): Promise<LlmIm
     one.addPage(p);
     out.push({ mime: "application/pdf", base64: toBase64(await one.save()) });
   }
-  return out;
+  return { files: out, total };
 }
 
 async function pool<T, R>(items: T[], limit: number, fn: (item: T, i: number) => Promise<R>): Promise<R[]> {
   const out = new Array<R>(items.length);
   let next = 0;
+  let failed: { e: unknown } | null = null; // first failure stops the other workers from starting new pages
   await Promise.all(Array.from({ length: Math.min(limit, items.length) }, async () => {
-    while (next < items.length) {
+    while (!failed && next < items.length) {
       const i = next++;
-      out[i] = await fn(items[i], i);
+      try { out[i] = await fn(items[i], i); } catch (e) { failed ??= { e }; }
     }
   }));
+  if (failed) throw (failed as { e: unknown }).e;
   return out;
 }
 
@@ -196,7 +199,8 @@ function writtenDate(date: string, asWritten: string, pageText: string): string 
   if (!p) return null;
   // the «as written» shortcut is only for dates written in words: a purely numeric text loses its separators in
   // verifyQuote (5/3/2024 → 532024 would match inside 15/3/2024), so numeric dates need the exact match below
-  if (asWritten && /\p{L}/u.test(asWritten) && verifyQuote(asWritten, [pageText])) return date;
+  // and the as-written text must itself carry the year (a bare «بتاريخ» on the page proves nothing)
+  if (asWritten && /\p{L}/u.test(asWritten) && normalizeDigits(asWritten).includes(p.iso.slice(0, 4)) && verifyQuote(asWritten, [pageText])) return date;
   if (p.precision === "day") return datesIn(pageText).has(p.iso) ? date : null;
   // month / year precision: the year must at least be written on the page
   return normalizeDigits(pageText).includes(p.iso.slice(0, 4)) ? date : null;
@@ -209,10 +213,12 @@ interface OpsInput {
   documentId: string;
   caseId: string | null;
   pages: string[]; // index 0 = page 1
+  /** What the existing case already holds, so a second document does not re-propose the same hearing / party. */
+  existing?: { hearings: { id: string; iso: string; decided: boolean }[]; parties: string[] };
 }
 
 /** Turn the extraction into registry ops. Every op gets page + quote; invalid ones are dropped with a reason. */
-export function extractionToOps({ ex, documentId, caseId, pages }: OpsInput): { ops: DraftOp[]; dropped: { tool: string; reason: string }[] } {
+export function extractionToOps({ ex, documentId, caseId, pages, existing }: OpsInput): { ops: DraftOp[]; dropped: { tool: string; reason: string }[] } {
   const ops: DraftOp[] = [];
   const dropped: { tool: string; reason: string }[] = [];
   const n = pages.length;
@@ -232,11 +238,11 @@ export function extractionToOps({ ex, documentId, caseId, pages }: OpsInput): { 
 
   // the case this document belongs to: existing, or a new one built ONLY from values written in the document
   let caseRef = caseId ?? "";
+  let clientRef: string | undefined;
   if (!caseId) {
     const ci = ex.case_info;
     const ciPage = pageOk(ci?.page) ? ci.page : 1;
     const ciQuote = clean(ci?.quote) || firstQuote();
-    let clientRef: string | undefined;
     const oc = ex.our_client;
     if (clean(oc?.name) && clean(oc?.quote)) {
       const before = ops.length;
@@ -265,9 +271,15 @@ export function extractionToOps({ ex, documentId, caseId, pages }: OpsInput): { 
   push("attach_document", { document: documentId, case: caseRef, doc_type: docType, title: clean(ex.title) || undefined }, pageOkOr1(ex.case_info?.page), clean(ex.case_info?.quote) || firstQuote());
   function pageOkOr1(p: unknown) { return pageOk(p) ? p : 1; }
 
+  const seenParties = new Set((existing?.parties ?? []).map(normalizeForMatch).filter(Boolean));
   for (const p of ex.parties ?? []) {
     const role = (PARTY_ROLES as readonly string[]).includes(p.role) ? p.role : "other";
-    push("add_party", { case: caseRef, name: clean(p.name), role, ...(oursName(ex) && clean(p.name) === oursName(ex) ? { is_our_client: true } : {}) }, p.page, clean(p.quote));
+    const key = normalizeForMatch(clean(p.name));
+    if (key && seenParties.has(key)) { dropped.push({ tool: "add_party", reason: `الطرف موجود بالفعل في الدعوى: ${clean(p.name)}` }); continue; }
+    const ours = oursName(ex) && clean(p.name) === oursName(ex) ? { is_our_client: true, ...(clientRef ? { client: clientRef } : {}) } : {};
+    const before = ops.length;
+    push("add_party", { case: caseRef, name: clean(p.name), role, ...ours }, p.page, clean(p.quote));
+    if (ops.length > before && key) seenParties.add(key);
   }
   for (const f of ex.facts ?? []) {
     const pageText = pageOk(f.page) ? pages[f.page - 1] : "";
@@ -289,14 +301,25 @@ export function extractionToOps({ ex, documentId, caseId, pages }: OpsInput): { 
     const pageText = pageOk(hr.page) ? pages[hr.page - 1] : "";
     const date = clean(hr.date) ? writtenDate(clean(hr.date), "", pageText) : null;
     if (!date) { dropped.push({ tool: "add_hearing", reason: `تاريخ الجلسة غير مكتوب بوضوح: «${hr.date}»` }); continue; }
-    const ref = `hearing${++h}`;
-    const before = ops.length;
-    push("add_hearing", { ref, case: caseRef, date, purpose: clean(hr.next_requirements) && !clean(hr.decision) ? clean(hr.next_requirements) : undefined }, hr.page, clean(hr.quote));
-    if (ops.length === before || !clean(hr.decision)) continue;
+    // a hearing the case already has on that date is reused (its uuid), never proposed a second time
+    const iso = parseDmy(date)?.iso;
+    const have = iso ? existing?.hearings.find((x) => x.iso === iso) : undefined;
+    let hearingRef: string;
+    if (have) {
+      if (!clean(hr.decision)) { dropped.push({ tool: "add_hearing", reason: `الجلسة ${date} موجودة بالفعل في الدعوى` }); continue; }
+      if (have.decided) { dropped.push({ tool: "record_decision", reason: `جلسة ${date} مسجّل لها قرار بالفعل` }); continue; }
+      hearingRef = have.id;
+    } else {
+      const ref = `hearing${++h}`;
+      const before = ops.length;
+      push("add_hearing", { ref, case: caseRef, date, purpose: clean(hr.next_requirements) && !clean(hr.decision) ? clean(hr.next_requirements) : undefined }, hr.page, clean(hr.quote));
+      if (ops.length === before || !clean(hr.decision)) continue;
+      hearingRef = `@${ref}`;
+    }
     const next = clean(hr.next_date) ? writtenDate(clean(hr.next_date), "", pageText) : null;
     if (hr.decision === "postponed" && !next) { dropped.push({ tool: "record_decision", reason: "تأجيل بلا تاريخ جلسة قادمة مكتوب" }); continue; }
     push("record_decision", {
-      hearing: `@${ref}`, decision: hr.decision, decision_text: clean(hr.decision_text) || undefined,
+      hearing: hearingRef, decision: hr.decision, decision_text: clean(hr.decision_text) || undefined,
       next_date: next ?? undefined, next_requirements: clean(hr.next_requirements) || undefined,
     }, hr.page, clean(hr.quote));
   }
@@ -312,10 +335,11 @@ const COUNT_LABEL: Record<string, string> = {
   add_hearing: "جلسات", record_decision: "قرارات جلسات", create_client: "موكل",
 };
 
-export function summaryText(fileName: string, pageCount: number, ex: Extraction | null, ops: DraftOp[], suspicious: { page: number; quote: string }[], hasCase: boolean): string {
+export function summaryText(fileName: string, pageCount: number, ex: Extraction | null, ops: DraftOp[], suspicious: { page: number; quote: string }[], hasCase: boolean, totalPages = pageCount): string {
   const lines: string[] = [];
   const pagesWord = pageCount === 1 ? "صفحة واحدة" : pageCount === 2 ? "صفحتين" : `${pageCount} صفحات`;
   lines.push(`قرأتُ ${pagesWord} من «${fileName}»${ex ? ` — ${DOC_TYPE[(ex.doc_type as keyof typeof DOC_TYPE)] ?? DOC_TYPE.other}` : ""}.`);
+  if (totalPages > pageCount) lines.push(`المستند ${totalPages} صفحة، وقرأتُ أول ${pageCount} صفحة فقط. الصفحات التالية لم تُقرأ؛ ارفعها في ملف منفصل.`);
   const counts = new Map<string, number>();
   for (const o of ops) if (COUNT_LABEL[o.tool]) counts.set(o.tool, (counts.get(o.tool) ?? 0) + 1);
   if (counts.size) {
@@ -334,6 +358,20 @@ export function summaryText(fileName: string, pageCount: number, ex: Extraction 
 
 // ---------- main ----------
 
+/** The case's current hearings and parties (RLS client), for de-duplicating a later document's card. */
+async function caseHoldings(db: Db, caseId: string): Promise<NonNullable<OpsInput["existing"]>> {
+  const [h, p] = await Promise.all([
+    db.from("hearings").select("id, hearing_date, decision_type").eq("case_id", caseId),
+    db.from("case_parties").select("name").eq("case_id", caseId),
+  ]);
+  if (h.error) throw new Error(h.error.message);
+  if (p.error) throw new Error(p.error.message);
+  return {
+    hearings: (h.data ?? []).map((x) => ({ id: x.id, iso: String(x.hearing_date).slice(0, 10), decided: x.decision_type !== null })),
+    parties: (p.data ?? []).map((x) => x.name),
+  };
+}
+
 /**
  * Read every page of a document, extract its content and post one card into the thread.
  * Safe to re-run: pages are upserted by (document_id, page_no).
@@ -348,13 +386,16 @@ export async function processDocument(db: Db, documentId: string, opts: { thread
 
   // 1. pages
   let pages: string[];
+  let totalPages = 0;
   try {
     await db.from("documents").update({ read_status: "reading", read_error: null }).eq("id", documentId);
     const dl = await db.storage.from("documents").download(doc.storage_path);
     if (dl.error || !dl.data) throw new Error(`تعذر تنزيل الملف: ${dl.error?.message ?? ""}`);
-    const files = await splitPages(new Uint8Array(await dl.data.arrayBuffer()), doc.mime_type);
+    const split = await splitPages(new Uint8Array(await dl.data.arrayBuffer()), doc.mime_type);
+    const files = split.files;
     result.pageCount = files.length;
-    await db.from("documents").update({ page_count: files.length }).eq("id", documentId);
+    totalPages = split.total;
+    await db.from("documents").update({ page_count: split.total }).eq("id", documentId);
     const read = await pool(files, READ_CONCURRENCY, async (file, i) => {
       const r = await llm.readPage({ file, prompt: PAGE_PROMPT, meta: { ...meta, purpose: "doc_read_page" } });
       const { error: e } = await db.from("document_pages").upsert(
@@ -399,7 +440,8 @@ export async function processDocument(db: Db, documentId: string, opts: { thread
   if (ex) {
     const reported = (ex.suspicious_lines ?? []).filter((s) => clean(s.quote)).map((s) => ({ page: s.page, quote: clean(s.quote) }));
     result.suspicious = mergeSuspicious(reported, result.suspicious);
-    const { ops, dropped } = extractionToOps({ ex, documentId, caseId: doc.case_id, pages });
+    const existing = doc.case_id ? await caseHoldings(db, doc.case_id) : undefined;
+    const { ops, dropped } = extractionToOps({ ex, documentId, caseId: doc.case_id, pages, existing });
     result.ops = ops.filter((o) => {
       if (o.tool === "attach_document" || o.tool === "create_case" || !touchesSuspicious(o.args, result.suspicious)) return true;
       dropped.push({ tool: o.tool, reason: "مبني على سطر مريب في المستند" });
@@ -413,7 +455,7 @@ export async function processDocument(db: Db, documentId: string, opts: { thread
 
   if (!threadId) return result;
   const content = ex
-    ? summaryText(doc.file_name, result.pageCount, ex, result.ops, result.suspicious, Boolean(doc.case_id))
+    ? summaryText(doc.file_name, result.pageCount, ex, result.ops, result.suspicious, Boolean(doc.case_id), totalPages)
     : `قرأتُ ${result.pageCount} صفحة من «${doc.file_name}» وحفظتُ نصها، لكن تعذر استخراج البيانات منها الآن. يمكنك قراءة النص في تبويب المستندات.`;
   const { data: msg, error: me } = await db.from("chat_messages").insert({ thread_id: threadId, role: "assistant", content }).select("id").single();
   if (me) throw new Error(me.message);

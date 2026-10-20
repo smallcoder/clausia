@@ -2,7 +2,7 @@
 // Run: npx tsx scripts/make-fixtures.ts   → tests/fixtures/{claim-sheet.pdf, hearing-decision.jpg, opponent-memo.pdf}
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { chromium } from "playwright";
+import { chromium } from "@playwright/test";
 
 const OUT = join(process.cwd(), "tests", "fixtures");
 

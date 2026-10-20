@@ -12,11 +12,12 @@ export function UploadDocument({ caseId, threadId, compact = false }: { caseId?:
   const [pending, start] = useTransition();
   const [name, setName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
   const [done, setDone] = useState<{ proposal: boolean } | null>(null);
 
   function onFile(f: File | undefined) {
     if (!f) return;
-    setError(null); setDone(null);
+    setError(null); setWarning(null); setDone(null);
     if (!ALLOWED_MIME.includes(f.type)) return setError("نوع الملف غير مدعوم. ارفع PDF أو صورة (JPEG / PNG / WebP).");
     if (f.size > MAX_BYTES) return setError("حجم الملف أكبر من 25 ميجابايت.");
     setName(f.name);
@@ -26,7 +27,8 @@ export function UploadDocument({ caseId, threadId, compact = false }: { caseId?:
     if (threadId) fd.set("threadId", threadId);
     start(async () => {
       const r = await uploadDocumentAction(fd);
-      if (!r.ok) setError(r.error ?? "تعذر رفع المستند");
+      if (!r.ok && r.warning) setWarning(`${r.error ?? "حُفظ النص لكن تعذر استخراج البيانات"}. يمكنك قراءة النص في تبويب المستندات.`);
+      else if (!r.ok) setError(r.error ?? "تعذر رفع المستند");
       else setDone({ proposal: Boolean(r.proposalId) });
       if (input.current) input.current.value = "";
       router.refresh();
@@ -45,6 +47,7 @@ export function UploadDocument({ caseId, threadId, compact = false }: { caseId?:
         </p>
       ) : null}
       {error ? <p className="text-sm text-danger" role="alert">{error}</p> : null}
+      {warning && !pending ? <p className="text-sm text-brass" role="status">{warning}</p> : null}
       {done && !pending ? (
         <p className="text-sm text-ok" role="status">
           {done.proposal ? "تمت القراءة. المقترحات بانتظار مراجعتك في محادثة الدعوى." : "تمت القراءة وحُفظ النص."}

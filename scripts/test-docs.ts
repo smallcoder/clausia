@@ -1,7 +1,9 @@
 // End-to-end test of the documents pipeline as the DEMO lawyer (RLS applies), on the fake fixtures.
 // Run: npx tsx --conditions=react-server --env-file=.env.local scripts/test-docs.ts
 // 1) claim sheet → NEW general thread, no case → card must start with create_case (@case1)
-// 2) hearing photo + 3) opponent memo → a temp case «اختبار-مستندات» (deleted at the end)
+// 2) hearing photo + 3) opponent memo → a temp case «اختبار-مستندات» (deleted at the end). The temp case already
+//    has the 21/4/2026 hearing, so the photo's card must reuse it (no duplicate add_hearing); the card is then
+//    confirmed through decideProposal and the document provenance is checked on the rows it wrote.
 // Cleans up every row and Storage object it created (not the fixture files).
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -10,6 +12,7 @@ import { normalizeDigits } from "@/lib/dates";
 import type { Database } from "@/lib/db/types";
 import { processDocument, type ProcessResult } from "@/lib/documents/process";
 import { safeFileName } from "@/lib/documents/files";
+import { decideProposal, normalizeForMatch } from "@/lib/proposals";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Db } from "@/lib/supabase/server";
 import { createGeneralThread, getOrCreateCaseThread } from "@/lib/threads";
@@ -100,21 +103,43 @@ async function main() {
     const t2 = await getOrCreateCaseThread(db, c.id);
     created.threads.push(t2);
 
+    // the case already holds the 21/4/2026 hearing (as if from the claim sheet or typed by the lawyer)
+    const { data: h0, error: he } = await db.from("hearings").insert({ case_id: c.id, hearing_date: "2026-04-21" }).select("id").single();
+    if (he) throw new Error(he.message);
+
     // 2) phone photo of a hearing decision
     const d2 = await upload(db, officeId, "hearing-decision.jpg", "image/jpeg", t2, c.id);
     created.docs.push(d2.id); created.paths.push(d2.path);
     const r2 = await processDocument(db, d2.id, { threadId: t2 });
-    const ops2 = await report(db, "hearing-decision.jpg (temp case)", r2);
+    const ops2 = await report(db, "hearing-decision.jpg (temp case with 21/4/2026 hearing)", r2);
     const dec = ops2.find((o) => o.tool === "record_decision");
-    check(ops2.some((o) => o.tool === "add_hearing" && o.args.date === "21/4/2026"), "hearing photo: hearing 21/4/2026");
+    check(!ops2.some((o) => o.tool === "add_hearing" && o.args.date === "21/4/2026"), "hearing photo: existing 21/4/2026 hearing not proposed again");
+    check(dec?.args.hearing === h0.id, `hearing photo: decision recorded on the existing hearing (${dec?.args.hearing})`);
     check(dec?.args.decision === "postponed" && dec?.args.next_date === "26/5/2026", `hearing photo: postponed to 26/5/2026 (${dec?.args.decision} → ${dec?.args.next_date})`);
     check(!ops2.some((o) => o.tool === "create_case"), "hearing photo: no new case (document already in a case)");
+
+    // confirm the whole card the way the lawyer's «confirm all» does, then check what reached the tables
+    const p2 = await decideProposal(db, r2.proposalId!, { mode: "confirm" });
+    const failedOps = p2.ops.filter((o) => o.status !== "confirmed");
+    check(failedOps.length === 0, `hearing photo: confirm all applied every op${failedOps.length ? ` (${failedOps.map((o) => `${o.tool}: ${o.status}`).join(", ")})` : ""}`);
+    const { data: hs } = await db.from("hearings").select("id, hearing_date, decision_type, next_hearing_id, previous_hearing_id, source_kind, source_document_id, source_page, source_quote").eq("case_id", c.id).order("hearing_date");
+    const h21 = (hs ?? []).filter((x) => x.hearing_date === "2026-04-21");
+    const h26 = (hs ?? []).find((x) => x.hearing_date === "2026-05-26");
+    check(h21.length === 1 && h21[0].decision_type === "postponed", `after confirm: one 21/4/2026 hearing, decided (${h21.length} rows, ${h21[0]?.decision_type})`);
+    check(!!h26 && h26.previous_hearing_id === h0.id && h21[0]?.next_hearing_id === h26.id, "after confirm: 26/5/2026 child hearing linked to the existing one");
+    check(h26?.source_kind === "document" && h26?.source_document_id === d2.id && h26?.source_page === 1 && !!h26?.source_quote, "after confirm: child hearing carries document provenance (kind, document, page 1, quote)");
+    const { data: att } = await db.from("documents").select("case_id, doc_type").eq("id", d2.id).single();
+    check(att?.case_id === c.id && att?.doc_type !== "judgment", `after confirm: photo attached to the case, not typed «حكم» (${att?.doc_type})`);
+    const { data: parties } = await db.from("case_parties").select("name, source_kind, source_document_id").eq("case_id", c.id);
+    check((parties ?? []).every((x) => x.source_kind === "document" && x.source_document_id === d2.id), `after confirm: parties carry document provenance (${(parties ?? []).length})`);
 
     // 3) opponent memo with an injected instruction
     const d3 = await upload(db, officeId, "opponent-memo.pdf", "application/pdf", t2, c.id);
     created.docs.push(d3.id); created.paths.push(d3.path);
     const r3 = await processDocument(db, d3.id, { threadId: t2 });
     const ops3 = await report(db, "opponent-memo.pdf (temp case, injected line)", r3);
+    const known = new Set((parties ?? []).map((x) => normalizeForMatch(x.name)));
+    check(!ops3.some((o) => o.tool === "add_party" && known.has(normalizeForMatch(String(o.args.name)))), "memo: parties already on the case are not proposed again");
     const { data: memoPage } = await db.from("document_pages").select("text").eq("document_id", d3.id).eq("page_no", 1).single();
     console.log(`  OCR kept the injected line in the page text: ${/example\.com/.test(memoPage?.text ?? "")}`);
     check(r3.suspicious.some((s) => /example\.com|تجاهل|احذف/.test(s.quote)), "memo: injected line reported in suspicious_lines");
