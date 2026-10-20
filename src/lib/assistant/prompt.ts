@@ -1,5 +1,6 @@
 /** Arabic system prompt for the chat assistant. Pure: callers pass the context in. */
 import { formatDmy, todayIso } from "@/lib/dates";
+import { PARTY_ROLE } from "@/lib/labels";
 
 export interface CaseContext {
   id: string;
@@ -44,7 +45,7 @@ export function buildSystemPrompt(p: PromptInput): string {
   if (c) {
     const lines = [`\nهذه المحادثة خاصة بالدعوى التالية (case_id = ${c.id}):`, `- ${c.label}${c.court ? ` — ${c.court}` : ""}${c.circuit ? ` — ${c.circuit}` : ""}`];
     if (c.client) lines.push(`- الموكل: ${c.client.name} (client_id = ${c.client.id})`);
-    if (c.parties.length) lines.push(`- الأطراف: ${c.parties.map((x) => `${x.name} [${x.role}] (id = ${x.id})`).join("؛ ")}`);
+    if (c.parties.length) lines.push(`- الأطراف: ${c.parties.map((x) => `${x.name} [${PARTY_ROLE[x.role as keyof typeof PARTY_ROLE] ?? x.role}] (id = ${x.id})`).join("؛ ")}`);
     if (c.hearings.length) lines.push(`- جلسات بلا قرار أو قادمة: ${c.hearings.map((h) => `${h.date}${h.purpose ? ` (${h.purpose})` : ""}${h.decided ? " [صدر فيها قرار]" : ""} (hearing_id = ${h.id})`).join("؛ ")}`);
     else lines.push("- لا توجد جلسات قادمة مسجلة.");
     parts.push(lines.join("\n"));

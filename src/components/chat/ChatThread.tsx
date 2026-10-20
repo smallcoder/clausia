@@ -43,6 +43,14 @@ export function ChatThread({ threadId, caseId, items, lookup }: { threadId: stri
     endRef.current?.scrollIntoView({ block: "end" });
   }, [shown.length, sending]);
 
+  // grow the composer with its text where `field-sizing: content` is unsupported (iOS Safari); max-h-40 caps it
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el || CSS.supports?.("field-sizing", "content")) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight + el.offsetHeight - el.clientHeight}px`;
+  }, [text]);
+
   function send() {
     const t = text.trim();
     if (!t || sending) return;
@@ -51,7 +59,11 @@ export function ChatThread({ threadId, caseId, items, lookup }: { threadId: stri
     startSend(async () => {
       addOptimistic(t);
       const r = await sendMessageAction(threadId, t);
-      if (!r.ok) { setError(r.error ?? "تعذّر الإرسال"); if (r.error === "الرسالة فارغة") setText(t); }
+      if (!r.ok) {
+        setError(r.error ?? "تعذّر الإرسال");
+        // not in the thread (session expired, thread missing…): give the text back instead of losing it
+        if (!r.saved) setText((cur) => cur || t);
+      }
       router.refresh();
     });
   }

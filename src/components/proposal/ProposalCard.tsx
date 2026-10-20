@@ -62,6 +62,15 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
+  // resync with a fresh prop after router.refresh() (card decided in another tab or by another feature);
+  // keyed on the statuses so a local decision that the server already reflects is not thrown away
+  const sig = `${initial.id}:${initial.status}:${initial.ops.map((o) => o.status).join(",")}`;
+  const [seenSig, setSeenSig] = useState(sig);
+  if (sig !== seenSig) {
+    setSeenSig(sig);
+    setP(initial);
+  }
+
   const openOps = p.ops.filter((o) => open(o.status));
   const createdCase = p.ops.find((o) => o.tool === "create_case" && o.result_id && (o.status === "confirmed" || o.status === "suggested"));
   const caseLink = createdCase?.result_id ?? (p.status !== "pending" ? p.case_id : null);
@@ -79,6 +88,18 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
       setEditing(null);
       router.refresh();
     });
+  }
+
+  /** Why a lone ✓ on this op cannot work yet: an «@ref» it points at (in this card) is not saved. */
+  function blockedBy(o: ProposalOp): string | null {
+    for (const f of OP_FIELDS[o.tool]) {
+      const v = o.args[f.key];
+      if (f.type !== "ref" || typeof v !== "string" || !v.startsWith("@")) continue;
+      const target = p.ops.find((x) => x.args.ref === v.slice(1));
+      if (!target || target.result_id) continue;
+      return target.status === "rejected" ? `العنصر المرتبط (${opName(target)}) مرفوض` : `أكّد العنصر المرتبط أولًا: ${opName(target)}`;
+    }
+    return null;
   }
 
   const toggle = (id: string) => setExpanded((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
@@ -122,6 +143,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
           const isEditing = editing === o.op_id;
           const st = STATUS[o.status];
           const merged = { ...o.args, ...(edits[o.op_id] ?? {}) };
+          const blocked = open(o.status) ? blockedBy(o) : null;
           return (
             <li key={o.op_id} className={cx(o.status === "rejected" && "opacity-60")}>
               <button type="button" onClick={() => toggle(o.op_id)} aria-expanded={isOpen}
@@ -167,10 +189,11 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
                   {o.result_id && o.tool === "create_case" ? <Link href={`/cases/${o.result_id}`} className="inline-block text-sm text-accent hover:underline">فتح ملف الدعوى</Link> : null}
 
                   {open(o.status) ? (
-                    <div className="flex flex-wrap gap-2">
-                      <Button size="sm" disabled={pending} onClick={() => decide("confirm", [o.op_id])}>✓ تأكيد</Button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button size="sm" disabled={pending || !!blocked} title={blocked ?? undefined} onClick={() => decide("confirm", [o.op_id])}>✓ تأكيد</Button>
                       <Button size="sm" variant="secondary" disabled={pending} onClick={() => setEditing(isEditing ? null : o.op_id)}>{isEditing ? "إنهاء التعديل" : "تعديل"}</Button>
                       <Button size="sm" variant="ghost" disabled={pending} onClick={() => decide("reject", [o.op_id])}>✗ رفض</Button>
+                      {blocked ? <p className="basis-full text-xs text-ink-3">{blocked}</p> : null}
                     </div>
                   ) : null}
                 </div>

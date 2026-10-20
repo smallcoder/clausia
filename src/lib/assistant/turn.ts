@@ -20,6 +20,8 @@ import { buildSystemPrompt, type CaseContext } from "./prompt";
 const MAX_ROUNDS = 4;
 const HISTORY = 40;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** Write-tool args that hold a reference (uuid or «@ref»); other string args are free text and may start with "@". */
+const REF_KEYS = ["case", "client", "hearing", "document", "previous_stage_case"];
 export const PROPOSED_RESULT = "اقتراح بانتظار تأكيد المحامي — لا تكرره";
 
 interface StoredAssistant { calls?: LlmToolCall[]; raw?: unknown }
@@ -34,10 +36,25 @@ export interface TurnResult {
   error?: string;
 }
 
-export async function runAssistantTurn(
-  db: Db,
-  input: { threadId: string; userText: string; userId: string; officeId: string },
-): Promise<TurnResult> {
+/** Thrown by runAssistantTurn; `userMessageSaved` tells the UI whether the lawyer's text is already in the thread. */
+export class TurnError extends Error {
+  constructor(message: string, readonly userMessageSaved: boolean) {
+    super(message);
+  }
+}
+
+type TurnInput = { threadId: string; userText: string; userId: string; officeId: string };
+
+export async function runAssistantTurn(db: Db, input: TurnInput): Promise<TurnResult> {
+  const state = { saved: false };
+  try {
+    return await turn(db, input, state);
+  } catch (e) {
+    throw new TurnError(e instanceof Error ? e.message : String(e), state.saved);
+  }
+}
+
+async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promise<TurnResult> {
   const text = input.userText.trim();
   if (!text) throw new Error("الرسالة فارغة");
   const { data: thread, error: te } = await db.from("chat_threads").select("id, case_id, title").eq("id", input.threadId).single();
@@ -45,6 +62,7 @@ export async function runAssistantTurn(
 
   const { data: userMsg, error: ue } = await db.from("chat_messages").insert({ thread_id: thread.id, role: "user", content: text }).select("id").single();
   if (ue || !userMsg) throw new Error(ue?.message ?? "تعذّر حفظ الرسالة");
+  state.saved = true;
   await db.from("chat_threads").update({ updated_at: new Date().toISOString() }).eq("id", thread.id);
 
   const [history, caseContext, cardNotes, docs, sourceTexts] = await Promise.all([
@@ -110,13 +128,13 @@ export async function runAssistantTurn(
       }
       // "@ref" must point at an item proposed earlier in this same card
       const missing = Object.entries(call.args)
-        .filter(([k, v]) => k !== "quote" && typeof v === "string" && v.startsWith("@") && !refsInCard.has(v.slice(1)))
+        .filter(([k, v]) => REF_KEYS.includes(k) && typeof v === "string" && v.startsWith("@") && !refsInCard.has(v.slice(1)))
         .map(([, v]) => v as string);
       if (missing.length) {
         results.set(call.id, { error: `لم يُقترح: المرجع ${missing.join("، ")} غير موجود في هذه البطاقة. استخدم معرّفًا محفوظًا أو أنشئ العنصر بـ ref في نفس الجولة.` });
         continue;
       }
-      const badId = Object.entries(call.args).filter(([k, v]) => k !== "quote" && k !== "ref" && ["case", "client", "hearing", "document", "previous_stage_case"].includes(k) && typeof v === "string" && !v.startsWith("@") && !UUID.test(v));
+      const badId = Object.entries(call.args).filter(([k, v]) => REF_KEYS.includes(k) && typeof v === "string" && !v.startsWith("@") && !UUID.test(v));
       if (badId.length) {
         results.set(call.id, { error: `لم يُقترح: ${badId.map(([k]) => k).join("، ")} يجب أن يكون معرّفًا (uuid) أو «@مرجع». ابحث عنه أولًا.` });
         continue;
