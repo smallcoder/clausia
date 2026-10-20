@@ -135,9 +135,9 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
                       {r.client?.name ?? "—"}
                       {r.client_role ? <p className="text-ink-3">{PARTY_ROLE[r.client_role]}</p> : null}
                     </td>
-                    <td className="px-4 py-3 text-ink-2">{STAGE[r.stage]}</td>
-                    <td className="px-4 py-3"><NextHearing iso={r.next_hearing} /></td>
-                    <td className="px-4 py-3"><Badge tone={STATUS_TONE[r.status]}>{CASE_STATUS[r.status]}</Badge></td>
+                    <td className="whitespace-nowrap px-4 py-3 text-ink-2">{STAGE[r.stage]}</td>
+                    <td className="whitespace-nowrap px-4 py-3"><NextHearing iso={r.next_hearing} /></td>
+                    <td className="whitespace-nowrap px-4 py-3"><Badge tone={STATUS_TONE[r.status]}>{CASE_STATUS[r.status]}</Badge></td>
                   </tr>
                 ))}
               </tbody>
