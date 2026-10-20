@@ -24,7 +24,7 @@ function CourtBlock({ court, items, today }: { court: string; items: HearingWith
         <div key={c.key}>
           <h4 className="px-4 pt-1.5 text-caption font-medium text-brass print:px-0">{c.key}</h4>
           <ul className="grouped">
-            {c.items.map((h) => <HearingItem key={h.id} h={h} today={today} showCircuit={false} decide={h.hearing_date <= today} />)}
+            {c.items.map((h) => <HearingItem key={h.id} h={h} today={today} showCircuit={false} decide={false} />)}
           </ul>
         </div>
       ))}
@@ -50,10 +50,10 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
   const isCurrent = view === "week" ? from === weekStart(today) : date === today;
 
   return (
-    <>
+    <div className="mx-auto max-w-[760px]">
       <PageHeader
         title="رول الجلسات"
-        subtitle={<>{title} · <span className="num">{rows.length}</span> جلسة{undecided ? <> · <span className="text-brass"><span className="num">{undecided}</span> بلا قرار</span></> : null}</>}
+        subtitle={<>{title} · <span className="num">{rows.length}</span> جلسة{undecided ? <> · <span className="text-suggest"><span className="num">{undecided}</span> بلا قرار</span></> : null}</>}
       />
 
       <nav className="mb-5 flex flex-wrap items-center gap-2 print:hidden" aria-label="التنقل في الرول">
@@ -106,6 +106,6 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
         </div>
       )}
       </DecisionNotices>
-    </>
+    </div>
   );
 }
