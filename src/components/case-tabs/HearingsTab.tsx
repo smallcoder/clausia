@@ -1,5 +1,6 @@
 // OWNER: hearings agent — the case's hearings as a timeline; add a hearing and record decisions inline.
 import { AddHearing } from "@/components/hearings/AddHearing";
+import { DecisionNotices } from "@/components/hearings/DecisionNotices";
 import { DecisionBadge } from "@/components/hearings/HearingItem";
 import { RecordDecision } from "@/components/hearings/RecordDecision";
 import { EmptyState, SourceBadge, cx } from "@/components/ui";
@@ -18,6 +19,7 @@ export async function HearingsTab({ caseId }: { caseId: string }) {
     <div className="max-w-3xl space-y-5">
       <AddHearing caseId={caseId} />
 
+      <DecisionNotices>
       {rows.length === 0 ? (
         <EmptyState title="لا جلسات مسجلة لهذه الدعوى" hint="أضف أول جلسة بتاريخها، أو أخبر المساعد في تبويب المحادثة." />
       ) : (
@@ -31,7 +33,7 @@ export async function HearingsTab({ caseId }: { caseId: string }) {
                     h.id === nextUp ? "border-accent bg-accent" : h.decision_type ? "border-line-strong bg-surface-2" : past ? "border-brass bg-brass-soft" : "border-accent bg-surface")} />
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                   <h3 className="font-semibold text-ink">{formatDayLabel(h.hearing_date)}</h3>
-                  {h.id === nextUp ? <span className="text-xs font-medium text-accent">الجلسة القادمة</span> : null}
+                  {h.id === nextUp ? <span className="text-xs font-medium text-accent">{h.hearing_date === today ? "اليوم" : "الجلسة القادمة"}</span> : null}
                   <DecisionBadge h={h} today={today} />
                 </div>
                 {h.purpose ? <p className="mt-1 text-sm text-ink-2"><span className="text-ink-3">الغرض / المطلوب: </span>{h.purpose}</p> : null}
@@ -43,12 +45,13 @@ export async function HearingsTab({ caseId }: { caseId: string }) {
                   </a>
                 ) : null}
                 <div className="mt-1.5"><SourceBadge row={h} /></div>
-                {!h.decision_type && h.hearing_date <= today ? <RecordDecision hearingId={h.id} caseId={caseId} hearingDate={h.hearing_date} /> : null}
+                {!h.decision_type && h.hearing_date <= today ? <RecordDecision hearingId={h.id} caseId={caseId} hearingDate={h.hearing_date} label={`جلسة ${formatDmy(h.hearing_date)}`} /> : null}
               </li>
             );
           })}
         </ol>
       )}
+      </DecisionNotices>
     </div>
   );
 }

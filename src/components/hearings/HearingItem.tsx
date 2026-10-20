@@ -8,7 +8,8 @@ import { RecordDecision } from "./RecordDecision";
 
 export function DecisionBadge({ h, today }: { h: { decision_type: HearingWithCase["decision_type"]; next_date: string | null; hearing_date: string }; today: string }) {
   if (!h.decision_type) {
-    return h.hearing_date < today ? <Badge tone="brass">بلا قرار بعد</Badge> : <Badge>لم تنعقد بعد</Badge>;
+    if (h.hearing_date < today) return <Badge tone="brass">بلا قرار بعد</Badge>;
+    return h.hearing_date === today ? <Badge>بلا قرار بعد</Badge> : <Badge>قادمة</Badge>;
   }
   return (
     <Badge tone={h.decision_type === "judgment" || h.decision_type === "reserved_for_judgment" ? "accent" : "ok"}>
@@ -22,13 +23,13 @@ export function HearingItem({ h, today, showCourt = false, showCircuit = true, s
   const c = h.case;
   const needed = h.purpose;
   return (
-    <li className="px-4 py-3 print:break-inside-avoid print:px-0 print:py-2">
+    <li className="px-4 py-2.5 print:break-inside-avoid print:px-0 print:py-2">
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
         <div className="min-w-0">
           <Link href={`/cases/${c.id}?tab=hearings`} className="font-medium text-ink hover:text-accent hover:underline">
             {caseLabel(c)}
           </Link>
-          {c.title && (c.case_number || c.case_year) ? <p className="truncate text-sm text-ink-2">{c.title}</p> : null}
+          {c.title && (c.case_number || c.case_year) ? <p className="text-sm text-ink-2">{c.title}</p> : null}
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           {c.status === "reserved_for_judgment" && !h.decision_type ? <Badge tone="accent">{CASE_STATUS[c.status]}</Badge> : null}
@@ -46,7 +47,7 @@ export function HearingItem({ h, today, showCourt = false, showCircuit = true, s
       </dl>
       {needed ? <p className="mt-1 text-sm text-ink"><span className="text-ink-3">المطلوب: </span>{needed}</p> : null}
       {h.decision_text ? <p className="mt-1 text-sm text-ink-2"><span className="text-ink-3">القرار: </span>{h.decision_text}</p> : null}
-      {decide && !h.decision_type ? <div className="print:hidden"><RecordDecision hearingId={h.id} caseId={c.id} hearingDate={h.hearing_date} compact /></div> : null}
+      {decide && !h.decision_type ? <div className="print:hidden"><RecordDecision hearingId={h.id} caseId={c.id} hearingDate={h.hearing_date} label={`${caseLabel(c)}، جلسة ${formatDmy(h.hearing_date)}`} compact /></div> : null}
     </li>
   );
 }

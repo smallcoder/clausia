@@ -1,5 +1,6 @@
 // OWNER: hearings agent — رول الجلسات by day / week, grouped by court then circuit.
 import Link from "next/link";
+import { DecisionNotices } from "@/components/hearings/DecisionNotices";
 import { HearingItem } from "@/components/hearings/HearingItem";
 import { Card, EmptyState, PageHeader, cx } from "@/components/ui";
 import { addDaysIso, formatDayLabel, formatDmy, parseDmy, todayIso } from "@/lib/dates";
@@ -78,6 +79,7 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
         </div>
       </nav>
 
+      <DecisionNotices>
       {rows.length === 0 ? (
         <EmptyState
           title={view === "week" ? "لا جلسات في هذا الأسبوع" : "لا جلسات في هذا اليوم"}
@@ -103,6 +105,7 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
           ))}
         </div>
       )}
+      </DecisionNotices>
     </>
   );
 }

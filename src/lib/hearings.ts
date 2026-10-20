@@ -45,16 +45,23 @@ export interface HearingWithCase extends HearingRow {
 
 const HEARING_COLS =
   "id, case_id, hearing_date, purpose, decision_type, decision_text, next_requirements, previous_hearing_id, next_hearing_id, review_status, created_by_kind, source_kind, source_page";
-const WITH_CASE = `${HEARING_COLS}, cases!inner(id, case_number, case_year, title, court, circuit, client_role, status, clients(name)), next:hearings!hearings_next_hearing_id_fkey(hearing_date)`;
+const WITH_CASE = `${HEARING_COLS}, cases!inner(id, case_number, case_year, title, court, circuit, client_role, status, clients(name))`;
 
 type RawCase = Omit<HearingCase, "client_name"> & { clients: { name: string } | null };
-type Raw = HearingRow & { cases: RawCase; next: { hearing_date: string } | { hearing_date: string }[] | null };
+type Raw = HearingRow & { cases: RawCase };
 
-function shape(r: Raw): HearingWithCase {
-  const { cases, next, ...h } = r;
-  const { clients, ...c } = cases;
-  const n = Array.isArray(next) ? next[0] : next;
-  return { ...h, case: { ...c, client_name: clients?.name ?? null }, next_date: n?.hearing_date ?? null };
+/** Flatten the join and fill `next_date` (one extra query for the linked next hearings). */
+async function shape(db: Db, raw: Raw[]): Promise<HearingWithCase[]> {
+  const nextIds = [...new Set(raw.map((r) => r.next_hearing_id).filter((x): x is string => !!x))];
+  const dates = new Map<string, string>();
+  if (nextIds.length) {
+    const rows = must(await db.from("hearings").select("id, hearing_date").in("id", nextIds));
+    for (const r of rows) dates.set(r.id, r.hearing_date);
+  }
+  return raw.map(({ cases, ...h }) => {
+    const { clients, ...c } = cases;
+    return { ...h, case: { ...c, client_name: clients?.name ?? null }, next_date: h.next_hearing_id ? dates.get(h.next_hearing_id) ?? null : null };
+  });
 }
 
 function must<T>(r: { data: T | null; error: { message: string } | null }): T {
@@ -65,13 +72,13 @@ function must<T>(r: { data: T | null; error: { message: string } | null }): T {
 /** Hearings with from ≤ date ≤ to (ISO), with their case and client, ordered by date then court. */
 export async function hearingsInRange(db: Db, from: string, to: string): Promise<HearingWithCase[]> {
   const rows = must(await db.from("hearings").select(WITH_CASE).gte("hearing_date", from).lte("hearing_date", to).neq("review_status", "rejected").order("hearing_date"));
-  return (rows as unknown as Raw[]).map(shape).sort(byDateCourt);
+  return (await shape(db, rows as unknown as Raw[])).sort(byDateCourt);
 }
 
 /** Past hearings (before today in Cairo) with no decision recorded yet, oldest first. */
 export async function undecidedPastHearings(db: Db, limit = 50): Promise<HearingWithCase[]> {
   const rows = must(await db.from("hearings").select(WITH_CASE).lt("hearing_date", todayIso()).is("decision_type", null).neq("review_status", "rejected").order("hearing_date", { ascending: true }).limit(limit));
-  return (rows as unknown as Raw[]).map(shape);
+  return shape(db, rows as unknown as Raw[]);
 }
 
 /** One case's hearings, oldest first. previous/next links are on each row (ids); `next_date` is filled in. */

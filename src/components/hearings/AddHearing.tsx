@@ -1,6 +1,6 @@
 "use client";
 /** Inline «إضافة جلسة»: a date (d/m/yyyy) and an optional purpose. */
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useState } from "react";
 import { Button, cx } from "@/components/ui";
 import { formatDmy } from "@/lib/dates";
 import { addHearingAction, type HearingFormState } from "./actions";
@@ -9,9 +9,14 @@ const input = "h-9 w-full rounded-lg border border-line-strong bg-surface px-2.5
 
 export function AddHearing({ caseId }: { caseId: string }) {
   const [open, setOpen] = useState(false);
-  const [state, action, pending] = useActionState<HearingFormState, FormData>(addHearingAction, null);
-  const form = useRef<HTMLFormElement>(null);
-  useEffect(() => { if (state?.ok) form.current?.reset(); }, [state]);
+  // controlled, so a refused save keeps what the lawyer typed; cleared after a successful save
+  const [date, setDate] = useState("");
+  const [purpose, setPurpose] = useState("");
+  const [state, action, pending] = useActionState<HearingFormState, FormData>(async (prev, fd) => {
+    const r = await addHearingAction(prev, fd);
+    if (r?.ok) { setDate(""); setPurpose(""); }
+    return r;
+  }, null);
 
   const saved = state?.ok ? state : null;
   const err = state && !state.ok ? state : null;
@@ -24,17 +29,17 @@ export function AddHearing({ caseId }: { caseId: string }) {
     );
   }
   return (
-    <form ref={form} action={action} className="space-y-2 rounded-lg border border-line bg-surface-2 p-3">
+    <form action={action} className="space-y-2 rounded-lg border border-line bg-surface-2 p-3">
       <input type="hidden" name="case_id" value={caseId} />
       <div className="grid gap-2 sm:grid-cols-[10rem_1fr]">
         <label className="block">
           <span className="mb-1 block text-xs text-ink-2">تاريخ الجلسة</span>
-          <input name="date" required inputMode="numeric" dir="ltr" placeholder="ي/ش/سنة" autoComplete="off"
+          <input name="date" required value={date} onChange={(e) => setDate(e.target.value)} inputMode="numeric" dir="ltr" placeholder="ي/ش/سنة" autoComplete="off"
             className={cx(input, "num text-start", err?.field === "date" && "border-danger")} />
         </label>
         <label className="block">
           <span className="mb-1 block text-xs text-ink-2">الغرض / المطلوب فيها</span>
-          <input name="purpose" className={input} placeholder="مثال: أول جلسة، لتقديم المستندات" autoComplete="off" />
+          <input name="purpose" value={purpose} onChange={(e) => setPurpose(e.target.value)} className={input} placeholder="مثال: أول جلسة، لتقديم المستندات" autoComplete="off" />
         </label>
       </div>
       {err ? <p className="text-sm text-danger" role="alert">{err.error}</p> : null}

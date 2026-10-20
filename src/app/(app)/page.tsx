@@ -1,7 +1,8 @@
 // OWNER: hearings agent — home: today's + tomorrow's hearings, past hearings with no decision.
 import Link from "next/link";
+import { DecisionNotices } from "@/components/hearings/DecisionNotices";
 import { HearingItem } from "@/components/hearings/HearingItem";
-import { Card, EmptyState, PageHeader, SectionTitle } from "@/components/ui";
+import { Badge, Card, EmptyState, PageHeader, SectionTitle } from "@/components/ui";
 import { addDaysIso, formatDayLabel, formatDmy, todayIso } from "@/lib/dates";
 import { courtOf, groupBy, hearingsInRange, undecidedPastHearings, type HearingWithCase } from "@/lib/hearings";
 import { createClient, getSession } from "@/lib/supabase/server";
@@ -9,6 +10,10 @@ import { createClient, getSession } from "@/lib/supabase/server";
 function greeting() {
   const h = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Cairo", hour: "numeric", hour12: false }).format(new Date()));
   return h < 12 ? "صباح الخير" : "مساء الخير";
+}
+
+function Count({ n, tone = "neutral" }: { n: number; tone?: "neutral" | "brass" }) {
+  return n ? <Badge tone={tone}><span className="num">{n}</span></Badge> : null;
 }
 
 function DayList({ items, today }: { items: HearingWithCase[]; today: string }) {
@@ -43,27 +48,28 @@ export default async function Home() {
       <PageHeader title={`${greeting()}${name}`} subtitle={formatDayLabel(today)} />
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
-        <div className="space-y-8">
+        <div className="min-w-0 space-y-8">
           <section aria-labelledby="today">
             <SectionTitle actions={<Link href={`/hearings?view=day&date=${today}`} className="text-sm text-accent hover:underline">رول اليوم</Link>}>
-              <span id="today">جلسات اليوم{todays.length ? <span className="num ms-1 font-normal text-ink-3">({todays.length})</span> : null}</span>
+              <span id="today" className="inline-flex items-center gap-2">جلسات اليوم<Count n={todays.length} /></span>
             </SectionTitle>
             {todays.length ? <DayList items={todays} today={today} /> : <EmptyState title="لا جلسات اليوم" hint="يوم بلا جلسات. يمكنك مراجعة الجلسات السابقة التي لم يُسجَّل قرارها." />}
           </section>
 
           <section aria-labelledby="tomorrow">
             <SectionTitle actions={<Link href={`/hearings?view=day&date=${tomorrow}`} className="text-sm text-accent hover:underline">رول الغد</Link>}>
-              <span id="tomorrow">جلسات الغد <span className="num font-normal text-ink-3">{formatDmy(tomorrow)}</span>{tomorrows.length ? <span className="num ms-1 font-normal text-ink-3">({tomorrows.length})</span> : null}</span>
+              <span id="tomorrow" className="inline-flex items-center gap-2">جلسات الغد<span className="num font-normal text-ink-3">{formatDmy(tomorrow)}</span><Count n={tomorrows.length} /></span>
             </SectionTitle>
             {tomorrows.length ? <DayList items={tomorrows} today={today} /> : <EmptyState title="لا جلسات غدًا" hint="عندما تضيف جلسة لأي دعوى ستظهر هنا قبلها بيوم." />}
           </section>
         </div>
 
-        <aside className="space-y-8">
+        <aside className="min-w-0 space-y-8">
           <section aria-labelledby="undecided">
             <SectionTitle>
-              <span id="undecided">جلسات سابقة بلا قرار{undecided.length ? <span className="num ms-1 font-normal text-ink-3">({undecided.length})</span> : null}</span>
+              <span id="undecided" className="inline-flex items-center gap-2">جلسات سابقة بلا قرار<Count n={undecided.length} tone="brass" /></span>
             </SectionTitle>
+            <DecisionNotices>
             {undecided.length ? (
               <Card>
                 <p className="border-b border-line px-4 py-2.5 text-xs text-ink-3">الأقدم أولًا. سجّل ما قررته المحكمة حتى تُنشأ الجلسة القادمة.</p>
@@ -74,6 +80,7 @@ export default async function Home() {
             ) : (
               <EmptyState title="كل الجلسات السابقة مسجّل قرارها" hint="لا شيء متأخر." />
             )}
+            </DecisionNotices>
           </section>
 
           <Link href="/chat" className="block rounded-[var(--radius)] border border-line bg-accent-soft px-4 py-4 transition hover:border-accent/40">
