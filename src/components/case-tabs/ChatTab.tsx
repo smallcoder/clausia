@@ -1,7 +1,10 @@
-// OWNER: chat agent — placeholder from the base; replace this file (keep the export name and props).
-import { EmptyState } from "@/components/ui";
+// The case's own conversation inside the case page (same thread UI as /chat/[threadId]).
+import { ThreadView } from "@/components/chat/ThreadView";
+import { createClient } from "@/lib/supabase/server";
+import { getOrCreateCaseThread } from "@/lib/threads";
 
 export async function ChatTab({ caseId }: { caseId: string }) {
-  void caseId;
-  return <EmptyState title="قيد الإنشاء" />;
+  const db = await createClient();
+  const threadId = await getOrCreateCaseThread(db, caseId);
+  return <ThreadView db={db} threadId={threadId} caseId={caseId} />;
 }

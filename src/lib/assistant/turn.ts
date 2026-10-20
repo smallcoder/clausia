@@ -1,0 +1,249 @@
+import "server-only";
+/**
+ * One assistant turn: save the lawyer's message, replay the thread to the model, run READ tools at once,
+ * gather the WRITE tool calls of each round into ONE proposal (confirmation card). Nothing is written to
+ * the content tables here — only chat_messages + proposals. Takes `db` (no cookies) so scripts can call it.
+ *
+ * Storage: assistant rows keep tool_calls = {calls, raw} (raw = provider parts incl. thought signatures,
+ * sent back unchanged); tool rows keep tool_calls = {results}. A card's proposal points at its assistant row.
+ */
+import { formatDmy, todayIso } from "@/lib/dates";
+import type { Json } from "@/lib/db/types";
+import { caseLabel } from "@/lib/labels";
+import { getLlm, type LlmMessage, type LlmToolCall } from "@/lib/llm";
+import { createProposal, type DraftOp, type Proposal } from "@/lib/proposals";
+import type { Db } from "@/lib/supabase/server";
+import { isReadTool, READ_TOOL_SPECS, runReadTool } from "@/lib/tools/read";
+import { isWriteTool, OP_TITLE, WRITE_TOOL_ARGS, writeToolSpecs } from "@/lib/tools/registry";
+import { buildSystemPrompt, type CaseContext } from "./prompt";
+
+const MAX_ROUNDS = 4;
+const HISTORY = 40;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const PROPOSED_RESULT = "اقتراح بانتظار تأكيد المحامي — لا تكرره";
+
+interface StoredAssistant { calls?: LlmToolCall[]; raw?: unknown }
+interface StoredTool { results?: { callId: string; name: string; result: unknown }[] }
+
+export interface TurnResult {
+  userMessageId: string;
+  assistantMessageIds: string[];
+  proposalIds: string[];
+  text: string;
+  rounds: number;
+  error?: string;
+}
+
+export async function runAssistantTurn(
+  db: Db,
+  input: { threadId: string; userText: string; userId: string; officeId: string },
+): Promise<TurnResult> {
+  const text = input.userText.trim();
+  if (!text) throw new Error("الرسالة فارغة");
+  const { data: thread, error: te } = await db.from("chat_threads").select("id, case_id, title").eq("id", input.threadId).single();
+  if (te || !thread) throw new Error("المحادثة غير موجودة");
+
+  const { data: userMsg, error: ue } = await db.from("chat_messages").insert({ thread_id: thread.id, role: "user", content: text }).select("id").single();
+  if (ue || !userMsg) throw new Error(ue?.message ?? "تعذّر حفظ الرسالة");
+  await db.from("chat_threads").update({ updated_at: new Date().toISOString() }).eq("id", thread.id);
+
+  const [history, caseContext, cardNotes, docs, sourceTexts] = await Promise.all([
+    loadHistory(db, thread.id),
+    thread.case_id ? loadCaseContext(db, thread.case_id) : Promise.resolve(null),
+    loadCardNotes(db, thread.id),
+    db.from("documents").select("id, file_name, page_count, read_status").eq("thread_id", thread.id).order("created_at").then((r) => r.data ?? []),
+    loadSourceTexts(db, thread.id),
+  ]);
+
+  const system = buildSystemPrompt({ caseContext, cardNotes, documents: docs });
+  const tools = [...READ_TOOL_SPECS, ...writeToolSpecs()];
+  const messages: LlmMessage[] = history;
+  const meta = { purpose: "chat" as const, officeId: input.officeId, userId: input.userId, threadId: thread.id };
+  const out: TurnResult = { userMessageId: userMsg.id, assistantMessageIds: [], proposalIds: [], text: "", rounds: 0 };
+
+  for (let round = 0; round < MAX_ROUNDS; round++) {
+    let res;
+    try {
+      res = await getLlm().chat({ system, messages, tools, meta });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      const friendly = msg.includes("spend cap") ? "تعذّر الرد: تم بلوغ حد الإنفاق التجريبي." : "تعذّر الرد الآن. حاول مرة أخرى بعد قليل.";
+      const { data: m } = await db.from("chat_messages").insert({ thread_id: thread.id, role: "assistant", content: friendly }).select("id").single();
+      if (m) out.assistantMessageIds.push(m.id);
+      out.text = friendly;
+      out.error = msg;
+      return out;
+    }
+    out.rounds = round + 1;
+    const calls = res.toolCalls;
+    const stored: StoredAssistant | null = calls.length ? { calls, raw: res.raw } : null;
+    const { data: am, error: ae } = await db.from("chat_messages")
+      .insert({ thread_id: thread.id, role: "assistant", content: res.text ?? "", tool_calls: stored as unknown as Json })
+      .select("id").single();
+    if (ae || !am) throw new Error(ae?.message ?? "تعذّر حفظ رد المساعد");
+    out.assistantMessageIds.push(am.id);
+    if (res.text) out.text = out.text ? `${out.text}\n${res.text}` : res.text;
+    messages.push({ role: "assistant", text: res.text ?? "", toolCalls: calls, raw: res.raw });
+    if (!calls.length) break;
+
+    const results = new Map<string, unknown>();
+    const drafts: { call: LlmToolCall; op: DraftOp }[] = [];
+    const refsInCard = new Set<string>();
+
+    for (const call of calls) {
+      if (isReadTool(call.name)) {
+        try {
+          results.set(call.id, await runReadTool(db, call.name, call.args));
+        } catch (e) {
+          results.set(call.id, { error: e instanceof Error ? e.message : String(e) });
+        }
+        continue;
+      }
+      if (!isWriteTool(call.name)) {
+        results.set(call.id, { error: `أداة غير معروفة: ${call.name}` });
+        continue;
+      }
+      const parsed = WRITE_TOOL_ARGS[call.name].safeParse(call.args);
+      if (!parsed.success) {
+        results.set(call.id, { error: `لم يُقترح: ${parsed.error.issues.map((i) => `${i.path.join(".") || "args"}: ${i.message}`).join("؛ ")}. صحّح الاستدعاء إن كان الخطأ واضحًا، وإلا اسأل المحامي ولا تخمّن.` });
+        continue;
+      }
+      // "@ref" must point at an item proposed earlier in this same card
+      const missing = Object.entries(call.args)
+        .filter(([k, v]) => k !== "quote" && typeof v === "string" && v.startsWith("@") && !refsInCard.has(v.slice(1)))
+        .map(([, v]) => v as string);
+      if (missing.length) {
+        results.set(call.id, { error: `لم يُقترح: المرجع ${missing.join("، ")} غير موجود في هذه البطاقة. استخدم معرّفًا محفوظًا أو أنشئ العنصر بـ ref في نفس الجولة.` });
+        continue;
+      }
+      const badId = Object.entries(call.args).filter(([k, v]) => k !== "quote" && k !== "ref" && ["case", "client", "hearing", "document", "previous_stage_case"].includes(k) && typeof v === "string" && !v.startsWith("@") && !UUID.test(v));
+      if (badId.length) {
+        results.set(call.id, { error: `لم يُقترح: ${badId.map(([k]) => k).join("، ")} يجب أن يكون معرّفًا (uuid) أو «@مرجع». ابحث عنه أولًا.` });
+        continue;
+      }
+      const ref = call.args.ref;
+      if (typeof ref === "string" && ref) refsInCard.add(ref);
+      drafts.push({
+        call,
+        op: { tool: call.name, args: call.args, source: { kind: "chat", message_id: userMsg.id, quote: (call.args.quote as string | undefined) ?? null } },
+      });
+    }
+
+    if (drafts.length) {
+      const caseId = thread.case_id ?? firstCaseUuid(drafts.map((x) => x.op));
+      try {
+        const proposal: Proposal = await createProposal(db, { threadId: thread.id, messageId: am.id, caseId, ops: drafts.map((x) => x.op), sourceTexts: [...sourceTexts, text] });
+        out.proposalIds.push(proposal.id);
+        for (const x of drafts) results.set(x.call.id, { status: PROPOSED_RESULT, card_id: proposal.id });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        for (const x of drafts) results.set(x.call.id, { error: `لم يُقترح: ${msg}` });
+      }
+    }
+
+    const toolResults = calls.map((c) => ({ callId: c.id, name: c.name, result: results.get(c.id) ?? { error: "لا نتيجة" } }));
+    const storedTool: StoredTool = { results: toolResults };
+    await db.from("chat_messages").insert({ thread_id: thread.id, role: "tool", content: "", tool_calls: storedTool as unknown as Json });
+    messages.push({ role: "tool", results: toolResults });
+  }
+  return out;
+}
+
+function firstCaseUuid(ops: DraftOp[]): string | null {
+  for (const o of ops) {
+    const v = o.args.case;
+    if (typeof v === "string" && UUID.test(v)) return v;
+  }
+  return null;
+}
+
+/**
+ * Last ~40 messages as LlmMessages. Gemini needs every functionCall followed by its functionResponse, so an
+ * assistant row with calls is replayed with its raw parts only when the next row holds its results; otherwise
+ * it is replayed as plain text. The window always starts at a user message.
+ */
+async function loadHistory(db: Db, threadId: string): Promise<LlmMessage[]> {
+  const { data } = await db.from("chat_messages").select("id, role, content, tool_calls, attachments, created_at")
+    .eq("thread_id", threadId).order("created_at", { ascending: false }).limit(HISTORY);
+  const rows = (data ?? []).reverse();
+  const start = rows.findIndex((r) => r.role === "user");
+  const win = start < 0 ? [] : rows.slice(start);
+  const out: LlmMessage[] = [];
+  for (let i = 0; i < win.length; i++) {
+    const r = win[i];
+    if (r.role === "user") {
+      const att = Array.isArray(r.attachments) ? (r.attachments as { document_id?: string; file_name?: string }[]) : [];
+      const note = att.length ? `\n[مرفقات: ${att.map((a) => `${a.file_name ?? "مستند"} (document_id = ${a.document_id})`).join("، ")}]` : "";
+      out.push({ role: "user", text: `${r.content}${note}` });
+    } else if (r.role === "assistant") {
+      const s = (r.tool_calls ?? null) as StoredAssistant | null;
+      const next = win[i + 1];
+      const answered = s?.calls?.length && next?.role === "tool" && ((next.tool_calls as StoredTool | null)?.results?.length ?? 0) > 0;
+      if (answered) {
+        out.push({ role: "assistant", text: r.content, toolCalls: s!.calls, raw: s!.raw });
+        out.push({ role: "tool", results: (next.tool_calls as StoredTool).results! });
+        i++;
+      } else if (r.content) {
+        out.push({ role: "assistant", text: r.content });
+      }
+    }
+    // orphan tool rows are skipped
+  }
+  return out;
+}
+
+async function loadCaseContext(db: Db, caseId: string): Promise<CaseContext | null> {
+  const { data: c } = await db.from("cases").select("id, case_number, case_year, title, court, circuit, client_id").eq("id", caseId).maybeSingle();
+  if (!c) return null;
+  const today = todayIso();
+  const [client, parties, hearings] = await Promise.all([
+    c.client_id ? db.from("clients").select("id, name").eq("id", c.client_id).maybeSingle().then((r) => r.data) : Promise.resolve(null),
+    db.from("case_parties").select("id, name, role").eq("case_id", caseId).order("created_at").then((r) => r.data ?? []),
+    db.from("hearings").select("id, hearing_date, purpose, decision_type").eq("case_id", caseId).order("hearing_date").then((r) => r.data ?? []),
+  ]);
+  return {
+    id: c.id, label: caseLabel(c), court: c.court, circuit: c.circuit, client,
+    parties,
+    hearings: hearings.filter((h) => !h.decision_type || h.hearing_date >= today)
+      .map((h) => ({ id: h.id, date: formatDmy(h.hearing_date), purpose: h.purpose, decided: !!h.decision_type })),
+  };
+}
+
+const STATUS_NOTE: Record<string, string> = { pending: "بانتظار التأكيد", confirmed: "حُفظ", suggested: "حُفظ كمقترح", rejected: "رفضه المحامي", failed: "تعذّر الحفظ" };
+
+/** What happened to each card in the thread, with the new ids, so the model can refer to saved items. */
+async function loadCardNotes(db: Db, threadId: string): Promise<string[]> {
+  const { data } = await db.from("proposals").select("id, ops, status, created_at").eq("thread_id", threadId).order("created_at", { ascending: false }).limit(10);
+  const props = (data ?? []).reverse() as unknown as Pick<Proposal, "id" | "ops" | "status">[];
+  const decisionIds = props.flatMap((p) => p.ops.filter((o) => o.tool === "record_decision" && o.result_id && (o.status === "confirmed" || o.status === "suggested")).map((o) => o.result_id!));
+  const next = new Map<string, string>();
+  if (decisionIds.length) {
+    const { data: hs } = await db.from("hearings").select("id, next_hearing_id").in("id", decisionIds);
+    for (const h of hs ?? []) if (h.next_hearing_id) next.set(h.id, h.next_hearing_id);
+  }
+  return props.map((p, i) => {
+    const ops = p.ops.map((o) => {
+      const a = o.args as Record<string, unknown>;
+      const what = [a.name, a.case_number && `رقم ${a.case_number}${a.case_year ? ` لسنة ${a.case_year}` : ""}`, a.date, a.next_date && `القادمة ${a.next_date}`, typeof a.text === "string" ? a.text.slice(0, 40) : null]
+        .filter(Boolean).join(" ");
+      const ids = o.result_id ? ` (id = ${o.result_id}${next.has(o.result_id) ? `، الجلسة القادمة id = ${next.get(o.result_id)}` : ""})` : "";
+      return `${o.op_id} ${o.tool} [${OP_TITLE[o.tool] ?? o.tool}${what ? `: ${what}` : ""}] → ${STATUS_NOTE[o.status] ?? o.status}${ids}${o.error ? ` — ${o.error}` : ""}`;
+    });
+    return `- بطاقة ${i + 1}: ${ops.join("؛ ")}`;
+  });
+}
+
+/** Texts the quotes may come from: every lawyer message in the thread + pages of documents uploaded here. */
+async function loadSourceTexts(db: Db, threadId: string): Promise<string[]> {
+  const [{ data: msgs }, { data: docs }] = await Promise.all([
+    db.from("chat_messages").select("content").eq("thread_id", threadId).eq("role", "user"),
+    db.from("documents").select("id").eq("thread_id", threadId),
+  ]);
+  const texts = (msgs ?? []).map((m) => m.content);
+  const ids = (docs ?? []).map((d) => d.id);
+  if (ids.length) {
+    const { data: pages } = await db.from("document_pages").select("text").in("document_id", ids);
+    for (const p of pages ?? []) texts.push(p.text);
+  }
+  return texts;
+}
