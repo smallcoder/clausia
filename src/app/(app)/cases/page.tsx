@@ -55,7 +55,7 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
   const filtered = Boolean(sp.q || sp.stage || sp.status);
 
   return (
-    <>
+    <div className="mx-auto max-w-[760px]">
       <PageHeader title="القضايا" subtitle={filtered ? `${rows.length} نتيجة` : `${rows.length} قضية في المكتب`} />
 
       <form action="/cases" className="mb-4 flex gap-2" role="search">
@@ -91,7 +91,7 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
       ) : (
         <>
           {/* mobile: cards */}
-          <ul className="grouped overflow-hidden rounded-[var(--radius)] bg-surface shadow-1 lg:hidden">
+          <ul className="grouped overflow-hidden rounded-[var(--radius)] bg-surface shadow-1">
             {rows.map((r) => (
               <li key={r.id}>
                 <Link href={`/cases/${r.id}`} className="flex min-h-11 items-start gap-3 px-4 py-3.5 transition-colors active:bg-surface-2">
@@ -117,7 +117,7 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
           </ul>
 
           {/* desktop: dense rows */}
-          <Card className="hidden overflow-hidden lg:block">
+          <Card className="hidden">
             <table className="w-full text-callout">
               <thead className="text-caption text-ink-3">
                 <tr className="text-right">
@@ -154,6 +154,6 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
           </Card>
         </>
       )}
-    </>
+    </div>
   );
 }
