@@ -53,6 +53,7 @@ async function main() {
     for (const [name, path] of routes) {
       const res = await page.goto(BASE + path, { waitUntil: "networkidle" });
       await page.waitForTimeout(400);
+      await page.evaluate(() => window.scrollTo(0, 0));
       await page.screenshot({ path: `${dir}/${name}.png`, fullPage: true });
       console.log(scheme, w, name, res?.status());
       // on mobile, open the confirmation card's bottom sheet

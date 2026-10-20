@@ -15,15 +15,15 @@ function href(view: View, date: string) {
 
 function CourtBlock({ court, items, today }: { court: string; items: HearingWithCase[]; today: string }) {
   return (
-    <Card className="print:rounded-none print:border-0 print:border-t">
-      <h3 className="flex items-center justify-between border-b border-line bg-surface-2 px-4 py-2 text-sm font-semibold text-ink print:bg-transparent print:px-0">
+    <Card className="overflow-hidden print:rounded-none print:shadow-none">
+      <h3 className="flex items-center justify-between px-4 pb-1 pt-3.5 text-callout font-semibold text-ink print:px-0">
         <span>{court}</span>
-        <span className="num text-xs font-normal text-ink-3">{items.length}</span>
+        <span className="num text-caption font-normal text-ink-3">{items.length}</span>
       </h3>
       {groupBy(items, circuitOf).map((c) => (
         <div key={c.key}>
-          <h4 className="px-4 pt-2.5 text-xs font-semibold text-brass print:px-0">{c.key}</h4>
-          <ul className="divide-y divide-line">
+          <h4 className="px-4 pt-1.5 text-caption font-medium text-brass print:px-0">{c.key}</h4>
+          <ul className="grouped">
             {c.items.map((h) => <HearingItem key={h.id} h={h} today={today} showCircuit={false} decide={h.hearing_date <= today} />)}
           </ul>
         </div>
@@ -57,23 +57,23 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
       />
 
       <nav className="mb-5 flex flex-wrap items-center gap-2 print:hidden" aria-label="التنقل في الرول">
-        <div className="inline-flex rounded-lg border border-line-strong bg-surface p-0.5 text-sm">
+        <div className="inline-flex rounded-[var(--radius-sm)] bg-line/70 p-1 text-callout">
           {(["day", "week"] as const).map((v) => (
             <Link key={v} href={href(v, date)} aria-current={v === view ? "page" : undefined}
-              className={cx("rounded-md px-3 py-1.5", v === view ? "bg-accent text-accent-ink" : "text-ink-2 hover:text-ink")}>
+              className={cx("flex min-h-9 items-center rounded-[8px] px-4 transition-colors", v === view ? "bg-surface font-semibold text-ink shadow-1" : "text-ink-2 hover:text-ink")}>
               {v === "day" ? "يوم" : "أسبوع"}
             </Link>
           ))}
         </div>
         <div className="inline-flex items-center gap-1">
-          <Link href={href(view, addDaysIso(date, -step))} className="inline-flex h-9 items-center rounded-lg border border-line-strong bg-surface px-3 text-sm text-ink hover:bg-surface-2">
+          <Link href={href(view, addDaysIso(date, -step))} className="inline-flex h-11 items-center rounded-[var(--radius-sm)] bg-surface px-3.5 text-callout text-ink shadow-1 transition-colors hover:text-accent">
             → {view === "week" ? "الأسبوع السابق" : "السابق"}
           </Link>
           <Link href={href(view, today)} aria-disabled={isCurrent || undefined}
-            className={cx("inline-flex h-9 items-center rounded-lg px-3 text-sm", isCurrent ? "text-ink-3" : "text-accent hover:bg-accent-soft")}>
+            className={cx("inline-flex h-11 items-center rounded-[var(--radius-sm)] px-3.5 text-callout", isCurrent ? "text-ink-3" : "text-accent hover:bg-accent-soft")}>
             اليوم
           </Link>
-          <Link href={href(view, addDaysIso(date, step))} className="inline-flex h-9 items-center rounded-lg border border-line-strong bg-surface px-3 text-sm text-ink hover:bg-surface-2">
+          <Link href={href(view, addDaysIso(date, step))} className="inline-flex h-11 items-center rounded-[var(--radius-sm)] bg-surface px-3.5 text-callout text-ink shadow-1 transition-colors hover:text-accent">
             {view === "week" ? "الأسبوع التالي" : "التالي"} ←
           </Link>
         </div>

@@ -1,5 +1,6 @@
 // Cases list: search (?q=) across number, year, title, court, circuit, client and party names; filters for stage and status.
 import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 import { Badge, Card, DateText, EmptyState, PageHeader, cx } from "@/components/ui";
 import { isKey, listCases, type CaseRow } from "@/lib/cases";
 import { todayIso } from "@/lib/dates";
@@ -22,8 +23,8 @@ function href(sp: SP, patch: Partial<SP>) {
 
 function Chip({ active, to, children }: { active: boolean; to: string; children: React.ReactNode }) {
   return (
-    <Link href={to} className={cx("whitespace-nowrap rounded-full border px-3 py-1 text-sm transition",
-      active ? "border-accent/30 bg-accent-soft font-medium text-accent" : "border-line bg-surface text-ink-2 hover:bg-surface-2")}>
+    <Link href={to} aria-current={active ? "true" : undefined} className={cx("inline-flex min-h-9 items-center whitespace-nowrap rounded-full px-3.5 text-callout transition-colors duration-150",
+      active ? "bg-ink font-medium text-paper" : "bg-surface text-ink-2 shadow-1 hover:text-ink")}>
       {children}
     </Link>
   );
@@ -57,23 +58,23 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
     <>
       <PageHeader title="القضايا" subtitle={filtered ? `${rows.length} نتيجة` : `${rows.length} قضية في المكتب`} />
 
-      <form action="/cases" className="mb-3 flex gap-2" role="search">
+      <form action="/cases" className="mb-4 flex gap-2" role="search">
         {sp.stage ? <input type="hidden" name="stage" value={sp.stage} /> : null}
         {sp.status ? <input type="hidden" name="status" value={sp.status} /> : null}
         <input
           name="q" defaultValue={sp.q ?? ""} type="search"
           placeholder="ابحث برقم الدعوى أو السنة أو المحكمة أو اسم الموكل أو الخصم"
-          className="h-11 min-w-0 flex-1 rounded-lg border border-line-strong bg-surface px-3 text-[15px] text-ink placeholder:text-ink-3"
+          className="h-11 min-w-0 flex-1 rounded-[var(--radius-sm)] bg-line/70 px-4 text-body text-ink placeholder:text-ink-3 focus:bg-surface focus:outline-none focus:ring-2 focus:ring-accent/40"
         />
-        <button className="h-11 rounded-lg bg-accent px-4 text-[15px] font-medium text-accent-ink hover:brightness-110">بحث</button>
+        <button className="h-11 rounded-[var(--radius-sm)] bg-accent px-5 text-body font-semibold text-accent-ink transition hover:opacity-90">بحث</button>
       </form>
 
-      <div className="mb-5 space-y-2">
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:px-0">
+      <div className="mb-6 space-y-2">
+        <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 py-1 lg:mx-0 lg:px-0">
           <Chip active={!sp.stage} to={href(sp, { stage: undefined })}>كل الدرجات</Chip>
           {Object.entries(STAGE).map(([k, v]) => <Chip key={k} active={sp.stage === k} to={href(sp, { stage: k })}>{v}</Chip>)}
         </div>
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:px-0">
+        <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 py-1 lg:mx-0 lg:px-0">
           <Chip active={!sp.status} to={href(sp, { status: undefined })}>كل الحالات</Chip>
           {Object.entries(CASE_STATUS).map(([k, v]) => <Chip key={k} active={sp.status === k} to={href(sp, { status: k })}>{v}</Chip>)}
         </div>
@@ -90,25 +91,26 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
       ) : (
         <>
           {/* mobile: cards */}
-          <ul className="space-y-3 lg:hidden">
+          <ul className="grouped overflow-hidden rounded-[var(--radius)] bg-surface shadow-1 lg:hidden">
             {rows.map((r) => (
               <li key={r.id}>
-                <Link href={`/cases/${r.id}`} className="block">
-                  <Card className="p-4 transition hover:border-line-strong">
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="font-semibold text-ink">{caseLabel(r)}</p>
-                      <Badge tone={STATUS_TONE[r.status]}>{CASE_STATUS[r.status]}</Badge>
-                    </div>
-                    {r.title ? <p className="mt-1 text-sm text-ink-2">{r.title}</p> : null}
-                    <p className="mt-2 text-sm text-ink-3">{[r.court, r.circuit].filter(Boolean).join(" · ") || "المحكمة غير محددة"}</p>
-                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3 text-sm">
+                <Link href={`/cases/${r.id}`} className="flex min-h-11 items-start gap-3 px-4 py-3.5 transition-colors active:bg-surface-2">
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-start justify-between gap-3">
+                      <span className="text-body font-semibold text-ink">{caseLabel(r)}</span>
+                      <Badge tone={STATUS_TONE[r.status]} className="shrink-0">{CASE_STATUS[r.status]}</Badge>
+                    </span>
+                    {r.title ? <span className="mt-0.5 block text-callout text-ink-2">{r.title}</span> : null}
+                    <span className="mt-1 block text-caption text-ink-3">{[r.court, r.circuit].filter(Boolean).join(" · ") || "المحكمة غير محددة"}</span>
+                    <span className="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-caption">
                       <span className="text-ink-2">
                         {r.client?.name ?? "بلا موكل"}
-                        {r.client_role ? <span className="text-ink-3"> — {PARTY_ROLE[r.client_role]}</span> : null}
+                        {r.client_role ? <span className="text-ink-3"> ({PARTY_ROLE[r.client_role]})</span> : null}
                       </span>
                       <span className="text-ink-3">الجلسة القادمة: <NextHearing iso={r.next_hearing} /></span>
-                    </div>
-                  </Card>
+                    </span>
+                  </span>
+                  <ChevronLeft aria-hidden size={18} strokeWidth={1.5} className="mt-1 shrink-0 text-ink-3" />
                 </Link>
               </li>
             ))}
@@ -116,20 +118,20 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
 
           {/* desktop: dense rows */}
           <Card className="hidden overflow-hidden lg:block">
-            <table className="w-full text-sm">
-              <thead className="bg-surface-2 text-ink-3">
+            <table className="w-full text-callout">
+              <thead className="text-caption text-ink-3">
                 <tr className="text-right">
-                  <th className="px-4 py-2.5 font-medium">الدعوى</th>
-                  <th className="px-4 py-2.5 font-medium">المحكمة · الدائرة</th>
-                  <th className="px-4 py-2.5 font-medium">الموكل وصفته</th>
-                  <th className="px-4 py-2.5 font-medium">الدرجة</th>
-                  <th className="px-4 py-2.5 font-medium">الجلسة القادمة</th>
-                  <th className="px-4 py-2.5 font-medium">الحالة</th>
+                  <th className="px-4 pb-2.5 pt-3.5 font-medium">الدعوى</th>
+                  <th className="px-4 pb-2.5 pt-3.5 font-medium">المحكمة · الدائرة</th>
+                  <th className="px-4 pb-2.5 pt-3.5 font-medium">الموكل وصفته</th>
+                  <th className="px-4 pb-2.5 pt-3.5 font-medium">الدرجة</th>
+                  <th className="px-4 pb-2.5 pt-3.5 font-medium">الجلسة القادمة</th>
+                  <th className="px-4 pb-2.5 pt-3.5 font-medium">الحالة</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={r.id} className="border-t border-line align-top hover:bg-surface-2/60">
+                  <tr key={r.id} className="border-t border-hairline align-top transition-colors hover:bg-surface-2">
                     <td className="max-w-[22rem] px-4 py-3">
                       <Link href={`/cases/${r.id}`} className="font-semibold text-ink hover:text-accent">{caseLabel(r)}</Link>
                       {r.title ? <p className="mt-0.5 truncate text-ink-3" title={r.title}>{r.title}</p> : null}
