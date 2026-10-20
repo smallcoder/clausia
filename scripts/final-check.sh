@@ -4,7 +4,7 @@ set -u
 cd "$(dirname "$0")/.."
 T="npx tsx --conditions=react-server --env-file=.env.local"
 status=0
-for s in test-rls test-next-hearing test-intake test-docs; do
+for s in test-rls test-next-hearing test-card-modes test-intake test-docs; do
   if [ -f "scripts/$s.ts" ]; then
     echo "=== $s"
     if $T "scripts/$s.ts" > "screenshots/$s.log" 2>&1; then echo "PASS $s"; else echo "FAIL $s (see screenshots/$s.log)"; status=1; fi
