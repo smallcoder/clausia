@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   description: "ملف القضية للمحامي المصري، يُملأ بالمحادثة",
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#f5f3ee" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: [{ media: "(prefers-color-scheme: light)", color: "#f4f3f0" }, { media: "(prefers-color-scheme: dark)", color: "#121110" }] };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

@@ -17,7 +17,8 @@ async function ids() {
   const best = (cases ?? []).sort((a, b) => ((b.case_facts as unknown as { count: number }[])[0]?.count ?? 0) - ((a.case_facts as unknown as { count: number }[])[0]?.count ?? 0))[0];
   const { data: thread } = await db.from("proposals").select("thread_id").not("thread_id", "is", null).order("created_at", { ascending: false }).limit(1).maybeSingle();
   const { data: docThread } = await db.from("proposals").select("thread_id").not("thread_id", "is", null).not("document_id", "is", null).order("created_at", { ascending: false }).limit(1).maybeSingle();
-  return { caseId: best?.id as string | undefined, threadId: thread?.thread_id as string | undefined, docThreadId: docThread?.thread_id as string | undefined };
+  const { data: pendingThread } = await db.from("proposals").select("thread_id").not("thread_id", "is", null).eq("status", "pending").order("created_at", { ascending: false }).limit(1).maybeSingle();
+  return { caseId: best?.id as string | undefined, threadId: thread?.thread_id as string | undefined, docThreadId: docThread?.thread_id as string | undefined, pendingThreadId: pendingThread?.thread_id as string | undefined };
 }
 
 async function login(page: Page) {
@@ -28,12 +29,14 @@ async function login(page: Page) {
 }
 
 async function main() {
-  const { caseId, threadId, docThreadId } = await ids();
+  const { caseId, threadId, docThreadId, pendingThreadId } = await ids();
+  console.log("pending-card thread:", pendingThreadId ?? "none");
   const routes: [string, string][] = [
     ["01-home", "/"],
     ["02-chat", "/chat"],
     ...(threadId ? [["03-chat-thread", `/chat/${threadId}`] as [string, string]] : []),
     ...(docThreadId ? [["03b-chat-document-card", `/chat/${docThreadId}`] as [string, string]] : []),
+    ...(pendingThreadId ? [["03c-chat-pending-card", `/chat/${pendingThreadId}`] as [string, string]] : []),
     ["04-hearings-day", "/hearings?view=day"],
     ["05-hearings-week", "/hearings?view=week"],
     ["06-cases", "/cases"],
