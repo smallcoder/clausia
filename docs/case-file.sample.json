@@ -1,0 +1,214 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-10-20T15:56:43.809Z",
+  "case": {
+    "id": "e663e9d6-4785-4bf4-a69e-d5280352b9ab",
+    "label": "الدعوى رقم 4521 لسنة 2026",
+    "title": null,
+    "case_number": "4521",
+    "case_year": 2026,
+    "court": "محكمة جنوب الجيزة الابتدائية",
+    "circuit": "الدائرة 7",
+    "case_type": "مدني كلي",
+    "stage": "first_instance",
+    "status": "judged",
+    "client_role": "plaintiff",
+    "summary": null,
+    "facts_date": null,
+    "facts_date_precision": "unknown",
+    "previous_stage_case": null,
+    "later_stage_cases": [],
+    "review_status": "confirmed",
+    "created_by": "model",
+    "source": {
+      "kind": "chat",
+      "message_id": "78b211da-5704-4133-8904-d7977022717d",
+      "document_id": null,
+      "page": null,
+      "quote": "رفعنا له دعوى رقم 4521 لسنة 2026 مدني كلي أمام محكمة جنوب الجيزة الابتدائية الدائرة 7، وهو المدعي فيها."
+    }
+  },
+  "client": {
+    "id": "2a5b9845-936a-4051-997f-99bf0365bf23",
+    "name": "عادل منصور التجريبي",
+    "kind": "person",
+    "phone": "01000000017"
+  },
+  "parties": [
+    {
+      "id": "0bcc402a-e0f4-4fa6-90a2-14bb8e289fcb",
+      "name": "شركة النيل التجريبية للمقاولات",
+      "role": "defendant",
+      "is_our_client": false,
+      "representative": null,
+      "notes": null,
+      "review_status": "confirmed",
+      "created_by": "model",
+      "source": {
+        "kind": "chat",
+        "message_id": "76b060ea-2d45-4139-9c71-b322a6fc363f",
+        "document_id": null,
+        "page": null,
+        "quote": "الخصم هو شركة النيل التجريبية للمقاولات، وهي المدعى عليها."
+      }
+    }
+  ],
+  "facts": [
+    {
+      "id": "2cf638f7-183f-4111-ad4f-5110edf7cf06",
+      "date": "2024-03-12",
+      "date_precision": "day",
+      "date_text": "12/3/2024",
+      "text": "شراء الموكل شقة من الشركة بموجب عقد بيع مع سداد الثمن بالكامل",
+      "review_status": "confirmed",
+      "created_by": "model",
+      "source": {
+        "kind": "chat",
+        "message_id": "ef678cd6-e5d5-4988-8c1c-c061286fd896",
+        "document_id": null,
+        "page": null,
+        "quote": "موكلنا اشترى شقة من الشركة بعقد بيع مؤرخ 12/3/2024 ودفع الثمن كامل."
+      }
+    },
+    {
+      "id": "0ad2ae4a-8ed0-4345-82d2-b873f79b7f9f",
+      "date": "2025-01-01",
+      "date_precision": "year",
+      "date_text": "أوائل 2025",
+      "text": "تسليم الشركة الشقة ناقصة التشطيب للموكل",
+      "review_status": "confirmed",
+      "created_by": "model",
+      "source": {
+        "kind": "chat",
+        "message_id": "ef678cd6-e5d5-4988-8c1c-c061286fd896",
+        "document_id": null,
+        "page": null,
+        "quote": "والشركة سلمت الشقة ناقصة التشطيب في أوائل 2025."
+      }
+    }
+  ],
+  "requests": [
+    {
+      "id": "9e6c46b6-fb2f-4bf6-aea2-cd029912dbc7",
+      "text": "إلزام الشركة بإتمام أعمال التشطيب",
+      "kind": "أصلي",
+      "review_status": "confirmed",
+      "created_by": "model",
+      "source": {
+        "kind": "chat",
+        "message_id": "122074fe-aeef-42e3-87a1-4cb8d0fa5b99",
+        "document_id": null,
+        "page": null,
+        "quote": "أصليًا إلزام الشركة بإتمام أعمال التشطيب"
+      }
+    },
+    {
+      "id": "527c134c-b333-40b8-b38c-b52575785e24",
+      "text": "إلزام الشركة بتعويض قدره 200 ألف جنيه",
+      "kind": "احتياطي",
+      "review_status": "confirmed",
+      "created_by": "model",
+      "source": {
+        "kind": "chat",
+        "message_id": "122074fe-aeef-42e3-87a1-4cb8d0fa5b99",
+        "document_id": null,
+        "page": null,
+        "quote": "واحتياطيًا تعويض قدره 200 ألف جنيه."
+      }
+    }
+  ],
+  "arguments": [
+    {
+      "id": "fd1e1203-d50c-41ce-af1d-c2885122dd5f",
+      "side": "opponent",
+      "kind": "دفع شكلي",
+      "text": "عدم اختصاص المحكمة محليًا",
+      "review_status": "confirmed",
+      "created_by": "model",
+      "source": {
+        "kind": "chat",
+        "message_id": "12c4c798-0664-4db6-a184-74c05be252ee",
+        "document_id": null,
+        "page": null,
+        "quote": "الشركة دفعت بعدم اختصاص المحكمة محليًا."
+      }
+    }
+  ],
+  "hearings": [
+    {
+      "id": "de5f0508-fbae-4fb0-bb91-09336e4c3408",
+      "date": "2026-10-01",
+      "purpose": "للإعلان",
+      "decision_type": "postponed",
+      "decision_text": "تأجيل لتقديم مستندات",
+      "next_requirements": "تقديم مستندات",
+      "next_hearing_id": "1ee308a7-a7eb-4175-9708-50a16fbb9c60",
+      "decision_source": {
+        "created_by": "model",
+        "kind": "chat",
+        "message_id": "0ea86cd7-61c4-41b1-8c1a-a76a202a06c4",
+        "document_id": null,
+        "page": null,
+        "quote": "الجلسة اتأجلت لـ 15/12/2026 لتقديم مستندات"
+      },
+      "review_status": "confirmed",
+      "created_by": "model",
+      "source": {
+        "kind": "chat",
+        "message_id": "f16d4d24-15ba-47c8-8887-22e6e9303da9",
+        "document_id": null,
+        "page": null,
+        "quote": "أول جلسة كانت يوم 1/10/2026 للإعلان."
+      }
+    },
+    {
+      "id": "1ee308a7-a7eb-4175-9708-50a16fbb9c60",
+      "date": "2026-12-15",
+      "purpose": "تقديم مستندات",
+      "decision_type": "judgment",
+      "decision_text": "حكم لصالحنا بإلزام الشركة بإتمام التشطيب",
+      "next_requirements": null,
+      "next_hearing_id": null,
+      "decision_source": {
+        "created_by": "model",
+        "kind": "chat",
+        "message_id": "ac7af65d-3e54-4711-98f2-e81a3bc9b417",
+        "document_id": null,
+        "page": null,
+        "quote": "في جلسة 15/12/2026 صدر حكم ابتدائي لصالحنا بإلزام الشركة بإتمام التشطيب"
+      },
+      "review_status": "confirmed",
+      "created_by": "model",
+      "source": {
+        "kind": "chat",
+        "message_id": "0ea86cd7-61c4-41b1-8c1a-a76a202a06c4",
+        "document_id": null,
+        "page": null,
+        "quote": "الجلسة اتأجلت لـ 15/12/2026 لتقديم مستندات"
+      }
+    }
+  ],
+  "judgments": [
+    {
+      "id": "7edc432f-83c7-48a5-b5d1-3333e45d80b8",
+      "date": "2026-12-15",
+      "kind": "final",
+      "operative_text": "إلزام الشركة بإتمام التشطيب",
+      "outcome": "لصالحنا",
+      "appeal_deadline": "2027-01-24",
+      "appeal_deadline_note": null,
+      "hearing_id": "1ee308a7-a7eb-4175-9708-50a16fbb9c60",
+      "review_status": "confirmed",
+      "created_by": "model",
+      "source": {
+        "kind": "chat",
+        "message_id": "ac7af65d-3e54-4711-98f2-e81a3bc9b417",
+        "document_id": null,
+        "page": null,
+        "quote": "صدر حكم ابتدائي لصالحنا بإلزام الشركة بإتمام التشطيب، وآخر ميعاد للاستئناف 24/1/2027."
+      }
+    }
+  ],
+  "documents": [],
+  "pending_suggestions": []
+}

@@ -7,6 +7,8 @@ export interface CaseContext {
   label: string;
   court: string | null;
   circuit: string | null;
+  /** ISO date of the case's main «تاريخ الوقائع», null when not set yet */
+  factsDate?: string | null;
   client: { id: string; name: string } | null;
   parties: { id: string; name: string; role: string }[];
   /** hearings with no decision yet, or today and later */
@@ -39,12 +41,14 @@ export function buildSystemPrompt(p: PromptInput): string {
 10. قبل إنشاء موكل أو دعوى جديدة وأنت تشك أنها موجودة، ابحث بـ search_clients أو search_cases.
 11. إن أعادت أداة خطأً فصحّح الاستدعاء إن كان الخطأ واضحًا، وإلا فاسأل المحامي. لا تكرر اقتراحًا ينتظر التأكيد.
 12. صفة الموكل: إن قال المحامي «رفعنا دعوى» فموكلنا مدعٍ (plaintiff) والخصم مدعى عليه (defendant)، و«مرفوع علينا دعوى» عكس ذلك. إن لم تتضح الصفة فاسأل.
-13. ردودك قصيرة ومهذبة، بالعربية الفصحى القانونية المستخدمة في مصر. بعد اقتراح بطاقة قل باختصار ما اقترحته واطلب المراجعة والتأكيد، ولا تدّعِ أن شيئًا حُفظ قبل تأكيده. لا تذكر في ردودك القيم الداخلية بالإنجليزية (مثل judged أو plaintiff) ولا المعرفات (uuid)؛ اكتب معناها بالعربية.`);
+13. ردودك قصيرة ومهذبة، بالعربية الفصحى القانونية المستخدمة في مصر. بعد اقتراح بطاقة قل باختصار ما اقترحته واطلب المراجعة والتأكيد، ولا تدّعِ أن شيئًا حُفظ قبل تأكيده. لا تذكر في ردودك القيم الداخلية بالإنجليزية (مثل judged أو plaintiff) ولا المعرفات (uuid)؛ اكتب معناها بالعربية.
+14. تاريخ الوقائع الأساسي للدعوى (facts_date) مهم جدًا: به يُختار إصدار القانون المنطبق. إن لم يكن محددًا للدعوى بعد: فإذا ذكر المحامي تاريخ الواقعة التي تقوم عليها الدعوى صراحةً (مثل تاريخ العقد أو الفصل أو الحادث) فاقترح facts_date بالتاريخ نفسه في create_case أو update_case مع اقتباسه، وإلا فاسأله مرة واحدة: «ما تاريخ الواقعة الأساسية التي تقوم عليها الدعوى؟». لا تختره من عندك إذا تعددت التواريخ دون بيان.`);
 
   const c = p.caseContext;
   if (c) {
     const lines = [`\nهذه المحادثة خاصة بالدعوى التالية (case_id = ${c.id}):`, `- ${c.label}${c.court ? ` — ${c.court}` : ""}${c.circuit ? ` — ${c.circuit}` : ""}`];
     if (c.client) lines.push(`- الموكل: ${c.client.name} (client_id = ${c.client.id})`);
+    lines.push(c.factsDate ? `- تاريخ الوقائع الأساسي: ${c.factsDate}` : "- تاريخ الوقائع الأساسي: غير محدد بعد (انظر القاعدة 14).");
     if (c.parties.length) lines.push(`- الأطراف: ${c.parties.map((x) => `${x.name} [${PARTY_ROLE[x.role as keyof typeof PARTY_ROLE] ?? x.role}] (id = ${x.id})`).join("؛ ")}`);
     if (c.hearings.length) lines.push(`- جلسات بلا قرار أو قادمة: ${c.hearings.map((h) => `${h.date}${h.purpose ? ` (${h.purpose})` : ""}${h.decided ? " [صدر فيها قرار]" : ""} (hearing_id = ${h.id})`).join("؛ ")}`);
     else lines.push("- لا توجد جلسات قادمة مسجلة.");

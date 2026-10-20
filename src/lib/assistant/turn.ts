@@ -211,7 +211,7 @@ async function loadHistory(db: Db, threadId: string): Promise<LlmMessage[]> {
 }
 
 async function loadCaseContext(db: Db, caseId: string): Promise<CaseContext | null> {
-  const { data: c } = await db.from("cases").select("id, case_number, case_year, title, court, circuit, client_id").eq("id", caseId).maybeSingle();
+  const { data: c } = await db.from("cases").select("id, case_number, case_year, title, court, circuit, client_id, facts_date, facts_date_precision").eq("id", caseId).maybeSingle();
   if (!c) return null;
   const today = todayIso();
   const [client, parties, hearings] = await Promise.all([
@@ -220,7 +220,7 @@ async function loadCaseContext(db: Db, caseId: string): Promise<CaseContext | nu
     db.from("hearings").select("id, hearing_date, purpose, decision_type").eq("case_id", caseId).order("hearing_date").then((r) => r.data ?? []),
   ]);
   return {
-    id: c.id, label: caseLabel(c), court: c.court, circuit: c.circuit, client,
+    id: c.id, label: caseLabel(c), court: c.court, circuit: c.circuit, factsDate: c.facts_date ? formatDmy(c.facts_date, c.facts_date_precision) : null, client,
     parties,
     hearings: hearings.filter((h) => !h.decision_type || h.hearing_date >= today)
       .map((h) => ({ id: h.id, date: formatDmy(h.hearing_date), purpose: h.purpose, decided: !!h.decision_type })),
