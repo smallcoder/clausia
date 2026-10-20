@@ -1,0 +1,107 @@
+// RLS isolation test: the OTHER lawyer (office B) must not see or change anything of office A (DEMO).
+// Also checks DEMO sees its own cases and that getCaseFile works for DEMO and fails for OTHER.
+// Prints PASS/FAIL per check; exits 1 on any FAIL. Never prints credentials.
+// Run: npx tsx --conditions=react-server --env-file=.env.local scripts/test-rls.ts
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "../src/lib/db/types";
+import type { Db } from "../src/lib/supabase/server";
+import { getCaseFile } from "../src/lib/case-file";
+
+const URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
+
+async function signIn(prefix: "DEMO" | "OTHER") {
+  const db = createClient<Database>(URL, KEY, { auth: { persistSession: false } });
+  const { error } = await db.auth.signInWithPassword({ email: process.env[`${prefix}_EMAIL`]!, password: process.env[`${prefix}_PASSWORD`]! });
+  if (error) throw new Error(`${prefix} sign-in failed: ${error.message}`);
+  return db;
+}
+
+let failed = 0;
+function check(name: string, ok: boolean, detail = "") {
+  if (!ok) failed++;
+  console.log(`${ok ? "PASS" : "FAIL"}  ${name}${detail ? `  (${detail})` : ""}`);
+}
+
+const A = await signIn("DEMO");
+const B = await signIn("OTHER");
+
+const { data: memA } = await A.from("office_members").select("office_id").single();
+const { data: memB } = await B.from("office_members").select("office_id").single();
+const officeA = memA!.office_id;
+check("offices A and B differ", !!memB && memB.office_id !== officeA);
+
+// ---------- DEMO sees its own data ----------
+const { data: aCases } = await A.from("cases").select("id").limit(50);
+check("DEMO sees its own cases", (aCases?.length ?? 0) > 0, `${aCases?.length ?? 0} cases`);
+const caseId = aCases?.[0]?.id;
+const { data: aHearing } = await A.from("hearings").select("id, hearing_date").order("hearing_date", { ascending: false }).limit(1).maybeSingle();
+const { data: aDoc } = await A.from("documents").select("id, storage_path").limit(1).maybeSingle();
+
+// ---------- OTHER reads nothing of office A ----------
+const TABLES = ["cases", "clients", "case_parties", "case_facts", "case_requests", "case_arguments", "hearings", "judgments", "documents",
+  "document_pages", "proposals", "chat_threads", "chat_messages", "llm_calls"] as const;
+for (const t of TABLES) {
+  const { count: aCount } = await (A as SupabaseClient<Database>).from(t).select("id", { count: "exact", head: true }).eq("office_id", officeA);
+  const { data, error } = await (B as SupabaseClient<Database>).from(t).select("id").eq("office_id", officeA).limit(5);
+  check(`OTHER reads 0 rows of office A: ${t}`, !error && (data?.length ?? 0) === 0, `A has ${aCount ?? "?"}; B got ${error ? `error ${error.message}` : data?.length}`);
+}
+if (caseId) {
+  const { data } = await B.from("cases").select("id").eq("id", caseId);
+  check("OTHER cannot read an office-A case by id", (data?.length ?? 0) === 0);
+}
+const { data: offA } = await B.from("offices").select("id").eq("id", officeA);
+check("OTHER cannot read office A row", (offA?.length ?? 0) === 0);
+
+// ---------- writes ----------
+if (caseId) {
+  const { data: upd, error: updErr } = await B.from("cases").update({ title: "اختبار اختراق" }).eq("id", caseId).select("id");
+  check("OTHER update of office-A case affects 0 rows", (upd?.length ?? 0) === 0, updErr ? `error ${updErr.message}` : `${upd?.length ?? 0} rows`);
+  const { data: del, error: delErr } = await B.from("cases").delete().eq("id", caseId).select("id");
+  check("OTHER delete of office-A case affects 0 rows", (del?.length ?? 0) === 0, delErr ? `error ${delErr.message}` : `${del?.length ?? 0} rows`);
+  const { data: still } = await A.from("cases").select("id").eq("id", caseId);
+  check("office-A case still exists after OTHER attempts", (still?.length ?? 0) === 1);
+}
+{
+  const { data, error } = await B.from("cases").insert({ office_id: officeA, title: "اختبار اختراق" }).select("id");
+  check("OTHER insert with office A's office_id fails", !!error && !data, error ? error.message : "inserted!");
+  if (data?.length) await A.from("cases").delete().in("id", data.map((r) => r.id)); // cleanup if the check failed
+}
+{
+  const { data, error } = await B.from("clients").insert({ office_id: officeA, name: "اختبار اختراق" }).select("id");
+  check("OTHER insert of a client into office A fails", !!error && !data, error ? error.message : "inserted!");
+  if (data?.length) await A.from("clients").delete().in("id", data.map((r) => r.id));
+}
+
+// ---------- RPC ----------
+if (aHearing) {
+  const { error } = await B.rpc("record_hearing_decision", { p_hearing_id: aHearing.id, p_decision: "other", p_decision_text: "اختبار اختراق" });
+  check("OTHER record_hearing_decision on office-A hearing fails", !!error, error?.message ?? "succeeded!");
+} else check("office A has a hearing to test record_hearing_decision", false);
+
+// ---------- storage ----------
+{
+  const { data, error } = await B.storage.from("documents").list(officeA, { limit: 10 });
+  check("OTHER lists nothing under office A's storage prefix", !!error || (data?.length ?? 0) === 0, error ? error.message : `${data?.length} objects`);
+  const path = aDoc?.storage_path ?? `${officeA}/00000000-0000-0000-0000-000000000000/probe.pdf`;
+  const { data: dl, error: dlErr } = await B.storage.from("documents").download(path);
+  check("OTHER cannot download an office-A object", !!dlErr && !dl, aDoc ? "real object" : "probe path (A has no documents yet)");
+  const { error: upErr } = await B.storage.from("documents").upload(`${officeA}/rls-probe/probe.txt`, new Blob(["x"]), { upsert: false });
+  check("OTHER cannot upload under office A's prefix", !!upErr, upErr?.message ?? "uploaded!");
+}
+
+// ---------- getCaseFile ----------
+if (caseId) {
+  const file = await getCaseFile(A as unknown as Db, caseId);
+  check("DEMO getCaseFile returns the case", file.case.id === caseId && file.schema_version === 1, `${file.facts.length} facts, ${file.hearings.length} hearings, ${file.pending_suggestions.length} pending`);
+  const dates = file.facts.map((f) => f.date).filter(Boolean) as string[];
+  check("getCaseFile facts are ordered by date", dates.every((d, i) => i === 0 || dates[i - 1] <= d));
+  const all = [...file.parties, ...file.facts, ...file.requests, ...file.arguments, ...file.hearings, ...file.judgments];
+  check("getCaseFile sections hold no suggested/rejected items", all.every((x) => x.review_status === "confirmed"));
+  let otherErr = "";
+  try { await getCaseFile(B as unknown as Db, caseId); } catch (e) { otherErr = e instanceof Error ? e.message : String(e); }
+  check("OTHER getCaseFile on office-A case fails", /not found/.test(otherErr), otherErr || "returned data!");
+}
+
+console.log(failed ? `\n${failed} check(s) FAILED` : "\nall checks passed");
+process.exit(failed ? 1 : 0);
