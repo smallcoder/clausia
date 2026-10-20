@@ -11,3 +11,4 @@ test-results/
 supabase/.temp/
 .DS_Store
 screenshots/tmp/
+.claude/worktrees/
