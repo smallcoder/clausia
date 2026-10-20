@@ -66,8 +66,8 @@ export async function DocumentsTab({ caseId }: { caseId: string }) {
                         </div>
                       </div>
                       <div className="flex shrink-0 items-center gap-1">
-                        <a href={`/api/documents/${d.id}`} target="_blank" rel="noopener" className="inline-flex h-8 items-center rounded-[var(--radius-sm)] px-3 text-callout font-medium text-accent hover:bg-accent-soft">فتح</a>
-                        <a href={`/api/documents/${d.id}?download=1`} className="inline-flex h-8 items-center rounded-[var(--radius-sm)] px-3 text-callout font-medium text-ink-2 hover:bg-surface-2">تنزيل</a>
+                        <a href={`/api/documents/${d.id}`} target="_blank" rel="noopener" className="inline-flex h-11 items-center rounded-[var(--radius-sm)] px-4 text-callout font-medium text-accent hover:bg-accent-soft">فتح</a>
+                        <a href={`/api/documents/${d.id}?download=1`} className="inline-flex h-11 items-center rounded-[var(--radius-sm)] px-4 text-callout font-medium text-ink-2 hover:bg-surface-2">تنزيل</a>
                       </div>
                     </div>
 

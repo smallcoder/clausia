@@ -73,6 +73,7 @@ export default async function CasePage({ params, searchParams }: { params: Promi
         </dl>
       </header>
       <nav aria-label="أقسام ملف الدعوى" className="no-scrollbar -mx-4 mb-6 overflow-x-auto px-4 lg:mx-0 lg:px-0">
+        <div className="flex w-max pe-4 lg:pe-0">
         <div className="inline-flex min-w-max gap-0.5 rounded-[var(--radius-sm)] bg-line/70 p-1">
         {TABS.map((t) => (
           <Link key={t.key} href={`/cases/${id}?tab=${t.key}`}
@@ -81,6 +82,7 @@ export default async function CasePage({ params, searchParams }: { params: Promi
             {t.label}
           </Link>
         ))}
+        </div>
         </div>
       </nav>
       <Body caseId={id} />
