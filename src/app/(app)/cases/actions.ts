@@ -29,7 +29,11 @@ export async function reviewItem(form: FormData): Promise<void> {
   revalidatePath(`/cases/${caseId}`);
 }
 
-/** Edit the text of a fact / request / argument. Provenance stays; an edited suggested item stays suggested until confirmed. */
+/**
+ * Edit the text of a fact / request / argument. Provenance is kept as is on purpose (brief: created_by_kind
+ * 'lawyer' only for new rows): created_by_kind / source_quote describe who first drafted the item and the
+ * quote that supported it, not the current wording. An edited suggested item stays suggested until confirmed.
+ */
 export async function editItemText(_prev: EditState, form: FormData): Promise<EditState> {
   const table = str(form, "table") as TextTable;
   const id = str(form, "id");

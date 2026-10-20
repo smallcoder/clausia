@@ -22,13 +22,3 @@ export function ReviewButtons({ table, id, caseId }: { table: string; id: string
     </div>
   );
 }
-
-/** Card wrapper for one case item: suggested items get the suggest tone and the review buttons. */
-export function ItemShell({ suggested, children, review }: { suggested: boolean; children: React.ReactNode; review?: React.ReactNode }) {
-  return (
-    <div className={suggested ? "rounded-[var(--radius)] border border-suggest/30 bg-suggest-soft/40 p-4" : "rounded-[var(--radius)] border border-line bg-surface p-4"}>
-      {children}
-      {suggested && review ? <div className="mt-3 border-t border-suggest/20 pt-3">{review}</div> : null}
-    </div>
-  );
-}

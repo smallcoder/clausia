@@ -40,7 +40,11 @@ export interface CaseFile {
   arguments: Arg[];
   hearings: Hearing[];
   judgments: Judgment[];
-  documents: { id: string; file_name: string; doc_type: string; title: string | null; page_count: number | null; read_status: string; pages: { page_no: number; text: string }[] }[];
+  /**
+   * Exception to "sections hold confirmed items only": documents are files the lawyer uploaded, so every
+   * non-rejected document is listed here (with its own review_status), none go to pending_suggestions.
+   */
+  documents: { id: string; file_name: string; doc_type: string; title: string | null; page_count: number | null; read_status: string; review_status: string; pages: { page_no: number; text: string }[] }[];
   /** Items with review_status 'suggested': not yet confirmed by the lawyer. `item` has the same shape as in its section. */
   pending_suggestions: { table: string; id: string; text: string; item: Party | Fact | Req | Arg | Hearing | Judgment }[];
 }
@@ -144,7 +148,7 @@ export async function getCaseFile(db: Db, caseId: string): Promise<CaseFile> {
       (r) => ({ id: r.id, date: r.judgment_date, kind: r.kind, operative_text: r.operative_text, outcome: r.outcome, appeal_deadline: r.appeal_deadline, appeal_deadline_note: r.appeal_deadline_note, hearing_id: r.hearing_id, ...prov(r) }),
       (o) => o.operative_text),
     documents: docs.map((d) => ({
-      id: d.id, file_name: d.file_name, doc_type: d.doc_type, title: d.title, page_count: d.page_count, read_status: d.read_status,
+      id: d.id, file_name: d.file_name, doc_type: d.doc_type, title: d.title, page_count: d.page_count, read_status: d.read_status, review_status: d.review_status,
       pages: pages.filter((p) => p.document_id === d.id).map((p) => ({ page_no: p.page_no, text: p.text })),
     })),
     pending_suggestions: pending,

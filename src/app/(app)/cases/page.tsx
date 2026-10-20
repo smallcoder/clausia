@@ -1,7 +1,7 @@
 // Cases list: search (?q=) across number, year, title, court, circuit, client and party names; filters for stage and status.
 import Link from "next/link";
 import { Badge, Card, DateText, EmptyState, PageHeader, cx } from "@/components/ui";
-import { listCases, type CaseRow } from "@/lib/cases";
+import { isKey, listCases, type CaseRow } from "@/lib/cases";
 import { todayIso } from "@/lib/dates";
 import { CASE_STATUS, PARTY_ROLE, STAGE, caseLabel } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
@@ -40,8 +40,15 @@ function NextHearing({ iso }: { iso: string | null }) {
   );
 }
 
-export default async function CasesPage({ searchParams }: { searchParams: Promise<SP> }) {
-  const sp = await searchParams;
+type RawSP = Record<string, string | string[] | undefined>;
+/** `?q=a&q=b` arrives as an array: keep the first value. */
+const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+
+export default async function CasesPage({ searchParams }: { searchParams: Promise<RawSP> }) {
+  const raw = await searchParams;
+  const stage = one(raw.stage), status = one(raw.status);
+  // unknown stage/status values are dropped so the chips, hidden inputs and query agree
+  const sp: SP = { q: one(raw.q), stage: stage && isKey(STAGE, stage) ? stage : undefined, status: status && isKey(CASE_STATUS, status) ? status : undefined };
   const db = await createClient();
   const rows = await listCases(db, sp);
   const filtered = Boolean(sp.q || sp.stage || sp.status);

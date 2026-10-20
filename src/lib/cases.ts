@@ -3,6 +3,7 @@ import "server-only";
 import type { Database } from "@/lib/db/types";
 import type { Db } from "@/lib/supabase/server";
 import { normalizeDigits, todayIso } from "@/lib/dates";
+import { CASE_STATUS, STAGE } from "@/lib/labels";
 
 type E = Database["public"]["Enums"];
 
@@ -23,6 +24,14 @@ export interface CaseRow {
 
 const CASE_COLS = "id, title, case_number, case_year, court, circuit, case_type, stage, status, client_role, updated_at, client:clients(id, name)";
 
+/** Own-key check (not `in`: `?stage=toString` must not pass). */
+export function isKey(rec: object, k: string): boolean {
+  return Object.prototype.hasOwnProperty.call(rec, k);
+}
+
+/** Max ids inlined per `in.(…)` list in the search filter (~3.7 KB of UUIDs each). */
+const MAX_INLINE_IDS = 100;
+
 /** Strip characters that would break a PostgREST `or=(...)` filter. */
 function safeTerm(s: string) {
   return s.replace(/[,()*%\\"]/g, " ").replace(/\s+/g, " ").trim();
@@ -32,24 +41,26 @@ function safeTerm(s: string) {
 export async function nextHearings(db: Db, caseIds: string[]): Promise<Map<string, string>> {
   const out = new Map<string, string>();
   if (!caseIds.length) return out;
-  const { data } = await db.from("hearings").select("case_id, hearing_date").in("case_id", caseIds).gte("hearing_date", todayIso()).order("hearing_date");
+  const { data } = await db.from("hearings").select("case_id, hearing_date").in("case_id", caseIds).neq("review_status", "rejected").gte("hearing_date", todayIso()).order("hearing_date");
   for (const h of data ?? []) if (!out.has(h.case_id)) out.set(h.case_id, h.hearing_date);
   return out;
 }
 
 export async function listCases(db: Db, opts: { q?: string; stage?: string; status?: string } = {}): Promise<CaseRow[]> {
   let query = db.from("cases").select(CASE_COLS).neq("review_status", "rejected").order("updated_at", { ascending: false }).limit(200);
-  if (opts.stage) query = query.eq("stage", opts.stage as E["case_stage"]);
-  if (opts.status) query = query.eq("status", opts.status as E["case_status"]);
+  // URL params: only known enum values filter; anything else is ignored (an unknown value would make PostgREST error)
+  if (opts.stage && isKey(STAGE, opts.stage)) query = query.eq("stage", opts.stage as E["case_stage"]);
+  if (opts.status && isKey(CASE_STATUS, opts.status)) query = query.eq("status", opts.status as E["case_status"]);
 
   const q = safeTerm(normalizeDigits(opts.q ?? ""));
   if (q) {
     const like = `%${q}%`;
     const ql = `"${like}"`; // quoted: the term may contain spaces
-    // client name and party name live in other tables: collect matching case ids first
+    // client name and party name live in other tables: collect matching case ids first.
+    // The ids are inlined in the GET `or=` filter, so each list is capped to keep the URL short.
     const [{ data: clients }, { data: parties }] = await Promise.all([
-      db.from("clients").select("id").ilike("name", like).limit(200),
-      db.from("case_parties").select("case_id").ilike("name", like).neq("review_status", "rejected").limit(500),
+      db.from("clients").select("id").ilike("name", like).limit(MAX_INLINE_IDS),
+      db.from("case_parties").select("case_id").ilike("name", like).neq("review_status", "rejected").limit(300),
     ]);
     const ors = [`title.ilike.${ql}`, `case_number.ilike.${ql}`, `court.ilike.${ql}`, `circuit.ilike.${ql}`];
     // «1234/2024» or «1234 لسنة 2024» → number + year
@@ -58,7 +69,7 @@ export async function listCases(db: Db, opts: { q?: string; stage?: string; stat
     if (/^\d{4}$/.test(q)) ors.push(`case_year.eq.${q}`);
     const clientIds = (clients ?? []).map((c) => c.id);
     if (clientIds.length) ors.push(`client_id.in.(${clientIds.join(",")})`);
-    const partyCaseIds = [...new Set((parties ?? []).map((p) => p.case_id))];
+    const partyCaseIds = [...new Set((parties ?? []).map((p) => p.case_id))].slice(0, MAX_INLINE_IDS);
     if (partyCaseIds.length) ors.push(`id.in.(${partyCaseIds.join(",")})`);
     query = query.or(ors.join(","));
   }
