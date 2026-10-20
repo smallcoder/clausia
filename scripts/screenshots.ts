@@ -54,7 +54,7 @@ async function main() {
     await page.screenshot({ path: `${dir}/00-login.png`, fullPage: true });
     await login(page);
     for (const [name, path] of routes) {
-      const res = await page.goto(BASE + path, { waitUntil: "networkidle" });
+      const res = await page.goto(BASE + path, { waitUntil: "load" });
       await page.waitForTimeout(400);
       await page.evaluate(() => window.scrollTo(0, 0));
       await page.screenshot({ path: `${dir}/${name}.png`, fullPage: true });
