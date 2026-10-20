@@ -33,5 +33,16 @@ export async function ThreadView({ db, threadId, caseId }: { db: Db; threadId: s
   for (const p of orphans) items.push({ id: `p-${p.id}`, role: "assistant", content: "", createdAt: p.created_at, attachments: [], proposals: [p] });
   items.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
-  return <ChatThread threadId={threadId} caseId={caseId ?? null} items={items} lookup={lookup} />;
+  // The card is made in a tool round with no text; the model's explanation comes in the next round.
+  // Show the explanation first, then the card under it.
+  for (let i = 0; i < items.length - 1; i++) {
+    const a = items[i], b = items[i + 1];
+    if (a.role === "assistant" && !a.content.trim() && a.proposals.length && b.role === "assistant" && b.content.trim()) {
+      b.proposals = [...a.proposals, ...b.proposals];
+      a.proposals = [];
+    }
+  }
+  const visible = items.filter((x) => x.role === "user" || x.content.trim() || x.proposals.length);
+
+  return <ChatThread threadId={threadId} caseId={caseId ?? null} items={visible} lookup={lookup} />;
 }

@@ -17,10 +17,15 @@ export interface ChatItem {
   proposals: Proposal[];
 }
 
-const EXAMPLES = [
+const EXAMPLES_GENERAL = [
   "موكل جديد اسمه … وتليفونه …",
   "رفعنا دعوى رقم … لسنة … أمام محكمة …",
   "الجلسة اتأجلت لـ 15/12/2026 لتقديم مستندات",
+];
+const EXAMPLES_CASE = [
+  "الجلسة اتأجلت لـ 15/12/2026 لتقديم مستندات",
+  "الخصم دفع بعدم قبول الدعوى لرفعها من غير ذي صفة",
+  "طلباتنا: إلزام المدعى عليه بأداء …",
 ];
 
 export function ChatThread({ threadId, caseId, items, lookup }: { threadId: string; caseId: string | null; items: ChatItem[]; lookup: Record<string, string> }) {
@@ -83,10 +88,10 @@ export function ChatThread({ threadId, caseId, items, lookup }: { threadId: stri
     <div className="pb-44 lg:pb-36">
       {shown.length === 0 ? (
         <div className="mx-auto max-w-xl py-8 text-center">
-          <p className="text-[15px] font-medium text-ink">اكتب ما تعرفه عن الموكل أو الدعوى</p>
+          <p className="text-[15px] font-medium text-ink">{caseId ? "اكتب ما استجد في هذه الدعوى" : "اكتب ما تعرفه عن الموكل أو الدعوى"}</p>
           <p className="mt-1.5 text-sm leading-relaxed text-ink-3">أقترح عليك ما يُحفظ في بطاقة تأكيد، ولا يُحفظ شيء إلا بعد موافقتك. يمكنك أيضًا إرفاق صحيفة دعوى أو حكم أو صورة مستند.</p>
           <div className="mt-5 flex flex-col items-center gap-2">
-            {EXAMPLES.map((x) => (
+            {(caseId ? EXAMPLES_CASE : EXAMPLES_GENERAL).map((x) => (
               <button key={x} type="button" onClick={() => { setText(x); boxRef.current?.focus(); }}
                 className="rounded-full border border-line bg-surface px-3.5 py-1.5 text-sm text-ink-2 hover:border-line-strong hover:text-ink">{x}</button>
             ))}

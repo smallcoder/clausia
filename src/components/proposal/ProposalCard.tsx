@@ -9,7 +9,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Badge, Button, cx } from "@/components/ui";
 import { decideProposalAction } from "@/lib/assistant/actions";
-import { DECISION, DOC_TYPE, PARTY_ROLE } from "@/lib/labels";
+import { CASE_STATUS, DECISION, DOC_TYPE, PARTY_ROLE, STAGE } from "@/lib/labels";
 import type { Proposal, ProposalOp } from "@/lib/proposals";
 import { OP_FIELDS, OP_TITLE, type FieldSpec } from "@/lib/tools/registry";
 
@@ -41,7 +41,7 @@ function summaryOf(o: ProposalOp): string {
   const cut = (s: unknown, n = 70) => { const t = String(s ?? ""); return t.length > n ? `${t.slice(0, n)}…` : t; };
   switch (o.tool) {
     case "create_client": return [a.name, a.phone].filter(Boolean).join(" · ");
-    case "create_case": case "update_case": return [a.case_number && `رقم ${a.case_number}${a.case_year ? ` لسنة ${a.case_year}` : ""}`, a.court, a.circuit, a.title, a.status].filter(Boolean).join(" · ");
+    case "create_case": case "update_case": return [a.case_number && `رقم ${a.case_number}${a.case_year ? ` لسنة ${a.case_year}` : ""}`, a.court, a.circuit, a.title, a.status && CASE_STATUS[a.status as keyof typeof CASE_STATUS], a.stage && a.stage !== "first_instance" && STAGE[a.stage as keyof typeof STAGE]].filter(Boolean).join(" · ");
     case "add_party": return [a.name, a.role && PARTY_ROLE[a.role as keyof typeof PARTY_ROLE]].filter(Boolean).join(" · ");
     case "add_fact": return [a.date_text ?? a.date ?? "بدون تاريخ", cut(a.text)].join(" · ");
     case "add_request": case "add_argument": return cut(a.text, 90);
@@ -56,7 +56,8 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
   const router = useRouter();
   const [p, setP] = useState(initial);
   const [edits, setEdits] = useState<Edits>({});
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set(initial.ops.length <= 3 ? initial.ops.map((o) => o.op_id) : []));
+  // small open cards start expanded; big cards (documents: 10–25 ops) and decided cards start as compact rows
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set(initial.ops.length <= 3 ? initial.ops.filter((o) => open(o.status)).map((o) => o.op_id) : []));
   const [editing, setEditing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -134,7 +135,8 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
                   <span className="mt-0.5 block truncate text-sm text-ink-2">{summaryOf({ ...o, args: merged }) || "—"}</span>
                 </span>
                 <Badge tone={st.tone} className="shrink-0">{st.label}</Badge>
-                <span aria-hidden className={cx("mt-1 shrink-0 text-xs text-ink-3 transition", isOpen && "rotate-180")}>▾</span>
+                <svg aria-hidden viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
+                  className={cx("mt-1 shrink-0 text-ink-3 transition", isOpen && "rotate-180")}><path d="m5 8 5 5 5-5" /></svg>
               </button>
 
               {isOpen ? (
@@ -142,13 +144,13 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
                   {isEditing ? (
                     <EditFields op={o} values={merged} onChange={(k, v) => setEdits((e) => ({ ...e, [o.op_id]: { ...(e[o.op_id] ?? {}), [k]: v } }))} display={(f, v) => display(o, f, v)} />
                   ) : (
-                    <dl className="grid grid-cols-[minmax(6rem,auto)_1fr] gap-x-4 gap-y-1.5 text-sm">
+                    <dl className="grid grid-cols-[minmax(5rem,8.5rem)_1fr] gap-x-4 gap-y-1.5 text-sm lg:grid-cols-[minmax(6rem,12rem)_1fr]">
                       {OP_FIELDS[o.tool].map((f) => {
                         const v = display(o, f, merged[f.key]);
                         return v === null ? null : (
                           <div key={f.key} className="contents">
                             <dt className="text-ink-3">{f.label}</dt>
-                            <dd className={cx("min-w-0 break-words text-ink", f.type === "date" || f.type === "number" ? "num" : "")}>{v}</dd>
+                            <dd className="min-w-0 break-words text-ink">{f.type === "date" || f.type === "number" ? <span className="num">{v}</span> : v}</dd>
                           </div>
                         );
                       })}
