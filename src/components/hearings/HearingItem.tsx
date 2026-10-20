@@ -33,6 +33,7 @@ export function HearingItem({ h, today, showCourt = false, showCircuit = true, s
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           {c.status === "reserved_for_judgment" && !h.decision_type ? <Badge tone="accent">{CASE_STATUS[c.status]}</Badge> : null}
+          {h.review_status === "suggested" ? <Badge tone="suggest">مقترح</Badge> : null}
           <DecisionBadge h={h} today={today} />
         </div>
       </div>

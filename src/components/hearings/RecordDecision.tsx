@@ -65,7 +65,7 @@ export function RecordDecision({ hearingId, caseId, hearingDate, label, compact 
       <div className="grid gap-2 sm:grid-cols-[10rem_1fr]">
         <label className="block">
           <span className="mb-1 block text-xs text-ink-2">الجلسة القادمة{postponed ? " (مطلوب)" : ""}</span>
-          <input name="next_date" value={nextDate} onChange={(e) => setNextDate(e.target.value)} inputMode="numeric" dir="ltr" placeholder="ي/ش/سنة" autoComplete="off"
+          <input name="next_date" value={nextDate} onChange={(e) => setNextDate(e.target.value)} dir="ltr" placeholder="ي/ش/سنة" autoComplete="off"
             aria-invalid={err?.field === "next_date" || undefined}
             className={cx(input, "num text-start", err?.field === "next_date" && "border-danger")} />
         </label>

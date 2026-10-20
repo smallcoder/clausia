@@ -34,7 +34,7 @@ export function AddHearing({ caseId }: { caseId: string }) {
       <div className="grid gap-2 sm:grid-cols-[10rem_1fr]">
         <label className="block">
           <span className="mb-1 block text-xs text-ink-2">تاريخ الجلسة</span>
-          <input name="date" required value={date} onChange={(e) => setDate(e.target.value)} inputMode="numeric" dir="ltr" placeholder="ي/ش/سنة" autoComplete="off"
+          <input name="date" required value={date} onChange={(e) => setDate(e.target.value)} dir="ltr" placeholder="ي/ش/سنة" autoComplete="off"
             className={cx(input, "num text-start", err?.field === "date" && "border-danger")} />
         </label>
         <label className="block">

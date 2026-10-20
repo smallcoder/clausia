@@ -6,7 +6,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/db/types";
 import type { Db } from "@/lib/supabase/server";
 import { applyOp, MANUAL } from "@/lib/tools/apply";
-import { caseHearings } from "@/lib/hearings";
+import { caseHearings, hearingsInRange, undecidedPastHearings } from "@/lib/hearings";
 
 let failed = 0;
 function check(name: string, ok: boolean, detail = "") {
@@ -61,6 +61,19 @@ async function main() {
     check("decision saved on old (type, text, requirements)", old?.decision_type === "postponed" && old.decision_text === "أجلت لتقديم المستندات" && old.next_requirements === "تقديم أصل العقد");
     check("new hearing is undecided, purpose = requirements", nw?.decision_type === null && nw?.purpose === "تقديم أصل العقد");
     check("caseHearings fills next_date / previous_date", old?.next_date === "2026-11-15" && nw?.previous_date === "2026-11-01");
+
+    // hearingsInRange: the case join and client_name flattening (what home and the roll render)
+    const inRange = (await hearingsInRange(db, "2026-11-01", "2026-11-15")).filter((x) => x.case_id === caseId);
+    check("hearingsInRange returns both hearings", inRange.length === 2 && inRange.some((x) => x.id === h1) && inRange.some((x) => x.id === nw?.id), JSON.stringify(inRange.map((x) => x.hearing_date)));
+    check("hearingsInRange joins court and client name", inRange.length > 0 && inRange.every((x) => x.case.court === "محكمة الاختبار" && x.case.client_name === "اختبار-جلسات موكل"), JSON.stringify(inRange.map((x) => [x.case.court, x.case.client_name])));
+    check("hearingsInRange fills next_date on the postponed one", inRange.find((x) => x.id === h1)?.next_date === "2026-11-15");
+
+    // undecidedPastHearings: a past hearing with no decision is listed (oldest first, so date it far back)
+    const past = (await applyOp(db, "add_hearing", { case: caseId, date: "1/1/2000", purpose: "جلسة سابقة", quote: "جلسة 1/1/2000" }, MANUAL)).id;
+    const undecided = await undecidedPastHearings(db);
+    const p = undecided.find((x) => x.id === past);
+    check("undecidedPastHearings includes a past undecided hearing", !!p && p.decision_type === null && p.case.client_name === "اختبار-جلسات موكل", p ? JSON.stringify([p.decision_type, p.case.client_name]) : "missing");
+    check("undecidedPastHearings excludes future hearings", !undecided.some((x) => x.id === nw?.id));
 
     // another office cannot see or decide these hearings (RLS)
     if (process.env.OTHER_EMAIL && process.env.OTHER_PASSWORD) {
