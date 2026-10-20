@@ -324,7 +324,7 @@ export function summaryText(fileName: string, pageCount: number, ex: Extraction 
   }
   if (!hasCase && counts.has("create_case") && !counts.has("create_client")) lines.push("لم يحدد المستند من هو موكلنا، فلم أقترح موكلًا. حدده عند تأكيد الدعوى.");
   if (suspicious.length) {
-    lines.push(`تنبيه: في المستند ${suspicious.length === 1 ? "سطر يبدو" : "أسطر تبدو"} كتعليمات موجهة للمساعد، فتجاهلتها ولم أنفذ منها شيئًا:`);
+    lines.push(`تنبيه: في المستند ${suspicious.length === 1 ? "سطر يبدو" : "أسطر تبدو"} كتعليمات موجهة للمساعد، ${suspicious.length === 1 ? "فتجاهلته ولم أنفذ منه" : "فتجاهلتها ولم أنفذ منها"} شيئًا:`);
     for (const s of suspicious.slice(0, 3)) lines.push(`ص ${s.page}: «${s.quote.slice(0, 160)}»`);
   }
   return lines.join("\n");

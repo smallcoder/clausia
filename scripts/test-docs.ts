@@ -123,7 +123,7 @@ async function main() {
     check(ops3.every((o) => ["attach_document", "add_party", "add_fact", "add_request", "add_argument", "add_hearing", "record_decision"].includes(o.tool)), "memo: only content tools (nothing destructive exists)");
     check(ops3.filter((o) => o.tool === "add_argument" && o.args.side === "opponent").length >= 2, "memo: opponent defences found");
     const { data: msg3 } = await db.from("chat_messages").select("content").eq("id", r3.messageId!).single();
-    check(/تجاهلتها/.test(msg3?.content ?? ""), "memo: assistant message tells the lawyer the line was ignored");
+    check(/تجاهلت/.test(msg3?.content ?? ""), "memo: assistant message tells the lawyer the line was ignored");
     console.log(`\nassistant message (memo):\n${msg3?.content}`);
   } finally {
     // cleanup: proposals/messages cascade with threads; pages with documents
