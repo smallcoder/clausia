@@ -23,13 +23,13 @@ export function HearingItem({ h, today, showCourt = false, showCircuit = true, s
   const c = h.case;
   const needed = h.purpose;
   return (
-    <li className="px-4 py-2.5 print:break-inside-avoid print:px-0 print:py-2">
+    <li className="px-4 py-3.5 print:break-inside-avoid print:px-0 print:py-2">
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
         <div className="min-w-0">
-          <Link href={`/cases/${c.id}?tab=hearings`} className="font-medium text-ink hover:text-accent hover:underline">
+          <Link href={`/cases/${c.id}?tab=hearings`} className="text-body font-semibold text-ink hover:text-accent">
             {caseLabel(c)}
           </Link>
-          {c.title && (c.case_number || c.case_year) ? <p className="text-sm text-ink-2">{c.title}</p> : null}
+          {c.title && (c.case_number || c.case_year) ? <p className="mt-0.5 text-callout text-ink-2">{c.title}</p> : null}
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           {c.status === "reserved_for_judgment" && !h.decision_type ? <Badge tone="accent">{CASE_STATUS[c.status]}</Badge> : null}
@@ -37,7 +37,7 @@ export function HearingItem({ h, today, showCourt = false, showCircuit = true, s
           <DecisionBadge h={h} today={today} />
         </div>
       </div>
-      <dl className="mt-1 flex flex-wrap gap-x-4 gap-y-0.5 text-sm text-ink-2">
+      <dl className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-caption text-ink-2">
         {showDate ? <div><dt className="sr-only">التاريخ</dt><dd className="num font-medium text-ink">{formatDmy(h.hearing_date)}</dd></div> : null}
         {showCourt ? <div><dt className="sr-only">المحكمة</dt><dd>{c.court ?? "محكمة غير محددة"}</dd></div> : null}
         {showCircuit && c.circuit ? <div><dt className="sr-only">الدائرة</dt><dd>{c.circuit}</dd></div> : null}
@@ -46,8 +46,8 @@ export function HearingItem({ h, today, showCourt = false, showCircuit = true, s
           <dd className="inline">{c.client_name ?? "غير محدد"}{c.client_role ? <span className="text-ink-3"> ({PARTY_ROLE[c.client_role]})</span> : null}</dd>
         </div>
       </dl>
-      {needed ? <p className="mt-1 text-sm text-ink"><span className="text-ink-3">المطلوب: </span>{needed}</p> : null}
-      {h.decision_text ? <p className="mt-1 text-sm text-ink-2"><span className="text-ink-3">القرار: </span>{h.decision_text}</p> : null}
+      {needed ? <p className="mt-1 text-callout text-ink"><span className="text-ink-3">المطلوب: </span>{needed}</p> : null}
+      {h.decision_text ? <p className="mt-1 text-callout text-ink-2"><span className="text-ink-3">القرار: </span>{h.decision_text}</p> : null}
       {decide && !h.decision_type ? <div className="print:hidden"><RecordDecision hearingId={h.id} caseId={c.id} hearingDate={h.hearing_date} label={`${caseLabel(c)}، جلسة ${formatDmy(h.hearing_date)}`} compact /></div> : null}
     </li>
   );

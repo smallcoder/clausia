@@ -48,23 +48,23 @@ export default async function ChatHome() {
         <EmptyState title="لا توجد محادثات بعد" hint="ابدأ محادثة جديدة واكتب ما تعرفه عن موكل أو دعوى." />
       ) : (
         <Card className="overflow-hidden">
-          <ul className="divide-y divide-line">
+          <ul className="grouped">
             {rows.map(({ t, m, at }) => {
               const c = t.case_id ? caseById.get(t.case_id) : null;
               return (
                 <li key={t.id}>
-                  <Link href={`/chat/${t.id}`} className="flex items-start gap-3 px-4 py-3.5 hover:bg-surface-2">
+                  <Link href={`/chat/${t.id}`} className="flex min-h-11 items-start gap-3 px-4 py-3.5 transition-colors hover:bg-surface-2">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="truncate font-medium text-ink">{c ? caseLabel(c) : t.title || "محادثة عامة"}</span>
+                        <span className="truncate text-body font-semibold text-ink">{c ? caseLabel(c) : t.title || "محادثة عامة"}</span>
                         {c ? <Badge tone="accent">محادثة الدعوى</Badge> : <Badge>عامة</Badge>}
                       </div>
-                      {c?.court ? <p className="mt-0.5 truncate text-xs text-ink-3">{c.court}</p> : null}
-                      <p className="mt-1 truncate text-sm text-ink-2">
+                      {c?.court ? <p className="mt-0.5 truncate text-caption text-ink-3">{c.court}</p> : null}
+                      <p className="mt-1 truncate text-callout text-ink-2">
                         {m ? <>{m.role === "user" ? "أنت: " : ""}{m.content.replace(/\*\*/g, "").replace(/\s+/g, " ").slice(0, 140)}</> : <span className="text-ink-3">لا رسائل بعد</span>}
                       </p>
                     </div>
-                    <span className="num shrink-0 pt-0.5 text-xs text-ink-3">{formatDmy(cairoDay(at))}</span>
+                    <span className="num shrink-0 pt-0.5 text-caption text-ink-3">{formatDmy(cairoDay(at))}</span>
                   </Link>
                 </li>
               );

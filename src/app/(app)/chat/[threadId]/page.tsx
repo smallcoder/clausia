@@ -18,7 +18,7 @@ export default async function ThreadPage({ params }: { params: Promise<{ threadI
   return (
     <>
       <div className="mb-2">
-        <Link href="/chat" className="text-sm text-ink-3 hover:text-ink">→ المحادثات</Link>
+        <Link href="/chat" className="text-callout text-ink-3 hover:text-ink">→ المحادثات</Link>
       </div>
       <PageHeader
         title={c ? caseLabel(c) : t.title || "محادثة"}

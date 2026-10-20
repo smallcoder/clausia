@@ -6,7 +6,8 @@
  */
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { Check, ChevronDown, FileCheck2, X } from "lucide-react";
 import { Badge, Button, cx } from "@/components/ui";
 import { decideProposalAction } from "@/lib/assistant/actions";
 import { CASE_STATUS, DECISION, DOC_TYPE, PARTY_ROLE, STAGE } from "@/lib/labels";
@@ -61,6 +62,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
   const [editing, setEditing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  const [sheet, setSheet] = useState(false);
 
   // resync with a fresh prop after router.refresh() (card decided in another tab or by another feature);
   // keyed on the statuses so a local decision that the server already reflects is not thrown away
@@ -102,6 +104,19 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
     return null;
   }
 
+  const showSheet = sheet && openOps.length > 0;
+  useEffect(() => {
+    if (!showSheet) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setSheet(false); };
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const onMq = () => { if (mq.matches) setSheet(false); };
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    mq.addEventListener("change", onMq);
+    return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", onKey); mq.removeEventListener("change", onMq); };
+  }, [showSheet]);
+
   const toggle = (id: string) => setExpanded((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
   function display(o: ProposalOp, f: FieldSpec, v: unknown): string | null {
@@ -127,17 +142,26 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
     return "من رسالتك في المحادثة";
   }
 
-  return (
-    <div className="rounded-[var(--radius)] border border-line-strong bg-surface shadow-[0_1px_0_var(--line)]">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3">
-        <div>
-          <p className="text-sm font-semibold text-ink">بطاقة تأكيد <span className="num text-ink-3">· {p.ops.length}</span></p>
-          <p className="mt-0.5 text-xs text-ink-3">{openOps.length ? "لن يُحفظ شيء قبل تأكيدك. راجع كل عنصر." : "تم البتّ في هذه البطاقة."}</p>
+  const card = (inSheet: boolean) => (
+    <div className={cx("bg-surface", inSheet ? "flex max-h-[85dvh] flex-col rounded-t-[var(--radius-lg)] shadow-3" : "overflow-hidden rounded-[var(--radius)] shadow-2")}>
+      {inSheet ? <div aria-hidden className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-line-strong" /> : null}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 pb-3 pt-3.5">
+        <div className="flex items-center gap-3">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-accent-soft text-accent"><FileCheck2 aria-hidden size={19} strokeWidth={1.5} /></span>
+          <div>
+            <p id={inSheet ? `sheet-title-${p.id}` : undefined} className="text-callout font-semibold text-ink">بطاقة تأكيد <span className="num font-normal text-ink-3">· {p.ops.length}</span></p>
+            <p className="text-caption text-ink-3">{openOps.length ? "لن يُحفظ شيء قبل تأكيدك. راجع كل عنصر." : "تم البتّ في هذه البطاقة."}</p>
+          </div>
         </div>
         {warnings ? <Badge tone="brass">{warnings === 1 ? "عنصر يحتاج مراجعة المصدر" : `${warnings} عناصر تحتاج مراجعة المصدر`}</Badge> : null}
+        {inSheet ? (
+          <button type="button" onClick={() => setSheet(false)} aria-label="إغلاق" className="-me-2 flex size-11 items-center justify-center rounded-full text-ink-3 hover:bg-surface-2">
+            <X aria-hidden size={20} strokeWidth={1.5} />
+          </button>
+        ) : null}
       </div>
 
-      <ul className="divide-y divide-line">
+      <ul className={cx("grouped border-t border-hairline", inSheet && "min-h-0 flex-1 overflow-y-auto overscroll-contain")}>
         {p.ops.map((o) => {
           const isOpen = expanded.has(o.op_id);
           const isEditing = editing === o.op_id;
@@ -147,18 +171,17 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
           return (
             <li key={o.op_id} className={cx(o.status === "rejected" && "opacity-60")}>
               <button type="button" onClick={() => toggle(o.op_id)} aria-expanded={isOpen}
-                className="flex w-full items-start gap-3 px-4 py-3 text-right hover:bg-surface-2">
+                className="flex min-h-11 w-full items-start gap-3 px-4 py-3 text-right transition-colors hover:bg-surface-2">
                 <span className="min-w-0 flex-1">
                   <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <span className="text-sm font-semibold text-ink">{OP_TITLE[o.tool]}</span>
+                    <span className="text-callout font-semibold text-ink">{OP_TITLE[o.tool]}</span>
                     {edits[o.op_id] || o.edited ? <Badge tone="accent">معدّل</Badge> : null}
                     {!o.quote_verified && open(o.status) ? <Badge tone="brass">راجع المصدر</Badge> : null}
                   </span>
-                  <span className="mt-0.5 block truncate text-sm text-ink-2">{summaryOf({ ...o, args: merged }) || "—"}</span>
+                  <span className="mt-0.5 block truncate text-callout text-ink-2">{summaryOf({ ...o, args: merged }) || "—"}</span>
                 </span>
                 <Badge tone={st.tone} className="shrink-0">{st.label}</Badge>
-                <svg aria-hidden viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"
-                  className={cx("mt-1 shrink-0 text-ink-3 transition", isOpen && "rotate-180")}><path d="m5 8 5 5 5-5" /></svg>
+                <ChevronDown aria-hidden size={18} strokeWidth={1.5} className={cx("mt-1 shrink-0 text-ink-3 transition-transform duration-200", isOpen && "rotate-180")} />
               </button>
 
               {isOpen ? (
@@ -166,7 +189,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
                   {isEditing ? (
                     <EditFields op={o} values={merged} onChange={(k, v) => setEdits((e) => ({ ...e, [o.op_id]: { ...(e[o.op_id] ?? {}), [k]: v } }))} display={(f, v) => display(o, f, v)} />
                   ) : (
-                    <dl className="grid grid-cols-[minmax(5rem,8.5rem)_1fr] gap-x-4 gap-y-1.5 text-sm lg:grid-cols-[minmax(6rem,12rem)_1fr]">
+                    <dl className="grid grid-cols-[minmax(5rem,8.5rem)_1fr] gap-x-4 gap-y-2 text-callout lg:grid-cols-[minmax(6rem,12rem)_1fr]">
                       {OP_FIELDS[o.tool].map((f) => {
                         const v = display(o, f, merged[f.key]);
                         return v === null ? null : (
@@ -179,20 +202,20 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
                     </dl>
                   )}
 
-                  <div className="rounded-lg bg-surface-2 px-3 py-2">
+                  <div className="rounded-[var(--radius-sm)] bg-surface-2 px-3.5 py-2.5">
                     <p className="text-xs text-ink-3">{sourceLine(o)}</p>
-                    {o.source.quote ? <p className="text-doc mt-1 text-[15px] text-ink">«{o.source.quote}»</p> : <p className="mt-1 text-xs text-ink-3">بدون اقتباس</p>}
+                    {o.source.quote ? <p className="text-doc mt-1 text-[16px] text-ink">«{o.source.quote}»</p> : <p className="mt-1 text-xs text-ink-3">بدون اقتباس</p>}
                     {!o.quote_verified ? <p className="mt-1.5 text-xs font-medium text-brass">لم أجد هذا النص في المصدر — راجعه</p> : null}
                   </div>
 
-                  {o.status === "failed" && o.error ? <p className="rounded-lg bg-danger-soft px-3 py-2 text-xs text-danger">{o.error}</p> : null}
+                  {o.status === "failed" && o.error ? <p className="rounded-[var(--radius-sm)] bg-danger-soft px-3 py-2 text-caption text-danger">{o.error}</p> : null}
                   {o.result_id && o.tool === "create_case" ? <Link href={`/cases/${o.result_id}`} className="inline-block text-sm text-accent hover:underline">فتح ملف الدعوى</Link> : null}
 
                   {open(o.status) ? (
                     <div className="flex flex-wrap items-center gap-2">
-                      <Button size="sm" disabled={pending || !!blocked} title={blocked ?? undefined} onClick={() => decide("confirm", [o.op_id])}>✓ تأكيد</Button>
+                      <Button size="sm" disabled={pending || !!blocked} title={blocked ?? undefined} onClick={() => decide("confirm", [o.op_id])}><Check aria-hidden size={16} strokeWidth={2} />تأكيد</Button>
                       <Button size="sm" variant="secondary" disabled={pending} onClick={() => setEditing(isEditing ? null : o.op_id)}>{isEditing ? "إنهاء التعديل" : "تعديل"}</Button>
-                      <Button size="sm" variant="ghost" disabled={pending} onClick={() => decide("reject", [o.op_id])}>✗ رفض</Button>
+                      <Button size="sm" variant="ghost" disabled={pending} onClick={() => decide("reject", [o.op_id])}><X aria-hidden size={16} strokeWidth={2} />رفض</Button>
                       {blocked ? <p className="basis-full text-xs text-ink-3">{blocked}</p> : null}
                     </div>
                   ) : null}
@@ -203,9 +226,9 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
         })}
       </ul>
 
-      {error ? <p className="mx-4 mb-3 rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p> : null}
+      {error ? <p className="mx-4 mb-3 shrink-0 rounded-[var(--radius-sm)] bg-danger-soft px-3 py-2 text-callout text-danger">{error}</p> : null}
 
-      <div className="flex flex-wrap items-center gap-2 border-t border-line px-4 py-3">
+      <div className={cx("flex shrink-0 flex-wrap items-center gap-2 border-t border-hairline px-4 py-3", inSheet ? "bg-surface pb-[calc(0.75rem+env(safe-area-inset-bottom))]" : "bg-surface-2/60")}>
         {openOps.length ? (
           <>
             <Button size="sm" disabled={pending} onClick={() => decide("confirm")}>{pending ? "جارٍ الحفظ…" : openOps.length === p.ops.length ? "تأكيد الكل" : `تأكيد الباقي (${openOps.length})`}</Button>
@@ -213,11 +236,35 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
             <Button size="sm" variant="ghost" disabled={pending} onClick={() => decide("reject")} className="text-ink-2">رفض الكل</Button>
           </>
         ) : (
-          <p className="text-sm text-ink-2">{decisionSummary(p)}</p>
+          <p className="text-callout text-ink-2">{decisionSummary(p)}</p>
         )}
         {caseLink ? <Link href={`/cases/${caseLink}`} className="ms-auto text-sm font-medium text-accent hover:underline">ملف الدعوى ←</Link> : null}
       </div>
     </div>
+  );
+
+  // Mobile (<1024px): a pending card is a compact summary that opens a bottom sheet. Desktop: inline.
+  const pendingCard = openOps.length > 0;
+  return (
+    <>
+      {pendingCard ? (
+        <div className="flex items-center gap-3 rounded-[var(--radius)] bg-surface px-4 py-3 shadow-2 lg:hidden">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-accent-soft text-accent"><FileCheck2 aria-hidden size={19} strokeWidth={1.5} /></span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-callout font-semibold text-ink">بطاقة تأكيد <span className="num font-normal text-ink-3">· {openOps.length}</span> عناصر</span>
+            <span className="block truncate text-caption text-ink-3">{warnings ? `${warnings} تحتاج مراجعة المصدر` : "لن يُحفظ شيء قبل تأكيدك"}</span>
+          </span>
+          <Button size="sm" onClick={() => setSheet(true)} aria-haspopup="dialog">مراجعة</Button>
+        </div>
+      ) : null}
+      {showSheet ? null : <div className={cx(pendingCard && "hidden lg:block")}>{card(false)}</div>}
+      {showSheet ? (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end lg:hidden" role="dialog" aria-modal="true" aria-labelledby={`sheet-title-${p.id}`}>
+          <button type="button" aria-label="إغلاق" tabIndex={-1} onClick={() => setSheet(false)} className="fade-enter absolute inset-0 bg-backdrop" />
+          <div className="sheet-enter relative">{card(true)}</div>
+        </div>
+      ) : null}
+    </>
   );
 }
 
@@ -230,7 +277,7 @@ function decisionSummary(p: Proposal) {
 function EditFields({ op, values, onChange, display }: {
   op: ProposalOp; values: Record<string, unknown>; onChange: (k: string, v: unknown) => void; display: (f: FieldSpec, v: unknown) => string | null;
 }) {
-  const input = "w-full rounded-lg border border-line-strong bg-surface px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none";
+  const input = "min-h-11 w-full rounded-[var(--radius-sm)] border border-line bg-surface-2 px-3 py-2 text-body text-ink focus:border-accent focus:bg-surface focus:outline-none";
   return (
     <div className="space-y-2.5">
       {OP_FIELDS[op.tool].map((f) => {

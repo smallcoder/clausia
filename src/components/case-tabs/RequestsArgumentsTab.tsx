@@ -22,7 +22,7 @@ function Item({ r, table, caseId, kindLabel }: { r: Row; table: "case_requests" 
       <div className="text-[15px] leading-relaxed text-ink">
         <InlineEdit action={editItemText} hidden={{ table, id: r.id, case_id: caseId }} initial={r.text} multiline display={r.text} />
       </div>
-      {r.source_quote ? <p className="mt-2 text-sm text-ink-3">المصدر: «{r.source_quote}»</p> : null}
+      {r.source_quote ? <p className="mt-2 text-callout text-ink-3">المصدر: «{r.source_quote}»</p> : null}
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
         <SourceBadge row={r} documentName={r.document?.file_name} />
         {suggested ? <ReviewButtons table={table} id={r.id} caseId={caseId} /> : null}

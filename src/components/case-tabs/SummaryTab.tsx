@@ -12,8 +12,8 @@ const PRECISION_NOTE = { day: "", month: "(بالشهر)", year: "(بالسنة)
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="border-t border-line py-3 first:border-t-0 sm:grid sm:grid-cols-[10rem_1fr] sm:gap-4">
-      <dt className="text-sm text-ink-3">{label}</dt>
+    <div className="border-t border-hairline py-3 first:border-t-0 sm:grid sm:grid-cols-[10rem_1fr] sm:gap-4">
+      <dt className="text-callout text-ink-3">{label}</dt>
       <dd className="mt-0.5 text-[15px] text-ink sm:mt-0">{children}</dd>
     </div>
   );
@@ -45,7 +45,7 @@ export async function SummaryTab({ caseId }: { caseId: string }) {
                 placeholder="مثال: 15/3/2023 أو 3/2023 أو 2023"
                 hint="يوم/شهر/سنة، أو شهر/سنة، أو السنة فقط. بهذا التاريخ يُختار إصدار القانون المنطبق."
                 display={factsIso && c.facts_date_precision !== "unknown"
-                  ? <><DateText iso={factsIso} precision={c.facts_date_precision} /> <span className="text-sm text-ink-3">{PRECISION_NOTE[c.facts_date_precision]}</span></>
+                  ? <><DateText iso={factsIso} precision={c.facts_date_precision} /> <span className="text-callout text-ink-3">{PRECISION_NOTE[c.facts_date_precision]}</span></>
                   : <span className="text-ink-3">غير محدد</span>} />
             </Field>
             <Field label="الحالة">
@@ -86,7 +86,7 @@ export async function SummaryTab({ caseId }: { caseId: string }) {
           </Card>
         ) : null}
 
-        <section className="rounded-[var(--radius)] border border-brass/30 bg-brass-soft p-5">
+        <section className="rounded-[var(--radius)] bg-brass-soft p-5">
           <h2 className="font-semibold text-brass">تحليل Clausia</h2>
           <p className="mt-2 text-[15px] leading-relaxed text-ink-2">سيكتب Clausia هنا رأيًا قانونيًا أو مذكرة من ملف القضية.</p>
           <Button variant="secondary" size="sm" className="mt-4" disabled>اكتب رأيًا قانونيًا (قريبًا)</Button>
@@ -96,14 +96,14 @@ export async function SummaryTab({ caseId }: { caseId: string }) {
       <aside className="space-y-5">
         <Card className="p-4">
           <SectionTitle>محتوى الملف</SectionTitle>
-          <ul className="grid grid-cols-2 gap-3 text-sm">
+          <ul className="grid grid-cols-2 gap-3 text-callout">
             {([
               ["facts", "الوقائع", counts.facts], ["parties", "الأطراف", counts.parties],
               ["hearings", "الجلسات", counts.hearings], ["documents", "المستندات", counts.documents],
               ["requests", "الطلبات والدفوع", counts.requests + counts.arguments], ["judgments", "الأحكام", counts.judgments],
             ] as const).map(([tab, label, n]) => (
               <li key={tab}>
-                <Link href={`/cases/${caseId}?tab=${tab}`} className="block rounded-lg border border-line bg-surface-2 px-3 py-2 hover:border-line-strong">
+                <Link href={`/cases/${caseId}?tab=${tab}`} className="block rounded-[var(--radius-sm)] bg-surface-2 px-3 py-2 hover:border-line-strong">
                   <span className="num block text-lg font-semibold text-ink">{n}</span>
                   <span className="text-ink-3">{label}</span>
                 </Link>
@@ -111,7 +111,7 @@ export async function SummaryTab({ caseId }: { caseId: string }) {
             ))}
           </ul>
         </Card>
-        <a href={`/api/cases/${caseId}/case-file?download`} className="block text-sm font-medium text-accent hover:underline">
+        <a href={`/api/cases/${caseId}/case-file?download`} className="block text-callout font-medium text-accent hover:underline">
           تنزيل ملف القضية (JSON)
         </a>
       </aside>

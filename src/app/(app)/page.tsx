@@ -21,9 +21,9 @@ function DayList({ items, today }: { items: HearingWithCase[]; today: string }) 
     <div className="space-y-3">
       {groupBy(items, courtOf).map((g) => (
         <Card key={g.key}>
-          <h3 className="flex items-center justify-between border-b border-line px-4 py-2.5 text-sm font-semibold text-ink">
+          <h3 className="flex items-center justify-between border-b border-line px-4 py-2.5 text-callout font-semibold text-ink">
             <span>{g.key}</span>
-            <span className="num text-xs font-normal text-ink-3">{g.items.length}</span>
+            <span className="num text-caption font-normal text-ink-3">{g.items.length}</span>
           </h3>
           <ul className="divide-y divide-line">
             {g.items.map((h) => <HearingItem key={h.id} h={h} today={today} decide={h.hearing_date <= today} />)}
@@ -50,14 +50,14 @@ export default async function Home() {
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
         <div className="min-w-0 space-y-8">
           <section aria-labelledby="today">
-            <SectionTitle actions={<Link href={`/hearings?view=day&date=${today}`} className="text-sm text-accent hover:underline">رول اليوم</Link>}>
+            <SectionTitle actions={<Link href={`/hearings?view=day&date=${today}`} className="text-callout text-accent hover:underline">رول اليوم</Link>}>
               <span id="today" className="inline-flex items-center gap-2">جلسات اليوم<Count n={todays.length} /></span>
             </SectionTitle>
             <DecisionNotices>{todays.length ? <DayList items={todays} today={today} /> : <EmptyState title="لا جلسات اليوم" hint="يوم بلا جلسات. يمكنك مراجعة الجلسات السابقة التي لم يُسجَّل قرارها." />}</DecisionNotices>
           </section>
 
           <section aria-labelledby="tomorrow">
-            <SectionTitle actions={<Link href={`/hearings?view=day&date=${tomorrow}`} className="text-sm text-accent hover:underline">رول الغد</Link>}>
+            <SectionTitle actions={<Link href={`/hearings?view=day&date=${tomorrow}`} className="text-callout text-accent hover:underline">رول الغد</Link>}>
               <span id="tomorrow" className="inline-flex items-center gap-2">جلسات الغد<span className="num font-normal text-ink-3">{formatDmy(tomorrow)}</span><Count n={tomorrows.length} /></span>
             </SectionTitle>
             {tomorrows.length ? <DayList items={tomorrows} today={today} /> : <EmptyState title="لا جلسات غدًا" hint="عندما تضيف جلسة لأي دعوى ستظهر هنا قبلها بيوم." />}
@@ -72,7 +72,7 @@ export default async function Home() {
             <DecisionNotices>
             {undecided.length ? (
               <Card>
-                <p className="border-b border-line px-4 py-2.5 text-xs text-ink-3">الأقدم أولًا. سجّل ما قررته المحكمة حتى تُنشأ الجلسة القادمة.</p>
+                <p className="border-b border-line px-4 py-2.5 text-caption text-ink-3">الأقدم أولًا. سجّل ما قررته المحكمة حتى تُنشأ الجلسة القادمة.</p>
                 <ul className="divide-y divide-line">
                   {undecided.map((h) => <HearingItem key={h.id} h={h} today={today} showDate showCourt decide />)}
                 </ul>
@@ -85,7 +85,7 @@ export default async function Home() {
 
           <Link href="/chat" className="block rounded-[var(--radius)] border border-line bg-accent-soft px-4 py-4 transition hover:border-accent/40">
             <p className="font-medium text-accent">أخبر المساعد بما حدث في الجلسة</p>
-            <p className="mt-1 text-sm text-ink-2">اكتب القرار كما سمعته، مثل «أجلت لجلسة 5/11/2026 لتقديم المستندات»، وسيعرض عليك بطاقة لتأكيدها قبل الحفظ.</p>
+            <p className="mt-1 text-callout text-ink-2">اكتب القرار كما سمعته، مثل «أجلت لجلسة 5/11/2026 لتقديم المستندات»، وسيعرض عليك بطاقة لتأكيدها قبل الحفظ.</p>
           </Link>
         </aside>
       </div>

@@ -30,11 +30,11 @@ export async function JudgmentsTab({ caseId }: { caseId: string }) {
               <Badge>{JUDGMENT_KIND[j.kind]}</Badge>
               {outcome ? <Badge tone={outcome.tone}>{outcome.label}</Badge> : j.outcome ? <Badge>{j.outcome}</Badge> : null}
             </div>
-            <div className="mt-3 rounded-lg border border-line bg-paper p-4">
-              <p className="mb-1 text-xs text-ink-3">المنطوق</p>
+            <div className="mt-3 rounded-[var(--radius-sm)] border border-line bg-paper p-4">
+              <p className="mb-1 text-caption text-ink-3">المنطوق</p>
               <p className="text-doc text-[16px] text-ink">{j.operative_text}</p>
             </div>
-            <div className="mt-3 text-sm">
+            <div className="mt-3 text-callout">
               {j.appeal_deadline ? (
                 <p className="text-ink">
                   آخر ميعاد للطعن: <DateText iso={j.appeal_deadline} className="font-semibold" /> <span className="text-ink-3">— كما ذكره المحامي</span>
