@@ -156,8 +156,12 @@ export async function decideProposal(
     : all.every((s) => s === "confirmed" || s === "suggested" || s === "rejected") ? "confirmed"
     : all.some((s) => s === "confirmed" || s === "suggested") ? "partially_confirmed" : "pending";
 
+  // a card that created the case is from then on «this case's» card
+  const createdCase = p.ops.find((o) => o.tool === "create_case" && o.result_id && (o.status === "confirmed" || o.status === "suggested"));
+  const caseId = p.case_id ?? createdCase?.result_id ?? null;
+
   const { data, error } = await db.from("proposals").update({
-    ops: p.ops as unknown as Json, status, decided_at: new Date().toISOString(), decided_by: user?.id ?? null,
+    ops: p.ops as unknown as Json, status, case_id: caseId, decided_at: new Date().toISOString(), decided_by: user?.id ?? null,
   }).eq("id", p.id).select("*").single();
   if (error) throw new Error(error.message);
   return data as unknown as Proposal;
