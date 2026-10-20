@@ -194,7 +194,9 @@ function datesIn(text: string): Set<string> {
 function writtenDate(date: string, asWritten: string, pageText: string): string | null {
   const p = parseDmy(date);
   if (!p) return null;
-  if (asWritten && verifyQuote(asWritten, [pageText])) return date;
+  // the «as written» shortcut is only for dates written in words: a purely numeric text loses its separators in
+  // verifyQuote (5/3/2024 → 532024 would match inside 15/3/2024), so numeric dates need the exact match below
+  if (asWritten && /\p{L}/u.test(asWritten) && verifyQuote(asWritten, [pageText])) return date;
   if (p.precision === "day") return datesIn(pageText).has(p.iso) ? date : null;
   // month / year precision: the year must at least be written on the page
   return normalizeDigits(pageText).includes(p.iso.slice(0, 4)) ? date : null;
