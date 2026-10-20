@@ -9,7 +9,7 @@ import "server-only";
 import { PDFDocument } from "pdf-lib";
 import { normalizeDigits, parseDmy } from "@/lib/dates";
 import { getLlm, type JsonSchema, type LlmImage } from "@/lib/llm";
-import { createProposal, verifyQuote, type DraftOp } from "@/lib/proposals";
+import { createProposal, normalizeForMatch, verifyQuote, type DraftOp } from "@/lib/proposals";
 import type { Db } from "@/lib/supabase/server";
 import { DECISIONS, DOC_TYPES, PARTY_ROLES, WRITE_TOOL_ARGS, isWriteTool } from "@/lib/tools/registry";
 import { DOC_TYPE } from "@/lib/labels";
@@ -120,6 +120,45 @@ function asData(text: string): string {
 }
 
 const clean = (s: unknown): string => (typeof s === "string" ? s.trim() : "");
+
+/**
+ * Deterministic backstop for the model's suspicious_lines: lines that read like instructions to an AI
+ * (court papers never address «the assistant», never ask to delete records or send data to a site).
+ */
+const INJECTION = [
+  /(تعليمات|رسالة|ملاحظة)\s+(لل|إلى\s+ال)?(مساعد|ذكاء|نموذج|بوت)/,
+  /تجاهل\s+(كل|جميع|كافة)?\s*(ما\s+سبق|التعليمات|الأوامر)/,
+  /(احذف|امسح)\s+(كل|جميع|كافة)\s+(القضايا|الدعاوى|البيانات|الملفات|السجلات)/,
+  /(أرسل|ارسل|انقل|سرّب)\s+(كل\s+|جميع\s+)?(البيانات|المعلومات|الملفات)/,
+  /\b(ignore|disregard)\s+(all\s+)?(previous|prior|above)\b/i,
+  /\b(system\s+prompt|you\s+are\s+(now\s+)?an?\s+(ai|assistant))\b/i,
+];
+export function findInjectionLines(pages: string[]): { page: number; quote: string }[] {
+  const out: { page: number; quote: string }[] = [];
+  pages.forEach((text, i) => {
+    for (const line of text.split(/\n+/)) {
+      const l = line.trim();
+      if (l && INJECTION.some((re) => re.test(l))) out.push({ page: i + 1, quote: l.slice(0, 300) });
+    }
+  });
+  return out;
+}
+
+/** Model-reported + pattern-found lines, de-duplicated by text. */
+function mergeSuspicious(a: { page: number; quote: string }[], b: { page: number; quote: string }[]) {
+  const out = [...a];
+  for (const x of b) {
+    const k = normalizeForMatch(x.quote);
+    if (!out.some((y) => { const ky = normalizeForMatch(y.quote); return ky.includes(k) || k.includes(ky); })) out.push(x);
+  }
+  return out;
+}
+
+/** An op whose content repeats a suspicious line is never proposed. */
+function touchesSuspicious(args: Record<string, unknown>, suspicious: { quote: string }[]): boolean {
+  const blob = normalizeForMatch(Object.values(args).filter((v) => typeof v === "string").join(" "));
+  return suspicious.some((s) => { const k = normalizeForMatch(s.quote); return k.length > 8 && blob.includes(k); });
+}
 
 /** All numeric dates written in a text, as ISO (d/m/yyyy and yyyy/m/d orders). */
 function datesIn(text: string): Set<string> {
@@ -335,10 +374,16 @@ export async function processDocument(db: Db, documentId: string, opts: { thread
   result.extraction = ex;
 
   // 3. ops → one proposal + one assistant message
+  result.suspicious = findInjectionLines(pages);
   if (ex) {
-    result.suspicious = (ex.suspicious_lines ?? []).filter((s) => clean(s.quote)).map((s) => ({ page: s.page, quote: clean(s.quote) }));
+    const reported = (ex.suspicious_lines ?? []).filter((s) => clean(s.quote)).map((s) => ({ page: s.page, quote: clean(s.quote) }));
+    result.suspicious = mergeSuspicious(reported, result.suspicious);
     const { ops, dropped } = extractionToOps({ ex, documentId, caseId: doc.case_id, pages });
-    result.ops = ops;
+    result.ops = ops.filter((o) => {
+      if (o.tool === "attach_document" || o.tool === "create_case" || !touchesSuspicious(o.args, result.suspicious)) return true;
+      dropped.push({ tool: o.tool, reason: "مبني على سطر مريب في المستند" });
+      return false;
+    });
     result.dropped = dropped;
     for (const d of dropped) console.warn(`[documents] dropped ${d.tool}: ${d.reason}`);
     const docDate = clean(ex.doc_date) ? writtenDate(clean(ex.doc_date), "", pages.join("\n")) : null;
