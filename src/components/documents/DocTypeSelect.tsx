@@ -25,7 +25,7 @@ export function DocTypeSelect({ documentId, value }: { documentId: string; value
             if (!r.ok) { setCurrent(prev); setError(true); } else router.refresh();
           });
         }}
-        className="h-7 rounded-md border border-line bg-surface px-1.5 text-caption font-medium text-ink-2 hover:border-line-strong focus:border-accent focus:outline-none disabled:opacity-60"
+        className="h-11 rounded-md border border-line bg-surface px-3 text-callout font-medium text-ink-2 hover:border-line-strong focus:border-accent focus:outline-none disabled:opacity-60"
       >
         {Object.entries(DOC_TYPE).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
       </select>

@@ -149,7 +149,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
         <div className="flex items-center gap-3">
           <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-accent-soft text-accent"><FileCheck2 aria-hidden size={19} strokeWidth={1.5} /></span>
           <div>
-            <p id={inSheet ? `sheet-title-${p.id}` : undefined} className="text-callout font-semibold text-ink">بطاقة تأكيد <span className="num font-normal text-ink-3">· {p.ops.length}</span></p>
+            <p id={inSheet ? `sheet-title-${p.id}` : undefined} className="text-callout font-semibold text-ink">بطاقة تأكيد <span className="font-normal text-ink-3">·</span> <span className="num font-normal text-ink-3">{p.ops.length}</span></p>
             <p className="text-caption text-ink-3">{openOps.length ? "لن يُحفظ شيء قبل تأكيدك. راجع كل عنصر." : "تم البتّ في هذه البطاقة."}</p>
           </div>
         </div>
@@ -251,7 +251,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
         <div className="flex items-center gap-3 rounded-[var(--radius)] bg-surface px-4 py-3 shadow-2 lg:hidden">
           <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-accent-soft text-accent"><FileCheck2 aria-hidden size={19} strokeWidth={1.5} /></span>
           <span className="min-w-0 flex-1">
-            <span className="block text-callout font-semibold text-ink">بطاقة تأكيد <span className="num font-normal text-ink-3">· {openOps.length}</span> عناصر</span>
+            <span className="block text-callout font-semibold text-ink">بطاقة تأكيد <span className="font-normal text-ink-3">·</span> <span className="num font-normal text-ink-3">{openOps.length}</span> عناصر</span>
             <span className="block truncate text-caption text-ink-3">{warnings ? `${warnings} تحتاج مراجعة المصدر` : "لن يُحفظ شيء قبل تأكيدك"}</span>
           </span>
           <Button size="sm" onClick={() => setSheet(true)} aria-haspopup="dialog">مراجعة</Button>
