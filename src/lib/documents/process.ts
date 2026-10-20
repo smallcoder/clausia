@@ -405,11 +405,8 @@ export async function processDocument(db: Db, documentId: string, opts: { thread
     });
     result.dropped = dropped;
     for (const d of dropped) console.warn(`[documents] dropped ${d.tool}: ${d.reason}`);
-    const docDate = clean(ex.doc_date) ? writtenDate(clean(ex.doc_date), "", pages.join("\n")) : null;
-    const patch: { doc_date?: string; title?: string } = {};
-    if (docDate) patch.doc_date = parseDmy(docDate)!.iso;
-    if (clean(ex.title) && !doc.title) patch.title = clean(ex.title).slice(0, 200);
-    if (Object.keys(patch).length) await db.from("documents").update(patch).eq("id", documentId);
+    // No direct writes from the model: the title and type reach the documents row only through the
+    // attach_document op once the lawyer confirms it. (doc_date has no registry arg yet, so it is not proposed.)
   }
 
   if (!threadId) return result;

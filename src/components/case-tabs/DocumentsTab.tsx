@@ -42,7 +42,7 @@ export async function DocumentsTab({ caseId }: { caseId: string }) {
       </Card>
 
       <section>
-        <SectionTitle>المستندات{docs?.length ? <span className="num ms-1 font-normal text-ink-3">({docs.length})</span> : null}</SectionTitle>
+        <SectionTitle>المستندات{docs?.length ? <span className="num font-normal text-ink-3"> ({docs.length})</span> : null}</SectionTitle>
         {!docs?.length ? (
           <EmptyState title="لا توجد مستندات في هذه الدعوى بعد" hint="ارفع أول مستند وسيقرأه المساعد صفحة صفحة." />
         ) : (
@@ -59,7 +59,7 @@ export async function DocumentsTab({ caseId }: { caseId: string }) {
                         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-ink-3">
                           <DocTypeSelect documentId={d.id} value={d.doc_type} />
                           <Badge tone={STATUS_TONE[d.read_status]}>{READ_STATUS[d.read_status]}</Badge>
-                          {d.page_count ? <span><span className="num">{d.page_count}</span> {d.page_count === 1 ? "صفحة" : d.page_count === 2 ? "صفحتان" : "صفحات"}</span> : null}
+                          {d.page_count ? <span>{d.page_count === 1 ? "صفحة واحدة" : d.page_count === 2 ? "صفحتان" : <><span className="num">{d.page_count}</span> {d.page_count <= 10 ? "صفحات" : "صفحة"}</>}</span> : null}
                           <span>رُفع <DateText iso={d.created_at} /></span>
                           {d.doc_date ? <span>بتاريخ <DateText iso={d.doc_date} /></span> : null}
                           {sizeLabel(d.size_bytes) ? <span className="num">{sizeLabel(d.size_bytes)}</span> : null}
