@@ -26,7 +26,7 @@ function DayList({ items, today }: { items: HearingWithCase[]; today: string }) 
             <span className="num text-xs font-normal text-ink-3">{g.items.length}</span>
           </h3>
           <ul className="divide-y divide-line">
-            {g.items.map((h) => <HearingItem key={h.id} h={h} today={today} />)}
+            {g.items.map((h) => <HearingItem key={h.id} h={h} today={today} decide={h.hearing_date <= today} />)}
           </ul>
         </Card>
       ))}
@@ -53,7 +53,7 @@ export default async function Home() {
             <SectionTitle actions={<Link href={`/hearings?view=day&date=${today}`} className="text-sm text-accent hover:underline">رول اليوم</Link>}>
               <span id="today" className="inline-flex items-center gap-2">جلسات اليوم<Count n={todays.length} /></span>
             </SectionTitle>
-            {todays.length ? <DayList items={todays} today={today} /> : <EmptyState title="لا جلسات اليوم" hint="يوم بلا جلسات. يمكنك مراجعة الجلسات السابقة التي لم يُسجَّل قرارها." />}
+            <DecisionNotices>{todays.length ? <DayList items={todays} today={today} /> : <EmptyState title="لا جلسات اليوم" hint="يوم بلا جلسات. يمكنك مراجعة الجلسات السابقة التي لم يُسجَّل قرارها." />}</DecisionNotices>
           </section>
 
           <section aria-labelledby="tomorrow">
