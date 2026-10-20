@@ -7,32 +7,32 @@
 :root {
   color-scheme: light dark;
   /* surfaces */
-  --paper: #f4f3f0;          /* grouped background (warm system grey) */
+  --paper: #fafaf9;          /* grouped background (warm system grey) */
   --surface: #ffffff;        /* inset cards, rows */
-  --surface-2: #f7f6f3;      /* quiet fills inside cards */
-  --chrome: rgb(246 245 242 / 0.8); /* translucent bars */
+  --surface-2: #f4f4f5;      /* quiet fills inside cards */
+  --chrome: rgb(250 250 249 / 0.82); /* translucent bars */
   /* ink */
-  --ink: #1c1b19;
-  --ink-2: #5a5852;
-  --ink-3: #8c8a83;
+  --ink: #111111;
+  --ink-2: #5f5f63;
+  --ink-3: #8e8e93;
   /* separators */
-  --line: #e6e4de;
-  --line-strong: #d3d0c8;
-  --hairline: rgb(60 55 45 / 0.14);
+  --line: #e7e7e9;
+  --line-strong: #d4d4d8;
+  --hairline: rgb(60 60 67 / 0.16);
   /* accent: deep ink blue */
   --accent: #1f3a68;
   --accent-ink: #ffffff;
-  --accent-soft: #e8edf6;
+  --accent-soft: #eef1f7;
   /* tones */
-  --brass: #876628;
-  --brass-soft: #f5eedf;
-  --suggest: #9a5d0c;
-  --suggest-soft: #fbf0dd;
-  --ok: #2c6a4c;
-  --ok-soft: #e4f1ea;
+  --brass: #6b6b70;
+  --brass-soft: #f4f4f5;
+  --suggest: #a15c00;
+  --suggest-soft: #fff4e0;
+  --ok: #1f7a45;
+  --ok-soft: #e7f6ec;
   --danger: #a5352f;
   --danger-soft: #f9e6e4;
-  --backdrop: rgb(20 18 14 / 0.32);
+  --backdrop: rgb(0 0 0 / 0.3);
   /* shape */
   --radius: 14px;
   --radius-sm: 10px;
@@ -44,25 +44,25 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --paper: #121110;
-    --surface: #1d1c1a;
-    --surface-2: #272623;
-    --chrome: rgb(24 23 21 / 0.78);
-    --ink: #f2f0eb;
-    --ink-2: #b4b1a9;
-    --ink-3: #85827a;
-    --line: #2e2d2a;
-    --line-strong: #3d3b37;
-    --hairline: rgb(255 250 240 / 0.1);
-    --accent: #8fb0e8;
-    --accent-ink: #0f1a2e;
-    --accent-soft: #1f2a3d;
-    --brass: #d6b06a;
-    --brass-soft: #2f2716;
-    --suggest: #e8a654;
-    --suggest-soft: #33240f;
-    --ok: #7cc9a0;
-    --ok-soft: #15291f;
+    --paper: #000000;
+    --surface: #1c1c1e;
+    --surface-2: #2c2c2e;
+    --chrome: rgb(10 10 10 / 0.78);
+    --ink: #f5f5f7;
+    --ink-2: #aeaeb2;
+    --ink-3: #8e8e93;
+    --line: #2c2c2e;
+    --line-strong: #3a3a3c;
+    --hairline: rgb(255 255 255 / 0.12);
+    --accent: #7aa2e8;
+    --accent-ink: #0b1426;
+    --accent-soft: #16213a;
+    --brass: #aeaeb2;
+    --brass-soft: #2c2c2e;
+    --suggest: #ffb340;
+    --suggest-soft: #3a2a0f;
+    --ok: #5fd08a;
+    --ok-soft: #123222;
     --danger: #f08a80;
     --danger-soft: #3a1b18;
     --backdrop: rgb(0 0 0 / 0.55);
@@ -102,13 +102,13 @@
   --shadow-2: var(--shadow-2);
   --shadow-3: var(--shadow-3);
   /* type scale: text-title (page titles), text-headline (sections), text-body, text-callout, text-caption */
-  --text-title: 2rem;
-  --text-title--line-height: 1.2;
+  --text-title: 2.125rem;
+  --text-title--line-height: 1.15;
   --text-title--letter-spacing: -0.01em;
-  --text-headline: 1.25rem;
+  --text-headline: 1.375rem;
   --text-headline--line-height: 1.35;
-  --text-body: 1rem;
-  --text-body--line-height: 1.6;
+  --text-body: 1.0625rem;
+  --text-body--line-height: 1.45;
   --text-callout: 0.9375rem;
   --text-callout--line-height: 1.55;
   --text-caption: 0.8125rem;

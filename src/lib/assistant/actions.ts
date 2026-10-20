@@ -64,3 +64,16 @@ export async function startChatAction(_: { error?: string } | null, form: FormDa
   }
   redirect(`/chat/${id}`);
 }
+
+/** Home composer «ارفع ورقة»: a new general thread, then the upload reads the paper and posts its card there. */
+export async function startWithFileAction(form: FormData): Promise<{ threadId?: string; error?: string }> {
+  const db = await createClient();
+  const s = await getSession(db);
+  if (!s) return { error: "انتهت الجلسة، سجّل الدخول من جديد" };
+  const file = form.get("file");
+  const id = await createGeneralThread(db, file instanceof File ? file.name.slice(0, 60) : "مستند جديد");
+  form.set("threadId", id);
+  const { uploadDocumentAction } = await import("@/lib/documents/actions");
+  const r = await uploadDocumentAction(form);
+  return r.ok || r.warning ? { threadId: id } : { threadId: id, error: r.error };
+}

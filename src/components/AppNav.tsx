@@ -21,7 +21,7 @@ export function AppNav({ officeName, userLabel }: { officeName: string; userLabe
   const current = ITEMS.find((it) => active(path, it.href));
   return (
     <>
-      <aside className="fixed inset-y-0 right-0 z-30 hidden w-64 flex-col border-l border-hairline bg-paper lg:flex">
+      <aside className="fixed inset-y-0 right-0 z-30 hidden w-52 flex-col border-l border-hairline bg-paper lg:flex">
         <div className="px-6 pb-6 pt-8">
           <div className="text-[1.375rem] font-bold tracking-tight text-ink">Clausia</div>
           <div className="mt-0.5 truncate text-caption text-ink-3">{officeName}</div>

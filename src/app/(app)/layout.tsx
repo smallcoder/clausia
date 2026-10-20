@@ -10,7 +10,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-dvh">
       <AppNav officeName={office?.name ?? ""} userLabel={session.user.email ?? ""} />
-      <div className="lg:pr-64">
+      <div className="lg:pr-52">
         <main className="mx-auto w-full max-w-5xl px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6 lg:px-10 lg:pb-12 lg:pt-12">{children}</main>
       </div>
     </div>
