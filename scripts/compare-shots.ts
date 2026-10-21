@@ -19,15 +19,29 @@ async function ids() {
   return { caseId: c?.id as string, threadId: (p?.thread_id ?? anyp?.thread_id) as string };
 }
 
-async function shootApp(browser: Browser, path: string, mobile: boolean, dark: boolean, out: string) {
-  const ctx = await browser.newContext({ viewport: { width: mobile ? 390 : 1440, height: mobile ? 844 : 960 }, deviceScaleFactor: mobile ? 2 : 1, locale: "ar-EG", timezoneId: "Africa/Cairo", colorScheme: dark ? "dark" : "light" });
+let state: Awaited<ReturnType<import("@playwright/test").BrowserContext["storageState"]>> | null = null;
+
+/** Logs in once and reuses the session for every shot (many logins in a row get rate-limited by Supabase Auth). */
+async function session(browser: Browser) {
+  if (state) return state;
+  const ctx = await browser.newContext();
   const page = await ctx.newPage();
   await page.goto(`${BASE}/login`);
   await page.fill('input[name="email"]', process.env.DEMO_EMAIL!);
   await page.fill('input[name="password"]', process.env.DEMO_PASSWORD!);
-  await Promise.all([page.waitForURL((u) => !u.pathname.startsWith("/login")), page.click('button:has-text("دخول")')]);
-  await page.goto(BASE + path, { waitUntil: "load" });
-  await page.waitForTimeout(800);
+  await Promise.all([page.waitForURL((u) => !u.pathname.startsWith("/login"), { waitUntil: "commit", timeout: 60_000 }), page.click('button:has-text("دخول")')]);
+  state = await ctx.storageState();
+  await ctx.close();
+  return state;
+}
+
+async function shootApp(browser: Browser, path: string, mobile: boolean, dark: boolean, out: string) {
+  const ctx = await browser.newContext({ storageState: await session(browser), viewport: { width: mobile ? 390 : 1440, height: mobile ? 844 : 960 }, deviceScaleFactor: mobile ? 2 : 1, locale: "ar-EG", timezoneId: "Africa/Cairo", colorScheme: dark ? "dark" : "light" });
+  const page = await ctx.newPage();
+  console.log(new Date().toISOString().slice(11, 19), "goto", path, mobile ? "mobile" : "desktop", dark ? "dark" : "light");
+  await page.goto(BASE + path, { waitUntil: "domcontentloaded", timeout: 60_000 });
+  await page.waitForLoadState("load", { timeout: 15_000 }).catch(() => {});
+  await page.waitForTimeout(1200);
   await page.screenshot({ path: out, fullPage: true });
   await ctx.close();
 }
