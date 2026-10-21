@@ -45,17 +45,17 @@ export function ChatComposer({ id, value, onChange, onSend, onFile, sending, bus
   return (
     <ChatDock>
       {error ? (
-        <p role="alert" className="mb-2 flex items-start justify-between gap-2 rounded-2xl border border-border-2 bg-card px-3.5 py-2 text-[13.5px] text-bad shadow-soft">
+        <p role="alert" className="mb-2 flex items-start justify-between gap-2 rounded-2xl border border-border-2 bg-card px-3.5 py-2 text-base text-bad shadow-soft">
           <span>{error}</span>
-          <button type="button" onClick={onDismissError} className="shrink-0 text-xs underline">إخفاء</button>
+          <button type="button" onClick={onDismissError} className="shrink-0 text-sm leading-4 underline">إخفاء</button>
         </p>
       ) : null}
       <div className="glass rounded-[24px] px-3 pb-2.5 pt-3.5 sm:rounded-[26px] sm:px-3.5 sm:pb-3 sm:pt-4">
         <div className="flex items-start gap-2.5 px-1 sm:gap-3 sm:px-1.5 sm:pt-0.5">
-          <span aria-hidden className="mark font-num mt-0.5 inline-flex size-[22px] shrink-0 items-center justify-center rounded-[7px] text-[11px] font-extrabold sm:size-[26px] sm:rounded-[9px] sm:text-[13px]">C</span>
+          <span aria-hidden className="mark font-num mt-0.5 inline-flex size-[22px] shrink-0 items-center justify-center rounded-[7px] text-xs font-extrabold sm:size-[26px] sm:rounded-[9px] sm:text-sm">C</span>
           <textarea ref={boxRef} value={value} onChange={(e) => onChange(e.target.value)} onKeyDown={onKey} rows={1}
             placeholder={placeholder} aria-label="رسالة لـ Clausia"
-            className="block max-h-40 min-h-[46px] min-w-0 flex-1 resize-none bg-transparent p-0 text-base leading-[1.6] text-text placeholder:text-text-4 focus:outline-none [field-sizing:content] sm:min-h-14 sm:text-[17px] sm:leading-[1.65]" />
+            className="block max-h-40 min-h-[46px] min-w-0 flex-1 resize-none bg-transparent p-0 text-md leading-[1.6] text-text placeholder:text-text-4 focus:outline-none [field-sizing:content] sm:min-h-14 sm:text-lg sm:leading-[1.65]" />
         </div>
         <div className="mt-1.5 flex items-center gap-2 sm:mt-2">
           <input ref={fileRef} type="file" accept="application/pdf,image/*" className="sr-only" id={`file-${id}`} onChange={(e) => onFile(e.target.files?.[0])} />
@@ -63,7 +63,7 @@ export function ChatComposer({ id, value, onChange, onSend, onFile, sending, bus
             className={cx(ROUND, "cursor-pointer", busy && "pointer-events-none opacity-50")}>
             <Plus aria-hidden size={18} strokeWidth={1.8} />
           </label>
-          <div className="min-w-0 flex-1 truncate text-center text-[10.5px] text-text-4 sm:text-start sm:text-xs" aria-live="polite">
+          <div className="min-w-0 flex-1 truncate text-center text-xs text-text-4 sm:text-start sm:text-sm sm:leading-4" aria-live="polite">
             {status ?? <span className="sm:hidden">مفيش حاجة بتتحفظ من غير موافقتك</span>}
           </div>
           <button type="button" onClick={onSend} disabled={!value.trim() || sending} aria-label="إرسال"
@@ -72,7 +72,7 @@ export function ChatComposer({ id, value, onChange, onSend, onFile, sending, bus
           </button>
         </div>
       </div>
-      <p className="mt-2.5 hidden text-center text-[11.5px] leading-[normal] text-text-4 sm:block">Clausia بتجهّز، وإنت اللي بتأكد. مفيش حاجة بتتحفظ من غير موافقتك.</p>
+      <p className="mt-2.5 hidden text-center text-xs leading-[normal] text-text-4 sm:block">Clausia بتجهّز، وإنت اللي بتأكد. مفيش حاجة بتتحفظ من غير موافقتك.</p>
     </ChatDock>
   );
 }

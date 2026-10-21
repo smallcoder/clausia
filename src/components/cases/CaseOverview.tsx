@@ -30,11 +30,11 @@ const CARD = "rounded-[24px] border border-border-2 bg-card shadow-card lg:round
 
 /** «مقترحة · راجعها»: a 5px gold dot + 11px gold word (needs the lawyer's action). */
 export const Suggested = ({ label = "مقترحة · راجعها" }: { label?: string }) => (
-  <span className="inline-flex items-center gap-[5px] text-[11px] font-semibold text-gold"><span aria-hidden className="size-[5px] rounded-full bg-gold" />{label}</span>
+  <span className="inline-flex items-center gap-[5px] text-xs font-semibold text-gold"><span aria-hidden className="size-[5px] rounded-full bg-gold" />{label}</span>
 );
 
 /** The Clausia «C» mark (mockup: 32px / 11px radius / 15px on desktop, 26px / 9px / 12px on mobile; a hairline + inner light in dark). */
-const MARK = "mark font-num inline-flex shrink-0 items-center justify-center font-extrabold size-[26px] rounded-[9px] text-[12px] lg:size-8 lg:rounded-[11px] lg:text-[15px] dark:border dark:border-white/8 dark:shadow-[var(--mark-shadow)]";
+const MARK = "mark font-num inline-flex shrink-0 items-center justify-center font-extrabold size-[26px] rounded-[9px] text-sm lg:size-8 lg:rounded-[11px] lg:text-md dark:border dark:border-white/8 dark:shadow-[var(--mark-shadow)]";
 
 function pendingOf<T>(cf: CaseFile, table: string): T[] {
   return cf.pending_suggestions.filter((p) => p.table === table).map((p) => p.item as T);
@@ -43,9 +43,9 @@ function pendingOf<T>(cf: CaseFile, table: string): T[] {
 /** Source + quote block inside a sheet. Quoted court / document text is verbatim, in Naskh. */
 function SheetSource({ cf, item }: { cf: CaseFile; item: { review_status: string; created_by: string; source: CaseFile["facts"][number]["source"] } }) {
   return (
-    <div className="space-y-1.5 rounded-2xl bg-card-2 px-4 py-3 text-[13px] text-text-3">
+    <div className="space-y-1.5 rounded-2xl bg-card-2 px-4 py-3 text-sm text-text-3">
       <p>{sourceText(item.source, cf.documents)} · {item.review_status === "suggested" ? "مقترحة، لسه ما اتأكدتش" : "مؤكدة"} · {item.created_by === "model" ? "صاغها Clausia" : "كتبها المحامي"}</p>
-      {item.source.quote ? <p className="text-doc text-[14px] text-text-2">«{item.source.quote}»</p> : null}
+      {item.source.quote ? <p className="text-doc text-base text-text-2">«{item.source.quote}»</p> : null}
       {item.source.document_id ? <a href={`/api/documents/${item.source.document_id}`} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center font-semibold text-text-2 underline-offset-4 hover:underline">فتح المستند</a> : null}
     </div>
   );
@@ -64,9 +64,9 @@ function Summary({ cf, hs, today, className }: { cf: CaseFile; hs: HearingState;
     <div className={`flex items-start gap-2.5 px-1 lg:gap-3.5 lg:px-2 ${className}`}>
       <span aria-hidden className={MARK}>C</span>
       <div className="min-w-0 flex-1">
-        <div className="hidden text-[12px] font-semibold text-gold lg:block">ملخص Clausia</div>
-        <p className="mt-0.5 text-[14.5px] leading-[1.8] text-text lg:hidden">{own ? (/[.!؟]$/u.test(own) ? own : `${own}.`) : segs}</p>
-        <p className="mt-1 hidden text-[17px] leading-[1.85] text-text lg:block">{segs}</p>
+        <div className="hidden text-sm font-semibold text-gold lg:block">ملخص Clausia</div>
+        <p className="mt-0.5 text-base leading-[1.8] text-text lg:hidden">{own ? (/[.!؟]$/u.test(own) ? own : `${own}.`) : segs}</p>
+        <p className="mt-1 hidden text-lg leading-[1.85] text-text lg:block">{segs}</p>
       </div>
     </div>
   );
@@ -83,7 +83,7 @@ function ReviewBanner({ cf, hs, caseId, className }: { cf: CaseFile; hs: Hearing
   return (
     <div className={`space-y-2 lg:hidden ${className}`}>
       {rows.map((r) => {
-        const cls = "flex min-h-11 items-center gap-2.5 rounded-[18px] border border-[var(--accent-edge)] px-3.5 py-3 text-[13.5px] text-text";
+        const cls = "flex min-h-11 items-center gap-2.5 rounded-[18px] border border-[var(--accent-edge)] px-3.5 py-3 text-base text-text";
         const body = (
           <>
             <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-gold" />
@@ -104,7 +104,7 @@ function FactRow({ f, last, cf }: { f: Fact; last: boolean; cf: CaseFile }) {
   const dated = f.date && f.date_precision !== "unknown";
   return (
     <span className="flex gap-3.5">
-      <span className={`font-num w-16 shrink-0 pt-1 text-[12.5px] font-semibold lg:w-[78px] ${dated ? "text-text" : "text-text-4"}`}>
+      <span className={`font-num w-16 shrink-0 pt-1 text-sm font-semibold lg:w-[78px] ${dated ? "text-text" : "text-text-4"}`}>
         <span className={f.date_precision === "day" ? "num" : ""}>{factDate(f.date, f.date_precision)}</span>
       </span>
       <span className="flex w-[9px] shrink-0 flex-col items-center" aria-hidden>
@@ -112,9 +112,9 @@ function FactRow({ f, last, cf }: { f: Fact; last: boolean; cf: CaseFile }) {
         {!last ? <span className="mt-1 w-px flex-1 bg-[var(--hairline-v2)]" /> : null}
       </span>
       <span className="min-w-0 flex-1 pb-[18px]">
-        <span className="text-doc block text-[15px] text-text lg:text-[16px]" style={{ lineHeight: 1.9 }}>{f.text}</span>
+        <span className="text-doc block text-md text-text" style={{ lineHeight: 1.9 }}>{f.text}</span>
         <span className="mt-0.5 flex flex-wrap items-center gap-2">
-          <span className="text-[11px] text-text-4">{sourceText(f.source, cf.documents)}{suggested ? "" : " · مؤكدة"}</span>
+          <span className="text-xs text-text-4">{sourceText(f.source, cf.documents)}{suggested ? "" : " · مؤكدة"}</span>
           {suggested ? <Suggested /> : null}
         </span>
       </span>
@@ -136,15 +136,15 @@ function Facts({ cf, caseId }: { cf: CaseFile; caseId: string }) {
   return (
     <section id="facts" className={`scroll-mt-24 ${CARD} rounded-[26px]`} aria-label="الوقائع">
       <div className="flex items-baseline justify-between gap-3 px-[18px] pt-4 lg:px-6 lg:pb-1.5 lg:pt-[18px]">
-        <h2 className="hidden text-[17px] font-bold text-title lg:block">الوقائع</h2>
-        <span className="text-[11.5px] text-text-4">تاريخ الوقائع {fd ? <span className="num font-num">{fd}</span> : "مش محدد"} · بيحدد نسخة القانون</span>
+        <h2 className="hidden text-lg font-bold text-title lg:block">الوقائع</h2>
+        <span className="text-xs text-text-4">تاريخ الوقائع {fd ? <span className="num font-num">{fd}</span> : "مش محدد"} · بيحدد نسخة القانون</span>
       </div>
       {all.length ? (
         <div className="px-3 pb-1.5 pt-2.5 lg:px-4">
           {all.map((f, i) => (
             <TapItem key={f.id} id={f.id} title="واقعة" tight className="rounded-2xl px-1.5 lg:px-2" row={<FactRow f={f} last={i === all.length - 1} cf={cf} />}>
-              <p className="font-num text-[13px] font-bold text-title">{factDate(f.date, f.date_precision)}{f.date_text && f.date_text !== factDate(f.date, f.date_precision) ? <span className="font-sans font-normal text-text-4"> · «{f.date_text}»</span> : null}</p>
-              <p className="text-doc text-[17px] text-text">{f.text}</p>
+              <p className="font-num text-sm font-bold text-title">{factDate(f.date, f.date_precision)}{f.date_text && f.date_text !== factDate(f.date, f.date_precision) ? <span className="font-sans font-normal text-text-4"> · «{f.date_text}»</span> : null}</p>
+              <p className="text-doc text-lg text-text">{f.text}</p>
               <SheetSource cf={cf} item={f} />
               {f.review_status === "suggested" ? <SheetReview table="case_facts" id={f.id} caseId={caseId} /> : null}
               <SheetEditText table="case_facts" id={f.id} caseId={caseId} initial={f.text} />
@@ -152,7 +152,7 @@ function Facts({ cf, caseId }: { cf: CaseFile; caseId: string }) {
           ))}
         </div>
       ) : (
-        <p className="px-[18px] pb-5 pt-3 text-[14px] leading-7 text-text-3 lg:px-6">لسه مفيش وقائع. احكي لـ Clausia اللي حصل وتواريخه، أو ارفع صحيفة الدعوى.</p>
+        <p className="px-[18px] pb-5 pt-3 text-base leading-7 text-text-3 lg:px-6">لسه مفيش وقائع. احكي لـ Clausia اللي حصل وتواريخه، أو ارفع صحيفة الدعوى.</p>
       )}
     </section>
   );
@@ -164,9 +164,9 @@ function TextItem({ cf, caseId, table, item, kindLabel }: { cf: CaseFile; caseId
   const suggested = item.review_status === "suggested";
   return (
     <TapItem id={item.id} title={table === "case_requests" ? "طلب" : "دفع / دفاع"} tight className="-mx-2 mt-1.5 rounded-xl px-2 lg:mt-2"
-      row={<span className="block text-[14px] leading-[1.7] text-text">{item.text}{suggested ? <span className="ms-2 inline-block"><Suggested /></span> : null}</span>}>
-      {kindLabel ? <p className="text-[13px] font-bold text-text-3">{kindLabel}</p> : null}
-      <p className="text-doc text-[17px] text-text">{item.text}</p>
+      row={<span className="block text-base leading-[1.7] text-text">{item.text}{suggested ? <span className="ms-2 inline-block"><Suggested /></span> : null}</span>}>
+      {kindLabel ? <p className="text-sm font-bold text-text-3">{kindLabel}</p> : null}
+      <p className="text-doc text-lg text-text">{item.text}</p>
       <SheetSource cf={cf} item={item} />
       {suggested ? <SheetReview table={table} id={item.id} caseId={caseId} /> : null}
       <SheetEditText table={table} id={item.id} caseId={caseId} initial={item.text} />
@@ -177,7 +177,7 @@ function TextItem({ cf, caseId, table, item, kindLabel }: { cf: CaseFile; caseId
 /** Mockup: dot (5px mobile / 6px desktop) + 11.5px / 12px semibold word, 6px apart. */
 function SideLabel({ tone, children }: { tone: "good" | "bad"; children: ReactNode }) {
   return (
-    <h2 className={`flex items-center gap-1.5 text-[11.5px] font-semibold lg:text-[12px] ${tone === "good" ? "text-good" : "text-bad"}`}>
+    <h2 className={`flex items-center gap-1.5 text-xs font-semibold lg:text-sm ${tone === "good" ? "text-good" : "text-bad"}`}>
       <span aria-hidden className={`size-[5px] rounded-full lg:size-1.5 ${tone === "good" ? "bg-good" : "bg-bad"}`} />{children}
     </h2>
   );
@@ -190,7 +190,7 @@ function Sides({ cf, caseId, className }: { cf: CaseFile; caseId: string; classN
   const theirs = args.filter((a) => a.side === "opponent");
   // mobile: one card (4px 18px) with the two halves split by a hairline; desktop: two equal-height cards 14px apart
   const card = "lg:flex-1 lg:rounded-[24px] lg:border lg:border-border-2 lg:bg-card lg:px-[22px] lg:py-[18px] lg:shadow-card";
-  const empty = (t: string) => <p className="mt-1.5 text-[13.5px] leading-[1.7] text-text-4 lg:mt-2">{t}</p>;
+  const empty = (t: string) => <p className="mt-1.5 text-base leading-[1.7] text-text-4 lg:mt-2">{t}</p>;
   return (
     <div className={`${CARD} px-[18px] py-1 lg:flex lg:gap-3.5 lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none ${className}`}>
       <section className={`border-b border-[var(--hairline-v2)] pb-3 pt-3.5 lg:border-b-0 ${card}`}>
@@ -219,22 +219,22 @@ function DayBlock({ iso }: { iso: string }) {
   const [, m, d] = iso.split("-").map(Number);
   return (
     <div className="w-11 shrink-0 text-center leading-none lg:w-auto lg:min-w-12">
-      <div className="stat-num text-[44px] text-title lg:text-[58px] lg:tracking-[-0.04em]" style={{ fontWeight: 200 }}>{d}</div>
-      <div className="mt-1 text-[11px] text-text-3 lg:mt-1.5 lg:text-[12px]">{MONTHS[m - 1]}</div>
+      <div className="stat-num text-2xl text-title lg:text-display lg:tracking-[-0.04em]" style={{ fontWeight: 200 }}>{d}</div>
+      <div className="mt-1 text-xs text-text-3 lg:mt-1.5 lg:text-sm">{MONTHS[m - 1]}</div>
     </div>
   );
 }
 
 function HearingCard({ cf, hs, today, caseId, className }: { cf: CaseFile; hs: HearingState; today: string; caseId: string; className: string }) {
   const circuit = cf.case.circuit;
-  const all = <Link href={`/cases/${caseId}?tab=hearings`} className="-my-3 inline-flex min-h-11 shrink-0 items-center text-[12px] text-text-3 hover:text-text hover:underline">الجلسات ←</Link>;
+  const all = <Link href={`/cases/${caseId}?tab=hearings`} className="-my-3 inline-flex min-h-11 shrink-0 items-center text-sm text-text-3 hover:text-text hover:underline">الجلسات ←</Link>;
   const h = hs.next ?? hs.undecided;
   if (!h) {
     return (
       <div className={`${CARD} flex items-center justify-between gap-3 px-[18px] py-4 lg:p-[22px] ${className}`}>
         <div>
-          <p className="text-[15px] font-bold text-text">مفيش جلسة جاية متسجلة</p>
-          <p className="mt-0.5 text-[12.5px] text-text-3">لما يتحدد ميعاد، قوله لـ Clausia.</p>
+          <p className="text-md font-bold text-text">مفيش جلسة جاية متسجلة</p>
+          <p className="mt-0.5 text-sm text-text-3">لما يتحدد ميعاد، قوله لـ Clausia.</p>
         </div>
         {all}
       </div>
@@ -248,7 +248,7 @@ function HearingCard({ cf, hs, today, caseId, className }: { cf: CaseFile; hs: H
   const needed = upcoming ? hs.nextNeeded : hs.undecidedNeeded;
   const when = upcoming ? `الجلسة الجاية · ${untilLabel(daysBetween(today, h.date))}` : `آخر جلسة · ${agoLabel(daysBetween(h.date, today))}`;
   const decide = !upcoming ? (
-    <Link href={`/cases/${caseId}?tab=hearings#h-${h.id}`} className="relative -my-3 inline-flex min-h-11 items-center gap-2 text-[13px] font-semibold text-gold hover:underline">
+    <Link href={`/cases/${caseId}?tab=hearings#h-${h.id}`} className="relative -my-3 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-gold hover:underline">
       <span aria-hidden className="size-1.5 rounded-full bg-gold" />محتاجة قرار · سجّله
     </Link>
   ) : null;
@@ -260,14 +260,14 @@ function HearingCard({ cf, hs, today, caseId, className }: { cf: CaseFile; hs: H
       <div className="flex items-center gap-4 lg:gap-[18px]">
         <DayBlock iso={h.date} />
         <div className="min-w-0 flex-1 border-s border-[var(--hairline-v2)] ps-4 lg:ps-[18px]">
-          <div className="text-[11.5px] text-text-3 lg:text-[12px]">{when}</div>
-          <div className="mt-[3px] text-[15px] font-bold text-text lg:mt-1 lg:text-[16px]">
+          <div className="text-xs text-text-3 lg:text-sm">{when}</div>
+          <div className="mt-[3px] text-md font-bold text-text lg:mt-1">
             {weekday} <span className="num font-num lg:hidden">{d}/{m}</span><span className="num font-num hidden lg:inline">{d}/{m}/{y}</span>
             {where ? <span className="lg:hidden"> · {where}</span> : null}
           </div>
-          {where ? <div className="mt-0.5 hidden text-[12.5px] text-text-3 lg:block">{where}</div> : null}
+          {where ? <div className="mt-0.5 hidden text-sm text-text-3 lg:block">{where}</div> : null}
           {needed ? (
-            <div className="mt-1 flex items-center gap-1.5 text-[12.5px] text-text lg:hidden">
+            <div className="mt-1 flex items-center gap-1.5 text-sm text-text lg:hidden">
               <span aria-hidden className={`size-[5px] shrink-0 rounded-full ${upcoming ? "bg-gold" : "bg-text-4"}`} />
               <span className="min-w-0">{upcoming ? "" : "كان المطلوب: "}{needed}</span>
             </div>
@@ -278,7 +278,7 @@ function HearingCard({ cf, hs, today, caseId, className }: { cf: CaseFile; hs: H
       {needed || decide ? (
         <div className="mt-[18px] hidden space-y-2 border-t border-[var(--hairline-v2)] pt-3.5 lg:block">
           {needed ? (
-            <div className="flex items-center gap-2 text-[13.5px]">
+            <div className="flex items-center gap-2 text-base">
               <span aria-hidden className={`size-1.5 shrink-0 rounded-full ${upcoming ? "bg-gold" : "bg-text-4"}`} />
               <span className="text-text-3">{upcoming ? "المطلوب:" : "كان المطلوب:"}</span>
               <span className="font-semibold text-text">{needed}</span>
@@ -296,7 +296,7 @@ function ListCard({ title, end, children, className = "" }: { title?: string; en
     <section className={`${CARD} px-[18px] py-1.5 lg:px-[22px] ${className}`} aria-label={title}>
       {title ? (
         <div className="hidden items-center justify-between pb-1.5 pt-3.5 lg:flex">
-          <h2 className="text-[14px] font-bold text-text">{title}</h2>
+          <h2 className="text-base font-bold text-text">{title}</h2>
           {end}
         </div>
       ) : null}
@@ -310,10 +310,10 @@ function Parties({ cf, caseId }: { cf: CaseFile; caseId: string }) {
   const line = (name: string, role: string, extra?: ReactNode) => (
     <span className="block py-3">
       <span className="flex items-center gap-2">
-        <span className="min-w-0 truncate text-[14px] font-semibold text-text">{name}</span>
+        <span className="min-w-0 truncate text-base font-semibold text-text">{name}</span>
         {extra}
       </span>
-      <span className="mt-0.5 block text-[11.5px] text-text-3">{role}</span>
+      <span className="mt-0.5 block text-xs text-text-3">{role}</span>
     </span>
   );
   return (
@@ -323,18 +323,18 @@ function Parties({ cf, caseId }: { cf: CaseFile; caseId: string }) {
           {rows.map((r, i) => r.id && r.party ? (
             <TapItem key={r.id} id={r.id} title="طرف في الدعوى" className="-mx-2 rounded-xl px-2" row={line(r.name, r.role, r.suggested ? <Suggested label="مقترح · راجعه" /> : null)}>
               <div>
-                <p className="text-[17px] font-bold text-text">{r.name}</p>
-                <p className="text-[13px] text-text-3">{r.role}</p>
+                <p className="text-lg font-bold text-text">{r.name}</p>
+                <p className="text-sm text-text-3">{r.role}</p>
               </div>
-              {r.party.representative ? <p className="text-[14px] text-text-2">يمثله: {r.party.representative}</p> : null}
-              {r.party.notes ? <p className="text-[14px] text-text-2">{r.party.notes}</p> : null}
+              {r.party.representative ? <p className="text-base text-text-2">يمثله: {r.party.representative}</p> : null}
+              {r.party.notes ? <p className="text-base text-text-2">{r.party.notes}</p> : null}
               <SheetSource cf={cf} item={r.party} />
               {r.suggested ? <SheetReview table="case_parties" id={r.id} caseId={caseId} /> : null}
             </TapItem>
           ) : <div key={`rep-${i}`}>{line(r.name, r.role)}</div>)}
         </div>
       ) : (
-        <p className="py-3.5 text-[13.5px] leading-6 text-text-3">لسه مفيش أطراف متسجلة. قول لـ Clausia مين موكلك ومين الخصم.</p>
+        <p className="py-3.5 text-base leading-6 text-text-3">لسه مفيش أطراف متسجلة. قول لـ Clausia مين موكلك ومين الخصم.</p>
       )}
     </ListCard>
   );
@@ -344,7 +344,7 @@ function Docs({ cf, caseId }: { cf: CaseFile; caseId: string }) {
   const docs = cf.documents;
   const shown = docs.slice(0, 8);
   // mockup: the header shows only the count; it opens the documents view
-  const all = <Link href={`/cases/${caseId}?tab=documents`} aria-label="كل المستندات" className="-my-3 inline-flex min-h-11 min-w-11 items-center justify-end text-[12px] text-text-3 hover:text-text hover:underline"><span className="font-num">{docs.length}</span></Link>;
+  const all = <Link href={`/cases/${caseId}?tab=documents`} aria-label="كل المستندات" className="-my-3 inline-flex min-h-11 min-w-11 items-center justify-end text-sm text-text-3 hover:text-text hover:underline"><span className="font-num">{docs.length}</span></Link>;
   return (
     <ListCard title="المستندات" end={all}>
       {shown.length ? (
@@ -352,14 +352,14 @@ function Docs({ cf, caseId }: { cf: CaseFile; caseId: string }) {
           {shown.map((d) => (
             <a key={d.id} href={`/api/documents/${d.id}`} target="_blank" rel="noopener" title={d.file_name}
               className="-mx-2 block min-h-11 rounded-xl px-2 py-3 transition-colors hover:bg-card-2/60">
-              <span className="block truncate text-[14px] font-semibold text-text">{docName(d)}</span>
-              <span className="mt-0.5 block text-[11.5px] text-text-3">{[pagesLabel(d.page_count), READ_SHORT[d.read_status] ?? d.read_status].filter(Boolean).join(" · ")}</span>
+              <span className="block truncate text-base font-semibold text-text">{docName(d)}</span>
+              <span className="mt-0.5 block text-xs text-text-3">{[pagesLabel(d.page_count), READ_SHORT[d.read_status] ?? d.read_status].filter(Boolean).join(" · ")}</span>
             </a>
           ))}
-          {docs.length ? <div className="flex justify-end py-1 lg:hidden"><Link href={`/cases/${caseId}?tab=documents`} className="-my-1 inline-flex min-h-11 items-center gap-1 text-[12px] text-text-3 hover:text-text hover:underline"><span className="font-num">{docs.length}</span> الكل ←</Link></div> : null}
+          {docs.length ? <div className="flex justify-end py-1 lg:hidden"><Link href={`/cases/${caseId}?tab=documents`} className="-my-1 inline-flex min-h-11 items-center gap-1 text-sm text-text-3 hover:text-text hover:underline"><span className="font-num">{docs.length}</span> الكل ←</Link></div> : null}
         </div>
       ) : (
-        <p className="py-3.5 text-[13.5px] leading-6 text-text-3">لسه مفيش مستندات. ارفع صحيفة الدعوى أو أي ورقة من «+» تحت، وClausia هيقراها صفحة صفحة.</p>
+        <p className="py-3.5 text-base leading-6 text-text-3">لسه مفيش مستندات. ارفع صحيفة الدعوى أو أي ورقة من «+» تحت، وClausia هيقراها صفحة صفحة.</p>
       )}
     </ListCard>
   );

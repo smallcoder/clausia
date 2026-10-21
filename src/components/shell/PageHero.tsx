@@ -24,8 +24,8 @@ export function StatTile({ s }: { s: HeroStat }) {
   const gold = s.highlight && !isZero(s.value);
   const body = (
     <>
-      <div className={`stat-num text-[32px] sm:text-[44px] ${gold ? "text-gold" : "text-title"}`}>{typeof s.value === "number" ? two(s.value) : s.value}</div>
-      <div className={`mt-2 flex items-center gap-1.5 text-[12px] ${gold ? "font-semibold text-gold" : "text-text-3"}`}>
+      <div className={`stat-num text-xl sm:text-2xl ${gold ? "text-gold" : "text-title"}`}>{typeof s.value === "number" ? two(s.value) : s.value}</div>
+      <div className={`mt-2 flex items-center gap-1.5 text-sm ${gold ? "font-semibold text-gold" : "text-text-3"}`}>
         {gold ? <span aria-hidden className="size-1.5 rounded-full bg-gold" /> : null}{s.label}
       </div>
     </>
@@ -69,9 +69,9 @@ export function PageHero({ back, action, eyebrow, title, subtitle, stats, classN
       <div className="flex min-w-0 items-start gap-3 sm:gap-4">
         {back ? <BackBtn href={back} /> : null}
         <div className="min-w-0">
-          {eyebrow ? <div className="text-[12px] font-semibold text-text-3 sm:text-[13px]">{eyebrow}</div> : null}
-          <h1 className="mt-1 text-[32px] font-bold leading-[1.15] text-title sm:text-[46px]">{title}</h1>
-          {subtitle ? <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-text-3 sm:text-[15px]">{subtitle}</div> : null}
+          {eyebrow ? <div className="text-sm font-semibold text-text-3">{eyebrow}</div> : null}
+          <h1 className="mt-1 text-xl font-bold leading-[1.15] text-title sm:text-2xl">{title}</h1>
+          {subtitle ? <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-base text-text-3 sm:text-md">{subtitle}</div> : null}
         </div>
       </div>
       {action || stats?.length ? (
@@ -87,10 +87,10 @@ export function PageHero({ back, action, eyebrow, title, subtitle, stats, classN
 /** v2 status: a small dot + a word. needs decision = gold · today = gold outline · active = green · reserved/done = muted · against us = red */
 export function StatusChip({ tone, children }: { tone: "good" | "warn" | "neutral" | "bad" | "accent"; children: ReactNode }) {
   if (tone === "accent")
-    return <span className="inline-flex h-[22px] items-center rounded-full border border-[var(--accent-edge)] px-2.5 text-[11.5px] font-bold text-gold">{children}</span>;
+    return <span className="inline-flex h-[22px] items-center rounded-full border border-[var(--accent-edge)] px-2.5 text-xs font-bold text-gold">{children}</span>;
   const c = { good: ["bg-good", "text-good"], warn: ["bg-gold", "text-gold"], neutral: ["bg-text-4", "text-text-3"], bad: ["bg-bad", "text-bad"] }[tone];
   return (
-    <span className={`inline-flex items-center gap-1.5 text-[12px] font-semibold ${c[1]}`}>
+    <span className={`inline-flex items-center gap-1.5 text-sm font-semibold ${c[1]}`}>
       <span aria-hidden className={`size-1.5 rounded-full ${c[0]}`} />{children}
     </span>
   );
@@ -100,10 +100,10 @@ export function StatusChip({ tone, children }: { tone: "good" | "warn" | "neutra
 export function ClausiaSays({ children, label, size = "lg" }: { children: ReactNode; label?: string; size?: "lg" | "md" }) {
   return (
     <div className="flex items-start gap-3">
-      <span className={`mark font-num inline-flex shrink-0 items-center justify-center font-black shadow-mark ${size === "lg" ? "size-[30px] rounded-[9px] text-[14px]" : "size-[26px] rounded-[8px] text-[12px]"}`}>C</span>
+      <span className={`mark font-num inline-flex shrink-0 items-center justify-center font-black shadow-mark ${size === "lg" ? "size-[30px] rounded-[9px] text-base" : "size-[26px] rounded-[8px] text-sm"}`}>C</span>
       <div className="min-w-0 flex-1 pt-0.5">
-        {label ? <div className="text-[12px] font-bold text-gold">{label}</div> : null}
-        <div className={`leading-[1.85] text-text-3 ${size === "lg" ? "text-[15.5px] sm:text-[18px]" : "text-[15px]"}`}>{children}</div>
+        {label ? <div className="text-sm font-bold text-gold">{label}</div> : null}
+        <div className={`leading-[1.85] text-text-3 ${size === "lg" ? "text-md sm:text-lg" : "text-md"}`}>{children}</div>
       </div>
     </div>
   );
@@ -115,8 +115,8 @@ export function Panel({ title, meta, children, className = "" }: { title?: React
     <section className={`rounded-[28px] border border-border-2 bg-card shadow-card ${className}`}>
       {title ? (
         <div className="flex items-center justify-between gap-3 border-b border-[var(--hairline-v2)] px-6 py-4">
-          <h2 className="text-[17px] font-bold text-title">{title}</h2>
-          {meta ? <div className="text-xs text-text-4">{meta}</div> : null}
+          <h2 className="text-lg font-bold text-title">{title}</h2>
+          {meta ? <div className="text-sm leading-4 text-text-4">{meta}</div> : null}
         </div>
       ) : null}
       {children}

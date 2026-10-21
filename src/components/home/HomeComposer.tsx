@@ -91,7 +91,7 @@ export function HomeComposer() {
         {CHIPS.map((c) => (
           <button key={c.label} type="button" disabled={pending}
             onClick={() => ("attach" in c ? fileRef.current?.click() : fill(c.text))}
-            className="tap glass glass-icon inline-flex h-9 shrink-0 items-center gap-[7px] rounded-full px-3.5 text-[12.5px] font-medium transition hover:text-text sm:h-[38px] sm:gap-2 sm:px-4 sm:text-[13px]">
+            className="tap glass glass-icon inline-flex h-9 shrink-0 items-center gap-[7px] rounded-full px-3.5 text-sm font-medium transition hover:text-text sm:h-[38px] sm:gap-2 sm:px-4">
             <c.Icon strokeWidth={1.8} aria-hidden className="size-3.5 sm:size-[15px]" />
             {"short" in c ? <><span className="sm:hidden">{c.short}</span><span className="hidden sm:inline">{c.label}</span></> : c.label}
           </button>
@@ -100,7 +100,7 @@ export function HomeComposer() {
       <input ref={fileRef} type="file" accept="application/pdf,image/*" className="sr-only" onChange={(e) => upload(e.target.files?.[0] ?? undefined)} />
       <div className="glass rounded-[24px] px-3 pb-2.5 pt-3.5 sm:rounded-[26px] sm:px-3.5 sm:pb-3 sm:pt-4">
         <div className="flex items-start gap-2.5 px-1 sm:gap-3 sm:px-1.5 sm:pt-0.5">
-          <span aria-hidden className="mark font-num mt-0.5 inline-flex size-[22px] shrink-0 items-center justify-center rounded-[7px] text-[11px] font-extrabold sm:size-[26px] sm:rounded-[9px] sm:text-[13px] dark:size-6 dark:border dark:border-border sm:dark:size-7">C</span>
+          <span aria-hidden className="mark font-num mt-0.5 inline-flex size-[22px] shrink-0 items-center justify-center rounded-[7px] text-xs font-extrabold sm:size-[26px] sm:rounded-[9px] sm:text-sm dark:size-6 dark:border dark:border-border sm:dark:size-7">C</span>
           <textarea
             ref={area}
             value={text}
@@ -110,12 +110,12 @@ export function HomeComposer() {
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }}
             placeholder={short ? PLACEHOLDER_SHORT : PLACEHOLDER}
             aria-label="اكتب لـ Clausia"
-            className="block min-h-[46px] min-w-0 flex-1 resize-none bg-transparent p-0 text-[16px] leading-[1.6] text-text placeholder:text-text-4 focus:outline-none sm:min-h-14 sm:text-[17px] sm:leading-[1.65]"
+            className="block min-h-[46px] min-w-0 flex-1 resize-none bg-transparent p-0 text-md leading-[1.6] text-text placeholder:text-text-4 focus:outline-none sm:min-h-14 sm:text-lg sm:leading-[1.65]"
           />
         </div>
         <div className="mt-1.5 flex items-center gap-2 sm:mt-2">
           <Round label="إضافة ورقة" onClick={() => fileRef.current?.click()} disabled={pending}><Plus strokeWidth={1.8} className="size-[17px] sm:size-[18px]" /></Round>
-          <div className="min-w-0 flex-1 truncate text-center text-[10.5px] leading-[15px] text-text-4 sm:text-start sm:text-xs" aria-live="polite">
+          <div className="min-w-0 flex-1 truncate text-center text-xs leading-[15px] text-text-4 sm:text-start sm:text-sm" aria-live="polite">
             {note ?? <span className="sm:hidden">مفيش حاجة بتتحفظ من غير موافقتك</span>}
           </div>
           <button type="button" onClick={send} disabled={pending || !text.trim()} aria-label="إرسال"
@@ -124,7 +124,7 @@ export function HomeComposer() {
           </button>
         </div>
       </div>
-      <p className="mt-2.5 hidden text-center text-[11.5px] leading-4 text-text-4 sm:block">Clausia بتجهّز، وإنت اللي بتأكد. مفيش حاجة بتتحفظ من غير موافقتك.</p>
+      <p className="mt-2.5 hidden text-center text-xs leading-4 text-text-4 sm:block">Clausia بتجهّز، وإنت اللي بتأكد. مفيش حاجة بتتحفظ من غير موافقتك.</p>
     </Dock>
   );
 }

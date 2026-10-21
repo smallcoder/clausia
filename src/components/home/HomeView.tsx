@@ -23,8 +23,8 @@ function Greeting({ text }: { text: string }) {
 function ClausiaLine({ children }: { children: ReactNode }) {
   return (
     <div className="mt-4 flex max-w-[700px] gap-2.5 sm:mt-[22px] sm:gap-3.5">
-      <span aria-hidden className="mark font-num inline-flex size-[26px] shrink-0 items-center justify-center rounded-[9px] text-[12px] font-extrabold sm:size-[30px] sm:rounded-[10px] sm:text-[14px] dark:size-[28px] dark:border dark:border-border sm:dark:size-[32px]">C</span>
-      <p className="mt-px min-w-0 text-[15.5px] leading-[1.75] text-text-3 sm:mt-0.5 sm:text-[18px] sm:leading-[1.8]">{children}</p>
+      <span aria-hidden className="mark font-num inline-flex size-[26px] shrink-0 items-center justify-center rounded-[9px] text-sm font-extrabold sm:size-[30px] sm:rounded-[10px] sm:text-base dark:size-[28px] dark:border dark:border-border sm:dark:size-[32px]">C</span>
+      <p className="mt-px min-w-0 text-md leading-[1.75] text-text-3 sm:mt-0.5 sm:text-lg sm:leading-[1.8]">{children}</p>
     </div>
   );
 }
@@ -33,8 +33,8 @@ export function HomeView({ data, displayName }: { data: HomeData; displayName: s
   const line = clausiaLine({ today: data.todays, tomorrow: data.tomorrows, undecided: data.undecided });
   return (
     <div className="mx-auto flex w-full max-w-[960px] flex-1 flex-col px-5 pt-3 leading-[normal] sm:px-6 sm:pt-[52px]">
-      <p className="text-[12px] font-semibold leading-4 tracking-[0.02em] text-text-3 sm:text-[13px] sm:leading-[17px]">{formatLongDay(data.today)}</p>
-      <h1 className="mt-1.5 text-[30px] font-bold leading-[1.2] text-title sm:mt-2 sm:text-[44px] sm:leading-[1.15] sm:tracking-[-0.01em]">
+      <p className="text-sm font-semibold leading-4 tracking-[0.02em] text-text-3 sm:leading-[17px]">{formatLongDay(data.today)}</p>
+      <h1 className="mt-1.5 text-xl font-bold leading-[1.2] text-title sm:mt-2 sm:text-2xl sm:leading-[1.15] sm:tracking-[-0.01em]">
         <Greeting text={greeting(displayName)} />
       </h1>
 

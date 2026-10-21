@@ -12,8 +12,8 @@ export function PageHeader({ title, subtitle, actions }: { title: ReactNode; sub
   return (
     <header className="mb-7 flex flex-wrap items-end justify-between gap-x-4 gap-y-3 pt-1 lg:mb-9">
       <div className="min-w-0">
-        <h1 className="text-[1.75rem] font-bold leading-tight tracking-tight text-ink lg:text-title">{title}</h1>
-        {subtitle ? <p className="mt-1.5 text-callout text-ink-2">{subtitle}</p> : null}
+        <h1 className="text-xl font-bold leading-tight tracking-tight text-ink lg:text-title">{title}</h1>
+        {subtitle ? <p className="mt-1.5 text-base leading-[1.55] text-ink-2">{subtitle}</p> : null}
       </div>
       {actions ? <div className="flex items-center gap-2">{actions}</div> : null}
     </header>
@@ -29,9 +29,9 @@ export function Card({ className, ...p }: ComponentProps<"section">) {
 export function GroupedList({ className, header, footer, children }: { className?: string; header?: ReactNode; footer?: ReactNode; children: ReactNode }) {
   return (
     <div className={className}>
-      {header ? <div className="mb-2 px-4 text-caption font-medium text-ink-3">{header}</div> : null}
+      {header ? <div className="mb-2 px-4 text-sm leading-[1.45] font-medium text-ink-3">{header}</div> : null}
       <div className="grouped overflow-hidden rounded-[var(--radius)] bg-surface shadow-1">{children}</div>
-      {footer ? <div className="mt-2 px-4 text-caption text-ink-3">{footer}</div> : null}
+      {footer ? <div className="mt-2 px-4 text-sm leading-[1.45] text-ink-3">{footer}</div> : null}
     </div>
   );
 }
@@ -44,10 +44,10 @@ export function ListRow({ href, title, subtitle, detail, leading, chevron = !!hr
     <>
       {leading ? <span className="shrink-0 text-ink-3">{leading}</span> : null}
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-body font-medium text-ink">{title}</span>
-        {subtitle ? <span className="mt-0.5 block truncate text-caption text-ink-3">{subtitle}</span> : null}
+        <span className="block truncate text-md leading-[1.6] font-medium text-ink">{title}</span>
+        {subtitle ? <span className="mt-0.5 block truncate text-sm leading-[1.45] text-ink-3">{subtitle}</span> : null}
       </span>
-      {detail ? <span className="shrink-0 text-callout text-ink-3">{detail}</span> : null}
+      {detail ? <span className="shrink-0 text-base leading-[1.55] text-ink-3">{detail}</span> : null}
       {chevron ? <ChevronLeft aria-hidden size={18} strokeWidth={1.5} className="shrink-0 text-ink-3" /> : null}
     </>
   );
@@ -58,7 +58,7 @@ export function ListRow({ href, title, subtitle, detail, leading, chevron = !!hr
 export function SectionTitle({ children, actions }: { children: ReactNode; actions?: ReactNode }) {
   return (
     <div className="mb-2.5 flex min-h-8 items-end justify-between gap-2 px-1">
-      <h2 className="text-headline font-semibold text-ink">{children}</h2>
+      <h2 className="text-lg leading-[1.3] font-semibold text-ink">{children}</h2>
       {actions}
     </div>
   );
@@ -78,7 +78,7 @@ export function Button({ variant = "primary", size = "md", className, ...p }: Co
       {...p}
       className={cx(
         "inline-flex select-none items-center justify-center gap-1.5 rounded-[var(--radius-sm)] font-semibold transition duration-150 disabled:cursor-not-allowed disabled:opacity-45",
-        size === "sm" ? "min-h-11 px-3.5 text-callout lg:min-h-9" : "min-h-11 px-5 text-body",
+        size === "sm" ? "min-h-11 px-3.5 text-base leading-[1.55] lg:min-h-9" : "min-h-11 px-5 text-md leading-[1.6]",
         BTN[variant],
         className,
       )}
@@ -87,7 +87,7 @@ export function Button({ variant = "primary", size = "md", className, ...p }: Co
 }
 
 export function LinkButton({ variant = "secondary", className, ...p }: ComponentProps<typeof Link> & { variant?: BtnVariant }) {
-  return <Link {...p} className={cx("inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[var(--radius-sm)] px-5 text-body font-semibold transition duration-150", BTN[variant], className)} />;
+  return <Link {...p} className={cx("inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[var(--radius-sm)] px-5 text-md leading-[1.6] font-semibold transition duration-150", BTN[variant], className)} />;
 }
 
 type Tone = "neutral" | "accent" | "suggest" | "ok" | "danger" | "brass";
@@ -101,7 +101,7 @@ const TONE: Record<Tone, string> = {
 };
 
 export function Badge({ tone = "neutral", children, className }: { tone?: Tone; children: ReactNode; className?: string }) {
-  return <span className={cx("inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-caption font-medium", TONE[tone], className)}>{children}</span>;
+  return <span className={cx("inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-sm leading-[1.45] font-medium", TONE[tone], className)}>{children}</span>;
 }
 
 export function EmptyState({ title, hint, action, icon: Icon = Inbox }: { title: string; hint?: string; action?: ReactNode; icon?: LucideIcon }) {
@@ -110,8 +110,8 @@ export function EmptyState({ title, hint, action, icon: Icon = Inbox }: { title:
       <span className="mb-3 flex size-12 items-center justify-center rounded-full bg-surface-2 text-ink-3">
         <Icon aria-hidden size={22} strokeWidth={1.5} />
       </span>
-      <p className="text-body font-semibold text-ink">{title}</p>
-      {hint ? <p className="mt-1 max-w-sm text-callout text-ink-3">{hint}</p> : null}
+      <p className="text-md leading-[1.6] font-semibold text-ink">{title}</p>
+      {hint ? <p className="mt-1 max-w-sm text-base leading-[1.55] text-ink-3">{hint}</p> : null}
       {action ? <div className="mt-5">{action}</div> : null}
     </div>
   );
@@ -164,7 +164,7 @@ export function SourceBadge({ row, documentName }: {
     <span className="inline-flex flex-wrap items-center gap-1">
       {suggested ? <Badge tone="suggest">مقترح · بانتظار التأكيد</Badge> : null}
       <Badge tone={row.created_by_kind === "model" ? "accent" : "neutral"}>{row.created_by_kind === "model" ? "صاغه Clausia" : "المحامي"}</Badge>
-      <span className="text-xs text-ink-3">{from}</span>
+      <span className="text-sm leading-4 text-ink-3">{from}</span>
     </span>
   );
 }

@@ -206,13 +206,13 @@ export function RollDay({ today, from, to, rows, pill, side }: Props) {
   const weekLink = (
     <a href={href({ date, view: view === "week" ? "day" : "week" })} onClick={select({ date, view: view === "week" ? "day" : "week" })}
       aria-current={view === "week" ? "page" : undefined} title={view === "week" ? "رجوع ليوم واحد" : "الأسبوع كله"}
-      className={cx("hidden h-11 items-center rounded-full text-[13px] transition sm:inline-flex", view === "week" ? "bg-selected px-4 text-on-selected" : "-mb-[8px] text-text-3 hover:text-text")}>
+      className={cx("hidden h-11 items-center rounded-full text-sm transition sm:inline-flex", view === "week" ? "bg-selected px-4 text-on-selected" : "-mb-[8px] text-text-3 hover:text-text")}>
       <span className={cx("font-num me-1 font-semibold", view === "week" ? "text-on-selected" : "text-title")}>{weekLoaded ? two(weekRows.length) : "–"}</span> جلسات الأسبوع
     </a>
   );
   const todayLink = isCurrent ? null : (
     <a href={href({ date: today, view: "day" })} onClick={select({ date: today, view: "day" })}
-      className="-mb-[8px] hidden h-11 items-center text-[13px] font-semibold text-text hover:underline sm:inline-flex">النهارده</a>
+      className="-mb-[8px] hidden h-11 items-center text-sm font-semibold text-text hover:underline sm:inline-flex">النهارده</a>
   );
   const eyebrow = view === "week"
     ? <>أسبوع {arDayMonth(wk)} – {arDayMonth(addDaysIso(wk, 6))}</>
@@ -270,11 +270,11 @@ function Content({ s, today, cache, select }: { s: Sel; today: string; cache: Ca
         {groupBy(weekRows, (h) => h.hearing_date).map((d) => (
           <section key={d.key}>
             <div className="flex items-baseline justify-between gap-3 px-1 pb-3.5 sm:px-2">
-              <h2 className="flex items-center gap-2.5 text-[17px] font-bold text-title sm:text-[19px]">
+              <h2 className="flex items-center gap-2.5 text-lg font-bold text-title">
                 <a href={href({ date: d.key, view: "day" })} onClick={select({ date: d.key, view: "day" })} className="hover:underline">{WEEKDAY_LONG[weekdayOf(d.key)]} {arDayMonth(d.key)}</a>
                 {d.key === today ? <StatusChip tone="accent">النهارده</StatusChip> : null}
               </h2>
-              <span className="text-[12.5px] text-text-3">{nHearings(d.items.length)}</span>
+              <span className="text-sm text-text-3">{nHearings(d.items.length)}</span>
             </div>
             <Timeline rows={d.items} today={today} showToday />
           </section>
@@ -298,8 +298,8 @@ function Content({ s, today, cache, select }: { s: Sel; today: string; cache: Ca
   return (
     <>
       <div className="hidden items-baseline justify-between gap-3 px-2 pb-3.5 sm:flex">
-        <h2 className="text-[19px] font-bold text-title">{dayName(date, today)}</h2>
-        {dayRows.length ? <span className="text-[12.5px] text-text-3">{nHearings(dayRows.length)} · {nCourts(nCourt)}</span> : null}
+        <h2 className="text-lg font-bold text-title">{dayName(date, today)}</h2>
+        {dayRows.length ? <span className="text-sm text-text-3">{nHearings(dayRows.length)} · {nCourts(nCourt)}</span> : null}
       </div>
       {dayRows.length ? (
         <Timeline rows={dayRows} today={today} next={nx?.h} label={nextLabel} />

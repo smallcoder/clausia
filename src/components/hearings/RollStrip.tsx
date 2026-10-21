@@ -324,7 +324,7 @@ export function RollStrip({ center, selected, focusDay, today, counts, pinned, o
   return (
     <div className="mt-[18px] leading-[normal] sm:mt-[26px]">
       <div className="flex h-7 items-center justify-between gap-3 px-1 sm:px-2">
-        <span className="text-[12.5px] text-text-3" data-roll-month>{arMonthYear(mid)}</span>
+        <span className="text-sm text-text-3" data-roll-month>{arMonthYear(mid)}</span>
         {/* screen readers: the month in view and the selected day, announced politely when they change */}
         <div role="status" aria-live="polite" className="sr-only" data-roll-status>
           <span>{arMonthYear(mid)}</span>
@@ -332,7 +332,7 @@ export function RollStrip({ center, selected, focusDay, today, counts, pinned, o
         </div>
         {todayOut ? (
           <button type="button" onClick={() => { pick(today, "today"); bring(tileOf(weekStart(today)) ? weekStart(today) : today, "start"); }}
-            className="tap fade-enter inline-flex h-7 items-center rounded-full border border-[var(--accent-edge)] px-3 text-[12px] font-semibold text-gold transition hover:bg-[var(--accent-wash)]">
+            className="tap fade-enter inline-flex h-7 items-center rounded-full border border-[var(--accent-edge)] px-3 text-sm font-semibold text-gold transition hover:bg-[var(--accent-wash)]">
             النهارده
           </button>
         ) : null}
@@ -360,10 +360,10 @@ export function RollStrip({ center, selected, focusDay, today, counts, pinned, o
                     on ? "text-on-selected duration-200 delay-100" : "text-text duration-0 hover:bg-card-2",
                     solid && "bg-selected shadow-[0_4px_10px_-4px_var(--backdrop)]",
                     !on && d === today && "ring-1 ring-inset ring-[var(--accent-edge)]")}>
-                  <span className={cx("block text-[10.5px] transition-colors sm:text-[12px]", on ? "text-on-selected/80 duration-200 delay-100" : cx("duration-0", d === today ? "font-semibold text-gold" : "text-text-3"))}>
+                  <span className={cx("block text-xs transition-colors sm:text-sm", on ? "text-on-selected/80 duration-200 delay-100" : cx("duration-0", d === today ? "font-semibold text-gold" : "text-text-3"))}>
                     <span className="sm:hidden">{WEEKDAY_SHORT[wd]}</span><span className="hidden sm:inline">{WEEKDAY_LONG[wd]}</span>
                   </span>
-                  <span className={cx("font-num mt-0.5 block text-[19px] leading-[1.1] sm:mt-[3px] sm:text-[26px]", on ? "font-medium" : "font-light")}>{Number(d.slice(8))}</span>
+                  <span className={cx("font-num mt-0.5 block text-lg leading-[1.1] sm:mt-[3px] sm:text-xl", on ? "font-medium" : "font-light")}>{Number(d.slice(8))}</span>
                   <span aria-hidden className="mt-[5px] flex h-1 justify-center gap-[2px] sm:mt-1.5 sm:h-[5px] sm:gap-[3px]">
                     {Array.from({ length: Math.min(n, 6) }, (_, i) => <span key={i} className={cx("size-1 rounded-full transition-colors sm:size-[5px]", on ? "bg-on-selected/85 duration-200 delay-100" : "bg-text-4 duration-0")} />)}
                   </span>

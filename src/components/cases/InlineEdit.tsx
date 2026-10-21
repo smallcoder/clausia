@@ -7,7 +7,7 @@ import type { EditState } from "@/app/(app)/cases/actions";
 
 type Action = (prev: EditState, form: FormData) => Promise<EditState>;
 
-const field = "w-full rounded-2xl border border-border bg-field px-3.5 text-[15px] text-text placeholder:text-text-4 focus:border-gold focus:outline-none";
+const field = "w-full rounded-2xl border border-border bg-field px-3.5 text-md text-text placeholder:text-text-4 focus:border-gold focus:outline-none";
 
 export function InlineEdit({
   action, hidden, initial, display, placeholder, options, multiline, hint, label = "تعديل", startOpen = false,
@@ -42,7 +42,7 @@ export function InlineEdit({
     return (
       <span className="inline-flex flex-wrap items-baseline gap-x-2">
         <span>{display}</span>
-        <button type="button" onClick={() => setOpen(true)} className="-my-2 inline-flex min-h-11 items-center px-2 text-[13px] font-semibold text-text-2 hover:text-text hover:underline">{label}</button>
+        <button type="button" onClick={() => setOpen(true)} className="-my-2 inline-flex min-h-11 items-center px-2 text-sm font-semibold text-text-2 hover:text-text hover:underline">{label}</button>
       </span>
     );
   }
@@ -58,11 +58,11 @@ export function InlineEdit({
       ) : (
         <input name="value" defaultValue={initial} className={`${field} h-11`} placeholder={placeholder} autoFocus={!startOpen} autoComplete="off" />
       )}
-      {hint ? <p className="text-[12.5px] leading-5 text-text-3">{hint}</p> : null}
-      {state?.error ? <p className="rounded-xl bg-bad-bg px-3 py-2 text-[14px] text-bad" role="alert">{state.error}</p> : null}
+      {hint ? <p className="text-sm leading-5 text-text-3">{hint}</p> : null}
+      {state?.error ? <p className="rounded-xl bg-bad-bg px-3 py-2 text-base text-bad" role="alert">{state.error}</p> : null}
       <div className="flex gap-2">
-        <button disabled={pending} className="bg-primary-fill inline-flex h-11 items-center justify-center rounded-full px-6 text-[15px] font-bold transition disabled:opacity-60">{pending ? "بيتحفظ…" : "حفظ"}</button>
-        <button type="button" onClick={close} className="inline-flex h-11 items-center rounded-full border border-border bg-chip px-5 text-[15px] text-text-2">إلغاء</button>
+        <button disabled={pending} className="bg-primary-fill inline-flex h-11 items-center justify-center rounded-full px-6 text-md font-bold transition disabled:opacity-60">{pending ? "بيتحفظ…" : "حفظ"}</button>
+        <button type="button" onClick={close} className="inline-flex h-11 items-center rounded-full border border-border bg-chip px-5 text-md text-text-2">إلغاء</button>
       </div>
     </form>
   );

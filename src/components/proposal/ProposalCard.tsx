@@ -230,9 +230,9 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
   }
 
   /** quiet outline pill (the mockup's «عدّل»); per-row secondary actions use it too */
-  const btn2 = "inline-flex h-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-border-2 px-[18px] text-[13.5px] font-medium glass-icon transition hover:text-text disabled:opacity-50";
+  const btn2 = "inline-flex h-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-border-2 px-[18px] text-base font-medium glass-icon transition hover:text-text disabled:opacity-50";
   /** text-only actions on the card's second footer line (save as suggestions, reject all) */
-  const quiet = "inline-flex min-h-11 items-center rounded-full px-3 text-[12.5px] text-text-3 transition hover:text-text disabled:opacity-50";
+  const quiet = "inline-flex min-h-11 items-center rounded-full px-3 text-sm text-text-3 transition hover:text-text disabled:opacity-50";
 
   const card = (inSheet: boolean) => {
     const limit = !inSheet && p.ops.length > MOBILE_ROWS + 1 && openOps.length > 0;
@@ -246,8 +246,8 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
             <FolderClosed aria-hidden size={18} strokeWidth={2} />
           </span>
           <div className="min-w-0 flex-1">
-            <p id={inSheet ? `sheet-title-${p.id}` : undefined} className="text-[15px] font-bold leading-[normal] text-title">{titleOf(p)}</p>
-            <p className="mt-0.5 text-[11.5px] leading-[normal] text-text-3">
+            <p id={inSheet ? `sheet-title-${p.id}` : undefined} className="text-md font-bold leading-[normal] text-title">{titleOf(p)}</p>
+            <p className="mt-0.5 text-xs leading-[normal] text-text-3">
               {openOps.length ? <><span className="font-num">{itemsLabel(p.ops.length)}</span> · مش هيتحفظ حاجة قبل ما تأكد</> : decisionSummary(p)}
             </p>
           </div>
@@ -280,14 +280,14 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
               <li key={o.op_id} className={cx("not-first:border-t not-first:border-[var(--hairline-v2)]", o.status === "rejected" && "opacity-55", limit && i >= MOBILE_ROWS && "lg:block hidden")}>
                 {/* kind · value (+ fact quote) · source · check — the mockup's hairline row */}
                 <div className="flex items-start gap-3.5 px-4 py-[13px] sm:px-[22px]">
-                  <span className="w-[58px] shrink-0 pt-0.5 text-[11.5px] leading-[normal] text-text-4 sm:w-[72px]">{kindOf(o)}</span>
+                  <span className="w-[58px] shrink-0 pt-0.5 text-xs leading-[normal] text-text-4 sm:w-[72px]">{kindOf(o)}</span>
                   <button type="button" onClick={() => toggle(o.op_id)} aria-expanded={isOpen} title={isOpen ? "اقفل التفاصيل" : "اعرض التفاصيل"} className="min-w-0 flex-1 text-start">
-                    <span className={cx("block text-[13.5px] font-semibold leading-[1.5] text-text sm:text-[14.5px]", !isOpen && "line-clamp-2")}>
+                    <span className={cx("block text-base font-semibold leading-[1.5] text-text", !isOpen && "line-clamp-2")}>
                       {summaryOf({ ...o, args: merged }) || OP_TITLE[o.tool]}
                     </span>
-                    {factQuote && !isOpen ? <span className="text-doc mt-[3px] line-clamp-2 text-[13px] leading-[1.8]! text-text-3">«{factQuote}»</span> : null}
+                    {factQuote && !isOpen ? <span className="text-doc mt-[3px] line-clamp-2 text-sm leading-[1.8]! text-text-3">«{factQuote}»</span> : null}
                     <span className="mt-[3px] flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                      <span className="text-[11px] leading-[normal] text-text-4">{sourceShort(o)}</span>
+                      <span className="text-xs leading-[normal] text-text-4">{sourceShort(o)}</span>
                       {tags}
                     </span>
                   </button>
@@ -312,7 +312,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
                     {isEditing ? (
                       <EditFields op={o} values={merged} onChange={(k, v) => setEdits((e) => ({ ...e, [o.op_id]: { ...(e[o.op_id] ?? {}), [k]: v } }))} display={display} />
                     ) : (
-                      <dl className="grid grid-cols-[minmax(4.5rem,7.5rem)_1fr] gap-x-4 gap-y-1.5 text-[13.5px]">
+                      <dl className="grid grid-cols-[minmax(4.5rem,7.5rem)_1fr] gap-x-4 gap-y-1.5 text-base">
                         {OP_FIELDS[o.tool].map((f) => {
                           const v = display(f, merged[f.key]);
                           return v === null ? null : (
@@ -326,31 +326,31 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
                     )}
 
                     <div className="rounded-[14px] border border-border-2 bg-card-2 px-3.5 py-2.5">
-                      <p className="text-[11.5px] text-text-3">{sourceLong(o)}</p>
-                      {o.source.quote ? <p className="text-doc mt-1 text-[15px] text-text">«{o.source.quote}»</p> : <p className="mt-1 text-xs text-text-4">بدون اقتباس</p>}
-                      {!o.quote_verified ? <p className="mt-1.5 text-xs font-medium text-gold">ما لقيتش النص ده في المصدر، راجعه</p> : null}
+                      <p className="text-xs text-text-3">{sourceLong(o)}</p>
+                      {o.source.quote ? <p className="text-doc mt-1 text-md text-text">«{o.source.quote}»</p> : <p className="mt-1 text-sm leading-4 text-text-4">بدون اقتباس</p>}
+                      {!o.quote_verified ? <p className="mt-1.5 text-sm leading-4 font-medium text-gold">ما لقيتش النص ده في المصدر، راجعه</p> : null}
                     </div>
 
-                    {o.status === "failed" && o.error ? <p className="rounded-xl bg-bad-bg px-3 py-2 text-[13px] text-bad">{o.error}</p> : null}
-                    {o.result_id && o.tool === "create_case" ? <Link href={`/cases/${o.result_id}`} className="inline-flex min-h-11 items-center text-[13.5px] font-semibold text-text hover:underline">فتح ملف القضية ←</Link> : null}
+                    {o.status === "failed" && o.error ? <p className="rounded-xl bg-bad-bg px-3 py-2 text-sm text-bad">{o.error}</p> : null}
+                    {o.result_id && o.tool === "create_case" ? <Link href={`/cases/${o.result_id}`} className="inline-flex min-h-11 items-center text-base font-semibold text-text hover:underline">فتح ملف القضية ←</Link> : null}
 
                     {live ? (
                       <div className="flex flex-wrap items-center gap-2">
                         <button type="button" disabled={pending || !!lone} title={lone ?? undefined} onClick={() => decide("confirm", [o.op_id])}
-                          className="bg-primary-fill inline-flex h-11 items-center gap-1.5 rounded-full px-[18px] text-[13.5px] font-bold transition disabled:opacity-50">
+                          className="bg-primary-fill inline-flex h-11 items-center gap-1.5 rounded-full px-[18px] text-base font-bold transition disabled:opacity-50">
                           <Check aria-hidden size={15} strokeWidth={2.6} />احفظ ده
                         </button>
                         <button type="button" disabled={pending} onClick={() => setEditing(isEditing ? null : o.op_id)} className={btn2}>
                           {isEditing ? "خلّصت التعديل" : "تعديل"}
                         </button>
                         <button type="button" disabled={pending} onClick={() => decide("reject", [o.op_id])}
-                          className={cx(quiet, "gap-1 text-[13px] hover:text-bad")}>
+                          className={cx(quiet, "gap-1 text-sm hover:text-bad")}>
                           <X aria-hidden size={15} strokeWidth={2.4} />ارفض
                         </button>
-                        {lone ? <p className="basis-full text-xs text-text-4">{lone}</p> : null}
+                        {lone ? <p className="basis-full text-sm leading-4 text-text-4">{lone}</p> : null}
                       </div>
                     ) : null}
-                    {live && sel && hard ? <p className="text-xs text-text-4">{hard}</p> : null}
+                    {live && sel && hard ? <p className="text-sm leading-4 text-text-4">{hard}</p> : null}
                   </div>
                 ) : null}
               </li>
@@ -359,14 +359,14 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
           {limit ? (
             <li className="border-t border-[var(--hairline-v2)] lg:hidden">
               <button type="button" onClick={() => setSheet(true)} aria-haspopup="dialog"
-                className="flex min-h-11 w-full items-center justify-center gap-1 px-4 py-3 text-[13px] font-semibold text-text-2 hover:text-text">
+                className="flex min-h-11 w-full items-center justify-center gap-1 px-4 py-3 text-sm font-semibold text-text-2 hover:text-text">
                 كل العناصر · <span className="font-num">{itemsLabel(p.ops.length)}</span>
               </button>
             </li>
           ) : null}
         </ul>
 
-        {error ? <p className="mx-4 mt-3 shrink-0 rounded-xl bg-bad-bg px-3 py-2 text-[13.5px] text-bad sm:mx-[22px]">{error}</p> : null}
+        {error ? <p className="mx-4 mt-3 shrink-0 rounded-xl bg-bad-bg px-3 py-2 text-base text-bad sm:mx-[22px]">{error}</p> : null}
 
         <div className={cx("shrink-0 border-t border-[var(--hairline-v2)] px-4 pt-3.5 sm:px-[22px]", openOps.length && more ? "pb-2" : "pb-4",
           inSheet && (openOps.length && more ? "pb-[calc(0.5rem+env(safe-area-inset-bottom))]" : "pb-[calc(1rem+env(safe-area-inset-bottom))]"))}>
@@ -374,7 +374,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
             <>
               <div className="flex gap-2">
                 <button type="button" disabled={pending || !chosen.length} onClick={() => decide("confirm", chosen.map((o) => o.op_id))}
-                  className="bg-primary-fill h-11 min-w-0 flex-1 truncate rounded-full px-5 text-[14.5px] font-bold transition disabled:opacity-50">
+                  className="bg-primary-fill h-11 min-w-0 flex-1 truncate rounded-full px-5 text-base font-bold transition disabled:opacity-50">
                   {pending ? "بحفظ…" : <>{newCase ? "احفظ الملف" : "احفظ"} · <span className="font-num">{itemsLabel(chosen.length)}</span></>}
                 </button>
                 {/* mobile: opens the sheet with every open row expanded; desktop (and inside the sheet): expands / collapses the rows */}
@@ -396,8 +396,8 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
             </>
           ) : (
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-[13.5px] text-text-2">{decisionSummary(p)}</p>
-              {caseLink ? <Link href={`/cases/${caseLink}`} className="inline-flex min-h-11 items-center text-[13.5px] font-semibold text-text hover:underline">فتح ملف القضية ←</Link> : null}
+              <p className="text-base text-text-2">{decisionSummary(p)}</p>
+              {caseLink ? <Link href={`/cases/${caseLink}`} className="inline-flex min-h-11 items-center text-base font-semibold text-text hover:underline">فتح ملف القضية ←</Link> : null}
             </div>
           )}
         </div>
@@ -409,7 +409,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
   if (!openOps.length && !showDecided) {
     const saved = p.ops.filter((o) => o.status === "confirmed" || o.status === "suggested").length;
     return (
-      <div className="flex min-h-[52px] items-center gap-2.5 rounded-[18px] border border-border-2 bg-card py-1 pe-2 ps-4 text-[13.5px] shadow-soft">
+      <div className="flex min-h-[52px] items-center gap-2.5 rounded-[18px] border border-border-2 bg-card py-1 pe-2 ps-4 text-base shadow-soft">
         <span aria-hidden className="inline-flex size-[22px] shrink-0 items-center justify-center rounded-full bg-good-bg text-good"><Check size={12} strokeWidth={2.6} /></span>
         <button type="button" onClick={() => setShowDecided(true)} aria-expanded={false} title="اعرض التفاصيل"
           className="inline-flex min-h-11 min-w-0 flex-1 items-center gap-1.5 text-start font-semibold text-text hover:text-title">
@@ -425,7 +425,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
   return (
     <>
       {!openOps.length ? (
-        <button type="button" onClick={() => setShowDecided(false)} className="mb-1.5 inline-flex min-h-11 items-center gap-1 text-[13px] font-semibold text-text-3 hover:text-text">
+        <button type="button" onClick={() => setShowDecided(false)} className="mb-1.5 inline-flex min-h-11 items-center gap-1 text-sm font-semibold text-text-3 hover:text-text">
           <ChevronDown aria-hidden size={14} strokeWidth={2} className="rotate-180" />اطوِ البطاقة
         </button>
       ) : null}
@@ -443,7 +443,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
 function Tag({ tone, children }: { tone: "neutral" | "warn" | "bad"; children: React.ReactNode }) {
   // v2 status: a small dot + a word (gold = needs the lawyer, red = failed, muted = info)
   const [dot, txt] = { neutral: ["bg-text-4", "text-text-3"], warn: ["bg-gold", "text-gold"], bad: ["bg-bad", "text-bad"] }[tone];
-  return <span className={cx("inline-flex items-center gap-1 text-[11px] font-semibold leading-[18px]", txt)}><span aria-hidden className={cx("size-1.5 rounded-full", dot)} />{children}</span>;
+  return <span className={cx("inline-flex items-center gap-1 text-xs font-semibold leading-[18px]", txt)}><span aria-hidden className={cx("size-1.5 rounded-full", dot)} />{children}</span>;
 }
 
 function decisionSummary(p: Proposal) {
@@ -455,14 +455,14 @@ function decisionSummary(p: Proposal) {
 function EditFields({ op, values, onChange, display }: {
   op: ProposalOp; values: Record<string, unknown>; onChange: (k: string, v: unknown) => void; display: (f: FieldSpec, v: unknown) => string | null;
 }) {
-  const input = "min-h-11 w-full rounded-[14px] border border-border bg-field px-3 py-2 text-[15px] text-text focus:border-text-4 focus:outline-none";
+  const input = "min-h-11 w-full rounded-[14px] border border-border bg-field px-3 py-2 text-md text-text focus:border-text-4 focus:outline-none";
   return (
     <div className="space-y-2.5">
       {OP_FIELDS[op.tool].map((f) => {
         const v = values[f.key];
         const id = `${op.op_id}-${f.key}`;
         let control;
-        if (f.type === "ref") control = <p className="py-1 text-sm text-text-2">{display(f, v) ?? "—"}</p>;
+        if (f.type === "ref") control = <p className="py-1 text-base leading-5 text-text-2">{display(f, v) ?? "—"}</p>;
         else if (f.type === "bool") control = <input id={id} type="checkbox" checked={!!v} onChange={(e) => onChange(f.key, e.target.checked)} className="h-4 w-4 accent-[var(--primary)]" />;
         else if (typeof f.type === "object") {
           control = (
@@ -482,7 +482,7 @@ function EditFields({ op, values, onChange, display }: {
         }
         return (
           <div key={f.key} className={cx(f.type === "bool" && "flex items-center gap-2")}>
-            <label htmlFor={id} className={cx("text-xs text-text-3", f.type !== "bool" && "mb-1 block")}>{f.label}</label>
+            <label htmlFor={id} className={cx("text-sm leading-4 text-text-3", f.type !== "bool" && "mb-1 block")}>{f.label}</label>
             {control}
           </div>
         );

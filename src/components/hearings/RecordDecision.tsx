@@ -12,7 +12,7 @@ import { DECISION } from "@/lib/labels";
 import { recordDecisionAction, type HearingFormState } from "./actions";
 import { useDecisionNotice } from "./DecisionNotices";
 
-const sheetInput = "h-11 w-full rounded-2xl border border-border bg-field px-3 text-[15px] text-text placeholder:text-text-4 focus:border-gold focus:outline-none";
+const sheetInput = "h-11 w-full rounded-2xl border border-border bg-field px-3 text-md text-text placeholder:text-text-4 focus:border-gold focus:outline-none";
 
 export function RecordDecision({ hearingId, caseId, hearingDate, label, compact = false, layout = "inline", onSaved, onCancel }: {
   hearingId: string;
@@ -46,7 +46,7 @@ export function RecordDecision({ hearingId, caseId, hearingDate, label, compact 
   if (state?.ok) {
     if (notify || onSaved) return null;
     return (
-      <p className="mt-2 rounded-2xl bg-good-bg px-4 py-2.5 text-[14px] text-good" role="status">
+      <p className="mt-2 rounded-2xl bg-good-bg px-4 py-2.5 text-base text-good" role="status">
         تم حفظ القرار.
         {state.nextDate ? <> الجلسة القادمة: <span className="num font-num font-bold">{formatDmy(state.nextDate)}</span></> : null}
       </p>
@@ -56,7 +56,7 @@ export function RecordDecision({ hearingId, caseId, hearingDate, label, compact 
   if (!open) {
     return (
       <button type="button" onClick={() => setOpen(true)}
-        className={cx("inline-flex h-11 items-center rounded-full px-5 text-[14px] font-bold transition",
+        className={cx("inline-flex h-11 items-center rounded-full px-5 text-base font-bold transition",
           compact ? "-ms-1 mt-1 border border-border bg-chip text-text-2 shadow-soft hover:text-text" : "bg-primary-fill mt-3")}>
         سجّل القرار
       </button>
@@ -78,13 +78,13 @@ export function RecordDecision({ hearingId, caseId, hearingDate, label, compact 
         {hidden}
         <input type="hidden" name="decision" value={decision} />
         <fieldset>
-          <legend className="mb-2 text-[13px] font-semibold text-text-3">القرار</legend>
+          <legend className="mb-2 text-sm font-semibold text-text-3">القرار</legend>
           <div className="flex flex-wrap gap-2" role="radiogroup" aria-invalid={err?.field === "decision" || undefined}>
             {Object.entries(DECISION).map(([k, v]) => {
               const on = decision === k;
               return (
                 <button key={k} type="button" role="radio" aria-checked={on} onClick={() => setDecision(k)}
-                  className={cx("h-11 rounded-full px-4 text-[14px] transition",
+                  className={cx("h-11 rounded-full px-4 text-base transition",
                     on ? "bg-primary-fill font-bold" : "border border-border bg-chip text-text-2 shadow-soft hover:text-text",
                     !on && err?.field === "decision" && "border-bad")}>
                   {v}
@@ -94,26 +94,26 @@ export function RecordDecision({ hearingId, caseId, hearingDate, label, compact 
           </div>
         </fieldset>
         <label className="block">
-          <span className="mb-1.5 block text-[13px] font-semibold text-text-3">نص القرار</span>
+          <span className="mb-1.5 block text-sm font-semibold text-text-3">نص القرار</span>
           <input name="decision_text" value={text} onChange={(e) => setText(e.target.value)} className={sheetInput} placeholder="زي ما سمعته في الجلسة، مثلاً: أجلت لتقديم المستندات" autoComplete="off" />
         </label>
         <label className="block">
-          <span className="mb-1.5 block text-[13px] font-semibold text-text-3">الجلسة القادمة{postponed ? " (مطلوب مع التأجيل)" : ""}</span>
+          <span className="mb-1.5 block text-sm font-semibold text-text-3">الجلسة القادمة{postponed ? " (مطلوب مع التأجيل)" : ""}</span>
           <input name="next_date" value={nextDate} onChange={(e) => setNextDate(e.target.value)} dir="ltr" inputMode="numeric" placeholder="يوم/شهر/سنة" autoComplete="off"
             aria-invalid={err?.field === "next_date" || undefined}
             className={cx(sheetInput, "num text-start", err?.field === "next_date" && "border-bad")} />
         </label>
         <label className="block">
-          <span className="mb-1.5 block text-[13px] font-semibold text-text-3">المطلوب للجلسة القادمة</span>
+          <span className="mb-1.5 block text-sm font-semibold text-text-3">المطلوب للجلسة القادمة</span>
           <input name="next_requirements" value={needed} onChange={(e) => setNeeded(e.target.value)} className={sheetInput} placeholder="مثلاً: إعلان الخصم، تقديم أصل العقد" autoComplete="off" />
         </label>
-        {err ? <p className="rounded-[12px] bg-bad-bg px-3 py-2 text-[14px] text-bad" role="alert">{err.error}</p> : null}
+        {err ? <p className="rounded-[12px] bg-bad-bg px-3 py-2 text-base text-bad" role="alert">{err.error}</p> : null}
         <div className="flex items-center gap-2 pt-1">
-          <button type="submit" disabled={pending} className="bg-primary-fill inline-flex h-11 flex-1 items-center justify-center rounded-full px-5 text-[15px] font-bold transition disabled:opacity-60">
+          <button type="submit" disabled={pending} className="bg-primary-fill inline-flex h-11 flex-1 items-center justify-center rounded-full px-5 text-md font-bold transition disabled:opacity-60">
             {pending ? "جارٍ الحفظ…" : "حفظ القرار"}
           </button>
           {cancel ? (
-            <button type="button" onClick={cancel} disabled={pending} className="inline-flex h-11 items-center rounded-full border border-border bg-card-2 px-5 text-[15px] text-text-2">
+            <button type="button" onClick={cancel} disabled={pending} className="inline-flex h-11 items-center rounded-full border border-border bg-card-2 px-5 text-md text-text-2">
               إلغاء
             </button>
           ) : null}

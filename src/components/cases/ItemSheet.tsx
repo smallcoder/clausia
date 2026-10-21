@@ -37,7 +37,7 @@ export function TapItem({ id, title, row, children, className = "", tight = fals
           <div className="px-5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-4">
             <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-border sm:hidden" aria-hidden />
             <div className="flex items-center justify-between gap-3">
-              <h2 className="text-[17px] font-bold text-text">{title}</h2>
+              <h2 className="text-lg font-bold text-text">{title}</h2>
               <button type="button" onClick={close} aria-label="إغلاق"
                 className="inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-border bg-card-2 text-text-3 hover:text-text">
                 <X size={18} strokeWidth={2} />
@@ -63,11 +63,11 @@ export function SheetReview({ table, id, caseId }: { table: string; id: string; 
     <div className="flex gap-2">
       <form action={reviewItem} onSubmit={close} className="flex-1">
         <Hidden v={{ ...base, status: "confirmed" }} />
-        <button className="bg-primary-fill h-11 w-full rounded-full text-[15px] font-bold">تأكيد</button>
+        <button className="bg-primary-fill h-11 w-full rounded-full text-md font-bold">تأكيد</button>
       </form>
       <form action={reviewItem} onSubmit={close} className="flex-1">
         <Hidden v={{ ...base, status: "rejected" }} />
-        <button className="h-11 w-full rounded-full border border-border bg-card-2 text-[15px] font-semibold text-bad">رفض</button>
+        <button className="h-11 w-full rounded-full border border-border bg-card-2 text-md font-semibold text-bad">رفض</button>
       </form>
     </div>
   );
@@ -83,7 +83,7 @@ export function SheetEditText({ table, id, caseId, initial }: { table: string; i
   if (!editing) {
     return (
       <button type="button" onClick={() => setEditing(true)}
-        className="h-11 w-full rounded-full border border-border bg-chip text-[15px] text-text-2 shadow-soft hover:text-text">
+        className="h-11 w-full rounded-full border border-border bg-chip text-md text-text-2 shadow-soft hover:text-text">
         تعديل النص
       </button>
     );
@@ -92,11 +92,11 @@ export function SheetEditText({ table, id, caseId, initial }: { table: string; i
     <form action={action} className="space-y-2">
       <Hidden v={{ table, id, case_id: caseId }} />
       <textarea name="value" defaultValue={initial} rows={4} autoFocus aria-label="نص البند"
-        className="text-doc block w-full resize-y rounded-2xl border border-border bg-field px-3.5 py-2.5 text-[15px] text-text focus:outline-none focus:border-gold" />
-      {state?.error ? <p className="text-[13px] text-bad">{state.error}</p> : null}
+        className="text-doc block w-full resize-y rounded-2xl border border-border bg-field px-3.5 py-2.5 text-md text-text focus:outline-none focus:border-gold" />
+      {state?.error ? <p className="text-sm text-bad">{state.error}</p> : null}
       <div className="flex gap-2">
-        <button disabled={pending} className="bg-primary-fill h-11 flex-1 rounded-full text-[15px] font-bold disabled:opacity-50">{pending ? "بيتحفظ…" : "حفظ"}</button>
-        <button type="button" onClick={() => setEditing(false)} className="h-11 flex-1 rounded-full border border-border bg-card-2 text-[15px] text-text-2">إلغاء</button>
+        <button disabled={pending} className="bg-primary-fill h-11 flex-1 rounded-full text-md font-bold disabled:opacity-50">{pending ? "بيتحفظ…" : "حفظ"}</button>
+        <button type="button" onClick={() => setEditing(false)} className="h-11 flex-1 rounded-full border border-border bg-card-2 text-md text-text-2">إلغاء</button>
       </div>
     </form>
   );

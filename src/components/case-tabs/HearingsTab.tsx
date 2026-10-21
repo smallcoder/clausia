@@ -33,8 +33,8 @@ function HearingRow({ h, today, nextUp, last, caseId }: { h: Row; today: string;
   return (
     <li id={`h-${h.id}`} className="flex scroll-mt-24 gap-2.5 sm:gap-3.5">
       <span className="w-[68px] shrink-0 pt-px sm:w-[84px]">
-        <span className="num font-num block text-[12.5px] font-semibold leading-[22px] text-title sm:text-[13px]">{formatDmy(h.hearing_date)}</span>
-        <span className="block text-[11px] text-text-4 sm:text-[11.5px]">{formatDayLabel(h.hearing_date).split(" ")[0]}</span>
+        <span className="num font-num block text-sm font-semibold leading-[22px] text-title">{formatDmy(h.hearing_date)}</span>
+        <span className="block text-xs text-text-4">{formatDayLabel(h.hearing_date).split(" ")[0]}</span>
       </span>
       <span className="flex w-2.5 shrink-0 flex-col items-center sm:w-3" aria-hidden>
         <span className={cx("mt-2 size-[7px] shrink-0 rounded-full", dot)} />
@@ -44,18 +44,18 @@ function HearingRow({ h, today, nextUp, last, caseId }: { h: Row; today: string;
         <div className="flex min-h-[23px] flex-wrap items-center gap-1.5">
           <DecisionBadge h={h} today={today} />
           {h.review_status === "suggested" ? <StatusChip tone="warn">مقترحة · راجعها</StatusChip> : null}
-          {nextUp && !h.decision_type && h.hearing_date > today ?<span className="text-[12px] font-semibold text-text-3">الجلسة الجاية</span> : null}
+          {nextUp && !h.decision_type && h.hearing_date > today ?<span className="text-sm font-semibold text-text-3">الجلسة الجاية</span> : null}
         </div>
-        <div className="mt-1.5 max-w-[680px] space-y-1 text-[15px] leading-[1.75]">
+        <div className="mt-1.5 max-w-[680px] space-y-1 text-md leading-[1.75]">
           {h.purpose ? <p className="text-text"><span className="text-text-3">المطلوب: </span>{h.purpose}</p> : null}
           {h.decision_text ? <p className="text-text"><span className="text-text-3">القرار: </span>{h.decision_text}</p> : null}
           {h.next_requirements ? <p className="text-text"><span className="text-text-3">المطلوب للجلسة الجاية: </span>{h.next_requirements}</p> : null}
           {!h.purpose && !h.decision_text && !h.next_requirements && !held ? <p className="text-text-3">لسه مفيش مطلوب متسجل للجلسة دي.</p> : null}
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-x-3">
-          <span className="text-[12px] text-text-4">{sourceLine(h)}</span>
+          <span className="text-sm text-text-4">{sourceLine(h)}</span>
           {h.next_hearing_id ? (
-            <a href={`#h-${h.next_hearing_id}`} className="inline-flex min-h-11 items-center text-[13px] font-semibold text-text-2 hover:text-text hover:underline sm:min-h-8">
+            <a href={`#h-${h.next_hearing_id}`} className="inline-flex min-h-11 items-center text-sm font-semibold text-text-2 hover:text-text hover:underline sm:min-h-8">
               الجلسة التالية&nbsp;<span className="num font-num">{formatDmy(h.next_date)}</span>&nbsp;←
             </a>
           ) : null}
@@ -84,7 +84,7 @@ export async function HearingsTab({ caseId }: { caseId: string }) {
               {rows.map((h, i) => <HearingRow key={h.id} h={h} today={today} nextUp={h.id === nextUp} last={i === rows.length - 1} caseId={caseId} />)}
             </ol>
           ) : (
-            <p className="px-5 py-5 text-[14px] leading-7 text-text-3">لسه مفيش جلسات متسجلة للقضية دي. أضف أول جلسة بتاريخها، أو قول لـ Clausia ميعادها.</p>
+            <p className="px-5 py-5 text-base leading-7 text-text-3">لسه مفيش جلسات متسجلة للقضية دي. أضف أول جلسة بتاريخها، أو قول لـ Clausia ميعادها.</p>
           )}
           <div className="overflow-hidden rounded-b-[22px] border-t border-border-2">
             <AddHearing caseId={caseId} />

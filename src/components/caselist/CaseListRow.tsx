@@ -40,7 +40,7 @@ export interface RowFlags { decision: boolean; review: boolean; againstUs: boole
 function Tag({ tone, children }: { tone: "warn" | "neutral" | "bad"; children: React.ReactNode }) {
   const [dot, text] = { warn: ["bg-gold", "text-gold"], neutral: ["bg-text-3", "text-text-3"], bad: ["bg-bad", "text-bad"] }[tone];
   return (
-    <span className={`inline-flex items-center gap-1 text-[10.5px] font-semibold leading-[15px] md:gap-[7px] md:text-[12.5px] md:leading-[17px] ${text}`}>
+    <span className={`inline-flex items-center gap-1 text-xs font-semibold leading-[15px] md:gap-[7px] md:text-sm md:leading-[17px] ${text}`}>
       <span aria-hidden className={`size-[5px] shrink-0 rounded-full md:size-1.5 ${dot}`} />{children}
     </span>
   );
@@ -69,23 +69,23 @@ export function CaseListRow({ r, today, flags }: { r: CaseRow; today: string; fl
       <Link href={`/cases/${r.id}`}
         className={`flex min-h-11 items-center gap-3 py-[13px] transition-colors md:px-[30px] md:py-[15px] md:hover:bg-card-2 ${COLS}`}>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[14.5px] font-semibold leading-[19px] text-text md:text-[15.5px] md:leading-[21px]" title={r.title ?? undefined}>{title}</span>
+          <span className="block truncate text-base font-semibold leading-[19px] text-text md:text-md md:leading-[21px]" title={r.title ?? undefined}>{title}</span>
           {/* desktop: the number only */}
-          <span className="font-num mt-[3px] hidden truncate text-xs text-text-4 md:block">{caseNumber(r)}</span>
+          <span className="font-num mt-[3px] hidden truncate text-sm leading-4 text-text-4 md:block">{caseNumber(r)}</span>
           {/* mobile: «number · court · circuit» */}
-          <span className="mt-[3px] block truncate text-[11.5px] leading-4 text-text-4 md:hidden">
+          <span className="mt-[3px] block truncate text-xs leading-4 text-text-4 md:hidden">
             <span className="font-num">{caseNumber(r)}</span>{where ? ` · ${where}` : ""}
           </span>
         </span>
 
         {/* desktop columns */}
-        <span className="hidden truncate text-[13.5px] leading-[18px] text-text-3 md:block" title={where || undefined}>{where || "المحكمة غير محددة"}</span>
-        <span className={`font-num hidden text-[14px] leading-[18px] md:block ${nextCls}`}>{nextText}</span>
+        <span className="hidden truncate text-base leading-[18px] text-text-3 md:block" title={where || undefined}>{where || "المحكمة غير محددة"}</span>
+        <span className={`font-num hidden text-base leading-[18px] md:block ${nextCls}`}>{nextText}</span>
         <span className="hidden justify-self-start md:block">{marker}</span>
 
         {/* mobile: date, marker under it */}
         <span className="flex shrink-0 flex-col items-end text-left md:hidden">
-          <span className={`font-num text-[13px] leading-4 ${nextCls}`}>{nextText}</span>
+          <span className={`font-num text-sm leading-4 ${nextCls}`}>{nextText}</span>
           {marker ? <span className="mt-[3px] flex">{marker}</span> : null}
         </span>
       </Link>
@@ -95,7 +95,7 @@ export function CaseListRow({ r, today, flags }: { r: CaseRow; today: string; fl
 
 export function CaseListHeader() {
   return (
-    <div className={`hidden px-[30px] pb-3 pt-4 text-xs font-medium text-text-4 ${COLS}`}>
+    <div className={`hidden px-[30px] pb-3 pt-4 text-sm leading-4 font-medium text-text-4 ${COLS}`}>
       <span>القضية</span><span>المحكمة</span><span>الجلسة الجاية</span><span className="sr-only">الحالة</span>
     </div>
   );

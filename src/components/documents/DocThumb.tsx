@@ -11,7 +11,7 @@ export function DocThumb({ note, className }: { note?: string | null; className?
       <span className="mt-[3px] h-0.5 w-full rounded-sm bg-ink-solid/10" />
       <span className="h-0.5 w-[88%] rounded-sm bg-ink-solid/10" />
       <span className="h-0.5 w-[94%] rounded-sm bg-ink-solid/10" />
-      {note ? <span className="mt-auto text-center text-[9.5px] font-semibold text-ink-solid/55">{note}</span> : null}
+      {note ? <span className="mt-auto text-center text-xs font-semibold text-ink-solid/55">{note}</span> : null}
     </span>
   );
 }

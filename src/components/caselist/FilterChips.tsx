@@ -26,7 +26,7 @@ export function casesHref(sp: ListParams, patch: Partial<ListParams>) {
 function Capsule({ on, to, children }: { on: boolean; to: string; children: React.ReactNode }) {
   return (
     <Link href={to} aria-current={on ? "true" : undefined} className="tap group inline-flex shrink-0 items-center">
-      <span className={`inline-flex h-8 items-center whitespace-nowrap rounded-full px-[13px] text-[12.5px] transition sm:h-[34px] sm:px-[15px] sm:text-[13px] ${on ? "bg-selected font-semibold text-on-selected shadow-[var(--tab-shadow)]" : "font-medium text-[var(--glass-icon)] group-hover:text-text"}`}>
+      <span className={`inline-flex h-8 items-center whitespace-nowrap rounded-full px-[13px] text-sm transition sm:h-[34px] sm:px-[15px] ${on ? "bg-selected font-semibold text-on-selected shadow-[var(--tab-shadow)]" : "font-medium text-[var(--glass-icon)] group-hover:text-text"}`}>
         {/* one inline run, so the spaces around «·» survive (bare flex items trim them) */}
         <span>{children}</span>
       </span>
@@ -67,7 +67,7 @@ export function FilterChips({ sp, counts }: { sp: ListParams; counts: Counts }) 
 function ClearPill({ label, to }: { label: string; to: string }) {
   return (
     <Link href={to} aria-label={`شيل التصفية ${label}`} className="tap group inline-flex shrink-0 items-center pe-1">
-      <span className="inline-flex h-8 max-w-[220px] items-center gap-1.5 rounded-full border border-border px-3 text-[12.5px] font-semibold text-text sm:h-[34px] sm:text-[13px]">
+      <span className="inline-flex h-8 max-w-[220px] items-center gap-1.5 rounded-full border border-border px-3 text-sm font-semibold text-text sm:h-[34px]">
         <span className="truncate">{label}</span>
         <X size={14} strokeWidth={2.2} aria-hidden className="shrink-0 text-text-4 group-hover:text-text" />
       </span>

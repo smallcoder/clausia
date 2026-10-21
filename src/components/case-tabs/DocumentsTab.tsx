@@ -44,12 +44,12 @@ export async function DocumentsTab({ caseId }: { caseId: string }) {
     <div className="space-y-4 pb-4">
       <section className="rounded-[28px] border border-border-2 bg-card shadow-card">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--hairline-v2)] px-6 py-4">
-          <h2 className="text-[17px] font-bold text-title">
+          <h2 className="text-lg font-bold text-title">
             {docs?.length ? pagesWord(docs.length) : "ارفع أول ورقة"}
           </h2>
           <UploadDocument caseId={caseId} />
         </div>
-        <p className="max-w-[640px] px-5 pt-3.5 text-[13px] leading-6 text-text-3">
+        <p className="max-w-[640px] px-5 pt-3.5 text-sm leading-6 text-text-3">
           صحيفة، مذكرة، محضر جلسة أو صورة بالموبايل (PDF أو صورة لحد 25 م.ب). Clausia بيقرا كل صفحة ويقترح اللي لقاه في محادثة القضية، ومش بيتحفظ حاجة قبل ما تأكد.
         </p>
         {docs?.length ? (
@@ -58,16 +58,16 @@ export async function DocumentsTab({ caseId }: { caseId: string }) {
               <li key={d.id} className="min-w-0">
                 <a href={`/api/documents/${d.id}`} target="_blank" rel="noopener" className="group block" title={d.file_name}>
                   <DocThumb note={d.read_status !== "done" ? READ_STATUS[d.read_status] : null} />
-                  <span className="mt-2 line-clamp-2 block text-center text-[12.5px] font-semibold leading-5 text-text sm:text-[13px]">{name(d)}</span>
+                  <span className="mt-2 line-clamp-2 block text-center text-sm font-semibold leading-5 text-text">{name(d)}</span>
                 </a>
-                <span className="mt-0.5 block truncate text-center text-[11.5px] text-text-3 sm:text-[12px]">
+                <span className="mt-0.5 block truncate text-center text-xs text-text-3 sm:text-sm">
                   {[d.title ? DOC_TYPE[d.doc_type as keyof typeof DOC_TYPE] : null, pagesLabel(d.page_count)].filter(Boolean).join(" · ") || " "}
                 </span>
               </li>
             ))}
           </ul>
         ) : (
-          <p className="px-5 pb-5 pt-2 text-[14px] leading-7 text-text-3">لسه مفيش مستندات في القضية دي، وأي ورقة ترفعها Clausia هيقراها صفحة صفحة.</p>
+          <p className="px-5 pb-5 pt-2 text-base leading-7 text-text-3">لسه مفيش مستندات في القضية دي، وأي ورقة ترفعها Clausia هيقراها صفحة صفحة.</p>
         )}
       </section>
 
@@ -84,34 +84,34 @@ export async function DocumentsTab({ caseId }: { caseId: string }) {
             className="overflow-hidden">
             <ul className="divide-y divide-border-2">
               <li className="flex min-h-12 items-center justify-between gap-3 px-5 py-1.5">
-                <span className="text-[15px] text-text">النوع</span>
+                <span className="text-md text-text">النوع</span>
                 <DocTypeSelect documentId={d.id} value={d.doc_type} />
               </li>
               <li className="flex min-h-12 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-5 py-1.5">
                 <span className="min-w-0">
-                  <span className="block truncate text-[15px] text-text" dir="auto">{d.file_name}</span>
-                  <span className="block text-[12px] text-text-4">{meta}</span>
+                  <span className="block truncate text-md text-text" dir="auto">{d.file_name}</span>
+                  <span className="block text-sm text-text-4">{meta}</span>
                 </span>
                 <span className="flex shrink-0 items-center gap-2">
-                  <a href={`/api/documents/${d.id}`} target="_blank" rel="noopener" className="bg-primary-fill inline-flex h-11 items-center rounded-full px-5 text-[14px] font-bold">فتح</a>
-                  <a href={`/api/documents/${d.id}?download=1`} className="inline-flex h-11 items-center rounded-full border border-border bg-chip px-5 text-[14px] text-text-2 shadow-soft hover:text-text">تنزيل</a>
+                  <a href={`/api/documents/${d.id}`} target="_blank" rel="noopener" className="bg-primary-fill inline-flex h-11 items-center rounded-full px-5 text-base font-bold">فتح</a>
+                  <a href={`/api/documents/${d.id}?download=1`} className="inline-flex h-11 items-center rounded-full border border-border bg-chip px-5 text-base text-text-2 shadow-soft hover:text-text">تنزيل</a>
                 </span>
               </li>
               {hasPending.has(d.id) ? (
                 <li className="flex min-h-12 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-5 py-2">
-                  <span className="flex items-center gap-2 text-[14px] text-text-2"><StatusChip tone="warn">مقترحات</StatusChip>Clausia طلّع من الورقة دي حاجات مستنية تأكيدك.</span>
-                  <Link href={`/cases/${caseId}?tab=chat`} className="inline-flex min-h-11 items-center text-[14px] font-semibold text-gold-text hover:underline">راجعها ←</Link>
+                  <span className="flex items-center gap-2 text-base text-text-2"><StatusChip tone="warn">مقترحات</StatusChip>Clausia طلّع من الورقة دي حاجات مستنية تأكيدك.</span>
+                  <Link href={`/cases/${caseId}?tab=chat`} className="inline-flex min-h-11 items-center text-base font-semibold text-gold-text hover:underline">راجعها ←</Link>
                 </li>
               ) : null}
               {d.read_status === "failed" && d.read_error ? (
-                <li className="px-5 py-3 text-[14px] text-bad">ما قدرناش نقرا الورقة: {d.read_error.slice(0, 160)}</li>
+                <li className="px-5 py-3 text-base text-bad">ما قدرناش نقرا الورقة: {d.read_error.slice(0, 160)}</li>
               ) : null}
               {ps.length ? (
                 <li>
                   <details className="group/text" open={ps.length <= 3}>
                     <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-5 py-2 hover:bg-card-2/60 [&::-webkit-details-marker]:hidden">
-                      <span className="text-[15px] text-text">النص المستخرج</span>
-                      <span className="flex items-center gap-1.5 text-[13px] text-text-3">
+                      <span className="text-md text-text">النص المستخرج</span>
+                      <span className="flex items-center gap-1.5 text-sm text-text-3">
                         {pagesLabel(ps.length)}
                         <ChevronDown aria-hidden size={16} strokeWidth={2} className="transition-transform group-open/text:rotate-180" />
                       </span>
@@ -120,11 +120,11 @@ export async function DocumentsTab({ caseId }: { caseId: string }) {
                       {ps.map((p) => (
                         <details key={p.page_no} open={p.page_no === ps[0].page_no} className="group/page overflow-hidden rounded-2xl border border-border-2 bg-card-2">
                           <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 py-2 [&::-webkit-details-marker]:hidden">
-                            <span className="shrink-0 text-[13px] font-bold text-text">صفحة <span className="font-num">{p.page_no}</span></span>
-                            <span className="text-doc min-w-0 flex-1 truncate text-[13px] text-text-3">{firstWords(p.text)}…</span>
+                            <span className="shrink-0 text-sm font-bold text-text">صفحة <span className="font-num">{p.page_no}</span></span>
+                            <span className="text-doc min-w-0 flex-1 truncate text-sm text-text-3">{firstWords(p.text)}…</span>
                             <ChevronDown aria-hidden size={15} strokeWidth={2} className="shrink-0 text-text-4 transition-transform group-open/page:rotate-180" />
                           </summary>
-                          <div className="text-doc max-h-[60vh] overflow-y-auto whitespace-pre-wrap break-words border-t border-border-2 bg-field px-4 py-3 text-[15px] text-text sm:px-6">
+                          <div className="text-doc max-h-[60vh] overflow-y-auto whitespace-pre-wrap break-words border-t border-border-2 bg-field px-4 py-3 text-md text-text sm:px-6">
                             {p.text || "—"}
                           </div>
                         </details>

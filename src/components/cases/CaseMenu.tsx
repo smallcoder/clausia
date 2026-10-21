@@ -20,7 +20,7 @@ export function CaseMenu({ caseId, chatHref, align, className }: { caseId: strin
     return () => { document.removeEventListener("mousedown", outside); document.removeEventListener("keydown", esc); };
   }, [open]);
   const close = () => setOpen(false);
-  const item = "flex min-h-11 items-center rounded-[14px] px-3.5 text-[14px] font-medium text-text transition-colors hover:bg-card-2/70";
+  const item = "flex min-h-11 items-center rounded-[14px] px-3.5 text-base font-medium text-text transition-colors hover:bg-card-2/70";
   return (
     <div ref={box} className="relative">
       <button type="button" onClick={() => setOpen(!open)} aria-label="المزيد" title="المزيد" aria-haspopup="menu" aria-expanded={open}

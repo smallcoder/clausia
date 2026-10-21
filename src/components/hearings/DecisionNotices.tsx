@@ -18,12 +18,12 @@ export function DecisionNotices({ children }: { children: ReactNode }) {
       {items.length ? (
         <ul className="mb-3 space-y-2 print:hidden">
           {items.map((n) => (
-            <li key={n.id} role="status" className="flex items-start justify-between gap-3 rounded-[var(--radius-sm)] border border-ok/20 bg-ok-soft px-3 py-2 text-callout text-ok">
+            <li key={n.id} role="status" className="flex items-start justify-between gap-3 rounded-[var(--radius-sm)] border border-ok/20 bg-ok-soft px-3 py-2 text-base leading-[1.55] text-ok">
               <span>
                 <span className="block">تم حفظ قرار {n.label}</span>
                 {n.nextDate ? <span className="block">الجلسة القادمة: <span className="num font-semibold">{formatDmy(n.nextDate)}</span></span> : null}
               </span>
-              <button type="button" onClick={() => setItems((xs) => xs.filter((x) => x.id !== n.id))} className="shrink-0 text-caption underline" aria-label="إخفاء">إخفاء</button>
+              <button type="button" onClick={() => setItems((xs) => xs.filter((x) => x.id !== n.id))} className="shrink-0 text-sm leading-[1.45] underline" aria-label="إخفاء">إخفاء</button>
             </li>
           ))}
         </ul>

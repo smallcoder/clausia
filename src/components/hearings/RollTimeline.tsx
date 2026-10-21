@@ -39,10 +39,10 @@ export function Timeline({ rows, today, next, label, showToday = false }: { rows
               {last ? null : <span className="mt-1.5 w-px flex-1 bg-[var(--hairline-v2)]" />}
             </div>
             <div className={cx("min-w-0 flex-1", last ? "pb-0" : "pb-[22px] sm:pb-[26px]")}>
-              {hasNext && label ? <div className={cx("mb-1 text-[11.5px] font-semibold sm:text-[12px]", label.gold ? "text-gold" : "text-text-3")}>{label.text}</div> : null}
+              {hasNext && label ? <div className={cx("mb-1 text-xs font-semibold sm:text-sm", label.gold ? "text-gold" : "text-text-3")}>{label.text}</div> : null}
               <div className="flex items-baseline justify-between gap-3">
-                <h3 className="min-w-0 truncate text-[14.5px] font-bold text-text sm:text-[15.5px]">{g.key}</h3>
-                {circuits ? <span className="shrink-0 truncate text-[11.5px] text-text-4 sm:text-[12px]">{circuits}</span> : null}
+                <h3 className="min-w-0 truncate text-base font-bold text-text sm:text-md">{g.key}</h3>
+                {circuits ? <span className="shrink-0 truncate text-xs text-text-4 sm:text-sm">{circuits}</span> : null}
               </div>
               <ul className="mt-2.5 space-y-2.5 sm:mt-3 sm:space-y-3">
                 {g.items.map((h) => <li key={h.id}>{next && h.id === next.id ? <RollNext h={h} today={today} /> : <RollRow h={h} today={today} showToday={showToday} />}</li>)}
@@ -56,5 +56,5 @@ export function Timeline({ rows, today, next, label, showToday = false }: { rows
 }
 
 export function Empty({ children }: { children: ReactNode }) {
-  return <div className="rounded-[24px] border border-border-2 bg-card px-5 py-6 text-center text-[14px] leading-7 text-text-3 shadow-card">{children}</div>;
+  return <div className="rounded-[24px] border border-border-2 bg-card px-5 py-6 text-center text-base leading-7 text-text-3 shadow-card">{children}</div>;
 }
