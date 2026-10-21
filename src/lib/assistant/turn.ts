@@ -329,7 +329,8 @@ export function notInSource(args: Record<string, unknown>, texts: string[]): str
       const [d, m] = p;
       const numeric = new RegExp(`(^|\\D)0?${d}\\s*[/\\-.]\\s*0?${m}(\\D|$)`).test(src);
       const named = new RegExp(`(^|\\D)0?${d}\\s+(${AR_MONTHS[Number(m) - 1] ?? "x"})`).test(src);
-      if (!numeric && !named) out.push(`التاريخ «${v}» مش مذكور كده`);
+      const iso = new RegExp(`${year}\\s*-\\s*0?${m}\\s*-\\s*0?${d}(\\D|$)`).test(src);
+      if (!numeric && !named && !iso) out.push(`التاريخ «${v}» مش مذكور كده`);
     }
   }
   for (const k of ["case_number", "case_year"] as const) {
@@ -337,18 +338,27 @@ export function notInSource(args: Record<string, unknown>, texts: string[]): str
     if (v !== undefined && v !== null && String(v).trim() && !src.includes(normalizeDigits(String(v)).trim())) out.push(`${k === "case_number" ? "رقم الدعوى" : "سنة الدعوى"} «${v}» مش مذكور`);
   }
   {
-    // court: must be named AS a court («محكمة جنوب الجيزة …»), not just a place («بمدينة نصر»)
+    // court: must be named AS a court («محكمة جنوب الجيزة …» / «المحكمة الاقتصادية …»), not just a place
+    // («بمدينة نصر»). Also accepted: the name alone when it says what kind of court it is («استئناف القاهرة»,
+    // «جنوب الجيزة الابتدائية»).
     const v = args.court;
     if (typeof v === "string" && v.trim()) {
-      const named = v.replace(/\s+(الابتدائي[ةه]|الجزئي[ةه]|الكلي[ةه]|الاقتصادي[ةه])(?=\s|$)/g, "").trim();
-      const withWord = /^محكم[ةه]/.test(named) ? named : `محكمة ${named}`;
-      if (!norm.includes(normalizeForMatch(withWord))) out.push(`المحكمة «${v}» مش مذكورة بالاسم`);
+      const fold = (x: string) => normalizeForMatch(x.replace(/(^|\s)المحكم[ةه](?=\s)/g, "$1محكمة"));
+      const srcF = fold(src);
+      const base = v.trim().replace(/^(ال)?محكم[ةه]\s+/, "");
+      const short = base.replace(/\s+(الابتدائي[ةه]|الجزئي[ةه]|الكلي[ةه])(?=\s|$)/g, "").trim();
+      const kind = /استئناف|ابتدائي|جزئي|كلي|اقتصادي|إداري|اداري|أسر[ةه]|اسر[ةه]|نقض|جنايات|جنح|عمال/.test(base);
+      const ok = [`محكمة ${base}`, `محكمة ${short}`].some((x) => srcF.includes(fold(x))) || (kind && base.split(/\s+/).length > 1 && srcF.includes(fold(base)));
+      if (!ok) out.push(`المحكمة «${v}» مش مذكورة بالاسم`);
     }
-    // circuit: its number / name must be there
+    // circuit: its number / name must be there, next to the word «دائرة» when it is only a number
     const c = args.circuit;
     if (typeof c === "string" && c.trim()) {
       const core = normalizeForMatch(c.replace(/الدائر[ةه]|دائر[ةه]|مدني|كلي/g, " "));
-      if (core && !norm.includes(core)) out.push(`الدائرة «${c}» مش مذكورة`);
+      const found = /^\d+$/.test(core)
+        ? new RegExp(`دائر[ةه]\\s*(رقم\\s*)?${core}(\\D|$)`).test(norm)
+        : !!core && norm.includes(core);
+      if (core && !found) out.push(`الدائرة «${c}» مش مذكورة`);
     }
   }
   return out;

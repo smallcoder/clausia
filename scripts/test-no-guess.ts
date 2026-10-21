@@ -16,5 +16,13 @@ check(notInSource({ date: "13/3/2024" }, t2).length === 1, "a changed day is ref
 check(notInSource({ case_number: "4522" }, t2).length === 1, "a changed case number is refused");
 check(notInSource({ court: "محكمة جنوب الجيزة الابتدائية" }, ["أمام محكمة جنوب الجيزة"]).length === 0, "adding «الابتدائية» to a named court passes");
 check(notInSource({ date: "2025" }, ["في أوائل 2025"]).length === 0, "a stated year passes");
+check(notInSource({ court: "المحكمة الاقتصادية بالقاهرة" }, ["الدعوى قدام المحكمة الاقتصادية بالقاهرة الدائرة 4"]).length === 0, "a court that starts with «المحكمة» passes");
+check(notInSource({ court: "محكمة الاقتصادية بالقاهرة" }, ["أمام المحكمة الاقتصادية بالقاهرة"]).length === 0, "«محكمة» vs «المحكمة» is the same court");
+check(notInSource({ court: "محكمة استئناف القاهرة" }, ["الدعوى في استئناف القاهرة"]).length === 0, "a court said without the word «محكمة» passes when it names its kind");
+check(notInSource({ court: "محكمة استئناف" }, ["هنطعن بالاستئناف"]).length === 1, "one kind word alone is not a court");
+check(notInSource({ date: "5/11/2026" }, ["تاريخ الجلسة: 2026-11-05"]).length === 0, "an ISO date in a paper passes");
+check(notInSource({ circuit: "الدائرة 3" }, ["عقد مؤرخ 3/1/2024"]).length === 1, "a circuit number that is only part of a date is refused");
+check(notInSource({ circuit: "الدائرة 4" }, ["الدائرة 4 تجاري"]).length === 0, "a stated circuit number passes");
+check(notInSource({ circuit: "4" }, ["دائرة رقم 4"]).length === 0, "«دائرة رقم 4» passes");
 console.log(fails ? `\n${fails} check(s) FAILED` : "\nall checks passed");
 process.exit(fails ? 1 : 0);
