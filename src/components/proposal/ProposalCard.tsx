@@ -15,7 +15,6 @@ import { decideProposalAction } from "@/lib/assistant/actions";
 import { CASE_STATUS, DECISION, DOC_TYPE, PARTY_ROLE, STAGE } from "@/lib/labels";
 import type { Proposal, ProposalOp } from "@/lib/proposals";
 import { OP_FIELDS, OP_TITLE, type FieldSpec } from "@/lib/tools/registry";
-import "@/components/chat/chat.css";
 
 type Edits = Record<string, Record<string, unknown>>;
 type Mode = "confirm" | "suggest" | "reject";
@@ -218,16 +217,16 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
     return `من الورقة: ${name}${o.source.page ? ` — صفحة ${o.source.page}` : ""}`;
   }
 
-  const btn2 = "inline-flex h-[38px] flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-chip px-4 text-[13px] text-text-2 transition hover:text-text disabled:opacity-50 sm:h-10 sm:flex-none sm:text-[13.5px]";
+  const btn2 = "inline-flex h-[38px] flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-border bg-chip px-3 sm:px-4 text-[13px] text-text-2 transition hover:text-text disabled:opacity-50 sm:h-10 sm:flex-none sm:text-[13.5px]";
 
   const card = (inSheet: boolean) => {
     const limit = !inSheet && p.ops.length > MOBILE_ROWS + 1 && openOps.length > 0;
     return (
       <div className={cx("bg-card", inSheet
         ? "flex max-h-[88dvh] flex-col rounded-t-[22px] border-t border-border shadow-pop"
-        : cx("overflow-hidden rounded-[20px] border border-border sm:rounded-[22px]", openOps.length ? "chat-pop" : "shadow-card"))}>
+        : cx("overflow-hidden rounded-[20px] border border-border sm:rounded-[22px]", openOps.length ? "shadow-pop dark:shadow-card" : "shadow-card"))}>
         {inSheet ? <div aria-hidden className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-card-3" /> : null}
-        <div className={cx("flex shrink-0 items-center gap-2.5 border-b border-border-2 px-3.5 py-3 sm:gap-3 sm:px-[18px] sm:py-3.5", openOps.length > 0 && "chat-wash")}>
+        <div className={cx("flex shrink-0 items-center gap-2.5 border-b border-border-2 px-3.5 py-3 sm:gap-3 sm:px-[18px] sm:py-3.5", openOps.length > 0 && "bg-linear-to-b from-[var(--accent-ring)] to-transparent dark:bg-none")}>
           <span className="mark inline-flex size-[30px] shrink-0 items-center justify-center rounded-[9px] sm:size-[34px] sm:rounded-[10px]">
             <FolderClosed aria-hidden size={17} strokeWidth={2.2} />
           </span>
@@ -363,9 +362,12 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
               </button>
               <div className="flex gap-2 sm:contents">
                 <button type="button" disabled={pending || !chosen.length} onClick={() => decide("suggest", chosen.map((o) => o.op_id))} className={btn2}>احفظ كمقترحات</button>
-                <button type="button" disabled={pending} onClick={() => editSomething(true)} className={cx(btn2, "lg:hidden", inSheet && "hidden")}>عدّل حاجة</button>
-                <button type="button" disabled={pending} onClick={() => editSomething(false)} aria-pressed={allOpenExpanded} className={cx(btn2, "hidden lg:inline-flex", inSheet && "!inline-flex")}>
-                  {allOpenExpanded ? "اقفل التفاصيل" : "عدّل حاجة"}
+                {/* mobile: opens the sheet with every open row expanded; desktop (and inside the sheet): expands / collapses the rows */}
+                <button type="button" disabled={pending}
+                  onClick={() => editSomething(!inSheet && !window.matchMedia("(min-width: 1024px)").matches)} className={btn2}>
+                  {inSheet ? (allOpenExpanded ? "اقفل التفاصيل" : "عدّل حاجة") : (
+                    <><span className="lg:hidden">عدّل حاجة</span><span className="hidden lg:inline">{allOpenExpanded ? "اقفل التفاصيل" : "عدّل حاجة"}</span></>
+                  )}
                 </button>
               </div>
               <button type="button" disabled={pending} onClick={() => decide("reject", openOps.map((o) => o.op_id))}
