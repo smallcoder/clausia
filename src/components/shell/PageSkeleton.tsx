@@ -74,7 +74,7 @@ export function PageSkeleton({ kind }: { kind: Kind }) {
   const narrow = kind === "home" || kind === "chat";
   return (
     <div role="status" aria-busy="true" aria-label="جارٍ التحميل"
-      className={`skel-shimmer mx-auto flex w-full flex-1 flex-col px-4 sm:px-10 ${kind === "chat" ? "sm:max-w-chat sm:px-6" : narrow ? "max-w-home sm:px-6" : "max-w-page"}`}>
+      className={`skel-shimmer mx-auto flex w-full flex-1 flex-col px-4 sm:px-10 ${narrow ? "max-w-narrow sm:px-6" : "max-w-page"}`}>
       {kind === "home" ? (
         <>
           <div className="space-y-3 pt-4 sm:pt-13"><Bar w="110px" h={11} /><Bar w="min(380px, 80vw)" h={40} className="rounded-md" /></div>
