@@ -42,7 +42,7 @@ export function CircuitNum({ h, size = "row" }: { h: HearingWithCase; size?: "ro
   const digits = { row: "text-[28px] sm:text-[36px]", next: "text-[54px] sm:text-[76px]", sheet: "text-[44px]" }[size];
   return (
     <span aria-hidden className={cx("flex shrink-0 flex-col items-center text-center leading-none", size === "row" && "min-w-7 sm:w-10")}>
-      <span className={cx("stat-num font-extralight", digits, n ? "text-gold" : "text-text-4")}>{n ?? "—"}</span>
+      <span className={cx("font-num font-extralight leading-none", digits, n ? "text-gold" : "text-text-4")}>{n ?? "—"}</span>
       <span className={cx("mt-[3px]", size === "row" ? "text-[9.5px] text-text-4 sm:text-[10.5px]" : "mt-1 text-[10.5px] text-text-3 sm:text-[11.5px]")}>دائرة</span>
     </span>
   );
@@ -80,7 +80,7 @@ export function RollRow({ h, today, showDate = false, showCourt = false, showTod
       <CircuitNum h={h} />
       <span className="min-w-0 flex-1 border-s border-[var(--hairline-v2)] ps-3.5 sm:ps-[22px]">
         <span className="flex items-center justify-between gap-2">
-          <span className="min-w-0 truncate text-[14px] font-semibold leading-[1.5] text-text sm:whitespace-normal sm:text-[15.5px]">{hearingTitle(h)}</span>
+          <span className="min-w-0 truncate text-[14px] font-semibold text-text sm:whitespace-normal sm:text-[15.5px]">{hearingTitle(h)}</span>
           <span className="shrink-0 sm:hidden">{status}</span>
         </span>
         {/* mobile: date / court, then «المطلوب: …» */}

@@ -1,8 +1,8 @@
 /** Roll skeleton: header, day strip, timeline and side card — the same footprint as the page, so nothing jumps. */
 export default function Loading() {
   return (
-    <div className="mx-auto w-full max-w-[1424px] px-4 pt-2 sm:px-8 sm:pt-4" aria-busy="true" aria-label="جارٍ التحميل">
-      <div className="px-1 pt-4 sm:px-2 sm:pt-8">
+    <div className="mx-auto w-full max-w-[1360px] px-4 sm:px-10" aria-busy="true" aria-label="جارٍ التحميل">
+      <div className="px-1 pt-3 sm:px-2 sm:pt-[36px]">
         <div className="skeleton h-3.5 w-40 rounded-full" />
         <div className="skeleton mt-3 h-10 w-32 rounded-[12px] sm:h-12" />
       </div>

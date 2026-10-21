@@ -1,11 +1,12 @@
-// OWNER: roll agent — الرول (design v2, docs/design/*Roll.dc.html): header with the date and the «محتاجة قرار» pill,
+// OWNER: roll agent — الرول (design v2, docs/design/*Roll.dc.html, laid out exactly): header with the date and «05 جلسات الأسبوع» (desktop) / the «محتاجة قرار» pill (mobile),
 // the week's day strip (a dot per hearing), a timeline by court with the next hearing expanded, a desktop side card of
 // past hearings that need a decision, and the Clausia composer. ?view=week, ?filter=undecided, ?date=d/m/yyyy.
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { OpenHearing, RollNext, RollRow, RollSheet } from "@/components/hearings/RollSheet";
 import { arDate, arDayMonth, dayCount, hearingTitle, nCourts, nHearings, shortDm, WEEKDAY_LONG, WEEKDAY_SHORT, weekdayOf } from "@/components/hearings/roll-text";
-import { ClausiaSays, PageHero, StatusChip, two } from "@/components/shell/PageHero";
+import { RollHeader, RollSays } from "@/components/hearings/RollHeader";
+import { StatusChip, two } from "@/components/shell/PageHero";
 import { Composer, type ComposerChip } from "@/components/shell/Composer";
 import { cx } from "@/components/ui";
 import { addDaysIso, formatDmy, parseDmy, todayIso } from "@/lib/dates";
@@ -28,7 +29,7 @@ function dayName(iso: string, today: string) {
 function DayStrip({ days, date, view, today, counts, wk }: { days: string[]; date: string; view: View; today: string; counts: Map<string, number>; wk: string }) {
   const arrow = "hidden size-11 shrink-0 items-center justify-center self-center rounded-full text-text-3 transition hover:bg-card-2 hover:text-text sm:inline-flex";
   return (
-    <nav aria-label="أيام الأسبوع" className="mt-[18px] flex items-stretch justify-between sm:mt-[26px] sm:gap-1.5 sm:rounded-[30px] sm:border sm:border-border-2 sm:bg-card sm:p-1.5 sm:shadow-card">
+    <nav aria-label="أيام الأسبوع" className="mt-[18px] flex leading-[normal] items-stretch justify-between sm:mt-[26px] sm:gap-1.5 sm:rounded-[30px] sm:border sm:border-border-2 sm:bg-card sm:p-1.5 sm:shadow-card">
       <Link href={href(view, addDaysIso(wk, -7))} aria-label="الأسبوع اللي فات" className={arrow}><ChevronRight size={18} strokeWidth={1.9} aria-hidden /></Link>
       {days.map((d) => {
         const on = view === "day" && d === date;
@@ -89,7 +90,7 @@ function Timeline({ rows, today, next, label, showToday = false }: { rows: Heari
           <li key={g.key} className="flex gap-3.5 sm:gap-[18px]">
             <div aria-hidden className="flex w-3 shrink-0 flex-col items-center sm:w-3.5">
               <span className={cx("mt-[5px] size-[11px] shrink-0 rounded-full sm:size-3", gold ? "bg-gold shadow-[0_0_0_4px_var(--accent-ring)] sm:shadow-[0_0_0_5px_var(--accent-ring)]" : "border-2 border-text-4")} />
-              {last ? null : <span className="mt-1.5 w-px flex-1 bg-border" />}
+              {last ? null : <span className="mt-1.5 w-px flex-1 bg-[var(--hairline-v2)]" />}
             </div>
             <div className={cx("min-w-0 flex-1", last ? "pb-0" : "pb-[22px] sm:pb-[26px]")}>
               {hasNext && label ? <div className={cx("mb-1 text-[11.5px] font-semibold sm:text-[12px]", label.gold ? "text-gold" : "text-text-3")}>{label.text}</div> : null}
@@ -114,7 +115,7 @@ function SideCard({ count, rows }: { count: number; rows: HearingWithCase[] }) {
   return (
     <section aria-label="جلسات محتاجة قرار" className="rounded-[28px] border border-[var(--accent-edge)] bg-card px-6 pb-1.5 pt-2 shadow-card">
       <Link href="/hearings?filter=undecided" className="flex items-center gap-3 pb-3 pt-4 transition hover:opacity-80">
-        <span className="stat-num text-[40px] font-extralight text-gold">{two(count)}</span>
+        <span className="font-num text-[40px] font-extralight leading-none text-gold">{two(count)}</span>
         <span>
           <span className="flex items-center gap-1.5 text-[14px] font-bold text-gold"><span aria-hidden className="size-1.5 rounded-full bg-gold" />محتاجة قرار</span>
           <span className="mt-[3px] block text-[12px] text-text-3">جلسات فاتت ولسه قرارها متسجّلش</span>
@@ -136,7 +137,7 @@ function SideCard({ count, rows }: { count: number; rows: HearingWithCase[] }) {
       </ul>
       {more > 0 ? (
         <Link href="/hearings?filter=undecided" className="block border-t border-[var(--hairline-v2)] py-3 text-center text-[12.5px] text-text-3 hover:text-text">
-          {more === 1 ? "وجلسة كمان" : `وكمان ${nHearings(more)}`}
+          {more === 1 ? "والجلسة الرابعة" : `وكمان ${nHearings(more)}`}
         </Link>
       ) : null}
     </section>
@@ -200,15 +201,15 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
             : <>{dayName(date, today)} فيه {nHearings(dayRows.length)} في {nCourts(nCourt)}.</>;
 
   const chips: ComposerChip[] = [
-    ...(undecidedCount && !undecidedMode ? [{ label: `${undecidedCount} ${undecidedCount === 1 ? "جلسة فاتت محتاجة قرار" : undecidedCount <= 10 ? "جلسات فاتت محتاجة قرار" : "جلسة فاتت محتاجة قرار"}`, short: `${undecidedCount} محتاجة قرار`, accent: true, href: "/hearings?filter=undecided" }] : []),
     { label: "اتأجلت لـ…", text: "اتأجلت لـ " },
     { label: "اتحجزت للحكم", text: "اتحجزت للحكم لجلسة " },
     { label: "ارفع محضر الجلسة", short: "صوّر المحضر", attach: true, icon: "file" },
   ];
 
+  // the undecided count: the side card on desktop (lg+), this pill below it (the mockup draws it on mobile)
   const pill = undecidedCount > 0 && !undecidedMode ? (
-    <Link href="/hearings?filter=undecided" className="inline-flex h-11 items-center" aria-label={`${nHearings(undecidedCount)} محتاجة قرار`}>
-      <span className="inline-flex h-[34px] items-center gap-1.5 rounded-full border border-[var(--accent-edge)] px-3 text-[12.5px] font-semibold text-gold transition hover:bg-[var(--accent-wash)]">
+    <Link href="/hearings?filter=undecided" className="inline-flex h-11 shrink-0 items-center lg:hidden" aria-label={`${nHearings(undecidedCount)} محتاجة قرار`}>
+      <span className="inline-flex h-[36px] items-center gap-1.5 rounded-full border border-[var(--accent-edge)] px-3 text-[12.5px] font-semibold text-gold transition hover:bg-[var(--accent-wash)]">
         <span aria-hidden className="size-1.5 rounded-full bg-gold" /><span className="font-num">{undecidedCount}</span> محتاجة قرار
       </span>
     </Link>
@@ -216,12 +217,12 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
   const weekLink = (
     <Link href={view === "week" ? href("day", date) : href("week", date)} aria-current={view === "week" ? "page" : undefined}
       title={view === "week" ? "رجوع ليوم واحد" : "الأسبوع كله"}
-      className={cx("hidden h-11 items-center rounded-full text-[13px] transition sm:inline-flex", view === "week" ? "bg-selected px-4 text-on-selected" : "text-text-3 hover:text-text")}>
+      className={cx("hidden h-11 items-center rounded-full text-[13px] transition sm:inline-flex", view === "week" ? "bg-selected px-4 text-on-selected" : "-mb-[8px] text-text-3 hover:text-text")}>
       <span className={cx("font-num me-1 font-semibold", view === "week" ? "text-on-selected" : "text-title")}>{two(weekRows.length)}</span> جلسات الأسبوع
     </Link>
   );
   const todayLink = isCurrent || undecidedMode ? null : (
-    <Link href={href("day", today)} className="hidden h-11 items-center text-[13px] font-semibold text-text hover:underline sm:inline-flex">النهارده</Link>
+    <Link href={href("day", today)} className="-mb-[8px] hidden h-11 items-center text-[13px] font-semibold text-text hover:underline sm:inline-flex">النهارده</Link>
   );
 
   const eyebrow = undecidedMode
@@ -231,13 +232,12 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
       : <><span className="sm:hidden">{arDate(date, false)}</span><span className="hidden sm:inline">{arDate(date)}</span></>;
 
   return (
-    <div className="mx-auto flex w-full max-w-[1424px] flex-1 flex-col px-4 pt-2 sm:px-8 sm:pt-4">
-      <PageHero
-        className="px-1 sm:px-2"
+    <div className="mx-auto flex w-full max-w-[1360px] flex-1 flex-col px-4 sm:px-10">
+      <RollHeader
         back={undecidedMode ? "/hearings" : undefined}
         eyebrow={eyebrow}
         title={undecidedMode ? "محتاجة قرار" : "الرول"}
-        action={undecidedMode ? null : <div className="flex items-center gap-4">{todayLink}{weekLink}{pill}</div>}
+        action={undecidedMode ? null : <div className="flex items-end gap-3.5">{todayLink}{weekLink}{pill}</div>}
       />
 
       <RollSheet today={today}>
@@ -250,14 +250,14 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
                 </ul>
               ) : <Empty>مفيش جلسات فاتت من غير قرار.</Empty>}
             </div>
-            <div className="order-first px-2 lg:order-none"><ClausiaSays size="md">{says}</ClausiaSays></div>
+            <div className="order-first leading-[normal] lg:order-none"><RollSays>{says}</RollSays></div>
           </div>
         ) : (
           <>
             <DayStrip days={days} date={date} view={view} today={today} counts={counts} wk={wk} />
             <MobileNav view={view} date={date} wk={wk} today={today} isCurrent={isCurrent} />
 
-            <div className="mt-1 grid grid-cols-[minmax(0,1fr)] items-start gap-7 sm:mt-[30px] lg:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)]">
+            <div className="mt-1 grid grid-cols-[minmax(0,1fr)] items-start gap-7 leading-[normal] sm:mt-[30px] lg:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)]">
               <div className="min-w-0">
                 {view === "week" ? (
                   weekRows.length ? (
@@ -296,7 +296,7 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
 
               <aside className="hidden space-y-5 lg:block">
                 {undecidedCount > 0 ? <SideCard count={undecidedCount} rows={undecidedRows} /> : null}
-                <div className="px-2"><ClausiaSays size="md">{says}</ClausiaSays></div>
+                <RollSays>{says}</RollSays>
               </aside>
             </div>
           </>
