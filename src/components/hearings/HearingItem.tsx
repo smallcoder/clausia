@@ -7,7 +7,7 @@ import { CASE_STATUS, DECISION, PARTY_ROLE, caseLabel } from "@/lib/labels";
 import { RecordDecision } from "./RecordDecision";
 
 /**
- * The one status chip for a hearing, everywhere: before today and undecided → amber «محتاجة قرار»;
+ * The one status chip for a hearing, everywhere: before today and undecided → gold «محتاجة قرار»;
  * today → «النهارده» (a decision can be recorded all day); later → «قادمة»; decided → the decision (+ next date).
  */
 export function DecisionBadge({ h, today }: { h: { decision_type: HearingWithCase["decision_type"]; next_date: string | null; hearing_date: string }; today: string }) {
@@ -37,7 +37,7 @@ export function HearingItem({ h, today, showCourt = false, showCircuit = true, s
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           {c.status === "reserved_for_judgment" && !h.decision_type ? <StatusChip tone="neutral">{CASE_STATUS[c.status]}</StatusChip> : null}
-          {h.review_status === "suggested" ? <StatusChip tone="accent">مقترحة</StatusChip> : null}
+          {h.review_status === "suggested" ? <StatusChip tone="warn">مقترحة</StatusChip> : null}
           <DecisionBadge h={h} today={today} />
         </div>
       </div>

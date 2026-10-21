@@ -71,7 +71,7 @@ export function partyRows(parties: Party[], suggested: Party[]): PartyRow[] {
     const role = PARTY_ROLE[p.role as keyof typeof PARTY_ROLE] ?? p.role;
     const side = sideOf(p.role);
     const opponent = !p.is_our_client && side !== null && ourSide !== null && side !== ourSide;
-    const line = p.is_our_client ? `موكلنا · ${role}` : opponent ? `خصم · ${role}` : role;
+    const line = p.is_our_client ? `موكلنا · ${role}` : opponent ? `الخصم · ${role}` : role;
     out.push({ id: p.id, name: p.name, role: line, ours: p.is_our_client, suggested: p.review_status === "suggested", party: p });
     if (p.representative && !p.is_our_client) {
       out.push({ id: null, name: p.representative, role: opponent ? "محامي الخصم" : `يمثل ${p.name}`, ours: false, suggested: false });
@@ -106,16 +106,37 @@ export function heroEyebrow(cf: CaseFile): string {
   return [c.case_type, STAGE[c.stage], num ?? (c.title ? null : caseLabel(c))].filter(Boolean).join(" · ");
 }
 
+/** Who first: our client (big) and the opponent («ضد …»). `fallback` is the case title / label when no client is known. */
+export function whoLine(cf: CaseFile): { client: string | null; opponent: string | null; fallback: string } {
+  const client = cf.parties.find((p) => p.is_our_client);
+  const ourName = client?.name ?? cf.client?.name ?? null;
+  const ourSide = client ? sideOf(client.role) : null;
+  const opp = cf.parties.find((p) => !p.is_our_client && sideOf(p.role) !== null && (ourSide === null || sideOf(p.role) !== ourSide));
+  return { client: ourName, opponent: opp?.name ?? null, fallback: cf.case.title || cf.case.label };
+}
+
+/** The spec sheet under the name: number, court, circuit (+ stage), type. Values verbatim; null = not recorded. */
+export function specSheet(cf: CaseFile): { label: string; short: string; value: string | null; extra?: string }[] {
+  const c = cf.case;
+  const subject = heroSubject(cf, heroTitle(cf));
+  return [
+    { label: "رقم الدعوى", short: "رقم الدعوى", value: c.case_number ? (c.case_year ? `${c.case_number} لسنة ${c.case_year}` : c.case_number) : null },
+    { label: "المحكمة", short: "المحكمة", value: c.court },
+    { label: "الدائرة", short: "الدائرة", value: c.circuit, extra: STAGE[c.stage] },
+    { label: "نوع الدعوى", short: "النوع", value: subject ?? c.case_type },
+  ];
+}
+
 export function docName(d: Pick<Doc, "title" | "doc_type" | "file_name">): string {
   return d.title || DOC_TYPE[d.doc_type as keyof typeof DOC_TYPE] || d.file_name;
 }
 
-/** «الصحيفة ص 2», «من رسالتك», «إدخال يدوي» */
+/** «الصحيفة · ص 2», «من رسالتك», «إدخال يدوي» */
 export function sourceText(src: Provenance["source"], docs: Doc[]): string {
   if (src.kind === "document") {
     const d = docs.find((x) => x.id === src.document_id);
     const name = d ? docName(d) : "مستند";
-    return src.page ? `${name} ص ${src.page}` : name;
+    return src.page ? `${name} · ص ${src.page}` : name;
   }
   if (src.kind === "chat") return "من رسالتك";
   return "إدخال يدوي";
@@ -144,38 +165,64 @@ export function hearingState(hearings: Hearing[], today: string): HearingState {
   return { next, nextNeeded: needed(next), undecided, undecidedNeeded: needed(undecided) };
 }
 
-/** The templated «ملخص Clausia» sentence (no LLM): facts date, hearings, what awaits review, an appeal deadline if stated. */
-export function summarySentences(cf: CaseFile, hs: HearingState, today: string): string[] {
-  const out: string[] = [];
-  const c = cf.case;
-  out.push(c.facts_date && c.facts_date_precision !== "unknown"
-    ? `تاريخ الوقائع ${formatDmy(c.facts_date, c.facts_date_precision)}، وده اللي بيحدد نسخة القانون.`
-    : "تاريخ الوقائع لسه مش محدد، ومن غيره مش هنعرف أنهي نسخة من القانون تنطبق.");
+/** A piece of the summary line; `gold` marks the part that needs the lawyer's action. */
+export type Seg = { text: string; gold?: boolean };
+
+/**
+ * The templated «ملخص Clausia» line (no LLM), Egyptian Arabic: the case summary as recorded, then the hearings
+ * (an undecided one first), then what awaits review (gold), then an appeal deadline if one was stated.
+ * The facts date is not repeated here: the Facts panel shows it.
+ */
+export function summarySegments(cf: CaseFile, hs: HearingState, today: string): Seg[] {
+  const out: Seg[] = [];
+  const say = (text: string, gold = false) => out.push({ text, gold });
+  const summary = cf.case.summary?.trim();
+  if (summary) say(`${/[.!؟]$/u.test(summary) ? summary : `${summary}.`} `);
 
   if (hs.undecided) {
-    out.push(`جلسة ${shortDmy(hs.undecided.date)} عدّت (${agoLabel(daysBetween(hs.undecided.date, today))}) ولسه قرارها ما اتسجلش${hs.undecidedNeeded ? `، وكان المطلوب فيها: ${hs.undecidedNeeded}` : ""}.`);
+    say(`جلسة ${shortDmy(hs.undecided.date)} عدّت (${agoLabel(daysBetween(hs.undecided.date, today))}) `);
+    say("ولسه قرارها ما اتسجلش", true);
+    say(`${hs.undecidedNeeded ? `، وكان المطلوب فيها: ${hs.undecidedNeeded}` : ""}. `);
   }
   if (hs.next) {
     const n = daysBetween(today, hs.next.date);
     const when = n <= 0 ? `فيه جلسة النهارده ${shortDmy(hs.next.date)}` : `الجلسة الجاية ${shortDmy(hs.next.date)} (${untilLabel(n)})`;
-    out.push(`${when}${hs.nextNeeded ? ` والمطلوب: ${hs.nextNeeded}` : ""}.`);
+    say(`${when}${hs.nextNeeded ? ` والمطلوب: ${hs.nextNeeded}` : ""}. `);
   } else if (!hs.undecided) {
-    out.push("مفيش جلسة جاية متسجلة.");
+    say("مفيش جلسة جاية متسجلة. ");
   }
 
   const p = cf.pending_suggestions;
   if (p.length) {
     const facts = p.every((x) => x.table === "case_facts");
     const what = facts ? count(p.length, "واقعة واحدة", "واقعتين", "وقائع", "واقعة") : count(p.length, "حاجة واحدة", "حاجتين", "حاجات", "حاجة");
-    out.push(`فيه ${what} لسه ${p.length === 2 ? "مقترحين" : "مقترحة"}، ${p.length === 1 ? "محتاجة" : "محتاجين"} مراجعتك.`);
+    say("فيه ");
+    say(`${what} لسه ${p.length === 2 ? "مقترحين" : "مقترحة"}`, true);
+    say(`، ${p.length === 1 ? "محتاجة" : "محتاجين"} مراجعتك. `);
   } else if (!hs.undecided) {
-    out.push("ومفيش حاجة مستنية مراجعتك.");
+    say("ومفيش حاجة مستنية مراجعتك. ");
   }
 
   const appeal = cf.judgments.filter((j) => j.appeal_deadline && j.appeal_deadline >= today).sort((a, b) => a.appeal_deadline!.localeCompare(b.appeal_deadline!))[0];
-  if (appeal?.appeal_deadline) out.push(`آخر ميعاد للطعن ${formatDmy(appeal.appeal_deadline)}، كما ذكره المحامي.`);
+  if (appeal?.appeal_deadline) say(`آخر ميعاد للطعن ${formatDmy(appeal.appeal_deadline)}، كما ذكره المحامي.`);
+  const last = out.at(-1);
+  if (last) last.text = last.text.trimEnd();
   return out;
 }
+
+/** The banner's gold words: «واقعة مقترحة», «3 وقائع مقترحة», «حاجتين مقترحين». */
+export function pendingWords(cf: CaseFile): string | null {
+  const p = cf.pending_suggestions;
+  if (!p.length) return null;
+  const facts = p.every((x) => x.table === "case_facts");
+  if (p.length === 1) return facts ? "واقعة مقترحة" : "حاجة مقترحة";
+  if (p.length === 2) return facts ? "واقعتين مقترحين" : "حاجتين مقترحين";
+  return `${p.length} ${facts ? (p.length <= 10 ? "وقائع" : "واقعة") : (p.length <= 10 ? "حاجات" : "حاجة")} مقترحة`;
+}
+
+/** Egyptian read state for the document rows. */
+export const READ_SHORT: Record<string, string> = { pending: "مستنية القراءة", reading: "بتتقري", done: "اتقرت", failed: "ما اتقرتش" };
+
 
 /** Where the «محتاجة مراجعة» tile links: the first suggested item. */
 export function pendingHref(cf: CaseFile): string | undefined {

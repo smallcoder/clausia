@@ -31,7 +31,7 @@ export function AddHearing({ caseId }: { caseId: string }) {
   if (!open) {
     return (
       <div className="flex min-h-12 flex-wrap items-center justify-between gap-x-3 px-5 py-1">
-        <button type="button" onClick={() => setOpen(true)} className="-ms-1 inline-flex min-h-11 items-center gap-1.5 px-1 text-[15px] font-semibold text-gold-text hover:underline">
+        <button type="button" onClick={() => setOpen(true)} className="-ms-1 inline-flex min-h-11 items-center gap-1.5 px-1 text-[15px] font-semibold text-text-2 hover:text-text hover:underline">
           <Plus aria-hidden size={18} strokeWidth={2.2} />أضف جلسة
         </button>
         {savedLine}

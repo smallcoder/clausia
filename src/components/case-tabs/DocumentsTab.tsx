@@ -11,12 +11,15 @@ import { formatDmy } from "@/lib/dates";
 import { DOC_TYPE, READ_STATUS } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
 
-const STATUS_TONE = { pending: "neutral", reading: "accent", done: "good", failed: "bad" } as const;
+const STATUS_TONE = { pending: "neutral", reading: "neutral", done: "good", failed: "bad" } as const;
 
 function sizeLabel(bytes: number | null) {
   if (!bytes) return null;
   return bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} م.ب` : `${Math.max(1, Math.round(bytes / 1024))} ك.ب`;
 }
+
+/** «مستند واحد», «مستندين», «3 مستندات», «12 مستند» */
+const pagesWord = (n: number) => (n === 1 ? "مستند واحد" : n === 2 ? "مستندين" : `${n} ${n <= 10 ? "مستندات" : "مستند"}`);
 
 const firstWords = (t: string, n = 9) => t.trim().split(/\s+/).slice(0, n).join(" ");
 
@@ -39,10 +42,10 @@ export async function DocumentsTab({ caseId }: { caseId: string }) {
 
   return (
     <div className="space-y-4 pb-4">
-      <section className="rounded-[22px] border border-border-2 bg-card shadow-card">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-2 px-5 py-4">
-          <h2 className="text-[17px] font-bold text-text">
-            المستندات{docs?.length ? <span className="font-num ms-1.5 text-[13px] font-normal text-text-3">{docs.length}</span> : null}
+      <section className="rounded-[28px] border border-border-2 bg-card shadow-card">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--hairline-v2)] px-6 py-4">
+          <h2 className="text-[17px] font-bold text-title">
+            {docs?.length ? pagesWord(docs.length) : "ارفع أول ورقة"}
           </h2>
           <UploadDocument caseId={caseId} />
         </div>
