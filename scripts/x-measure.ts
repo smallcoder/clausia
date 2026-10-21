@@ -25,7 +25,7 @@ const probe = () => {
   nums.slice(0, 3).forEach((e, i) => { box(`stat${i}`, e); box(`stat${i}-block`, e.parentElement); box(`stat${i}-label`, e.nextElementSibling); });
   const n = document.body.innerText.match(/الكل · (\d+)/)?.[1] ?? "";
   const all = leaf(`الكل · ${n}`)[0] ?? [...document.querySelectorAll("nav a > span")].find((e) => txt(e).startsWith("الكل"));
-  box("cap-all", all);
+  box("cap-all", all?.closest("a > span") ?? all); // app: the visible capsule, not the inner text run
   const card = [...document.querySelectorAll("body *")].find((e) => {
     const s = getComputedStyle(e);
     return (s.borderTopLeftRadius === "28px" || s.borderTopLeftRadius === "24px") && txt(e).includes("لسنة") && e.getBoundingClientRect().width > 300;

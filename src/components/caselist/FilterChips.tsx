@@ -35,7 +35,7 @@ function Capsule({ on, to, children }: { on: boolean; to: string; children: Reac
 }
 
 /** «الكل · 12»: plain spaces around the dot, as the mockup sets it */
-const Count = ({ n }: { n: number }) => <>{" · "}{n}</>;
+const Count = ({ n }: { n: number }) => <>{" "}<span aria-hidden>·</span>{" "}{n}</>;
 
 export function FilterChips({ sp, counts, review }: { sp: ListParams; counts: Counts; review: number }) {
   const statuses = (Object.keys(CASE_STATUS) as (keyof typeof CASE_STATUS)[]).filter((k) => counts.status[k] > 0 || sp.status === k);
