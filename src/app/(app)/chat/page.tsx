@@ -1,8 +1,10 @@
-// The conversations with Clausia (v2): page header, one row per conversation (latest first), and the composer for a new one.
+// The conversations with Clausia. No mockup draws this page, so it uses the thread's style (owner decision
+// 2026-10-21): the 820px column, the thread's small centered glass pill instead of a page header, one solid row per
+// conversation (latest first), and the thread's two-row glass composer for a new one.
 import { ChevronLeft, FolderClosed } from "lucide-react";
 import Link from "next/link";
-import { Composer } from "@/components/shell/Composer";
-import { ClausiaSays, PageHero, StatusChip } from "@/components/shell/PageHero";
+import { NewChatComposer } from "@/components/chat/NewChatComposer";
+import { ClausiaSays, StatusChip } from "@/components/shell/PageHero";
 import { formatDmy } from "@/lib/dates";
 import { caseLabel } from "@/lib/labels";
 import type { ProposalOp } from "@/lib/proposals";
@@ -14,6 +16,9 @@ const cairoDay = (ts: string) =>
 
 const isOpen = (s: string) => s === "pending" || s === "failed";
 
+/** «3 محادثات», Arabic count agreement */
+const chatsLabel = (n: number) => (n === 1 ? "محادثة واحدة" : n === 2 ? "محادثتين" : n >= 3 && n <= 10 ? `${n} محادثات` : `${n} محادثة`);
+
 export default async function ChatHome() {
   const db = await createClient();
   const { data: threads } = await db.from("chat_threads").select("id, title, case_id, created_at, updated_at").order("updated_at", { ascending: false }).limit(60);
@@ -22,13 +27,12 @@ export default async function ChatHome() {
   const caseIds = [...new Set(list.map((t) => t.case_id).filter(Boolean))] as string[];
   // latest visible message of EACH thread (one small indexed query per listed thread; a shared window would
   // let busy threads crowd quiet ones out)
-  const [msgs, cases, cards, docsRead] = await Promise.all([
+  const [msgs, cases, cards] = await Promise.all([
     Promise.all(ids.map((id) =>
       db.from("chat_messages").select("thread_id, role, content, created_at").eq("thread_id", id).neq("role", "tool").neq("content", "")
         .order("created_at", { ascending: false }).limit(1).maybeSingle().then((r) => r.data))),
     caseIds.length ? db.from("cases").select("id, case_number, case_year, title, court").in("id", caseIds).then((r) => r.data ?? []) : Promise.resolve([]),
     ids.length ? db.from("proposals").select("thread_id, ops").in("thread_id", ids).in("status", ["pending", "partially_confirmed"]).then((r) => r.data ?? []) : Promise.resolve([]),
-    ids.length ? db.from("documents").select("id", { count: "exact", head: true }).in("thread_id", ids).eq("read_status", "done").then((r) => r.count ?? 0) : Promise.resolve(0),
   ]);
   const last = new Map<string, { role: string; content: string; created_at: string }>();
   for (const m of msgs) if (m) last.set(m.thread_id, m);
@@ -43,19 +47,25 @@ export default async function ChatHome() {
     .filter((r) => r.m || !r.t.case_id)
     .sort((a, b) => b.at.localeCompare(a.at));
 
+  const waitingCount = rows.filter((r) => waiting.has(r.t.id)).length;
+
   return (
-    <div className="mx-auto flex w-full flex-1 flex-col gap-7 px-3.5 pt-2.5 sm:max-w-[820px] sm:gap-9 sm:px-6 sm:pt-5">
-      <PageHero
-        back="/"
-        icon={<span className="font-num text-[25px] font-black sm:text-[30px]">C</span>}
-        eyebrow="Clausia"
-        title="المحادثات"
-        stats={[
-          { value: rows.length, label: "محادثة" },
-          { value: docsRead, label: "ورقة اتقرت" },
-          { value: rows.filter((r) => waiting.has(r.t.id)).length, label: "بطاقة مستنياك", highlight: true },
-        ]}
-      />
+    <div className="mx-auto flex w-full flex-1 flex-col gap-[18px] px-3.5 pt-2.5 sm:max-w-[820px] sm:gap-[22px] sm:px-6 sm:pt-5">
+      {/* the thread's header language: one small centered glass pill (what this is · how many), nothing else */}
+      <div className="glass inline-flex h-8 max-w-full items-center gap-2 self-center rounded-2xl px-3.5 text-[12.5px]">
+        <h1 className="shrink-0 font-semibold text-text">المحادثات</h1>
+        <span aria-hidden className="text-text-4">·</span>
+        <span className="truncate text-text-3"><span className="font-num">{chatsLabel(rows.length)}</span></span>
+        {waitingCount ? (
+          <>
+            <span aria-hidden className="text-text-4">·</span>
+            <span className="inline-flex shrink-0 items-center gap-1.5 font-semibold text-gold">
+              <span aria-hidden className="size-1.5 rounded-full bg-gold" />
+              <span className="font-num">{waitingCount}</span> {waitingCount === 1 ? "بطاقة مستنياك" : "بطاقات مستنياك"}
+            </span>
+          </>
+        ) : null}
+      </div>
 
       {rows.length === 0 ? (
         <div className="rounded-[24px] border border-border-2 bg-card px-5 py-6 shadow-card">
@@ -91,8 +101,8 @@ export default async function ChatHome() {
         </ul>
       )}
 
-      <div className="min-h-6 flex-1" />
-      <Composer target={{ kind: "new" }} placeholder="محادثة جديدة؟ احكي لـ Clausia، أو ارفع الصحيفة وهي تعمل الملف" />
+      <div className="min-h-[30px] flex-1" />
+      <NewChatComposer placeholder="محادثة جديدة؟ احكي لـ Clausia، أو ارفع الصحيفة وهي تعمل الملف" />
     </div>
   );
 }
