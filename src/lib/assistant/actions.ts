@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { decideProposal, type Proposal } from "@/lib/proposals";
 import { createClient, getSession } from "@/lib/supabase/server";
-import { createGeneralThread } from "@/lib/threads";
+import { createGeneralThread, dropIfEmpty } from "@/lib/threads";
 import { runAssistantTurn, TurnError } from "./turn";
 
 /** `saved`: the lawyer's message is in the thread (so the UI must not put it back in the composer). */
@@ -59,8 +59,10 @@ export async function startChatAction(_: { error?: string } | null, form: FormDa
   const id = await createGeneralThread(db, text.replace(/\s+/g, " ").slice(0, 60));
   try {
     await runAssistantTurn(db, { threadId: id, userText: text.slice(0, 8000), userId: s.user.id, officeId: s.officeId });
-  } catch {
-    // the thread page shows the saved message and lets the lawyer retry
+  } catch (e) {
+    // the message never got in: no empty thread; the text stays in the composer
+    if (await dropIfEmpty(db, id)) return { error: e instanceof Error ? e.message : "تعذّر الإرسال" };
+    // otherwise the thread page shows the saved message and lets the lawyer retry
   }
   redirect(`/chat/${id}`);
 }
@@ -75,5 +77,6 @@ export async function startWithFileAction(form: FormData): Promise<{ threadId?: 
   form.set("threadId", id);
   const { uploadDocumentAction } = await import("@/lib/documents/actions");
   const r = await uploadDocumentAction(form);
-  return r.ok || r.warning ? { threadId: id } : { threadId: id, error: r.error };
+  if (r.ok || r.warning) return { threadId: id };
+  return (await dropIfEmpty(db, id)) ? { error: r.error } : { threadId: id, error: r.error };
 }

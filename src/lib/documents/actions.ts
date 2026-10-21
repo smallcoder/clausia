@@ -6,7 +6,7 @@
  */
 import { revalidatePath } from "next/cache";
 import { createClient, getSession } from "@/lib/supabase/server";
-import { createGeneralThread, getOrCreateCaseThread } from "@/lib/threads";
+import { createGeneralThread, dropIfEmpty, getOrCreateCaseThread } from "@/lib/threads";
 import { DOC_TYPES } from "@/lib/tools/registry";
 import { ALLOWED_MIME, MAX_BYTES, safeFileName } from "./files";
 import { processDocument } from "./process";
@@ -31,6 +31,7 @@ export async function uploadDocumentAction(formData: FormData): Promise<{ ok: bo
   let threadId = fromThread ? String(formData.get("threadId")) : null;
   let caseId = typeof formData.get("caseId") === "string" && formData.get("caseId") !== "" ? String(formData.get("caseId")) : null;
 
+  let createdThread: string | null = null; // a thread made here is removed again if nothing got into it
   try {
     if (threadId) {
       const { data: t } = await db.from("chat_threads").select("id, case_id").eq("id", threadId).maybeSingle();
@@ -42,12 +43,16 @@ export async function uploadDocumentAction(formData: FormData): Promise<{ ok: bo
       threadId = await getOrCreateCaseThread(db, caseId);
     } else {
       threadId = await createGeneralThread(db, file.name.slice(0, 80));
+      createdThread = threadId;
     }
 
     const documentId = crypto.randomUUID();
     const storagePath = `${session.officeId}/${documentId}/${safeFileName(file.name, file.type)}`;
     const up = await db.storage.from("documents").upload(storagePath, file, { contentType: file.type, upsert: false });
-    if (up.error) return { ok: false, error: `تعذر رفع الملف: ${up.error.message}` };
+    if (up.error) {
+      if (createdThread) await dropIfEmpty(db, createdThread);
+      return { ok: false, error: `تعذر رفع الملف: ${up.error.message}` };
+    }
 
     const { data: msg, error: me } = await db.from("chat_messages").insert({
       thread_id: threadId, role: "user", content: `أرفقتُ مستندًا: ${file.name}`,
@@ -78,6 +83,7 @@ export async function uploadDocumentAction(formData: FormData): Promise<{ ok: bo
     }
     return { ok: true, documentId, proposalId: r.proposalId };
   } catch (e) {
+    if (createdThread) await dropIfEmpty(db, createdThread);
     return { ok: false, error: e instanceof Error ? e.message : String(e) };
   }
 }
@@ -91,3 +97,4 @@ export async function setDocumentTypeAction(documentId: string, docType: string)
   if (data.case_id) revalidatePath(`/cases/${data.case_id}`);
   return { ok: true };
 }
+

@@ -100,6 +100,14 @@ export interface LlmProvider {
   json<T = unknown>(req: JsonRequest): Promise<JsonResponse<T>>;
 }
 
+/** The provider could not answer now (402 / 429 / 5xx / timeout / network). Never retried; logged once. */
+export class LlmUnavailableError extends Error {
+  constructor(message: string, public status?: number) {
+    super(message);
+    this.name = "LlmUnavailableError";
+  }
+}
+
 export class SpendCapError extends Error {
   constructor(spent: number, cap: number) {
     super(`LLM spend cap reached: $${spent.toFixed(4)} of $${cap}`);
