@@ -52,7 +52,7 @@ export function CaseHeader({ cf, caseId, stats }: { cf: CaseFile; caseId: string
                 <div key={s.label} className={`min-w-0 border-[var(--hairline-v2)] px-3.5 py-3 lg:border-t-0 lg:border-e-0 lg:px-[22px] lg:py-0 ${i % 2 === 0 ? "border-e" : ""} ${i >= 2 ? "border-t" : ""} ${i > 0 ? "lg:border-s" : ""}`}>
                   <dt className="text-[11px] text-text-4 lg:text-[11.5px]"><span className="lg:hidden">{s.short}</span><span className="hidden lg:inline">{s.label}</span></dt>
                   <dd className={`mt-1 text-[14px] leading-[1.4] lg:mt-[5px] lg:text-[14.5px] ${s.value ? "font-semibold text-text" : "text-text-4"}`}>
-                    {s.value ?? "مش متسجل"}{s.value && s.extra ? <span className="hidden lg:inline"> · {s.extra}</span> : null}
+                    {s.value ?? (s.fem ? "مش متسجلة" : "مش متسجل")}{s.value && s.extra ? <span className="hidden lg:inline"> · {s.extra}</span> : null}
                   </dd>
                 </div>
               ))}

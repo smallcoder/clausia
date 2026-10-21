@@ -116,13 +116,13 @@ export function whoLine(cf: CaseFile): { client: string | null; opponent: string
 }
 
 /** The spec sheet under the name: number, court, circuit (+ stage), type. Values verbatim; null = not recorded. */
-export function specSheet(cf: CaseFile): { label: string; short: string; value: string | null; extra?: string }[] {
+export function specSheet(cf: CaseFile): { label: string; short: string; value: string | null; extra?: string; fem?: boolean }[] {
   const c = cf.case;
   const subject = heroSubject(cf, heroTitle(cf));
   return [
     { label: "رقم الدعوى", short: "رقم الدعوى", value: c.case_number ? (c.case_year ? `${c.case_number} لسنة ${c.case_year}` : c.case_number) : null },
-    { label: "المحكمة", short: "المحكمة", value: c.court },
-    { label: "الدائرة", short: "الدائرة", value: c.circuit, extra: STAGE[c.stage] },
+    { label: "المحكمة", short: "المحكمة", value: c.court, fem: true },
+    { label: "الدائرة", short: "الدائرة", value: c.circuit, extra: STAGE[c.stage], fem: true },
     { label: "نوع الدعوى", short: "النوع", value: subject ?? c.case_type },
   ];
 }

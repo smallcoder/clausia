@@ -67,7 +67,7 @@ export async function DocumentsTab({ caseId }: { caseId: string }) {
             ))}
           </ul>
         ) : (
-          <p className="px-5 pb-5 pt-2 text-[14px] leading-7 text-text-3">لسه مفيش مستندات في القضية دي. ارفع أول ورقة، وClausia هيقراها صفحة صفحة.</p>
+          <p className="px-5 pb-5 pt-2 text-[14px] leading-7 text-text-3">لسه مفيش مستندات في القضية دي، وأي ورقة ترفعها Clausia هيقراها صفحة صفحة.</p>
         )}
       </section>
 

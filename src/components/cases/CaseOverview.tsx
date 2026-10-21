@@ -67,20 +67,25 @@ function Summary({ cf, hs, today, className }: { cf: CaseFile; hs: HearingState;
 
 /** Mobile only (the desktop mockup carries the review in the summary's gold words and the gold stat). */
 function ReviewBanner({ cf, hs, caseId, className }: { cf: CaseFile; hs: HearingState; caseId: string; className: string }) {
-  const rows: { key: string; href: string; gold: string; rest: string }[] = [];
+  // `hash`: a same-page #item-… link is a plain <a> so the browser fires hashchange (opens the sheet, switches the tab)
+  const rows: { key: string; href: string; gold: string; rest: string; hash?: boolean }[] = [];
   const words = pendingWords(cf);
-  if (words) rows.push({ key: "p", href: `/cases/${caseId}${pendingHref(cf) ?? ""}`, gold: words, rest: cf.pending_suggestions.length === 1 ? "محتاجة مراجعتك" : "محتاجين مراجعتك" });
+  if (words) rows.push({ key: "p", href: `/cases/${caseId}${pendingHref(cf) ?? ""}`, gold: words, rest: cf.pending_suggestions.length === 1 ? "محتاجة مراجعتك" : "محتاجين مراجعتك", hash: pendingHref(cf)?.startsWith("#") });
   if (hs.undecided) rows.push({ key: "h", href: `/cases/${caseId}?tab=hearings#h-${hs.undecided.id}`, gold: `جلسة ${shortDmy(hs.undecided.date)}`, rest: "محتاجة قرار" });
   if (!rows.length) return null;
   return (
     <div className={`space-y-2 lg:hidden ${className}`}>
-      {rows.map((r) => (
-        <Link key={r.key} href={r.href} className="flex min-h-12 items-center gap-2.5 rounded-[18px] border border-[var(--accent-edge)] px-3.5 py-3 text-[13.5px] text-text">
-          <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-gold" />
-          <span className="min-w-0 flex-1"><span className="font-semibold text-gold">{r.gold}</span> {r.rest}</span>
-          <ChevronLeft aria-hidden size={18} strokeWidth={2} className="shrink-0 text-gold" />
-        </Link>
-      ))}
+      {rows.map((r) => {
+        const cls = "flex min-h-12 items-center gap-2.5 rounded-[18px] border border-[var(--accent-edge)] px-3.5 py-3 text-[13.5px] text-text";
+        const body = (
+          <>
+            <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-gold" />
+            <span className="min-w-0 flex-1"><span className="font-semibold text-gold">{r.gold}</span> {r.rest}</span>
+            <ChevronLeft aria-hidden size={18} strokeWidth={2} className="shrink-0 text-gold" />
+          </>
+        );
+        return r.hash ? <a key={r.key} href={r.href} className={cls}>{body}</a> : <Link key={r.key} href={r.href} className={cls}>{body}</Link>;
+      })}
     </div>
   );
 }

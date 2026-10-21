@@ -1,7 +1,7 @@
 // Case page screenshots for design v2 (redesign v3): 1440×960 and 390×844, light and dark (viewport + full page), plus one mobile shot with
 // another tab selected → screenshots/v3/case-<scheme>-<desktop|mobile>[-tab].png. Logs in once and reuses the session.
 // Needs the app running. Run: npx tsx --env-file=.env.local scripts/v3-case-shots.ts <caseId> [baseUrl] [statePath]
-// SHOT_PATH appends to the case URL (e.g. "?tab=hearings"); SHOT_SUFFIX names the file variant; SHOT_TAP=1 also shoots the first fact's sheet.
+// SHOT_PATH appends to the case URL (e.g. "?tab=hearings"); SHOT_SUFFIX names the file variant; SHOT_TAP=1 also shoots the first fact's sheet; SHOT_BANNER=1 taps the mobile review banner.
 import { chromium } from "@playwright/test";
 import { existsSync, mkdirSync } from "node:fs";
 
@@ -42,6 +42,14 @@ for (const scheme of ["light", "dark"] as const) for (const kind of ["desktop", 
     await page.locator('#facts button[aria-haspopup="dialog"]').first().click();
     await page.waitForTimeout(500);
     await page.screenshot({ path: `screenshots/v3/case-${scheme}-${kind}-sheet${suffix}.png` });
+    await page.keyboard.press("Escape");
+  }
+  if (mobile && process.env.SHOT_BANNER) {
+    // the review banner's same-page link must open the suggested item's sheet
+    await page.locator('a[href*="#item-"]:visible').first().click();
+    await page.waitForTimeout(600);
+    console.log("sheet open after banner:", await page.locator("dialog[open]").count());
+    await page.screenshot({ path: `screenshots/v3/case-${scheme}-${kind}-banner${suffix}.png` });
     await page.keyboard.press("Escape");
   }
   if (mobile && !process.env.SHOT_PATH) {
