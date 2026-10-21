@@ -175,3 +175,27 @@ export async function weekHearingsCount(db: Db): Promise<number> {
     .gte("hearing_date", from).lte("hearing_date", addDaysIso(from, 6)).neq("review_status", "rejected");
   return count ?? 0;
 }
+
+/**
+ * Cases with a past hearing and no decision recorded (the «محتاجة قرار» marker in the cases list).
+ * Same rule as `undecidedPastHearings`; a subset of `casesNeedingReview`.
+ */
+export async function casesNeedingDecision(db: Db): Promise<Set<string>> {
+  const { data } = await db.from("hearings").select("case_id").lt("hearing_date", todayIso()).is("decision_type", null).neq("review_status", "rejected");
+  return new Set((data ?? []).map((h) => h.case_id));
+}
+
+/** Of `caseIds`, the cases whose latest judgment (not rejected) has outcome `against_us`. */
+export async function judgedAgainstUs(db: Db, caseIds: string[]): Promise<Set<string>> {
+  const out = new Set<string>();
+  if (!caseIds.length) return out;
+  const { data } = await db.from("judgments").select("case_id, outcome").in("case_id", caseIds).neq("review_status", "rejected")
+    .order("judgment_date", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false });
+  const seen = new Set<string>();
+  for (const j of data ?? []) {
+    if (seen.has(j.case_id)) continue;
+    seen.add(j.case_id);
+    if (j.outcome === "against_us") out.add(j.case_id);
+  }
+  return out;
+}
