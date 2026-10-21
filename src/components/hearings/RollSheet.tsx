@@ -20,10 +20,11 @@ const Ctx = createContext<((h: HearingWithCase) => void) | null>(null);
 export function RollSheet({ today, children }: { today: string; children: ReactNode }) {
   const [h, setH] = useState<HearingWithCase | null>(null);
   const open = useCallback((x: HearingWithCase) => setH(x), []);
+  const close = useCallback(() => setH(null), []);
   return (
     <Ctx.Provider value={open}>
       {children}
-      {h ? <Sheet key={h.id} h={h} today={today} onClose={() => setH(null)} /> : null}
+      {h ? <Sheet key={h.id} h={h} today={today} onClose={close} /> : null}
     </Ctx.Provider>
   );
 }
