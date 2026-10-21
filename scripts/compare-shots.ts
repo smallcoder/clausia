@@ -39,7 +39,9 @@ async function shootApp(browser: Browser, path: string, mobile: boolean, dark: b
   const ctx = await browser.newContext({ storageState: await session(browser), viewport: { width: mobile ? 390 : 1440, height: mobile ? 844 : 960 }, deviceScaleFactor: mobile ? 2 : 1, locale: "ar-EG", timezoneId: "Africa/Cairo", colorScheme: dark ? "dark" : "light" });
   const page = await ctx.newPage();
   console.log(new Date().toISOString().slice(11, 19), "goto", path, mobile ? "mobile" : "desktop", dark ? "dark" : "light");
-  await page.goto(BASE + path, { waitUntil: "domcontentloaded", timeout: 60_000 });
+  // the local server sometimes stalls one request; retry once
+  try { await page.goto(BASE + path, { waitUntil: "domcontentloaded", timeout: 40_000 }); }
+  catch { await page.goto(BASE + path, { waitUntil: "domcontentloaded", timeout: 60_000 }); }
   await page.waitForLoadState("load", { timeout: 15_000 }).catch(() => {});
   await page.waitForTimeout(1200);
   await page.screenshot({ path: out, fullPage: true });
