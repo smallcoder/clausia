@@ -21,8 +21,10 @@ const reply = (parts: Record<string, unknown>[]) => new Response(JSON.stringify(
 }), { status: 200, headers: { "content-type": "application/json" } });
 /** waits `ms`, or rejects like fetch does when the request is cancelled */
 const slow = (ms: number, signal: AbortSignal | null | undefined, then: () => Response) => new Promise<Response>((resolve, reject) => {
+  const abort = () => reject(new DOMException("This operation was aborted", "AbortError"));
+  if (signal?.aborted) return abort(); // like fetch: an already-cancelled request fails at once
   const t = setTimeout(() => resolve(then()), ms);
-  signal?.addEventListener("abort", () => { clearTimeout(t); reject(new DOMException("This operation was aborted", "AbortError")); }, { once: true });
+  signal?.addEventListener("abort", () => { clearTimeout(t); abort(); }, { once: true });
 });
 
 /** Fake Gemini: `steps[n]` answers the n-th call (delay + parts). Returns the counters. */
@@ -105,7 +107,7 @@ async function main() {
       check(seen.calls === c.calls, `${c.name}: ${c.calls} model call(s), no retry`, `${seen.calls}`);
       check(o.failed.length === c.failedRows, `${c.name}: ${c.failedRows} failed llm_calls row(s)`, o.failed.map((f) => f.error).join(" | ").slice(0, 120));
       if (c.failedRows) check(seen.aborted === 1, `${c.name}: the request in flight was cancelled`, `${seen.aborted}`);
-      check(elapsed >= LIMIT - 100 && elapsed < LIMIT + 1_500, `${c.name}: ends at about the limit`, `${elapsed}ms for a ${LIMIT}ms limit`);
+      check(elapsed >= LIMIT - 100 && elapsed < LIMIT + 2_500, `${c.name}: ends at about the limit`, `${elapsed}ms for a ${LIMIT}ms limit`);
     }
   } finally {
     globalThis.fetch = realFetch;

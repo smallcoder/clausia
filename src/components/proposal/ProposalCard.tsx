@@ -19,6 +19,7 @@ import { cx } from "@/components/ui";
 import { decideProposalAction } from "@/lib/assistant/actions";
 import { CASE_STATUS, DECISION, DOC_TYPE, PARTY_ROLE, STAGE } from "@/lib/labels";
 import type { Proposal, ProposalOp } from "@/lib/proposals";
+import { relativeDayText } from "@/lib/relative-days";
 import { OP_FIELDS, OP_TITLE, type FieldSpec } from "@/lib/tools/registry";
 
 type Edits = Record<string, Record<string, unknown>>;
@@ -85,7 +86,7 @@ function summaryOf(o: ProposalOp): string {
  */
 function relativeNotes(o: ProposalOp, values: Record<string, unknown>): Record<string, string> {
   const out: Record<string, string> = {};
-  for (const [k, r] of Object.entries(o.resolved_from ?? {})) if (values[k] === o.args[k]) out[k] = `${r.word} = ${r.label}`;
+  for (const [k, r] of Object.entries(o.resolved_from ?? {})) if (values[k] === o.args[k]) out[k] = relativeDayText(r);
   return out;
 }
 
@@ -297,7 +298,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
                       {summaryOf({ ...o, args: merged }) || OP_TITLE[o.tool]}
                     </span>
                     {factQuote && !isOpen ? <span className="text-doc mt-0.75 line-clamp-2 text-sm leading-[1.8]! text-text-3">«{factQuote}»</span> : null}
-                    {!isOpen ? Object.values(notes).map((n) => <span key={n} className="mt-0.75 block text-sm font-semibold leading-[normal] text-text-2">{n}</span>) : null}
+                    {!isOpen ? Object.entries(notes).map(([k, n]) => <span key={k} className="mt-0.75 block text-sm font-semibold leading-[normal] text-text-2">{n}</span>) : null}
                     <span className="mt-0.75 flex flex-wrap items-center gap-x-2.5 gap-y-1">
                       <span className="text-xs leading-[normal] text-text-4">{sourceShort(o)}</span>
                       {tags}
