@@ -83,7 +83,7 @@ function ReviewBanner({ cf, hs, caseId, className }: { cf: CaseFile; hs: Hearing
   return (
     <div className={`space-y-2 lg:hidden ${className}`}>
       {rows.map((r) => {
-        const cls = "flex min-h-11 items-center gap-2.5 rounded-lg border border-[var(--accent-edge)] px-3.5 py-3 text-base text-text";
+        const cls = "flex min-h-11 items-center gap-2.5 rounded-lg border border-gold-edge px-3.5 py-3 text-base text-text";
         const body = (
           <>
             <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-gold" />
@@ -109,7 +109,7 @@ function FactRow({ f, last, cf }: { f: Fact; last: boolean; cf: CaseFile }) {
       </span>
       <span className="flex w-[9px] shrink-0 flex-col items-center" aria-hidden>
         <span className={`mt-2.25 size-[7px] shrink-0 rounded-full ${suggested ? "bg-gold" : "bg-text-3"}`} />
-        {!last ? <span className="mt-1 w-px flex-1 bg-[var(--hairline-v2)]" /> : null}
+        {!last ? <span className="mt-1 w-px flex-1 bg-border-2" /> : null}
       </span>
       <span className="min-w-0 flex-1 pb-4.5">
         <span className="text-doc block text-md text-text" style={{ lineHeight: 1.9 }}>{f.text}</span>
@@ -193,7 +193,7 @@ function Sides({ cf, caseId, className }: { cf: CaseFile; caseId: string; classN
   const empty = (t: string) => <p className="mt-1.5 text-base leading-[1.7] text-text-4 lg:mt-2">{t}</p>;
   return (
     <div className={`${CARD} px-4.5 py-1 lg:flex lg:gap-3.5 lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none ${className}`}>
-      <section className={`border-b border-[var(--hairline-v2)] pb-3 pt-3.5 lg:border-b-0 ${card}`}>
+      <section className={`border-b border-border-2 pb-3 pt-3.5 lg:border-b-0 ${card}`}>
         <SideLabel tone="good">لنا · طلباتنا</SideLabel>
         <div>
           {requests.map((r) => <TextItem key={r.id} cf={cf} caseId={caseId} table="case_requests" item={r} kindLabel={r.kind ? REQUEST_KIND[r.kind] ?? r.kind : null} />)}
@@ -259,7 +259,7 @@ function HearingCard({ cf, hs, today, caseId, className }: { cf: CaseFile; hs: H
       <Link href={`/cases/${caseId}?tab=hearings`} aria-label="الجلسات" className="absolute inset-0 rounded-[inherit]" /* ds-allow: the link overlay takes its card's radius */ />
       <div className="flex items-center gap-4 lg:gap-4.5">
         <DayBlock iso={h.date} />
-        <div className="min-w-0 flex-1 border-s border-[var(--hairline-v2)] ps-4 lg:ps-4.5">
+        <div className="min-w-0 flex-1 border-s border-border-2 ps-4 lg:ps-4.5">
           <div className="text-xs text-text-3 lg:text-sm">{when}</div>
           <div className="mt-0.75 text-md font-bold text-text lg:mt-1">
             {weekday} <span className="num font-num lg:hidden">{d}/{m}</span><span className="num font-num hidden lg:inline">{d}/{m}/{y}</span>
@@ -276,7 +276,7 @@ function HearingCard({ cf, hs, today, caseId, className }: { cf: CaseFile; hs: H
         </div>
       </div>
       {needed || decide ? (
-        <div className="mt-4.5 hidden space-y-2 border-t border-[var(--hairline-v2)] pt-3.5 lg:block">
+        <div className="mt-4.5 hidden space-y-2 border-t border-border-2 pt-3.5 lg:block">
           {needed ? (
             <div className="flex items-center gap-2 text-base">
               <span aria-hidden className={`size-1.5 shrink-0 rounded-full ${upcoming ? "bg-gold" : "bg-text-4"}`} />
@@ -319,7 +319,7 @@ function Parties({ cf, caseId }: { cf: CaseFile; caseId: string }) {
   return (
     <ListCard title="الأطراف">
       {rows.length ? (
-        <div className="lg:[&>*]:border-t [&>*+*]:border-t [&>*]:border-[var(--hairline-v2)]">
+        <div className="lg:[&>*]:border-t [&>*+*]:border-t [&>*]:border-[var(--border-2)]">
           {rows.map((r, i) => r.id && r.party ? (
             <TapItem key={r.id} id={r.id} title="طرف في الدعوى" className="-mx-2 rounded-md px-2" row={line(r.name, r.role, r.suggested ? <Suggested label="مقترح · راجعه" /> : null)}>
               <div>
@@ -348,7 +348,7 @@ function Docs({ cf, caseId }: { cf: CaseFile; caseId: string }) {
   return (
     <ListCard title="المستندات" end={all}>
       {shown.length ? (
-        <div className="lg:[&>*]:border-t [&>*+*]:border-t [&>*]:border-[var(--hairline-v2)]">
+        <div className="lg:[&>*]:border-t [&>*+*]:border-t [&>*]:border-[var(--border-2)]">
           {shown.map((d) => (
             <a key={d.id} href={`/api/documents/${d.id}`} target="_blank" rel="noopener" title={d.file_name}
               className="-mx-2 block min-h-11 rounded-md px-2 py-3 transition-colors hover:bg-card-2/60">

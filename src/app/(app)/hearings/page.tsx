@@ -22,7 +22,7 @@ const SSR_WEEKS = 3;
 function SideCard({ count, rows }: { count: number; rows: HearingWithCase[] }) {
   const more = count - rows.length;
   return (
-    <section aria-label="جلسات محتاجة قرار" className="rounded-xl border border-[var(--accent-edge)] bg-card px-6 pb-1.5 pt-2 shadow-card">
+    <section aria-label="جلسات محتاجة قرار" className="rounded-xl border border-gold-edge bg-card px-6 pb-1.5 pt-2 shadow-card">
       <Link href="/hearings?filter=undecided" className="flex items-center gap-3 pb-3 pt-4 transition hover:opacity-80">
         <span className="font-num text-2xl font-extralight leading-none text-gold">{two(count)}</span>
         <span>
@@ -32,7 +32,7 @@ function SideCard({ count, rows }: { count: number; rows: HearingWithCase[] }) {
       </Link>
       <ul>
         {rows.map((h) => (
-          <li key={h.id} className="flex items-center gap-3 border-t border-[var(--hairline-v2)] py-3.5">
+          <li key={h.id} className="flex items-center gap-3 border-t border-border-2 py-3.5">
             <div className="min-w-0 flex-1">
               <div className="truncate text-base font-semibold text-text">{hearingTitle(h)}</div>
               <div className="mt-0.75 truncate text-sm text-text-3">{courtOf(h)} · <span className="num font-num">{shortDm(h.hearing_date)}</span></div>
@@ -45,7 +45,7 @@ function SideCard({ count, rows }: { count: number; rows: HearingWithCase[] }) {
         ))}
       </ul>
       {more > 0 ? (
-        <Link href="/hearings?filter=undecided" className="block border-t border-[var(--hairline-v2)] py-3 text-center text-sm text-text-3 hover:text-text">
+        <Link href="/hearings?filter=undecided" className="block border-t border-border-2 py-3 text-center text-sm text-text-3 hover:text-text">
           {more === 1 ? "والجلسة الرابعة" : `وكمان ${nHearings(more)}`}
         </Link>
       ) : null}
@@ -80,7 +80,7 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
   // the undecided count: the side card on desktop (lg+), this pill below it (the mockup draws it on mobile)
   const pill = undecidedCount > 0 && !undecidedMode ? (
     <Link href="/hearings?filter=undecided" className="inline-flex h-11 shrink-0 items-center lg:hidden" aria-label={`${nHearings(undecidedCount)} محتاجة قرار`}>
-      <span className="inline-flex h-[36px] items-center gap-1.5 rounded-full border border-[var(--accent-edge)] px-3 text-sm font-semibold text-gold transition hover:bg-[var(--accent-wash)]">
+      <span className="inline-flex h-[36px] items-center gap-1.5 rounded-full border border-gold-edge px-3 text-sm font-semibold text-gold transition hover:bg-gold-bg">
         <span aria-hidden className="size-1.5 rounded-full bg-gold" /><span className="font-num">{undecidedCount}</span> محتاجة قرار
       </span>
     </Link>

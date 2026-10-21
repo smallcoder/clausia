@@ -35,8 +35,8 @@ export function Timeline({ rows, today, next, label, showToday = false }: { rows
         return (
           <li key={g.key} className="flex gap-3.5 sm:gap-4.5">
             <div aria-hidden className="flex w-3 shrink-0 flex-col items-center sm:w-3.5">
-              <span className={cx("mt-1.25 size-[11px] shrink-0 rounded-full sm:size-3", gold ? "bg-gold shadow-[0_0_0_4px_var(--accent-ring)] sm:shadow-[0_0_0_5px_var(--accent-ring)]" : "border-2 border-text-4")} />
-              {last ? null : <span className="mt-1.5 w-px flex-1 bg-[var(--hairline-v2)]" />}
+              <span className={cx("mt-1.25 size-[11px] shrink-0 rounded-full sm:size-3", gold ? "bg-gold shadow-[0_0_0_4px_var(--gold-edge)] sm:shadow-[0_0_0_5px_var(--gold-edge)]" : "border-2 border-text-4")} />
+              {last ? null : <span className="mt-1.5 w-px flex-1 bg-border-2" />}
             </div>
             <div className={cx("min-w-0 flex-1", last ? "pb-0" : "pb-5.5 sm:pb-6.5")}>
               {hasNext && label ? <div className={cx("mb-1 text-xs font-semibold sm:text-sm", label.gold ? "text-gold" : "text-text-3")}>{label.text}</div> : null}

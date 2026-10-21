@@ -17,7 +17,7 @@ function Rows({ n, line = true }: { n: number; line?: boolean }) {
   return (
     <div>
       {Array.from({ length: n }, (_, i) => (
-        <div key={i} className={`flex items-center gap-4 py-4 ${line && i ? "border-t border-[var(--hairline-v2)]" : ""}`}>
+        <div key={i} className={`flex items-center gap-4 py-4 ${line && i ? "border-t border-border-2" : ""}`}>
           <Bar w="28px" h={28} className="rounded-xl" />
           <div className="flex-1 space-y-2"><Bar w={`${62 - (i % 3) * 9}%`} h={13} /><Bar w={`${38 - (i % 2) * 8}%`} h={10} /></div>
           <Bar w="70px" h={10} className="hidden sm:block" />
@@ -102,7 +102,7 @@ export function PageSkeleton({ kind }: { kind: Kind }) {
           {/* same columns as the header card: 4 spec cells (1fr) | 3 stat cells (0.7fr) */}
           <div className="mt-6 hidden grid-cols-[repeat(4,minmax(0,1fr))_repeat(3,minmax(0,0.7fr))] items-center rounded-xl border border-border-2 bg-card py-5 shadow-card sm:grid">
             {Array.from({ length: 7 }, (_, i) => (
-              <div key={i} className={`min-w-0 space-y-2 px-6 ${i ? "border-s border-[var(--hairline-v2)]" : ""}`}>
+              <div key={i} className={`min-w-0 space-y-2 px-6 ${i ? "border-s border-border-2" : ""}`}>
                 {i < 4 ? <><Bar w="50px" h={9} /><Bar w="85%" h={13} /></> : <><Bar w="38px" h={28} className="rounded-xl" /><Bar w="46px" h={9} /></>}
               </div>
             ))}
@@ -124,7 +124,7 @@ export function PageSkeleton({ kind }: { kind: Kind }) {
             <span aria-hidden className="absolute end-1.5 top-1/2 hidden size-9 -translate-y-1/2 rounded-full border border-border sm:block" />
           </div>
           <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_455px]">
-            <div className="space-y-6 border-s border-[var(--hairline-v2)] ps-6">{[0, 1, 2].map((i) => <div key={i} className="space-y-3"><Bar w="200px" h={14} /><Card className={i ? "" : "pb-8"}><Rows n={1} line={false} />{i ? null : <Bar w="100%" h={48} className="mt-3 rounded-full" />}</Card></div>)}</div>
+            <div className="space-y-6 border-s border-border-2 ps-6">{[0, 1, 2].map((i) => <div key={i} className="space-y-3"><Bar w="200px" h={14} /><Card className={i ? "" : "pb-8"}><Rows n={1} line={false} />{i ? null : <Bar w="100%" h={48} className="mt-3 rounded-full" />}</Card></div>)}</div>
             <div className="hidden lg:block"><Card><Bar w="140px" h={14} /><Rows n={3} /></Card></div>
           </div>
         </>
@@ -133,7 +133,7 @@ export function PageSkeleton({ kind }: { kind: Kind }) {
         <>
           <Header />
           <div className="mt-6 flex gap-2">{Array.from({ length: 4 }, (_, i) => <Bar key={i} w="88px" h={34} className="rounded-full" />)}</div>
-          <Card className="mt-4 !p-0"><div className="border-b border-[var(--hairline-v2)] px-6 py-3"><Bar w="40%" h={10} /></div><div className="px-6"><Rows n={7} /></div></Card>
+          <Card className="mt-4 !p-0"><div className="border-b border-border-2 px-6 py-3"><Bar w="40%" h={10} /></div><div className="px-6"><Rows n={7} /></div></Card>
         </>
       ) : null}
       <ComposerShell width={780} tall={kind === "home" || kind === "chat"} />

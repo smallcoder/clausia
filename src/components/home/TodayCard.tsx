@@ -13,7 +13,7 @@ function Row({ h }: { h: HearingWithCase }) {
   const place = placeLine(h);
   const need = h.purpose?.trim() || null;
   return (
-    <Link href={`/cases/${h.case_id}`} className="group flex items-center gap-3.5 border-t border-[var(--hairline-v2)] py-3 md:gap-4.5 md:py-4">
+    <Link href={`/cases/${h.case_id}`} className="group flex items-center gap-3.5 border-t border-border-2 py-3 md:gap-4.5 md:py-4">
       <span title={h.case.circuit ?? undefined}
         className="font-num w-[22px] shrink-0 text-center text-lg font-light text-gold md:w-[30px] md:text-xl">
         {circuitNo(h.case.circuit)}
@@ -48,13 +48,13 @@ export function TodayCard({ todays, tomorrows, tomorrow, nextDate, className = "
         <div>
           {list.slice(0, MAX_ROWS).map((h) => <Row key={h.id} h={h} />)}
           {more > 0 ? (
-            <Link href="/hearings" className="flex min-h-11 items-center border-t border-[var(--hairline-v2)] text-sm font-semibold text-text-2 hover:text-text">
+            <Link href="/hearings" className="flex min-h-11 items-center border-t border-border-2 text-sm font-semibold text-text-2 hover:text-text">
               و{hearingsCount(more)} كمان في الرول ←
             </Link>
           ) : null}
         </div>
       ) : (
-        <div className="border-t border-[var(--hairline-v2)] py-5 md:py-6">
+        <div className="border-t border-border-2 py-5 md:py-6">
           <div className="text-md font-semibold text-text">مفيش جلسات النهارده ولا بكره</div>
           <div className="mt-1 text-sm text-text-3">
             {nextDate ? <>أقرب جلسة يوم {formatLongDay(nextDate)} · </> : null}

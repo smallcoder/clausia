@@ -18,7 +18,7 @@ export function DecisionNotices({ children }: { children: ReactNode }) {
       {items.length ? (
         <ul className="mb-3 space-y-2 print:hidden">
           {items.map((n) => (
-            <li key={n.id} role="status" className="flex items-start justify-between gap-3 rounded-md border border-ok/20 bg-ok-soft px-3 py-2 text-base leading-[1.55] text-ok">
+            <li key={n.id} role="status" className="flex items-start justify-between gap-3 rounded-md border border-good/20 bg-good-bg px-3 py-2 text-base leading-[1.55] text-good">
               <span>
                 <span className="block">تم حفظ قرار {n.label}</span>
                 {n.nextDate ? <span className="block">الجلسة القادمة: <span className="num font-semibold">{formatDmy(n.nextDate)}</span></span> : null}

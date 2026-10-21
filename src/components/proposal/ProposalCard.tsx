@@ -241,7 +241,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
         ? "flex max-h-[88dvh] flex-col rounded-t-xl border-t border-border-2 shadow-pop"
         : "overflow-hidden rounded-xl border border-border-2 shadow-card")}>
         {inSheet ? <div aria-hidden className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-card-3" /> : null}
-        <div className="flex shrink-0 items-center gap-3 border-b border-[var(--hairline-v2)] px-4 py-4 sm:px-5.5">
+        <div className="flex shrink-0 items-center gap-3 border-b border-border-2 px-4 py-4 sm:px-5.5">
           <span className="mark inline-flex size-9 shrink-0 items-center justify-center rounded-md">
             <FolderClosed aria-hidden size={18} strokeWidth={2} />
           </span>
@@ -277,7 +277,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
             ].filter(Boolean);
             const tags = tagList.length ? tagList : null;
             return (
-              <li key={o.op_id} className={cx("not-first:border-t not-first:border-[var(--hairline-v2)]", o.status === "rejected" && "opacity-55", limit && i >= MOBILE_ROWS && "lg:block hidden")}>
+              <li key={o.op_id} className={cx("not-first:border-t not-first:border-border-2", o.status === "rejected" && "opacity-55", limit && i >= MOBILE_ROWS && "lg:block hidden")}>
                 {/* kind · value (+ fact quote) · source · check — the mockup's hairline row */}
                 <div className="flex items-start gap-3.5 px-4 py-3.25 sm:px-5.5">
                   <span className="w-[58px] shrink-0 pt-0.5 text-xs leading-[normal] text-text-4 sm:w-[72px]">{kindOf(o)}</span>
@@ -295,13 +295,13 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
                     <button type="button" role="checkbox" aria-checked={sel} aria-label={sel ? `شيل ${kindOf(o)} من الحفظ` : `ضيف ${kindOf(o)} للحفظ`}
                       onClick={() => toggleSelect(o)} disabled={pending || (!sel && !!lone && lone.includes("مرفوض"))}
                       className={cx("tap mt-0.5 inline-flex size-[22px] shrink-0 items-center justify-center rounded-full border transition disabled:opacity-40",
-                        sel ? "border-[var(--accent-edge)] text-gold" : "border-border text-transparent hover:text-text-4")}>
+                        sel ? "border-gold-edge text-gold" : "border-border text-transparent hover:text-text-4")}>
                       <Check aria-hidden size={12} strokeWidth={2.6} />
                     </button>
                   ) : (
                     <span aria-label={o.status === "rejected" ? "مرفوض" : o.status === "suggested" ? "اتحفظ كمقترح" : "اتحفظ"}
                       className={cx("mt-0.5 inline-flex size-[22px] shrink-0 items-center justify-center rounded-full",
-                        o.status === "rejected" ? "bg-card-2 text-text-4" : o.status === "suggested" ? "bg-warn-bg text-warn" : "bg-good-bg text-good")}>
+                        o.status === "rejected" ? "bg-card-2 text-text-4" : o.status === "suggested" ? "bg-gold-bg text-gold" : "bg-good-bg text-good")}>
                       {o.status === "rejected" ? <X aria-hidden size={12} strokeWidth={2.6} /> : <Check aria-hidden size={12} strokeWidth={2.6} />}
                     </span>
                   )}
@@ -357,7 +357,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
             );
           })}
           {limit ? (
-            <li className="border-t border-[var(--hairline-v2)] lg:hidden">
+            <li className="border-t border-border-2 lg:hidden">
               <button type="button" onClick={() => setSheet(true)} aria-haspopup="dialog"
                 className="flex min-h-11 w-full items-center justify-center gap-1 px-4 py-3 text-sm font-semibold text-text-2 hover:text-text">
                 كل العناصر · <span className="font-num">{itemsLabel(p.ops.length)}</span>
@@ -368,7 +368,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
 
         {error ? <p className="mx-4 mt-3 shrink-0 rounded-md bg-bad-bg px-3 py-2 text-base text-bad sm:mx-5.5">{error}</p> : null}
 
-        <div className={cx("shrink-0 border-t border-[var(--hairline-v2)] px-4 pt-3.5 sm:px-5.5", openOps.length && more ? "pb-2" : "pb-4",
+        <div className={cx("shrink-0 border-t border-border-2 px-4 pt-3.5 sm:px-5.5", openOps.length && more ? "pb-2" : "pb-4",
           inSheet && (openOps.length && more ? "pb-[calc(0.5rem+env(safe-area-inset-bottom))]" : "pb-[calc(1rem+env(safe-area-inset-bottom))]")) /* ds-allow: safe-area inset needs calc() */}>
           {openOps.length ? (
             <>
@@ -463,7 +463,7 @@ function EditFields({ op, values, onChange, display }: {
         const id = `${op.op_id}-${f.key}`;
         let control;
         if (f.type === "ref") control = <p className="py-1 text-base leading-5 text-text-2">{display(f, v) ?? "—"}</p>;
-        else if (f.type === "bool") control = <input id={id} type="checkbox" checked={!!v} onChange={(e) => onChange(f.key, e.target.checked)} className="h-4 w-4 accent-[var(--primary)]" />;
+        else if (f.type === "bool") control = <input id={id} type="checkbox" checked={!!v} onChange={(e) => onChange(f.key, e.target.checked)} className="h-4 w-4 accent-primary" />;
         else if (typeof f.type === "object") {
           control = (
             <select id={id} value={String(v ?? "")} onChange={(e) => onChange(f.key, e.target.value || undefined)} className={input}>

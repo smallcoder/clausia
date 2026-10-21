@@ -31,7 +31,7 @@ export function StatTile({ s }: { s: HeroStat }) {
     </>
   );
   // hairline between stats on the logical start side (RTL-safe), none before the first
-  const cls = "block min-w-0 flex-1 border-s border-[var(--hairline-v2)] px-4 first:border-s-0 first:ps-0 sm:min-w-[88px] sm:flex-none sm:px-7";
+  const cls = "block min-w-0 flex-1 border-s border-border-2 px-4 first:border-s-0 first:ps-0 sm:min-w-[88px] sm:flex-none sm:px-7";
   if (!s.href) return <div className={cls}>{body}</div>;
   // a same-page hash (e.g. #item-…) must fire hashchange so the item sheet opens: plain <a>
   return s.href.includes("#") ? <a href={s.href} className={`${cls} transition hover:opacity-80`}>{body}</a> : <Link href={s.href} className={`${cls} transition hover:opacity-80`}>{body}</Link>;
@@ -87,7 +87,7 @@ export function PageHero({ back, action, eyebrow, title, subtitle, stats, classN
 /** v2 status: a small dot + a word. needs decision = gold · today = gold outline · active = green · reserved/done = muted · against us = red */
 export function StatusChip({ tone, children }: { tone: "good" | "warn" | "neutral" | "bad" | "accent"; children: ReactNode }) {
   if (tone === "accent")
-    return <span className="inline-flex h-[22px] items-center rounded-full border border-[var(--accent-edge)] px-2.5 text-xs font-bold text-gold">{children}</span>;
+    return <span className="inline-flex h-[22px] items-center rounded-full border border-gold-edge px-2.5 text-xs font-bold text-gold">{children}</span>;
   const c = { good: ["bg-good", "text-good"], warn: ["bg-gold", "text-gold"], neutral: ["bg-text-4", "text-text-3"], bad: ["bg-bad", "text-bad"] }[tone];
   return (
     <span className={`inline-flex items-center gap-1.5 text-sm font-semibold ${c[1]}`}>
@@ -114,7 +114,7 @@ export function Panel({ title, meta, children, className = "" }: { title?: React
   return (
     <section className={`rounded-xl border border-border-2 bg-card shadow-card ${className}`}>
       {title ? (
-        <div className="flex items-center justify-between gap-3 border-b border-[var(--hairline-v2)] px-6 py-4">
+        <div className="flex items-center justify-between gap-3 border-b border-border-2 px-6 py-4">
           <h2 className="text-lg font-bold text-title">{title}</h2>
           {meta ? <div className="text-sm leading-4 text-text-4">{meta}</div> : null}
         </div>

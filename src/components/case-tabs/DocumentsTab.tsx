@@ -43,7 +43,7 @@ export async function DocumentsTab({ caseId }: { caseId: string }) {
   return (
     <div className="space-y-4 pb-4">
       <section className="rounded-xl border border-border-2 bg-card shadow-card">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--hairline-v2)] px-6 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-2 px-6 py-4">
           <h2 className="text-lg font-bold text-title">
             {docs?.length ? pagesWord(docs.length) : "ارفع أول ورقة"}
           </h2>
@@ -100,7 +100,7 @@ export async function DocumentsTab({ caseId }: { caseId: string }) {
               {hasPending.has(d.id) ? (
                 <li className="flex min-h-12 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-5 py-2">
                   <span className="flex items-center gap-2 text-base text-text-2"><StatusChip tone="warn">مقترحات</StatusChip>Clausia طلّع من الورقة دي حاجات مستنية تأكيدك.</span>
-                  <Link href={`/cases/${caseId}?tab=chat`} className="inline-flex min-h-11 items-center text-base font-semibold text-gold-text hover:underline">راجعها ←</Link>
+                  <Link href={`/cases/${caseId}?tab=chat`} className="inline-flex min-h-11 items-center text-base font-semibold text-gold hover:underline">راجعها ←</Link>
                 </li>
               ) : null}
               {d.read_status === "failed" && d.read_error ? (

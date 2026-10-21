@@ -15,8 +15,7 @@
  */
 :root {
   color-scheme: light;
-  /* ---- v2 tokens (docs/design/DESIGN.md): one identity, navy ink + champagne ---- */
-  --page: #ECEEF2;
+  /* surfaces */
   --bg: #ECEEF2;
   --bg-image: radial-gradient(1100px 560px at 75% -15%, rgba(255,255,255,0.95), transparent 65%), radial-gradient(900px 600px at 0% 100%, rgba(214,220,232,0.7), transparent 60%);
   --card: #FFFFFF;
@@ -24,83 +23,59 @@
   --card-3: #ECEEF2;
   --field: #FFFFFF;
   --chip: #FFFFFF;
+  /* text */
   --text: #121A2B;
   --title: #0F1626;
   --text-2: #2A2D31;
-  --text-3: #6A6E76;
-  --text-4: #9A9EA6;
+  --text-3: #6A6E76;                     /* muted */
+  --text-4: #9A9EA6;                     /* faint */
+  /* lines */
   --border: rgba(18,26,43,0.08);
-  --border-2: rgba(18,26,43,0.06);
-  --hairline-v2: rgba(18,26,43,0.06);
-  --ink-solid: #141C2E;
+  --border-2: rgba(18,26,43,0.06);       /* hairline */
+  --border-strong: rgba(18,26,43,0.14);  /* hover outline */
+  /* ink: brand mark, selected, primary */
+  --ink-solid: #141C2E;                  /* ink in both themes: print on the paper thumbnail */
   --mark-bg: #141C2E;
   --mark-fg: #D6C08F;
   --selected: #141C2E;                   /* selected tab / filter / day */
   --on-selected: #FFFFFF;
   --primary: #141C2E;                    /* send, save, record */
-  --primary-bg: #141C2E;
   --on-primary: #FFFFFF;
-  --primary-shadow: 0 8px 18px -8px rgba(18,26,43,0.6);
-  --gold: #897038;                       /* needs action: text, dots, thin outlines, big light numbers */
-  --accent-base: #897038;
-  --accent-text: #897038;
-  --accent-wash: rgba(137,112,56,0.10);
-  --accent-ring: rgba(137,112,56,0.3);
-  --accent-edge: rgba(137,112,56,0.3);
-  --accent-grad: #141C2E;                /* v1 leftover: no gradients in v2 */
-  --accent-shadow: transparent;
+  /* gold: needs action (text, dots, thin outlines, big light numbers; never a fill on buttons) */
+  --gold: #897038;
+  --gold-bg: rgba(137,112,56,0.10);
+  --gold-edge: rgba(137,112,56,0.3);
+  /* status */
   --good: #1F7A4A;
   --good-bg: rgba(31,122,74,0.10);
   --bad: #A23B3B;
   --bad-bg: rgba(162,59,59,0.08);
-  --warn: #897038;
-  --warn-bg: rgba(137,112,56,0.10);
-  --amber: #897038;
-  --amber-bg: rgba(137,112,56,0.10);
-  --amber-text: #897038;
+  /* the paper thumbnail of a document */
   --paper-thumb: #ECE7DC;
+  --paper-thumb-ink: #7A2A20;            /* PDF / IMG label on a paper thumbnail */
+  /* shadows */
+  --primary-shadow: 0 8px 18px -8px rgba(18,26,43,0.6);
   --tab-shadow: 0 4px 10px -4px rgba(18,26,43,0.5);
   --mark-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
-  --paper-thumb-ink: #7A2A20;              /* PDF / IMG label on a paper thumbnail */
-  --court-tint: none;
-  --hero: transparent;
-  --hero-border: transparent;
-  --hero-shadow: none;
-  --tile: transparent;
-  --tile-border: transparent;
-  --tile-hi: transparent;
-  --tile-hi-text: #897038;
-  --tile-hi-sub: #897038;
-  --tile-hi-shadow: none;
   --shadow-card: 0 1px 2px rgba(18,26,43,0.04), 0 30px 60px -34px rgba(18,26,43,0.25);
   --shadow-soft: 0 1px 2px rgba(18,26,43,0.04);
   --shadow-pop: 0 2px 4px rgba(18,26,43,0.05), 0 22px 44px -20px rgba(18,26,43,0.32);
-  --shadow-accent: none;
   --shadow-mark: 0 4px 10px rgba(18,26,43,0.25);
-  --shadow-tile: none;
   /* glass (floating controls only) */
   --glass-bg: linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(255,255,255,0.52) 55%, rgba(255,255,255,0.6) 100%);
   --glass-filter: blur(24px) saturate(190%) brightness(1.04);
   --glass-border: 1px solid rgba(255,255,255,0.95);
   --glass-shadow: 0 0 0 0.5px rgba(18,26,43,0.10), inset 0 1.5px 0 #FFFFFF, inset 0 -10px 18px -12px rgba(18,26,43,0.12), inset 1px 0 0 rgba(255,255,255,0.7), 0 2px 4px rgba(18,26,43,0.05), 0 22px 44px -20px rgba(18,26,43,0.32);
   --glass-icon: #5F636A;
+  /* the fade behind the composer, skeletons, the sheet backdrop */
   --fade: linear-gradient(to top, #ECEEF2 55%, rgba(236,238,242,0));
   --skel: rgba(18,26,43,0.06);
   --skel-hi: rgba(255,255,255,0.7);
-  /* ---- legacy names mapped onto v2 ---- */
-  --paper: var(--bg); --surface: var(--card); --surface-2: var(--card-2); --chrome: rgba(236,238,242,0.82);
-  --ink: var(--text); --ink-2: var(--text-3); --ink-3: var(--text-4);
-  --line: var(--border); --line-strong: rgba(18,26,43,0.14); --hairline: var(--border-2);
-  --accent: var(--primary); --accent-ink: var(--on-primary); --accent-soft: var(--card-2);
-  --brass: var(--gold); --brass-soft: var(--accent-wash);
-  --suggest: var(--gold); --suggest-soft: var(--accent-wash);
-  --ok: var(--good); --ok-soft: var(--good-bg); --danger: var(--bad); --danger-soft: var(--bad-bg);
   --backdrop: rgba(15,22,38,0.4);
-  --shadow-1: var(--shadow-soft); --shadow-2: var(--shadow-card); --shadow-3: var(--shadow-pop);
 }
 
+/* dark: the same list twice — for the toggle (data-theme) and for the system setting; keep the two in sync */
 :root[data-theme="dark"] { color-scheme: dark;
-  --page: #14161C;
   --bg: #14161C;
   --bg-image: radial-gradient(1200px 600px at 75% -15%, rgba(255,255,255,0.08), transparent 65%), radial-gradient(900px 500px at 10% 110%, rgba(255,255,255,0.035), transparent 60%);
   --card: #1C1F27;
@@ -115,37 +90,25 @@
   --text-4: #6A6E78;
   --border: rgba(255,255,255,0.08);
   --border-2: rgba(255,255,255,0.06);
-  --hairline-v2: rgba(255,255,255,0.06);
+  --border-strong: rgba(255,255,255,0.16);
   --mark-bg: #222C44;
   --mark-fg: #D6C08F;
   --selected: #26314B;
   --on-selected: #FFFFFF;
   --primary: #F2F2F4;
-  --primary-bg: #F2F2F4;
   --on-primary: #111113;
-  --primary-shadow: 0 6px 16px -6px rgba(0,0,0,0.7);
-  --tab-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 4px 10px -4px rgba(0,0,0,0.5);
-  --mark-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
   --gold: #D6C08F;
-  --accent-base: #D6C08F;
-  --accent-text: #D6C08F;
-  --accent-wash: rgba(214,192,143,0.10);
-  --accent-ring: rgba(214,192,143,0.3);
-  --accent-edge: rgba(214,192,143,0.3);
-  --accent-grad: #F2F2F4;
+  --gold-bg: rgba(214,192,143,0.10);
+  --gold-edge: rgba(214,192,143,0.3);
   --good: #7FD3A4;
   --good-bg: rgba(127,211,164,0.10);
   --bad: #E9A0A0;
   --bad-bg: rgba(233,160,160,0.10);
-  --warn: #D6C08F;
-  --warn-bg: rgba(214,192,143,0.10);
-  --amber: #D6C08F;
-  --amber-bg: rgba(214,192,143,0.10);
-  --amber-text: #D6C08F;
   --paper-thumb: #ECE7DC;
   --paper-thumb-ink: #7A2A20;
-  --tile-hi-text: #D6C08F;
-  --tile-hi-sub: #D6C08F;
+  --primary-shadow: 0 6px 16px -6px rgba(0,0,0,0.7);
+  --tab-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 4px 10px -4px rgba(0,0,0,0.5);
+  --mark-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
   --shadow-card: inset 0 1px 0 rgba(255,255,255,0.04), 0 30px 60px -30px rgba(0,0,0,0.8);
   --shadow-soft: inset 0 1px 0 rgba(255,255,255,0.04);
   --shadow-pop: 0 24px 50px -22px rgba(0,0,0,0.85);
@@ -158,11 +121,10 @@
   --fade: linear-gradient(to top, #14161C 55%, rgba(20,22,28,0));
   --skel: rgba(255,255,255,0.06);
   --skel-hi: rgba(255,255,255,0.06);
-  --chrome: rgba(20,22,28,0.8); --line-strong: rgba(255,255,255,0.16); --backdrop: rgba(0,0,0,0.6);
+  --backdrop: rgba(0,0,0,0.6);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) { color-scheme: dark;
-  --page: #14161C;
   --bg: #14161C;
   --bg-image: radial-gradient(1200px 600px at 75% -15%, rgba(255,255,255,0.08), transparent 65%), radial-gradient(900px 500px at 10% 110%, rgba(255,255,255,0.035), transparent 60%);
   --card: #1C1F27;
@@ -177,37 +139,25 @@
   --text-4: #6A6E78;
   --border: rgba(255,255,255,0.08);
   --border-2: rgba(255,255,255,0.06);
-  --hairline-v2: rgba(255,255,255,0.06);
+  --border-strong: rgba(255,255,255,0.16);
   --mark-bg: #222C44;
   --mark-fg: #D6C08F;
   --selected: #26314B;
   --on-selected: #FFFFFF;
   --primary: #F2F2F4;
-  --primary-bg: #F2F2F4;
   --on-primary: #111113;
-  --primary-shadow: 0 6px 16px -6px rgba(0,0,0,0.7);
-  --tab-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 4px 10px -4px rgba(0,0,0,0.5);
-  --mark-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
   --gold: #D6C08F;
-  --accent-base: #D6C08F;
-  --accent-text: #D6C08F;
-  --accent-wash: rgba(214,192,143,0.10);
-  --accent-ring: rgba(214,192,143,0.3);
-  --accent-edge: rgba(214,192,143,0.3);
-  --accent-grad: #F2F2F4;
+  --gold-bg: rgba(214,192,143,0.10);
+  --gold-edge: rgba(214,192,143,0.3);
   --good: #7FD3A4;
   --good-bg: rgba(127,211,164,0.10);
   --bad: #E9A0A0;
   --bad-bg: rgba(233,160,160,0.10);
-  --warn: #D6C08F;
-  --warn-bg: rgba(214,192,143,0.10);
-  --amber: #D6C08F;
-  --amber-bg: rgba(214,192,143,0.10);
-  --amber-text: #D6C08F;
   --paper-thumb: #ECE7DC;
   --paper-thumb-ink: #7A2A20;
-  --tile-hi-text: #D6C08F;
-  --tile-hi-sub: #D6C08F;
+  --primary-shadow: 0 6px 16px -6px rgba(0,0,0,0.7);
+  --tab-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 4px 10px -4px rgba(0,0,0,0.5);
+  --mark-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
   --shadow-card: inset 0 1px 0 rgba(255,255,255,0.04), 0 30px 60px -30px rgba(0,0,0,0.8);
   --shadow-soft: inset 0 1px 0 rgba(255,255,255,0.04);
   --shadow-pop: 0 24px 50px -22px rgba(0,0,0,0.85);
@@ -220,10 +170,11 @@
   --fade: linear-gradient(to top, #14161C 55%, rgba(20,22,28,0));
   --skel: rgba(255,255,255,0.06);
   --skel-hi: rgba(255,255,255,0.06);
-  --chrome: rgba(20,22,28,0.8); --line-strong: rgba(255,255,255,0.16); --backdrop: rgba(0,0,0,0.6);
+  --backdrop: rgba(0,0,0,0.6);
   }
 }
 
+/* colour + shadow utilities (bg-card, text-text-3, border-border-2, text-gold, shadow-card …): one name per meaning */
 @theme inline {
   --color-bg: var(--bg);
   --color-card: var(--card);
@@ -233,65 +184,35 @@
   --color-chip: var(--chip);
   --color-text: var(--text);
   --color-title: var(--title);
-  --color-selected: var(--selected);
-  --color-on-selected: var(--on-selected);
   --color-text-2: var(--text-2);
   --color-text-3: var(--text-3);
   --color-text-4: var(--text-4);
   --color-border: var(--border);
   --color-border-2: var(--border-2);
-  --color-gold: var(--accent-base);
-  --color-gold-text: var(--accent-text);
+  --color-border-strong: var(--border-strong);
   --color-ink-solid: var(--ink-solid);
+  --color-selected: var(--selected);
+  --color-on-selected: var(--on-selected);
   --color-primary: var(--primary);
   --color-on-primary: var(--on-primary);
-  --color-hero: var(--hero);
-  --color-tile: var(--tile);
-  --color-tile-hi-text: var(--tile-hi-text);
+  --color-gold: var(--gold);
+  --color-gold-bg: var(--gold-bg);
+  --color-gold-edge: var(--gold-edge);
   --color-good: var(--good);
   --color-good-bg: var(--good-bg);
   --color-bad: var(--bad);
   --color-bad-bg: var(--bad-bg);
-  --color-warn: var(--warn);
-  --color-warn-bg: var(--warn-bg);
-  --color-amber: var(--amber);
   --color-paper-thumb: var(--paper-thumb);
-  /* legacy */
-  --color-paper: var(--paper);
-  --color-surface: var(--surface);
-  --color-surface-2: var(--surface-2);
-  --color-chrome: var(--chrome);
-  --color-ink: var(--ink);
-  --color-ink-2: var(--ink-2);
-  --color-ink-3: var(--ink-3);
-  --color-line: var(--line);
-  --color-line-strong: var(--line-strong);
-  --color-hairline: var(--hairline);
-  --color-accent: var(--accent);
-  --color-accent-ink: var(--accent-ink);
-  --color-accent-soft: var(--accent-soft);
-  --color-brass: var(--brass);
-  --color-brass-soft: var(--brass-soft);
-  --color-suggest: var(--suggest);
-  --color-suggest-soft: var(--suggest-soft);
-  --color-ok: var(--ok);
-  --color-ok-soft: var(--ok-soft);
-  --color-danger: var(--danger);
-  --color-danger-soft: var(--danger-soft);
+  --color-paper-thumb-ink: var(--paper-thumb-ink);
   --color-backdrop: var(--backdrop);
   /* system Arabic font (SF Arabic on Apple), as in the mockups; no bundled Arabic web font */
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Arabic", "SF Pro Text", system-ui, sans-serif;
   --font-num: -apple-system, "SF Pro Display", system-ui, var(--font-inter), sans-serif;
   --font-naskh: var(--font-naskh), serif;
-  --shadow-1: var(--shadow-1);
-  --shadow-2: var(--shadow-2);
-  --shadow-3: var(--shadow-3);
   --shadow-card: var(--shadow-card);
   --shadow-soft: var(--shadow-soft);
   --shadow-pop: var(--shadow-pop);
-  --shadow-accent: var(--shadow-accent);
   --shadow-mark: var(--shadow-mark);
-  --shadow-tile: var(--shadow-tile);
 }
 
 /*
@@ -344,8 +265,6 @@ body {
 .mark { background: var(--mark-bg); color: var(--mark-fg); }
 :root[data-theme="dark"] .mark { box-shadow: 0 0 0 1px rgba(255,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.1); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mark { box-shadow: 0 0 0 1px rgba(255,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.1); } }
-/* v2: no gradient fills on buttons (kept as a plain primary fill for old call sites) */
-.bg-accent-grad { background: var(--primary-bg); color: var(--on-primary); }
 /* Glass: floating controls only (top bar, tab capsule, composer, round buttons, chips) */
 .glass { background: var(--glass-bg); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); border: var(--glass-border); box-shadow: var(--glass-shadow); }
 .glass-icon { color: var(--glass-icon); }
@@ -360,8 +279,7 @@ body {
 /* big light stat numbers */
 @layer components {
 .stat-num { font-family: -apple-system, "SF Pro Display", system-ui, var(--font-inter), sans-serif; font-weight: 300; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
-.bg-primary-fill { background: var(--primary-bg); color: var(--on-primary); box-shadow: var(--primary-shadow); }
-.bg-tile-hi { background: var(--tile-hi); color: var(--tile-hi-text); }
+.bg-primary-fill { background: var(--primary); color: var(--on-primary); box-shadow: var(--primary-shadow); }
 
 /* Document text and quotes read better in Naskh */
 .text-doc { font-family: var(--font-naskh), serif; line-height: 1.9; }
@@ -374,18 +292,15 @@ body {
 .grouped > * + * { position: relative; }
 .grouped > * + *::before {
   content: ""; position: absolute; top: 0; inset-inline-start: 1rem; inset-inline-end: 0;
-  height: 1px; transform: scaleY(0.5); transform-origin: top; background: var(--hairline);
+  height: 1px; transform: scaleY(0.5); transform-origin: top; background: var(--border-2);
   pointer-events: none;
 }
 /* tailwind divide-* utilities become hairlines too */
-.divide-y > * + *, .divide-line > * + * { border-color: var(--hairline) !important; }
-
-/* Translucent chrome */
-.chrome { background: var(--chrome); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); }
+.divide-y > * + *, .divide-line > * + * { border-color: var(--border-2) !important; }
 
 /* Skeleton, quiet pulse */
 @keyframes skeleton-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-.skeleton { background: var(--line); border-radius: var(--radius-sm); animation: skeleton-pulse 1.4s ease-in-out infinite; }
+.skeleton { background: var(--border); border-radius: var(--radius-sm); animation: skeleton-pulse 1.4s ease-in-out infinite; }
 /* v2 loading: solid shapes in the page's real layout, one calm shimmer sweeping the whole page (no spinners) */
 @keyframes skel-sweep { from { background-position: 150% 0; } to { background-position: -50% 0; } }
 .skel { background-color: var(--skel); border-radius: var(--radius-sm); }
@@ -413,4 +328,4 @@ body {
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
-:focus-visible { outline: 2px solid var(--accent-base); outline-offset: 2px; border-radius: var(--radius-sm); }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: var(--radius-sm); }

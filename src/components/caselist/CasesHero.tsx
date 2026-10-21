@@ -11,7 +11,7 @@ const isZero = (v: number | string) => v === 0 || v === "0" || v === "00";
 
 function Stat({ s }: { s: HeroStat }) {
   const gold = s.highlight && !isZero(s.value);
-  const cls = "block min-w-0 flex-1 px-3.5 border-[var(--hairline-v2)] not-first:border-s sm:flex-none sm:border-s sm:px-6.5 transition hover:opacity-80";
+  const cls = "block min-w-0 flex-1 px-3.5 border-border-2 not-first:border-s sm:flex-none sm:border-s sm:px-6.5 transition hover:opacity-80";
   const body = (
     <>
       <div className={`stat-num text-xl sm:text-2xl ${gold ? "text-gold" : "text-title"}`}>{typeof s.value === "number" ? two(s.value) : s.value}</div>

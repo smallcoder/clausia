@@ -16,23 +16,23 @@ export async function FactsTab({ caseId }: { caseId: string }) {
   if (!facts.length) return <EmptyState title="لا توجد وقائع بعد" hint="احكِ لـ Clausia في المحادثة ما حدث وتواريخه، أو ارفع صحيفة الدعوى، وسيقترح الوقائع لتؤكدها." />;
 
   return (
-    <ol className="relative space-y-4 border-s border-line ps-5">
+    <ol className="relative space-y-4 border-s border-border ps-5">
       {facts.map((f) => {
         const suggested = f.review_status === "suggested";
         const dated = f.fact_date && f.date_precision !== "unknown";
         return (
           <li key={f.id} className="relative">
-            <span className={cx("absolute -start-[1.6rem] top-1.5 size-2.5 rounded-full border-2 border-paper", suggested ? "bg-suggest" : "bg-accent")} /* ds-allow: the dot sits on the rail 1.6rem out (25.6px, no 0.25 step) */ />
+            <span className={cx("absolute -start-[1.6rem] top-1.5 size-2.5 rounded-full border-2 border-bg", suggested ? "bg-gold" : "bg-primary")} /* ds-allow: the dot sits on the rail 1.6rem out (25.6px, no 0.25 step) */ />
             <div className="flex flex-wrap items-baseline gap-x-2">
-              <span className={cx("font-semibold", dated ? "num text-ink" : "text-ink-3")}>{dated ? formatDmy(f.fact_date, f.date_precision) : "تاريخ غير محدد"}</span>
-              {f.date_text && f.date_text !== formatDmy(f.fact_date, f.date_precision) ? <span className="text-base leading-[1.55] text-ink-3">«{f.date_text}»</span> : null}
+              <span className={cx("font-semibold", dated ? "num text-text" : "text-text-4")}>{dated ? formatDmy(f.fact_date, f.date_precision) : "تاريخ غير محدد"}</span>
+              {f.date_text && f.date_text !== formatDmy(f.fact_date, f.date_precision) ? <span className="text-base leading-[1.55] text-text-4">«{f.date_text}»</span> : null}
               {f.date_precision === "month" || f.date_precision === "year" ? <Badge>{f.date_precision === "month" ? "بالشهر" : "بالسنة"}</Badge> : null}
             </div>
-            <div className={cx("mt-1.5 rounded-lg p-4", suggested ? "bg-suggest-soft ring-1 ring-suggest/25" : "bg-surface shadow-1")}>
-              <div className="text-doc text-lg text-ink">
+            <div className={cx("mt-1.5 rounded-lg p-4", suggested ? "bg-gold-bg ring-1 ring-gold/25" : "bg-card shadow-soft")}>
+              <div className="text-doc text-lg text-text">
                 <InlineEdit action={editItemText} hidden={{ table: "case_facts", id: f.id, case_id: caseId }} initial={f.text} multiline display={f.text} />
               </div>
-              {f.source_quote ? <p className="mt-2 text-base leading-[1.55] text-ink-3">المصدر: <span className="text-doc">«{f.source_quote}»</span></p> : null}
+              {f.source_quote ? <p className="mt-2 text-base leading-[1.55] text-text-4">المصدر: <span className="text-doc">«{f.source_quote}»</span></p> : null}
               <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                 <SourceBadge row={f} documentName={f.document?.file_name} />
                 {suggested ? <ReviewButtons table="case_facts" id={f.id} caseId={caseId} /> : null}

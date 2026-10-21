@@ -12,9 +12,9 @@ const PRECISION_NOTE = { day: "", month: "(بالشهر)", year: "(بالسنة)
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="border-t border-hairline py-3 first:border-t-0 sm:grid sm:grid-cols-[10rem_1fr] sm:gap-4">
-      <dt className="text-base leading-[1.55] text-ink-3">{label}</dt>
-      <dd className="mt-0.5 text-md text-ink sm:mt-0">{children}</dd>
+    <div className="border-t border-border-2 py-3 first:border-t-0 sm:grid sm:grid-cols-[10rem_1fr] sm:gap-4">
+      <dt className="text-base leading-[1.55] text-text-4">{label}</dt>
+      <dd className="mt-0.5 text-md text-text sm:mt-0">{children}</dd>
     </div>
   );
 }
@@ -34,7 +34,7 @@ export async function SummaryTab({ caseId }: { caseId: string }) {
         {c.summary ? (
           <Card className="p-4">
             <SectionTitle>نبذة</SectionTitle>
-            <p className="text-md leading-relaxed text-ink">{c.summary}</p>
+            <p className="text-md leading-relaxed text-text">{c.summary}</p>
           </Card>
         ) : null}
 
@@ -45,8 +45,8 @@ export async function SummaryTab({ caseId }: { caseId: string }) {
                 placeholder="مثال: 15/3/2023 أو 3/2023 أو 2023"
                 hint="يوم/شهر/سنة، أو شهر/سنة، أو السنة فقط. بهذا التاريخ يُختار إصدار القانون المنطبق."
                 display={factsIso && c.facts_date_precision !== "unknown"
-                  ? <><DateText iso={factsIso} precision={c.facts_date_precision} /> <span className="text-base leading-[1.55] text-ink-3">{PRECISION_NOTE[c.facts_date_precision]}</span></>
-                  : <span className="text-ink-3">غير محدد</span>} />
+                  ? <><DateText iso={factsIso} precision={c.facts_date_precision} /> <span className="text-base leading-[1.55] text-text-4">{PRECISION_NOTE[c.facts_date_precision]}</span></>
+                  : <span className="text-text-4">غير محدد</span>} />
             </Field>
             <Field label="الحالة">
               <InlineEdit action={editCaseField} hidden={{ ...hidden, field: "status" }} initial={c.status}
@@ -55,13 +55,13 @@ export async function SummaryTab({ caseId }: { caseId: string }) {
             </Field>
             <Field label="الدائرة">
               <InlineEdit action={editCaseField} hidden={{ ...hidden, field: "circuit" }} initial={c.circuit ?? ""}
-                placeholder="مثال: الدائرة 12 مدني" display={c.circuit ?? <span className="text-ink-3">غير محددة</span>} />
+                placeholder="مثال: الدائرة 12 مدني" display={c.circuit ?? <span className="text-text-4">غير محددة</span>} />
             </Field>
             <Field label="نوع الدعوى">
               <InlineEdit action={editCaseField} hidden={{ ...hidden, field: "case_type" }} initial={c.case_type ?? ""}
-                placeholder="مدني / عمال / إيجارات / أسرة / تجاري / جنح / إداري" display={c.case_type ?? <span className="text-ink-3">غير محدد</span>} />
+                placeholder="مدني / عمال / إيجارات / أسرة / تجاري / جنح / إداري" display={c.case_type ?? <span className="text-text-4">غير محدد</span>} />
             </Field>
-            <Field label="المحكمة">{c.court ?? <span className="text-ink-3">غير محددة</span>}</Field>
+            <Field label="المحكمة">{c.court ?? <span className="text-text-4">غير محددة</span>}</Field>
             <Field label="الدرجة">{STAGE[c.stage]}</Field>
           </dl>
         </Card>
@@ -73,22 +73,22 @@ export async function SummaryTab({ caseId }: { caseId: string }) {
               {links.previous ? (
                 <li className="flex flex-wrap items-center gap-2">
                   <Badge>الدرجة السابقة · {STAGE[links.previous.stage]}</Badge>
-                  <Link href={`/cases/${links.previous.id}`} className="text-accent hover:underline">{caseLabel(links.previous)}</Link>
+                  <Link href={`/cases/${links.previous.id}`} className="text-primary hover:underline">{caseLabel(links.previous)}</Link>
                 </li>
               ) : null}
               {links.later.map((l) => (
                 <li key={l.id} className="flex flex-wrap items-center gap-2">
                   <Badge tone="accent">الدرجة التالية · {STAGE[l.stage]}</Badge>
-                  <Link href={`/cases/${l.id}`} className="text-accent hover:underline">{caseLabel(l)}</Link>
+                  <Link href={`/cases/${l.id}`} className="text-primary hover:underline">{caseLabel(l)}</Link>
                 </li>
               ))}
             </ul>
           </Card>
         ) : null}
 
-        <section className="rounded-lg bg-brass-soft p-5">
-          <h2 className="font-semibold text-brass">تحليل Clausia</h2>
-          <p className="mt-2 text-md leading-relaxed text-ink-2">سيكتب Clausia هنا رأيًا قانونيًا أو مذكرة من ملف القضية.</p>
+        <section className="rounded-lg bg-gold-bg p-5">
+          <h2 className="font-semibold text-gold">تحليل Clausia</h2>
+          <p className="mt-2 text-md leading-relaxed text-text-3">سيكتب Clausia هنا رأيًا قانونيًا أو مذكرة من ملف القضية.</p>
           <Button variant="secondary" size="sm" className="mt-4" disabled>اكتب رأيًا قانونيًا (قريبًا)</Button>
         </section>
       </div>
@@ -103,15 +103,15 @@ export async function SummaryTab({ caseId }: { caseId: string }) {
               ["requests", "الطلبات والدفوع", counts.requests + counts.arguments], ["judgments", "الأحكام", counts.judgments],
             ] as const).map(([tab, label, n]) => (
               <li key={tab}>
-                <Link href={`/cases/${caseId}?tab=${tab}`} className="block rounded-md bg-surface-2 px-3 py-2 hover:border-line-strong">
-                  <span className="num block text-lg leading-7 font-semibold text-ink">{n}</span>
-                  <span className="text-ink-3">{label}</span>
+                <Link href={`/cases/${caseId}?tab=${tab}`} className="block rounded-md bg-card-2 px-3 py-2 hover:border-border-strong">
+                  <span className="num block text-lg leading-7 font-semibold text-text">{n}</span>
+                  <span className="text-text-4">{label}</span>
                 </Link>
               </li>
             ))}
           </ul>
         </Card>
-        <a href={`/api/cases/${caseId}/case-file?download`} className="block text-base leading-[1.55] font-medium text-accent hover:underline">
+        <a href={`/api/cases/${caseId}/case-file?download`} className="block text-base leading-[1.55] font-medium text-primary hover:underline">
           تنزيل ملف القضية (JSON)
         </a>
       </aside>

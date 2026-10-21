@@ -21,7 +21,7 @@ const TONE = { good: ["bg-good", "text-good"], warn: ["bg-gold", "text-gold"], n
 function StatusPill({ status }: { status: string }) {
   const [dot, text] = TONE[statusTone(status)];
   return (
-    <span className={`box-content inline-flex h-7 items-center gap-1.5 rounded-full border border-[var(--hairline-v2)] px-3 text-sm font-semibold ${text}`}>
+    <span className={`box-content inline-flex h-7 items-center gap-1.5 rounded-full border border-border-2 px-3 text-sm font-semibold ${text}`}>
       <span aria-hidden className={`size-1.5 rounded-full ${dot}`} />{CASE_STATUS[status as keyof typeof CASE_STATUS] ?? status}
     </span>
   );
@@ -42,7 +42,7 @@ function StatCell({ s, first }: { s: HeroStat; first: boolean }) {
       </div>
     </>
   );
-  const cls = `block min-w-0 px-6 ${first ? "" : "border-s border-[var(--hairline-v2)]"}`;
+  const cls = `block min-w-0 px-6 ${first ? "" : "border-s border-border-2"}`;
   if (!s.href) return <div className={cls}>{body}</div>;
   // a same-page hash (e.g. #item-…) must fire hashchange so the item sheet opens: plain <a>
   return s.href.includes("#")
@@ -90,7 +90,7 @@ export function CaseHeader({ cf, caseId, chatHref, stats }: { cf: CaseFile; case
       {/* below lg: the 2×2 spec card (mobile mockup) */}
       <dl className="mt-4 grid grid-cols-2 overflow-hidden rounded-lg border border-border-2 bg-card shadow-card lg:hidden">
         {spec.map((s, i) => (
-          <div key={s.label} className={`min-w-0 border-[var(--hairline-v2)] px-3.5 py-3 ${i % 2 === 0 ? "border-e" : ""} ${i >= 2 ? "border-t" : ""}`}>
+          <div key={s.label} className={`min-w-0 border-border-2 px-3.5 py-3 ${i % 2 === 0 ? "border-e" : ""} ${i >= 2 ? "border-t" : ""}`}>
             <dt className="text-xs text-text-4">{s.short}</dt>
             {/* long court / type names stay one line with «…», the full name in the tooltip (owner decision) */}
             <dd title={s.clip && s.value ? s.value : undefined}
@@ -105,7 +105,7 @@ export function CaseHeader({ cf, caseId, chatHref, stats }: { cf: CaseFile; case
       <div className="mt-5.5 hidden grid-cols-[repeat(4,minmax(0,1fr))_1px_repeat(3,minmax(0,0.7fr))] items-stretch rounded-xl border border-border-2 bg-card py-5 shadow-card lg:grid">
         <dl className="contents">
           {spec.map((s, i) => (
-            <div key={s.label} className={`min-w-0 px-6 ${i > 0 ? "border-s border-[var(--hairline-v2)]" : ""}`}>
+            <div key={s.label} className={`min-w-0 px-6 ${i > 0 ? "border-s border-border-2" : ""}`}>
               <dt className="text-xs leading-4 text-text-4">{s.label}</dt>
               <dd className={`mt-1.75 text-md leading-[1.4] ${s.value ? "font-semibold text-text" : "text-text-4"}`}>
                 {s.value ?? empty(s.fem)}{s.value && s.extra ? ` · ${s.extra}` : null}
@@ -113,7 +113,7 @@ export function CaseHeader({ cf, caseId, chatHref, stats }: { cf: CaseFile; case
             </div>
           ))}
         </dl>
-        <div aria-hidden className="-my-1 bg-[var(--hairline-v2)]" />
+        <div aria-hidden className="-my-1 bg-border-2" />
         {stats.map((s, i) => <StatCell key={s.label} s={s} first={i === 0} />)}
       </div>
     </header>
