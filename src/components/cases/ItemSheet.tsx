@@ -10,7 +10,8 @@ import { editItemText, reviewItem } from "@/app/(app)/cases/actions";
 
 const CloseCtx = createContext<() => void>(() => {});
 
-export function TapItem({ id, title, row, children, className = "" }: { id: string; title: string; row: ReactNode; children: ReactNode; className?: string }) {
+/** `tight`: no 44px minimum, the row is exactly as tall as the mockup draws it (fact timeline, لنا / ضدنا lines). */
+export function TapItem({ id, title, row, children, className = "", tight = false }: { id: string; title: string; row: ReactNode; children: ReactNode; className?: string; tight?: boolean }) {
   const ref = useRef<HTMLDialogElement>(null);
   const hash = `#item-${id}`;
   const close = useCallback(() => ref.current?.close(), []);
@@ -25,7 +26,7 @@ export function TapItem({ id, title, row, children, className = "" }: { id: stri
   return (
     <div id={`item-${id}`} className="scroll-mt-24">
       <button type="button" onClick={() => ref.current?.showModal()} aria-haspopup="dialog"
-        className={`block min-h-11 w-full cursor-pointer text-start transition-colors hover:bg-card-2/60 focus-visible:bg-card-2/60 ${className}`}>
+        className={`block ${tight ? "" : "min-h-11"} w-full cursor-pointer text-start transition-colors hover:bg-card-2/60 focus-visible:bg-card-2/60 ${className}`}>
         {row}
       </button>
       <dialog ref={ref} aria-label={title}

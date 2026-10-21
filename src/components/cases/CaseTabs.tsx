@@ -1,6 +1,7 @@
 "use client";
 /**
- * Mobile tabs on the case page (docs/design/*MobileCase.dc.html): Facts / Docs / Parties as a segmented control.
+ * Mobile tabs on the case page (docs/design/*MobileCase.dc.html): Facts / Docs / Parties as a segmented control
+ * (4px padding, 36px segments, 13px; the active one ink-filled).
  * Below `lg` only the active segment is shown; at `lg` and up every segment is visible in its desktop column, so
  * the content stays server-rendered and the desktop layout is untouched. A `#item-<id>` link (the review banner,
  * a hero stat) switches to the segment that holds the item, so its sheet can open.
@@ -35,7 +36,9 @@ export function SegBar({ items, className = "" }: { items: { key: SegKey; label:
         const active = on === t.key;
         return (
           <button key={t.key} type="button" role="tab" aria-selected={active} aria-controls={`seg-${t.key}`} onClick={() => set(t.key)}
-            className={`h-11 flex-1 rounded-[18px] text-[13.5px] transition ${active ? "bg-selected font-semibold text-on-selected shadow-mark" : "text-text-3 hover:text-text"}`}>
+            className={`h-9 flex-1 rounded-[18px] text-[13px] transition ${active
+              ? "bg-selected font-semibold text-on-selected shadow-[0_4px_10px_-4px_rgba(18,26,43,0.5)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_6px_14px_-6px_rgba(0,0,0,0.6)]"
+              : "font-medium text-[var(--glass-icon)] hover:text-text"}`}>
             {t.label} <span className="font-num opacity-70">{t.count}</span>
           </button>
         );
