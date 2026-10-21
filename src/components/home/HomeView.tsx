@@ -1,23 +1,16 @@
 /**
- * Home (docs/design/*Home.dc.html, v2): date eyebrow + big greeting, the Clausia line built from real counts (no LLM),
- * today's roll next to «محتاجة قرار» (stacked on mobile, «محتاجة قرار» first), then the floating hero composer.
+ * Home, laid out exactly as docs/design/{Light,Dark}{,Mobile}Home.dc.html: date eyebrow + big greeting, the Clausia
+ * line built from real counts (no LLM), today's roll next to «محتاجة قرار» (stacked on mobile, «محتاجة قرار» first),
+ * then the fixed Home composer. Text line heights are set to the px the mockups render with `line-height: normal`,
+ * so block heights match whichever Arabic font loads.
  * Writes only via confirmation cards.
  */
-import { Composer, type ComposerChip } from "@/components/shell/Composer";
-import { ClausiaSays } from "@/components/shell/PageHero";
+import type { ReactNode } from "react";
 import type { HomeData } from "./data";
+import { HomeComposer } from "./HomeComposer";
 import { clausiaLine, formatLongDay, greeting } from "./text";
 import { TodayCard } from "./TodayCard";
 import { UndecidedCard } from "./UndecidedCard";
-
-const CHIPS: ComposerChip[] = [
-  { label: "موكل وقضية جديدة", text: "موكل جديد: ", icon: "user" },
-  { label: "سجّل قرار جلسة", text: "قرار جلسة النهارده في قضية ", icon: "gavel" },
-  { label: "المطلوب مني الأسبوع ده", text: "إيه المطلوب مني الأسبوع ده؟", icon: "list" },
-  { label: "ارفع ورقة", attach: true, icon: "file" },
-];
-
-const PLACEHOLDER = "اكتب لـ Clausia… حصل إيه في الجلسة، موكل جديد، أو أي سؤال عن قضاياك";
 
 /** «مساء الخير، أستاذ تجريبي» → breaks after the comma on mobile, one line on desktop */
 function Greeting({ text }: { text: string }) {
@@ -26,37 +19,39 @@ function Greeting({ text }: { text: string }) {
   return <>{text.slice(0, at + 1)}<br className="sm:hidden" /> {text.slice(at + 2)}</>;
 }
 
+/** The Clausia line as drawn on Home: C mark (26 / 30px, no shadow; dark adds a 1px hairline around it) + the sentence. */
+function ClausiaLine({ children }: { children: ReactNode }) {
+  return (
+    <div className="mt-4 flex max-w-[700px] gap-2.5 sm:mt-[22px] sm:gap-3.5">
+      <span aria-hidden className="mark font-num inline-flex size-[26px] shrink-0 items-center justify-center rounded-[9px] text-[12px] font-extrabold sm:size-[30px] sm:rounded-[10px] sm:text-[14px] dark:size-[28px] dark:border dark:border-border sm:dark:size-[32px]">C</span>
+      <p className="mt-px min-w-0 text-[15.5px] leading-[1.75] text-text-3 sm:mt-0.5 sm:text-[18px] sm:leading-[1.8]">{children}</p>
+    </div>
+  );
+}
+
 export function HomeView({ data, displayName }: { data: HomeData; displayName: string }) {
   const line = clausiaLine({ today: data.todays, tomorrow: data.tomorrows, undecided: data.undecided });
   return (
-    <div className="mx-auto flex w-full max-w-[1024px] flex-1 flex-col px-5 pt-3 sm:px-8 sm:pt-[52px]">
-      <p className="text-[12px] font-semibold tracking-[0.02em] text-text-3 sm:text-[13px]">{formatLongDay(data.today)}</p>
+    <div className="mx-auto flex w-full max-w-[960px] flex-1 flex-col px-5 pt-3 leading-[normal] sm:px-6 sm:pt-[52px]">
+      <p className="text-[12px] font-semibold leading-4 tracking-[0.02em] text-text-3 sm:text-[13px] sm:leading-[17px]">{formatLongDay(data.today)}</p>
       <h1 className="mt-1.5 text-[30px] font-bold leading-[1.2] text-title sm:mt-2 sm:text-[44px] sm:leading-[1.15] sm:tracking-[-0.01em]">
         <Greeting text={greeting(displayName)} />
       </h1>
 
-      <div className="mt-4 max-w-[700px] sm:mt-[22px]">
-        <ClausiaSays>
-          <p className="text-[15.5px] leading-[1.75] text-text-3 sm:text-[18px] sm:leading-[1.8]">
-            {line.roll}<span className="hidden sm:inline">{line.where}</span>.
-            {line.late ? <> وفيه <span className="font-semibold text-gold">{line.late.gold}</span>{line.late.tail}</> : line.calm}
-            {line.ask ? <span className="hidden sm:inline">{line.ask}</span> : null}
-          </p>
-        </ClausiaSays>
-      </div>
+      <ClausiaLine>
+        {line.roll}<span className="hidden sm:inline">{line.where}</span>.
+        {line.late ? <> وفيه <span className="font-semibold text-gold">{line.late.gold}</span>{line.late.tail}</> : line.calm}
+        {line.ask ? <span className="hidden sm:inline">{line.ask}</span> : null}
+      </ClausiaLine>
 
       <div className="mt-[18px] flex flex-col gap-3 md:mt-[30px] md:grid md:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)] md:gap-4">
         <TodayCard todays={data.todays} tomorrows={data.tomorrows} tomorrow={data.tomorrow} nextDate={data.nextDate} />
         <UndecidedCard count={data.undecided} className="order-first md:order-none" />
       </div>
 
-      {data.lastRecorded ? (
-        <p className="mt-5 hidden text-[12px] leading-normal text-text-4 md:block">آخر ما سجّلته: {data.lastRecorded}</p>
-      ) : null}
-
       <div className="min-h-8 flex-1" />
 
-      <Composer size="hero" target={{ kind: "new" }} chips={CHIPS} placeholder={PLACEHOLDER} />
+      <HomeComposer />
     </div>
   );
 }

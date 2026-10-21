@@ -1,5 +1,5 @@
 /**
- * «محتاجة قرار» (v2 Home mockups): a solid card with a huge light number — the real count of hearings before today
+ * «محتاجة قرار» (docs/design/*Home.dc.html): a solid card with a huge light number — the real count of hearings before today
  * with no decision. Gold only when the count is above 0; at 0 the number is plain and the card says so calmly.
  * Desktop: a column beside today's roll. Mobile: one horizontal card above it.
  */
@@ -20,7 +20,7 @@ function sub(n: number) {
 
 function Label({ on }: { on: boolean }) {
   return (
-    <span className={`flex items-center gap-1.5 text-[12.5px] font-semibold md:gap-2 md:text-[13px] ${on ? "text-gold" : "text-text-3"}`}>
+    <span className={`flex items-center gap-1.5 text-[12.5px] font-semibold leading-[17px] md:gap-2 md:text-[13px] ${on ? "text-gold" : "text-text-3"}`}>
       {on ? <span aria-hidden className="size-1.5 rounded-full bg-gold" /> : null}محتاجة قرار
     </span>
   );
@@ -29,7 +29,7 @@ function Label({ on }: { on: boolean }) {
 function Pill() {
   return (
     <span className="bg-primary-fill inline-flex h-9 shrink-0 items-center gap-1 rounded-full px-3.5 text-[13px] font-semibold md:h-[38px] md:gap-1.5 md:px-4 md:text-[13.5px]">
-      سجّلها <ChevronLeft size={14} strokeWidth={2.2} aria-hidden />
+      سجّلها <ChevronLeft strokeWidth={2.2} aria-hidden className="size-[13px] md:size-3.5" />
     </span>
   );
 }
@@ -45,16 +45,16 @@ export function UndecidedCard({ count, className = "" }: { count: number; classN
         <span className={`${NUM} text-[52px] ${on ? "text-gold" : "text-title"}`}>{two(count)}</span>
         <span className="min-w-0 flex-1">
           <Label on={on} />
-          <span className="mt-[3px] block text-[12px] text-text-3">{line}</span>
+          <span className="mt-[3px] block text-[12px] leading-4 text-text-3">{line}</span>
         </span>
         {on ? <Pill /> : null}
       </span>
       {/* desktop: label · huge number · line + pill */}
-      <span className="hidden h-full min-h-[240px] flex-col p-[26px] md:flex">
+      <span className="hidden h-full flex-col p-[26px] md:flex">
         <Label on={on} />
-        <span className={`${NUM} flex flex-1 items-center py-4 text-[92px] ${on ? "text-gold" : "text-title"}`}>{two(count)}</span>
+        <span className={`${NUM} flex flex-1 items-center text-[92px] ${on ? "text-gold" : "text-title"}`}>{two(count)}</span>
         <span className="flex min-h-[38px] items-center justify-between gap-3">
-          <span className="text-[13px] text-text-3">{line}</span>
+          <span className="text-[13px] leading-[17px] text-text-3">{line}</span>
           {on ? <Pill /> : null}
         </span>
       </span>

@@ -1,4 +1,4 @@
-// Home: Clausia first — today's roll, «محتاجة قرار», and the floating hero composer (v2).
+// Home (docs/design/*Home.dc.html): today's roll, «محتاجة قرار», and the Home composer.
 import { loadHome } from "@/components/home/data";
 import { HomeView } from "@/components/home/HomeView";
 import { createClient, getSession } from "@/lib/supabase/server";
