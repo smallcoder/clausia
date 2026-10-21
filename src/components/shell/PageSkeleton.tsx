@@ -92,8 +92,20 @@ export function PageSkeleton({ kind }: { kind: Kind }) {
       ) : null}
       {kind === "case" ? (
         <>
-          <div className="space-y-3 pt-4 sm:pt-8"><Bar w="140px" h={12} /><Bar w="min(360px, 75vw)" h={40} className="rounded-xl" /><Bar w="180px" h={14} /></div>
-          <div className="mt-6 grid grid-cols-2 gap-4 sm:flex sm:gap-10">{Array.from({ length: 4 }, (_, i) => <div key={i} className="space-y-2"><Bar w="60px" h={10} /><Bar w="120px" h={14} /></div>)}</div>
+          {/* desktop (item 19): breadcrumb row with the status chip, client «ضد» opponent, one card of 4 spec | 3 stats */}
+          <div className="hidden items-center justify-between pt-8 sm:flex">
+            <div className="flex items-center gap-3"><span className="size-8 rounded-full border border-border" /><Bar w="130px" h={12} /></div>
+            <Bar w="64px" h={22} className="rounded-full" />
+          </div>
+          <div className="space-y-3 pt-4 sm:pt-5"><Bar w="50px" h={10} /><div className="flex items-end gap-3"><Bar w="min(240px, 60vw)" h={36} className="rounded-xl" /><Bar w="130px" h={18} className="hidden sm:block" /></div><Bar w="180px" h={14} className="sm:hidden" /></div>
+          <div className="mt-6 grid grid-cols-2 gap-4 sm:hidden">{Array.from({ length: 4 }, (_, i) => <div key={i} className="space-y-2"><Bar w="60px" h={10} /><Bar w="120px" h={14} /></div>)}</div>
+          <div className="mt-6 hidden items-center rounded-[26px] border border-border-2 bg-card px-2 py-5 shadow-card sm:flex">
+            {Array.from({ length: 7 }, (_, i) => (
+              <div key={i} className={`flex-1 space-y-2 px-5 ${i ? "border-s border-[var(--hairline-v2)]" : ""}`}>
+                {i < 4 ? <><Bar w="50px" h={9} /><Bar w="85%" h={13} /></> : <><Bar w="38px" h={28} className="rounded-lg" /><Bar w="46px" h={9} /></>}
+              </div>
+            ))}
+          </div>
           <div className="mt-8 grid gap-5 lg:grid-cols-[minmax(0,1.85fr)_minmax(0,1fr)]">
             <div className="space-y-5"><div className="flex gap-3"><Bar w="32px" h={32} className="rounded-[10px]" /><div className="flex-1 space-y-2"><Bar w="85%" h={14} /><Bar w="50%" h={14} /></div></div><Card><Bar w="80px" h={14} /><Rows n={3} /></Card><div className="grid gap-4 sm:grid-cols-2"><Card><Rows n={2} line={false} /></Card><Card><Rows n={2} line={false} /></Card></div></div>
             <div className="hidden space-y-5 lg:block"><Card><Bar w="70px" h={56} className="rounded-xl" /><Bar w="60%" h={12} className="mt-4" /></Card><Card><Rows n={3} /></Card><Card><Rows n={3} /></Card></div>

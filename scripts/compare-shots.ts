@@ -54,10 +54,12 @@ async function shootLoading(browser: Browser, path: string, mobile: boolean, dar
   const page = await ctx.newPage();
   await page.goto(BASE + (path === "/" ? "/cases" : "/"), { waitUntil: "domcontentloaded", timeout: 60_000 });
   await page.waitForTimeout(1500);
-  await page.route(/_rsc=/, async (r) => { await new Promise((ok) => setTimeout(ok, 15_000)); await r.continue().catch(() => {}); });
-  // prefetch first, as a real <Link> would, so the target route's own loading boundary is the one shown
+  // prefetch first (not held back), as a real <Link> would, so the target route's own loading boundary is known;
+  // then hold back only the page's data request and navigate
   await page.evaluate((p) => (window as unknown as { next: { router: { prefetch: (p: string) => void } } }).next.router.prefetch(p), path);
-  await page.waitForTimeout(400);
+  await page.waitForLoadState("networkidle", { timeout: 10_000 }).catch(() => {});
+  await page.waitForTimeout(800);
+  await page.route(/_rsc=/, async (r) => { await new Promise((ok) => setTimeout(ok, 15_000)); await r.continue().catch(() => {}); });
   await page.evaluate((p) => (window as unknown as { next: { router: { push: (p: string) => void } } }).next.router.push(p), path);
   await page.waitForSelector('[aria-busy="true"]', { timeout: 10_000 }).catch(() => {});
   await page.waitForTimeout(900);
