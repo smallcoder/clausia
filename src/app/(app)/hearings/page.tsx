@@ -1,11 +1,12 @@
 // OWNER: roll agent — الرول (design v2, docs/design/*Roll.dc.html, laid out exactly): header with the date and «05 جلسات الأسبوع» (desktop) / the «محتاجة قرار» pill (mobile),
-// the week's day strip (a dot per hearing), a timeline by court with the next hearing expanded, a desktop side card of
+// the week's day strip (a dot per hearing; swipe it on touch screens, prev/next buttons at its ends on desktop), a timeline by court with the next hearing expanded, a desktop side card of
 // past hearings that need a decision, and the Clausia composer. ?view=week, ?filter=undecided, ?date=d/m/yyyy.
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { OpenHearing, RollNext, RollRow, RollSheet } from "@/components/hearings/RollSheet";
 import { arDate, arDayMonth, dayCount, hearingTitle, nCourts, nHearings, shortDm, WEEKDAY_LONG, WEEKDAY_SHORT, weekdayOf } from "@/components/hearings/roll-text";
 import { RollHeader, RollSays } from "@/components/hearings/RollHeader";
+import { SwipeWeek } from "@/components/hearings/SwipeWeek";
 import { StatusChip, two } from "@/components/shell/PageHero";
 import { Composer, type ComposerChip } from "@/components/shell/Composer";
 import { cx } from "@/components/ui";
@@ -25,51 +26,43 @@ function dayName(iso: string, today: string) {
   return `${WEEKDAY_LONG[weekdayOf(iso)]} ${arDayMonth(iso)}`;
 }
 
-/** The week: Sat–Thu (Friday only when chosen or it has hearings); weekday, big day number, one dot per hearing. */
+/**
+ * The week: Sat–Thu (Friday only when chosen or it has hearings); weekday, big day number, one dot per hearing.
+ * Changing the week (owner decision 15): on desktop two small quiet glass buttons at the two ends of the strip; on
+ * touch screens a sideways swipe on the strip (SwipeWeek; dragging toward the left → previous week, toward the right →
+ * next week, as RTL content moves with the finger).
+ */
 function DayStrip({ days, date, view, today, counts, wk }: { days: string[]; date: string; view: View; today: string; counts: Map<string, number>; wk: string }) {
-  const arrow = "hidden size-11 shrink-0 items-center justify-center self-center rounded-full text-text-3 transition hover:bg-card-2 hover:text-text sm:inline-flex";
+  const arrow = "glass glass-icon tap hidden size-9 shrink-0 items-center justify-center self-center rounded-full transition hover:text-text sm:inline-flex";
+  const prev = href(view, addDaysIso(wk, -7));
+  const next = href(view, addDaysIso(wk, 7));
   return (
-    <nav aria-label="أيام الأسبوع" className="mt-[18px] flex leading-[normal] items-stretch justify-between sm:mt-[26px] sm:gap-1.5 sm:rounded-[30px] sm:border sm:border-border-2 sm:bg-card sm:p-1.5 sm:shadow-card">
-      <Link href={href(view, addDaysIso(wk, -7))} aria-label="الأسبوع اللي فات" className={arrow}><ChevronRight size={18} strokeWidth={1.9} aria-hidden /></Link>
-      {days.map((d) => {
-        const on = view === "day" && d === date;
-        const n = counts.get(d) ?? 0;
-        const wd = weekdayOf(d);
-        return (
-          <Link key={d} href={href("day", d)} aria-current={on ? "date" : undefined}
-            className={cx("w-[50px] rounded-[18px] pb-[7px] pt-2 text-center transition sm:w-auto sm:flex-1 sm:rounded-[22px] sm:pb-[11px] sm:pt-3",
-              on ? "bg-selected text-on-selected shadow-[0_4px_10px_-4px_var(--backdrop)]" : "text-text hover:bg-card-2",
-              !on && d === today && "ring-1 ring-inset ring-[var(--accent-edge)]")}>
-            <span className={cx("block text-[10.5px] sm:text-[12px]", on ? "text-on-selected/80" : d === today ? "font-semibold text-gold" : "text-text-3")}>
-              <span className="sm:hidden">{WEEKDAY_SHORT[wd]}</span><span className="hidden sm:inline">{WEEKDAY_LONG[wd]}</span>
-            </span>
-            <span className={cx("font-num mt-0.5 block text-[19px] leading-[1.1] sm:mt-[3px] sm:text-[26px]", on ? "font-medium" : "font-light")}>{Number(d.slice(8))}</span>
-            <span aria-hidden className="mt-[5px] flex h-1 justify-center gap-[2px] sm:mt-1.5 sm:h-[5px] sm:gap-[3px]">
-              {Array.from({ length: Math.min(n, 6) }, (_, i) => <span key={i} className={cx("size-1 rounded-full sm:size-[5px]", on ? "bg-on-selected/85" : "bg-text-4")} />)}
-            </span>
-            <span className="sr-only">{d === today ? "النهارده، " : ""}{dayCount(n)}</span>
-          </Link>
-        );
-      })}
-      <Link href={href(view, addDaysIso(wk, 7))} aria-label="الأسبوع الجاي" className={arrow}><ChevronLeft size={18} strokeWidth={1.9} aria-hidden /></Link>
-    </nav>
-  );
-}
-
-/** Mobile: moving through the roll (the strip has no room for arrows). */
-function MobileNav({ view, date, wk, today, isCurrent }: { view: View; date: string; wk: string; today: string; isCurrent: boolean }) {
-  const btn = "inline-flex h-11 items-center gap-1 px-2 text-[12.5px] hover:text-text";
-  return (
-    <nav aria-label="التنقل في الرول" className="mt-1 flex items-center justify-between sm:hidden">
-      <Link href={href(view, addDaysIso(wk, -7))} className={cx(btn, "text-text-3")}><ChevronRight size={16} strokeWidth={1.9} aria-hidden />اللي فات</Link>
-      <span className="flex items-center">
-        {isCurrent ? null : <Link href={href("day", today)} className={cx(btn, "font-semibold text-text")}>النهارده</Link>}
-        <Link href={view === "week" ? href("day", date) : href("week", date)} className={cx(btn, view === "week" ? "font-semibold text-text" : "text-text-3")}>
-          {view === "week" ? "يوم واحد" : "الأسبوع كله"}
-        </Link>
-      </span>
-      <Link href={href(view, addDaysIso(wk, 7))} className={cx(btn, "text-text-3")}>اللي جاي<ChevronLeft size={16} strokeWidth={1.9} aria-hidden /></Link>
-    </nav>
+    <SwipeWeek prevHref={prev} nextHref={next}>
+      <nav aria-label="أيام الأسبوع" className="mt-[18px] flex leading-[normal] items-stretch justify-between sm:mt-[26px] sm:gap-1.5 sm:rounded-[30px] sm:border sm:border-border-2 sm:bg-card sm:p-1.5 sm:shadow-card">
+        <Link href={prev} aria-label="الأسبوع اللي فات" className={arrow}><ChevronRight size={16} strokeWidth={1.9} aria-hidden /></Link>
+        {days.map((d) => {
+          const on = view === "day" && d === date;
+          const n = counts.get(d) ?? 0;
+          const wd = weekdayOf(d);
+          return (
+            <Link key={d} href={href("day", d)} aria-current={on ? "date" : undefined}
+              className={cx("w-[50px] rounded-[18px] pb-[7px] pt-2 text-center transition sm:w-auto sm:flex-1 sm:rounded-[22px] sm:pb-[11px] sm:pt-3",
+                on ? "bg-selected text-on-selected shadow-[0_4px_10px_-4px_var(--backdrop)]" : "text-text hover:bg-card-2",
+                !on && d === today && "ring-1 ring-inset ring-[var(--accent-edge)]")}>
+              <span className={cx("block text-[10.5px] sm:text-[12px]", on ? "text-on-selected/80" : d === today ? "font-semibold text-gold" : "text-text-3")}>
+                <span className="sm:hidden">{WEEKDAY_SHORT[wd]}</span><span className="hidden sm:inline">{WEEKDAY_LONG[wd]}</span>
+              </span>
+              <span className={cx("font-num mt-0.5 block text-[19px] leading-[1.1] sm:mt-[3px] sm:text-[26px]", on ? "font-medium" : "font-light")}>{Number(d.slice(8))}</span>
+              <span aria-hidden className="mt-[5px] flex h-1 justify-center gap-[2px] sm:mt-1.5 sm:h-[5px] sm:gap-[3px]">
+                {Array.from({ length: Math.min(n, 6) }, (_, i) => <span key={i} className={cx("size-1 rounded-full sm:size-[5px]", on ? "bg-on-selected/85" : "bg-text-4")} />)}
+              </span>
+              <span className="sr-only">{d === today ? "النهارده، " : ""}{dayCount(n)}</span>
+            </Link>
+          );
+        })}
+        <Link href={next} aria-label="الأسبوع الجاي" className={arrow}><ChevronLeft size={16} strokeWidth={1.9} aria-hidden /></Link>
+      </nav>
+    </SwipeWeek>
   );
 }
 
@@ -85,7 +78,9 @@ function Timeline({ rows, today, next, label, showToday = false }: { rows: Heari
         const hasNext = !!next && g.items.some((h) => h.id === next.id);
         const gold = hasNext && !!label?.gold;
         const last = gi === groups.length - 1;
-        const circuits = [...new Set(g.items.map((h) => h.case.circuit?.trim()).filter(Boolean))].join(" · ");
+        // the court line: where the hearing sits («الدور 4 · قاعة 12») when known, else the circuit — never invented
+        const places = [...new Set(g.items.map((h) => h.location?.trim()).filter(Boolean))];
+        const circuits = places.length ? places.join(" · ") : [...new Set(g.items.map((h) => h.case.circuit?.trim()).filter(Boolean))].join(" · ");
         return (
           <li key={g.key} className="flex gap-3.5 sm:gap-[18px]">
             <div aria-hidden className="flex w-3 shrink-0 flex-col items-center sm:w-3.5">
@@ -129,7 +124,7 @@ function SideCard({ count, rows }: { count: number; rows: HearingWithCase[] }) {
               <div className="mt-[3px] truncate text-[12px] text-text-3">{courtOf(h)} · <span className="num font-num">{shortDm(h.hearing_date)}</span></div>
             </div>
             <OpenHearing h={h} label={`سجّل قرار جلسة ${hearingTitle(h)} يوم ${formatDmy(h.hearing_date)}`}
-              className="bg-primary-fill inline-flex h-8 shrink-0 items-center rounded-full px-3.5 text-[12.5px] font-semibold transition hover:opacity-90">
+              className="bg-primary-fill tap inline-flex h-8 shrink-0 items-center rounded-full px-3.5 text-[12.5px] font-semibold transition hover:opacity-90">
               سجّل
             </OpenHearing>
           </li>
@@ -255,9 +250,8 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
         ) : (
           <>
             <DayStrip days={days} date={date} view={view} today={today} counts={counts} wk={wk} />
-            <MobileNav view={view} date={date} wk={wk} today={today} isCurrent={isCurrent} />
 
-            <div className="mt-1 grid grid-cols-[minmax(0,1fr)] items-start gap-7 leading-[normal] sm:mt-[30px] lg:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)]">
+            <div className="mt-6 grid grid-cols-[minmax(0,1fr)] items-start gap-7 leading-[normal] sm:mt-[30px] lg:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)]">
               <div className="min-w-0">
                 {view === "week" ? (
                   weekRows.length ? (
@@ -283,7 +277,7 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
                       {dayRows.length ? <span className="text-[12.5px] text-text-3">{nHearings(dayRows.length)} · {nCourts(nCourt)}</span> : null}
                     </div>
                     {dayRows.length ? (
-                      <div className="mt-3 sm:mt-0"><Timeline rows={dayRows} today={today} next={nx?.h} label={nextLabel} /></div>
+                      <Timeline rows={dayRows} today={today} next={nx?.h} label={nextLabel} />
                     ) : (
                       <Empty>
                         مفيش جلسات {date === today ? "النهارده" : `يوم ${dayName(date, today)}`}.
