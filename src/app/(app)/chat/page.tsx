@@ -59,7 +59,7 @@ export default async function ChatHome() {
 
       {rows.length === 0 ? (
         <div className="rounded-[24px] border border-border-2 bg-card px-5 py-6 shadow-card">
-          <ClausiaSays>لسه مافيش محادثات. احكي لـ Clausia عن موكل أو قضية من تحت، أو ارفع ورقة.</ClausiaSays>
+          <ClausiaSays size="md">لسه مافيش محادثات. احكي لـ Clausia عن موكل أو قضية من تحت، أو ارفع ورقة.</ClausiaSays>
         </div>
       ) : (
         <ul className="overflow-hidden rounded-[24px] border border-border-2 bg-card shadow-card">
