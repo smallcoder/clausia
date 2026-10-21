@@ -52,10 +52,10 @@ export function ChatComposer({ id, value, onChange, onSend, onFile, sending, bus
       ) : null}
       <div className="glass rounded-xl px-3 pb-2.5 pt-3.5 sm:px-3.5 sm:pb-3 sm:pt-4">
         <div className="flex items-start gap-2.5 px-1 sm:gap-3 sm:px-1.5 sm:pt-0.5">
-          <span aria-hidden className="mark font-num mt-0.5 inline-flex size-[22px] shrink-0 items-center justify-center rounded-sm text-xs font-extrabold sm:size-[26px] sm:text-sm">C</span>
+          <span aria-hidden className="mark font-num mt-0.5 inline-flex size-mark-sm shrink-0 items-center justify-center rounded-sm text-xs font-extrabold sm:size-mark sm:text-sm">C</span>
           <textarea ref={boxRef} value={value} onChange={(e) => onChange(e.target.value)} onKeyDown={onKey} rows={1}
             placeholder={placeholder} aria-label="رسالة لـ Clausia"
-            className="block max-h-40 min-h-[46px] min-w-0 flex-1 resize-none bg-transparent p-0 text-md leading-[1.6] text-text placeholder:text-text-4 focus:outline-none [field-sizing:content] sm:min-h-14 sm:text-lg sm:leading-[1.65]" />
+            className="block max-h-40 min-h-control-xl min-w-0 flex-1 resize-none bg-transparent p-0 text-md leading-[1.6] text-text placeholder:text-text-4 focus:outline-none [field-sizing:content] sm:min-h-14 sm:text-lg sm:leading-[1.65]" />
         </div>
         <div className="mt-1.5 flex items-center gap-2 sm:mt-2">
           <input ref={fileRef} type="file" accept="application/pdf,image/*" className="sr-only" id={`file-${id}`} onChange={(e) => onFile(e.target.files?.[0])} />
@@ -67,7 +67,7 @@ export function ChatComposer({ id, value, onChange, onSend, onFile, sending, bus
             {status ?? <span className="sm:hidden">مفيش حاجة بتتحفظ من غير موافقتك</span>}
           </div>
           <button type="button" onClick={onSend} disabled={!value.trim() || sending} aria-label="إرسال"
-            className="tap bg-primary-fill inline-flex size-[38px] shrink-0 items-center justify-center rounded-full transition disabled:cursor-not-allowed sm:size-10">
+            className="tap bg-primary-fill inline-flex size-control shrink-0 items-center justify-center rounded-full transition disabled:cursor-not-allowed sm:size-10">
             <ArrowUp aria-hidden size={19} strokeWidth={2.4} />
           </button>
         </div>
@@ -78,4 +78,4 @@ export function ChatComposer({ id, value, onChange, onSend, onFile, sending, bus
 }
 
 /** round composer control (Chat mockup: hairline ring, no fill): 38px mobile, 40px desktop, 44px tap area */
-const ROUND = "tap inline-flex size-[38px] shrink-0 items-center justify-center rounded-full border border-border-2 glass-icon transition hover:text-text sm:size-10";
+const ROUND = "tap inline-flex size-control shrink-0 items-center justify-center rounded-full border border-border-2 glass-icon transition hover:text-text sm:size-10";

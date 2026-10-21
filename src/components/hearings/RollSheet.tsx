@@ -135,7 +135,7 @@ export function RollNext({ h, today }: { h: HearingWithCase; today: string }) {
       {needLine ? <div className="mt-4 border-t border-border-2 pt-3.25 sm:hidden">{needLine}</div> : null}
       {canDecide ? (
         <button type="button" onClick={() => open?.(h)} aria-haspopup="dialog"
-          className="bg-primary-fill mt-3.5 inline-flex h-11 w-full shrink-0 items-center justify-center rounded-full px-5.5 text-base font-bold transition hover:opacity-90 sm:mt-0 sm:h-[46px] sm:w-auto sm:self-end">
+          className="bg-primary-fill mt-3.5 inline-flex h-11 w-full shrink-0 items-center justify-center rounded-full px-5.5 text-base font-bold transition hover:opacity-90 sm:mt-0 sm:h-control-xl sm:w-auto sm:self-end">
           سجّل قرار الجلسة دي
         </button>
       ) : null}

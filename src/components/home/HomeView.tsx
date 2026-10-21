@@ -23,7 +23,7 @@ function Greeting({ text }: { text: string }) {
 function ClausiaLine({ children }: { children: ReactNode }) {
   return (
     <div className="mt-4 flex max-w-[700px] gap-2.5 sm:mt-5.5 sm:gap-3.5">
-      <span aria-hidden className="mark font-num inline-flex size-[26px] shrink-0 items-center justify-center rounded-sm text-sm font-extrabold sm:size-[30px] sm:text-base dark:size-[28px] dark:border dark:border-border sm:dark:size-[32px]">C</span>
+      <span aria-hidden className="mark font-num inline-flex size-mark shrink-0 items-center justify-center rounded-sm text-sm font-extrabold sm:size-mark-lg sm:text-base dark:size-[28px] dark:border dark:border-border sm:dark:size-[32px]">C</span>
       <p className="mt-px min-w-0 text-md leading-[1.75] text-text-3 sm:mt-0.5 sm:text-lg sm:leading-[1.8]">{children}</p>
     </div>
   );

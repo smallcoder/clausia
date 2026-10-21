@@ -47,7 +47,7 @@ export function StatRow({ stats, className = "" }: { stats: HeroStat[]; classNam
 
 export function BackBtn({ href }: { href: string }) {
   return (
-    <Link href={href} aria-label="رجوع" className="tap glass glass-icon inline-flex size-[42px] shrink-0 items-center justify-center rounded-full sm:size-11">
+    <Link href={href} aria-label="رجوع" className="tap glass glass-icon inline-flex size-control-lg shrink-0 items-center justify-center rounded-full sm:size-11">
       <ChevronRight size={20} strokeWidth={2} aria-hidden />
     </Link>
   );
@@ -100,7 +100,7 @@ export function StatusChip({ tone, children }: { tone: "good" | "warn" | "neutra
 export function ClausiaSays({ children, label, size = "lg" }: { children: ReactNode; label?: string; size?: "lg" | "md" }) {
   return (
     <div className="flex items-start gap-3">
-      <span className={`mark font-num inline-flex shrink-0 items-center justify-center font-black shadow-mark ${size === "lg" ? "size-[30px] rounded-sm text-base" : "size-[26px] rounded-sm text-sm"}`}>C</span>
+      <span className={`mark font-num inline-flex shrink-0 items-center justify-center font-black shadow-mark ${size === "lg" ? "size-mark-lg rounded-sm text-base" : "size-mark rounded-sm text-sm"}`}>C</span>
       <div className="min-w-0 flex-1 pt-0.5">
         {label ? <div className="text-sm font-bold text-gold">{label}</div> : null}
         <div className={`leading-[1.85] text-text-3 ${size === "lg" ? "text-md sm:text-lg" : "text-md"}`}>{children}</div>

@@ -137,7 +137,7 @@ export function Composer({ target, placeholder = "اكتب لـ Clausia… ما 
           {/* one-row pill (Roll / Case / Cases mockups): [+] [input] [send], sizes as drawn */}
           <div className="glass flex items-center gap-1.5 rounded-xl p-1.5 sm:gap-2 sm:p-1.75">
             <button type="button" aria-label="إرفاق ورقة" title="إرفاق ورقة" onClick={() => fileRef.current?.click()} disabled={pending}
-              className="tap glass-icon inline-flex size-[38px] shrink-0 items-center justify-center rounded-full border border-border transition hover:text-text disabled:opacity-40 sm:size-10"><Plus size={18} strokeWidth={1.9} /></button>
+              className="tap glass-icon inline-flex size-control shrink-0 items-center justify-center rounded-full border border-border transition hover:text-text disabled:opacity-40 sm:size-10"><Plus size={18} strokeWidth={1.9} /></button>
             <textarea
               ref={area}
               value={text}
@@ -147,7 +147,7 @@ export function Composer({ target, placeholder = "اكتب لـ Clausia… ما 
               placeholder={short && placeholderShort ? placeholderShort : placeholder}
               aria-label="رسالة إلى Clausia"
               onKeyDown={onKey}
-              className="block h-[38px] min-w-0 flex-1 resize-none bg-transparent px-1 py-2 [&:placeholder-shown]:overflow-hidden [&:placeholder-shown]:text-ellipsis [&:placeholder-shown]:whitespace-nowrap text-base leading-[22px] sm:h-10 sm:py-2.25 sm:text-md text-text placeholder:text-text-4 focus:outline-none"
+              className="block h-control min-w-0 flex-1 resize-none bg-transparent px-1 py-2 [&:placeholder-shown]:overflow-hidden [&:placeholder-shown]:text-ellipsis [&:placeholder-shown]:whitespace-nowrap text-base leading-[22px] sm:h-10 sm:py-2.25 sm:text-md text-text placeholder:text-text-4 focus:outline-none"
             />
             <SendBtn onClick={send} disabled={pending || !text.trim()} />
           </div>
@@ -187,7 +187,7 @@ export function FixedDock({ children, width = 780 }: { children: React.ReactNode
 function SendBtn({ onClick, disabled }: { onClick: () => void; disabled: boolean }) {
   return (
     <button type="button" onClick={onClick} disabled={disabled} aria-label="إرسال"
-      className="tap bg-primary-fill inline-flex size-[38px] shrink-0 items-center justify-center rounded-full transition disabled:cursor-not-allowed sm:size-10">
+      className="tap bg-primary-fill inline-flex size-control shrink-0 items-center justify-center rounded-full transition disabled:cursor-not-allowed sm:size-10">
       <ArrowUp size={20} strokeWidth={2.6} />
     </button>
   );

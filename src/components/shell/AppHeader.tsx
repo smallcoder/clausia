@@ -58,7 +58,7 @@ export function AppHeader({ initials, officeName, email, alerts }: { initials: s
           return (
             <Link key={href} href={href} aria-label={label} aria-current={active ? "page" : undefined}
               className={`tap inline-flex h-9 items-center gap-2 rounded-lg text-sm transition sm:h-10 sm:px-4.5 sm:text-base ${active ? "bg-selected px-3 font-semibold text-on-selected shadow-[var(--tab-shadow)]" : "glass-icon px-2.5 font-medium hover:text-text"}`}>
-              <Icon size={16} strokeWidth={1.9} aria-hidden className="size-[15px] sm:size-4" />
+              <Icon size={16} strokeWidth={1.9} aria-hidden className="size-glyph-sm sm:size-4" />
               <span className={active ? "" : "hidden sm:inline"}>{label}</span>
             </Link>
           );
@@ -67,13 +67,13 @@ export function AppHeader({ initials, officeName, email, alerts }: { initials: s
 
       <div className="flex items-center gap-2 justify-self-end">
         <Link href="/hearings?filter=undecided" aria-label={alerts ? `${alerts} جلسات محتاجة قرار` : "التنبيهات"}
-          className="glass glass-icon relative hidden size-[46px] items-center justify-center rounded-full sm:inline-flex">
+          className="glass glass-icon relative hidden size-control-xl items-center justify-center rounded-full sm:inline-flex">
           <Bell size={19} strokeWidth={1.9} aria-hidden />
           {alerts ? <span aria-hidden className="absolute end-2.5 top-2.5 size-2 rounded-full bg-gold" /> : null}
         </Link>
         <div ref={menu} className="relative">
           <button type="button" onClick={() => setOpen(!open)} aria-label="الحساب" aria-expanded={open}
-            className="tap glass inline-flex size-[42px] items-center justify-center rounded-full text-sm font-bold text-text sm:size-[46px]">
+            className="tap glass inline-flex size-control-lg items-center justify-center rounded-full text-sm font-bold text-text sm:size-control-xl">
             {initials}
           </button>
           {open ? (

@@ -37,7 +37,7 @@ function HearingRow({ h, today, nextUp, last, caseId }: { h: Row; today: string;
         <span className="block text-xs text-text-4">{formatDayLabel(h.hearing_date).split(" ")[0]}</span>
       </span>
       <span className="flex w-2.5 shrink-0 flex-col items-center sm:w-3" aria-hidden>
-        <span className={cx("mt-2 size-[7px] shrink-0 rounded-full", dot)} />
+        <span className={cx("mt-2 size-dot-lg shrink-0 rounded-full", dot)} />
         {!last ? <span className="mt-1 w-px flex-1 bg-border-2" /> : null}
       </span>
       <div className="min-w-0 flex-1 pb-5 sm:pb-6">

@@ -307,13 +307,13 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
                   {live ? (
                     <button type="button" role="checkbox" aria-checked={sel} aria-label={sel ? `شيل ${kindOf(o)} من الحفظ` : `ضيف ${kindOf(o)} للحفظ`}
                       onClick={() => toggleSelect(o)} disabled={pending || (!sel && !!lone && lone.includes("مرفوض"))}
-                      className={cx("tap mt-0.5 inline-flex size-[22px] shrink-0 items-center justify-center rounded-full border transition disabled:opacity-40",
+                      className={cx("tap mt-0.5 inline-flex size-tick shrink-0 items-center justify-center rounded-full border transition disabled:opacity-40",
                         sel ? "border-gold-edge text-gold" : "border-border text-transparent hover:text-text-4")}>
                       <Check aria-hidden size={12} strokeWidth={2.6} />
                     </button>
                   ) : (
                     <span aria-label={o.status === "rejected" ? "مرفوض" : o.status === "suggested" ? "اتحفظ كمقترح" : "اتحفظ"}
-                      className={cx("mt-0.5 inline-flex size-[22px] shrink-0 items-center justify-center rounded-full",
+                      className={cx("mt-0.5 inline-flex size-tick shrink-0 items-center justify-center rounded-full",
                         o.status === "rejected" ? "bg-card-2 text-text-4" : o.status === "suggested" ? "bg-gold-bg text-gold" : "bg-good-bg text-good")}>
                       {o.status === "rejected" ? <X aria-hidden size={12} strokeWidth={2.6} /> : <Check aria-hidden size={12} strokeWidth={2.6} />}
                     </span>
@@ -426,7 +426,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
     const saved = p.ops.filter((o) => o.status === "confirmed" || o.status === "suggested").length;
     return (
       <div className="flex min-h-[52px] items-center gap-2.5 rounded-lg border border-border-2 bg-card py-1 pe-2 ps-4 text-base shadow-soft">
-        <span aria-hidden className="inline-flex size-[22px] shrink-0 items-center justify-center rounded-full bg-good-bg text-good"><Check size={12} strokeWidth={2.6} /></span>
+        <span aria-hidden className="inline-flex size-tick shrink-0 items-center justify-center rounded-full bg-good-bg text-good"><Check size={12} strokeWidth={2.6} /></span>
         <button type="button" onClick={() => setShowDecided(true)} aria-expanded={false} title="اعرض التفاصيل"
           className="inline-flex min-h-11 min-w-0 flex-1 items-center gap-1.5 text-start font-semibold text-text hover:text-title">
           <span className="truncate">{saved ? <>اتحفظ <span className="font-num">{saved}</span> {saved === 1 ? "عنصر" : saved === 2 ? "عنصرين" : saved <= 10 ? "عناصر" : "عنصر"}</> : decisionSummary(p)}</span>

@@ -364,8 +364,8 @@ export function RollStrip({ center, selected, focusDay, today, counts, pinned, o
                     <span className="sm:hidden">{WEEKDAY_SHORT[wd]}</span><span className="hidden sm:inline">{WEEKDAY_LONG[wd]}</span>
                   </span>
                   <span className={cx("font-num mt-0.5 block text-lg leading-[1.1] sm:mt-0.75 sm:text-xl", on ? "font-medium" : "font-light")}>{Number(d.slice(8))}</span>
-                  <span aria-hidden className="mt-1.25 flex h-1 justify-center gap-0.5 sm:mt-1.5 sm:h-[5px] sm:gap-0.75">
-                    {Array.from({ length: Math.min(n, 6) }, (_, i) => <span key={i} className={cx("size-1 rounded-full transition-colors sm:size-[5px]", on ? "bg-on-selected/85 duration-200 delay-100" : "bg-text-4 duration-0")} />)}
+                  <span aria-hidden className="mt-1.25 flex h-1 justify-center gap-0.5 sm:mt-1.5 sm:h-dot sm:gap-0.75">
+                    {Array.from({ length: Math.min(n, 6) }, (_, i) => <span key={i} className={cx("size-1 rounded-full transition-colors sm:size-dot", on ? "bg-on-selected/85 duration-200 delay-100" : "bg-text-4 duration-0")} />)}
                   </span>
                   <span className="sr-only">{d === today ? "النهارده، " : ""}{formatDmy(d)}، {counts.has(d) ? dayCount(n) : ""}</span>
                 </a>

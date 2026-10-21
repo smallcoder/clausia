@@ -28,7 +28,7 @@ function Label({ on }: { on: boolean }) {
 
 function Pill() {
   return (
-    <span className="bg-primary-fill inline-flex h-9 shrink-0 items-center gap-1 rounded-full px-3.5 text-sm font-semibold md:h-[38px] md:gap-1.5 md:px-4 md:text-base">
+    <span className="bg-primary-fill inline-flex h-9 shrink-0 items-center gap-1 rounded-full px-3.5 text-sm font-semibold md:h-control md:gap-1.5 md:px-4 md:text-base">
       سجّلها <ChevronLeft strokeWidth={2.2} aria-hidden className="size-[13px] md:size-3.5" />
     </span>
   );
@@ -53,7 +53,7 @@ export function UndecidedCard({ count, className = "" }: { count: number; classN
       <span className="hidden h-full flex-col p-6.5 md:flex">
         <Label on={on} />
         <span className={`${NUM} flex flex-1 items-center text-display-xl ${on ? "text-gold" : "text-title"}`}>{two(count)}</span>
-        <span className="flex min-h-[38px] items-center justify-between gap-3">
+        <span className="flex min-h-control items-center justify-between gap-3">
           <span className="text-sm leading-[17px] text-text-3">{line}</span>
           {on ? <Pill /> : null}
         </span>

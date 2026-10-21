@@ -46,7 +46,7 @@ export default async function ThreadPage({ params }: { params: Promise<{ threadI
         <Link href={back} aria-label={t.case_id ? "رجوع لملف القضية" : "رجوع للمحادثات"} className={ROUND}>
           <ChevronRight aria-hidden size={20} strokeWidth={2.2} />
         </Link>
-        <MaybeLink href={caseHref} className="glass flex h-[42px] min-w-0 flex-1 items-center gap-2.5 rounded-full pe-3.5 ps-1.5">
+        <MaybeLink href={caseHref} className="glass flex h-control-lg min-w-0 flex-1 items-center gap-2.5 rounded-full pe-3.5 ps-1.5">
           <span aria-hidden className="mark font-num inline-flex size-7 shrink-0 items-center justify-center rounded-sm text-sm font-extrabold">C</span>
           <span className="min-w-0 leading-[1.2]">
             <span className="font-num block text-base font-bold text-title">Clausia</span>
@@ -72,7 +72,7 @@ export default async function ThreadPage({ params }: { params: Promise<{ threadI
   );
 }
 
-const ROUND = "glass glass-icon inline-flex size-[42px] shrink-0 items-center justify-center rounded-full transition hover:text-text";
+const ROUND = "glass glass-icon inline-flex size-control-lg shrink-0 items-center justify-center rounded-full transition hover:text-text";
 
 /** The pill opens the case file when the conversation has one; otherwise it is just a label. */
 function MaybeLink({ href, className, children }: { href: string | null; className: string; children: ReactNode }) {
