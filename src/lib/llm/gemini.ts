@@ -1,5 +1,7 @@
 import "server-only";
 import { priceUsd } from "./pricing";
+import { LlmUnavailableError } from "./types";
+import { isUnavailableStatus } from "./unavailable";
 import type {
   ChatRequest, ChatResponse, JsonRequest, JsonResponse, LlmMessage, LlmProvider, LlmToolCall, ReadPageRequest, ReadPageResponse,
 } from "./types";
@@ -57,39 +59,33 @@ function cleanSchema(s: unknown): unknown {
   return s;
 }
 
+/** One request, no retries (owner decision): 402 / 429 / 5xx, a timeout or a network failure → LlmUnavailableError. */
 async function post(model: string, body: unknown, timeoutMs = 120_000): Promise<{ res: GeminiResponse; latencyMs: number }> {
   const started = Date.now();
-  let lastErr: unknown;
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    let r: Response;
     try {
-      const r = await fetch(`${API}/${model}:generateContent`, {
+      r = await fetch(`${API}/${model}:generateContent`, {
         method: "POST",
         headers: { "content-type": "application/json", "x-goog-api-key": key() },
         body: JSON.stringify(body),
         signal: ctrl.signal,
       });
-      const json = (await r.json()) as GeminiResponse;
-      if (!r.ok || json.error) {
-        const err = new GeminiError(`Gemini ${r.status}: ${json.error?.message ?? "unknown error"}`, r.status);
-        if ((r.status === 429 || r.status >= 500) && attempt < 2) {
-          lastErr = err;
-          await new Promise((ok) => setTimeout(ok, 2500));
-          continue;
-        }
-        throw err;
-      }
-      return { res: json, latencyMs: Date.now() - started };
     } catch (e) {
-      lastErr = e;
-      if (e instanceof GeminiError) throw e;
-      if (attempt >= 2) throw e;
-    } finally {
-      clearTimeout(timer);
+      throw new LlmUnavailableError(ctrl.signal.aborted ? `Gemini timeout after ${timeoutMs}ms` : `Gemini network error: ${e instanceof Error ? e.message : String(e)}`);
     }
+    const json = (await r.json().catch(() => ({}))) as GeminiResponse;
+    if (!r.ok || json.error) {
+      const message = `Gemini ${r.status}: ${json.error?.message ?? "unknown error"}`;
+      if (isUnavailableStatus(r.status)) throw new LlmUnavailableError(message, r.status);
+      throw new GeminiError(message, r.status);
+    }
+    return { res: json, latencyMs: Date.now() - started };
+  } finally {
+    clearTimeout(timer);
   }
-  throw lastErr;
 }
 
 function usageOf(res: GeminiResponse) {
@@ -141,7 +137,8 @@ export const gemini: LlmProvider = {
         : {}),
       generationConfig: genConfig(model, { temperature: req.temperature ?? 0.2, maxOutputTokens: req.maxOutputTokens ?? 8192 }),
     };
-    const { res, latencyMs } = await post(model, body);
+    // a chat turn waits at most 60s for the model, then the chat shows the «not available» notice
+    const { res, latencyMs } = await post(model, body, 60_000);
     const content = res.candidates?.[0]?.content ?? { role: "model", parts: [] };
     const parts = content.parts ?? [];
     const text = parts.filter((p) => typeof p.text === "string" && !p.thought).map((p) => p.text as string).join("");
@@ -176,6 +173,7 @@ export const gemini: LlmProvider = {
         }
         return { text, provider: "gemini", model, usage: { inputTokens: spent.inputTokens, outputTokens: spent.outputTokens }, costUsd: spent.costUsd, latencyMs: spent.latencyMs };
       } catch (e) {
+        if (e instanceof LlmUnavailableError) throw e; // same account, same answer: don't call the fallback model
         lastErr = e;
       }
     }

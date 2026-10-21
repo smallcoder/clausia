@@ -10,7 +10,8 @@ import "server-only";
 import { formatDmy, normalizeDigits, todayIso } from "@/lib/dates";
 import type { Json } from "@/lib/db/types";
 import { caseLabel } from "@/lib/labels";
-import { getLlm, type LlmMessage, type LlmToolCall } from "@/lib/llm";
+import { getLlm, LlmUnavailableError, SpendCapError, type LlmMessage, type LlmToolCall } from "@/lib/llm";
+import { UNAVAILABLE_TEXT } from "@/lib/llm/unavailable";
 import { createProposal, normalizeForMatch, type DraftOp, type Proposal } from "@/lib/proposals";
 import type { Db } from "@/lib/supabase/server";
 import { isReadTool, READ_TOOL_SPECS, runReadTool } from "@/lib/tools/read";
@@ -85,8 +86,9 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promis
     try {
       res = await getLlm().chat({ system, messages, tools, meta });
     } catch (e) {
+      // already logged once in llm_calls (getLlm); one notice in the chat, no retry
       const msg = e instanceof Error ? e.message : String(e);
-      const friendly = msg.includes("spend cap") ? "مش هقدر أرد دلوقتي: وصلنا لحد الصرف التجريبي." : "مش قادر أرد دلوقتي. جرّب تاني بعد شوية.";
+      const friendly = e instanceof SpendCapError ? "مش هقدر أرد دلوقتي: وصلنا لحد الصرف التجريبي." : UNAVAILABLE_TEXT;
       const { data: m } = await db.from("chat_messages").insert({ thread_id: thread.id, role: "assistant", content: friendly }).select("id").single();
       if (m) out.assistantMessageIds.push(m.id);
       out.text = friendly;
@@ -181,7 +183,9 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promis
       try {
         const r = await getLlm().chat({ system: `${system}\n\nاكتب دلوقتي رد قصير للمحامي بالعامية المصرية: لقيت إيه ومحتاج منه إيه، من غير ما تستدعي أدوات.`, messages: [...messages, { role: "user", text: "لخّص لي اللي وصلتله وقولّي محتاج مني إيه." }], meta });
         reply = r.text?.trim() ?? "";
-      } catch { /* fall through */ }
+      } catch (e) {
+        if (e instanceof LlmUnavailableError) reply = UNAVAILABLE_TEXT;
+      }
       if (!reply) reply = "راجعت اللي عندي ولسه محتاج خطوة كمان. اكتب «كمّل» وأنا أجهّز البطاقة.";
     }
     const { data: m } = await db.from("chat_messages").insert({ thread_id: thread.id, role: "assistant", content: reply }).select("id").single();
@@ -246,7 +250,7 @@ async function loadHistory(db: Db, threadId: string): Promise<LlmMessage[]> {
         out.push({ role: "assistant", text: r.content, toolCalls: s!.calls, raw: s!.raw });
         out.push({ role: "tool", results: (next.tool_calls as StoredTool).results! });
         i++;
-      } else if (r.content) {
+      } else if (r.content && r.content !== UNAVAILABLE_TEXT) {
         out.push({ role: "assistant", text: r.content });
       }
     }
