@@ -10,3 +10,14 @@
 - Scripts that import app code: `npx tsx --conditions=react-server --env-file=.env.local scripts/x.ts`.
 - Before a PR: `npx tsc --noEmit` clean. No secrets in git (`.env.local` is ignored).
 - Out of scope → GitHub issue with label `future`.
+
+## Models for agents (owner decision 2026-10-21)
+
+Building (pass `model` on every Agent / workflow call):
+- **Sonnet 5.5**: the default.
+- **Haiku 5.5**: small mechanical tasks: screenshots and re-shoots, renames, running tests, simple copy changes.
+- **Opus 5.5**: only when the task really needs it (tricky logic, architecture, a hard bug). Say why in the PR.
+
+Reviews before merge:
+- **Sonnet 5.5**: UI PRs (layout, styles, components, screenshots).
+- **Fable 5.1**: only PRs that touch security or data: RLS, auth, the never-guess guard, writes (proposals, `applyOp`, server actions that write), and anything that reads LawMill. A PR with both gets Fable.
