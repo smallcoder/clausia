@@ -43,7 +43,19 @@ function Header({ stats = 3, eyebrow = true }: { stats?: number; eyebrow?: boole
   );
 }
 
-function ComposerShell({ width }: { width: number }) {
+function ComposerShell({ width, tall = false }: { width: number; tall?: boolean }) {
+  if (tall)
+    return (
+      <>
+        <div aria-hidden className="h-44 shrink-0" />
+        <div className="bg-fade pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(18px+env(safe-area-inset-bottom))] pt-10 sm:px-6 sm:pb-6 sm:pt-[60px]">
+          <div className="glass mx-auto flex h-[116px] flex-col justify-between rounded-[26px] p-3.5 sm:h-[136px] sm:rounded-[30px] sm:p-4" style={{ maxWidth: width }}>
+            <Bar w="55%" h={12} />
+            <div className="flex items-center justify-between"><span className="size-[38px] rounded-full border border-border sm:size-10" /><span className="size-[38px] rounded-full bg-primary-fill opacity-30 sm:size-10" /></div>
+          </div>
+        </div>
+      </>
+    );
   return (
     <>
       <div aria-hidden className="h-28 shrink-0" />
@@ -67,7 +79,7 @@ export function PageSkeleton({ kind }: { kind: Kind }) {
         <>
           <div className="space-y-3 pt-4 sm:pt-[52px]"><Bar w="110px" h={11} /><Bar w="min(380px, 80vw)" h={40} className="rounded-xl" /></div>
           <div className="mt-6 flex gap-3"><Bar w="30px" h={30} className="rounded-[9px]" /><div className="flex-1 space-y-2"><Bar w="80%" h={14} /><Bar w="55%" h={14} /></div></div>
-          <div className="mt-8 grid gap-4 sm:grid-cols-[1fr_minmax(0,0.55fr)]"><Card><Rows n={3} /></Card><Card><Bar w="90px" h={11} /><Bar w="110px" h={72} className="mt-6 rounded-2xl" /><Bar w="60%" h={10} className="mt-6" /></Card></div>
+          <div className="mt-8 grid gap-4 sm:grid-cols-[1fr_minmax(0,0.55fr)]"><Card className="order-2 sm:order-none"><Rows n={3} /></Card><Card className="order-1 sm:order-none"><Bar w="90px" h={11} /><Bar w="110px" h={72} className="mt-6 rounded-2xl" /><Bar w="60%" h={10} className="mt-6" /></Card></div>
         </>
       ) : null}
       {kind === "chat" ? (
@@ -105,7 +117,7 @@ export function PageSkeleton({ kind }: { kind: Kind }) {
           <Card className="mt-4 !p-0"><div className="border-b border-[var(--hairline-v2)] px-6 py-3"><Bar w="40%" h={10} /></div><div className="px-6"><Rows n={7} /></div></Card>
         </>
       ) : null}
-      <ComposerShell width={780} />
+      <ComposerShell width={780} tall={kind === "home" || kind === "chat"} />
     </div>
   );
 }
