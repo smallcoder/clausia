@@ -27,7 +27,7 @@ function dayName(iso: string, today: string) {
 }
 
 /**
- * The week: Sat–Thu (Friday only when chosen or it has hearings); weekday, big day number, one dot per hearing.
+ * The week: Sat–Thu; Friday is hidden unless it has a hearing that week (owner decision), or it is the chosen day; weekday, big day number, one dot per hearing.
  * Changing the week (owner decision 15): on desktop two small quiet glass buttons at the two ends of the strip; on
  * touch screens a sideways swipe on the strip (SwipeWeek; dragging toward the left → previous week, toward the right →
  * next week, as RTL content moves with the finger).

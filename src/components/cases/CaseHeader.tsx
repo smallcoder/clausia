@@ -1,5 +1,6 @@
 // The case page header (docs/design/*Case.dc.html), v2: who first — «موكلنا», the client's name big, «ضد <opponent>».
-// Desktop (item 19): row 1 = back · «…» · breadcrumb «القضايا / <number>» … status chip at the far end; row 2 = eyebrow
+// Desktop (item 19): row 1 = back · breadcrumb «القضايا / <number>» … status chip, then «…» at the far end (owner:
+// it holds the moved links — case data, hearings, case chat, JSON); row 2 = eyebrow
 // + the name with «ضد <opponent>» on the same line; row 3 = one solid card of 7 cells split by hairlines — number,
 // court, circuit, type | facts, docs, needs review (big light numbers, gold only when > 0).
 // Mobile: back + «…» floating, eyebrow + status, the name, «ضد» below, then a 2×2 solid spec card, no stats (the tabs
@@ -62,15 +63,15 @@ export function CaseHeader({ cf, caseId, chatHref, stats }: { cf: CaseFile; case
         <CaseMenu caseId={caseId} chatHref={chatHref} align="end" className="size-[42px]" />
       </div>
 
-      {/* desktop row 1: 40px back · «…» (owner decision: the one addition) · breadcrumb … status chip */}
+      {/* desktop row 1: 40px back · breadcrumb … status chip · «…» (owner decision: «…» next to the chip) */}
       <div className="hidden items-center gap-3 px-2 pt-6 sm:flex">
         <Link href="/cases" aria-label="رجوع" className={`${ROUND} sm:size-10`}><ChevronRight size={20} strokeWidth={2.2} aria-hidden /></Link>
-        <CaseMenu caseId={caseId} chatHref={chatHref} align="start" className="size-10" />
         <nav aria-label="المسار" className="min-w-0 flex-1 truncate text-[13px] text-text-3">
           <Link href="/cases" className="tap hover:text-text hover:underline">القضايا</Link>
           {number ? <><span aria-hidden className="mx-1.5 text-text-4">/</span><span className="font-semibold text-text">{number}</span></> : null}
         </nav>
         <StatusPill status={cf.case.status} />
+        <CaseMenu caseId={caseId} chatHref={chatHref} align="end" className="size-10" />
       </div>
 
       {/* who: mobile = eyebrow + status, name, «ضد» below; desktop = eyebrow, then name + «ضد» on one line */}

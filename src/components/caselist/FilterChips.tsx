@@ -3,7 +3,7 @@
  * counts (every status that has cases, not only the drawn three; on phones the row scrolls sideways).
  * Plain links (query params), so they work without JS. Not glass: the row sits on the page, not over content.
  * The selected capsule is the ink fill. `?decision=1` (the «محتاجة قرار» stat), `?review=1`, `?stage=` and `?q=`
- * have no capsule; when one is active it shows as a clearable pill.
+ * have no capsule; when one is active it shows as a clearable pill, first in the row.
  */
 import { X } from "lucide-react";
 import Link from "next/link";
@@ -47,6 +47,11 @@ export function FilterChips({ sp, counts }: { sp: ListParams; counts: Counts }) 
     // py-1.5 keeps the capsules' 44px tap areas inside the scroll box (it would clip them). Phones: 16px + 6px puts
     // the visible capsule where it was drawn; desktop: 28px + 6px = the mockup's 34px, and -mb gives the 6px back.
     <nav aria-label="تصفية القضايا" className="no-scrollbar mt-4 flex items-center gap-0.5 overflow-x-auto py-1.5 sm:-mb-1.5 sm:mt-[28px] sm:gap-1 sm:px-1">
+      {/* owner decision: the active filter's clear pill comes first (at the right), so it is never scrolled out of view */}
+      {sp.decision ? <ClearPill label="محتاجة قرار" to={casesHref(sp, { decision: undefined })} /> : null}
+      {sp.review ? <ClearPill label="محتاجة مراجعة" to={casesHref(sp, { review: undefined })} /> : null}
+      {stage ? <ClearPill label={stage} to={casesHref(sp, { stage: undefined })} /> : null}
+      {sp.q ? <ClearPill label={`«${sp.q}»`} to={casesHref(sp, { q: undefined })} /> : null}
       <Capsule on={!sp.status && !sp.review && !sp.decision} to={casesHref(sp, { status: undefined, ...NO_FLAGS })}>الكل<Count n={counts.total} /></Capsule>
       {statuses.map((k) => (
         <Capsule key={k} on={sp.status === k} to={casesHref(sp, { status: k, ...NO_FLAGS })}>
@@ -54,10 +59,6 @@ export function FilterChips({ sp, counts }: { sp: ListParams; counts: Counts }) 
           <Count n={counts.status[k]} />
         </Capsule>
       ))}
-      {sp.decision ? <ClearPill label="محتاجة قرار" to={casesHref(sp, { decision: undefined })} /> : null}
-      {sp.review ? <ClearPill label="محتاجة مراجعة" to={casesHref(sp, { review: undefined })} /> : null}
-      {stage ? <ClearPill label={stage} to={casesHref(sp, { stage: undefined })} /> : null}
-      {sp.q ? <ClearPill label={`«${sp.q}»`} to={casesHref(sp, { q: undefined })} /> : null}
     </nav>
   );
 }
@@ -65,7 +66,7 @@ export function FilterChips({ sp, counts }: { sp: ListParams; counts: Counts }) 
 /** an active filter without a capsule of its own (?decision=, ?review=, ?stage=, ?q=): shown with an × that removes it */
 function ClearPill({ label, to }: { label: string; to: string }) {
   return (
-    <Link href={to} aria-label={`شيل التصفية ${label}`} className="tap group inline-flex shrink-0 items-center ps-1">
+    <Link href={to} aria-label={`شيل التصفية ${label}`} className="tap group inline-flex shrink-0 items-center pe-1">
       <span className="inline-flex h-8 max-w-[220px] items-center gap-1.5 rounded-full border border-border px-3 text-[12.5px] font-semibold text-text sm:h-[34px] sm:text-[13px]">
         <span className="truncate">{label}</span>
         <X size={14} strokeWidth={2.2} aria-hidden className="shrink-0 text-text-4 group-hover:text-text" />

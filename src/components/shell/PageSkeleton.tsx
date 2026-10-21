@@ -95,13 +95,14 @@ export function PageSkeleton({ kind }: { kind: Kind }) {
           {/* desktop (item 19): breadcrumb row with the status chip, client «ضد» opponent, one card of 4 spec | 3 stats */}
           <div className="hidden items-center justify-between pt-8 sm:flex">
             <div className="flex items-center gap-3"><span className="size-8 rounded-full border border-border" /><Bar w="130px" h={12} /></div>
-            <Bar w="64px" h={22} className="rounded-full" />
+            <div className="flex items-center gap-3"><Bar w="64px" h={22} className="rounded-full" /><span className="size-10 rounded-full border border-border" /></div>
           </div>
           <div className="space-y-3 pt-4 sm:pt-5"><Bar w="50px" h={10} /><div className="flex items-end gap-3"><Bar w="min(240px, 60vw)" h={36} className="rounded-xl" /><Bar w="130px" h={18} className="hidden sm:block" /></div><Bar w="180px" h={14} className="sm:hidden" /></div>
           <div className="mt-6 grid grid-cols-2 gap-4 sm:hidden">{Array.from({ length: 4 }, (_, i) => <div key={i} className="space-y-2"><Bar w="60px" h={10} /><Bar w="120px" h={14} /></div>)}</div>
-          <div className="mt-6 hidden items-center rounded-[26px] border border-border-2 bg-card px-2 py-5 shadow-card sm:flex">
+          {/* same columns as the header card: 4 spec cells (1fr) | 3 stat cells (0.7fr) */}
+          <div className="mt-6 hidden grid-cols-[repeat(4,minmax(0,1fr))_repeat(3,minmax(0,0.7fr))] items-center rounded-[26px] border border-border-2 bg-card py-5 shadow-card sm:grid">
             {Array.from({ length: 7 }, (_, i) => (
-              <div key={i} className={`flex-1 space-y-2 px-5 ${i ? "border-s border-[var(--hairline-v2)]" : ""}`}>
+              <div key={i} className={`min-w-0 space-y-2 px-6 ${i ? "border-s border-[var(--hairline-v2)]" : ""}`}>
                 {i < 4 ? <><Bar w="50px" h={9} /><Bar w="85%" h={13} /></> : <><Bar w="38px" h={28} className="rounded-lg" /><Bar w="46px" h={9} /></>}
               </div>
             ))}

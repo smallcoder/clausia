@@ -48,7 +48,9 @@ The 20 `*.dc.html` files here are the approved screens: Home, Chat, Case, Roll a
 - Every screen has the same soft fade behind the floating composer and chips (Home too).
 - Home mobile chips scroll sideways.
 - Case: judgments live in the hearings view; the links (case details, hearings, case chat, JSON) live in the «…» menu; long court / case-type names are one line with «…» on mobile.
-- Cases: the third stat is «محتاجة قرار» with its own filter; each row keeps its review marker; extra status filters scroll on mobile.
-- Roll: on mobile, swipe the day strip to change the week; on desktop, two small quiet prev/next week buttons at the two ends of the strip (no separate row).
+- Case desktop header: back · breadcrumb … status chip · «…» (the menu sits at the end of the row, next to the chip). The header card keeps the mockup's widths: 4 wider data cells and 3 narrower stat cells, aligned on one line and split by hairlines.
+- Cases: the third stat is «محتاجة قرار» with its own filter; each row keeps its review marker; extra status filters scroll on mobile; an active filter's clear pill comes first in the row (at the right).
+- Roll: on mobile, swipe the day strip to change the week (drag right → next week, as RTL); on desktop, two small quiet prev/next week buttons at the two ends of the strip (no separate row); the next-week arrow points left.
+- Roll: the strip shows Saturday–Thursday. Friday is hidden unless that week's Friday has a hearing (or is the chosen day).
 - Chat: the card footer's second line (save as suggestions · reject all · open case) shows only after «عدّل»; the /chat list uses the thread's style.
 - Loading: one shared skeleton in each page's real layout (title, stats, card or table shapes), card + hairline tokens, one calm shimmer, no spinners; the top bar and composer stay visible.
