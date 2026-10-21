@@ -92,7 +92,7 @@ export function RollRow({ h, today, showDate = false, showCourt = false, showTod
           {sep([date, court, num ? <span>{num}</span> : null, h.case.case_type?.trim()])}
         </span>
       </span>
-      <span className="hidden max-w-[38%] shrink-0 flex-col items-end gap-1.5 text-sm sm:flex">
+      <span className="hidden max-w-[38%] shrink-0 flex-col items-end gap-1.5 text-sm sm:flex" /* ds-allow: a share of the row (38%), not a length */>
         {status}
         {need ? <span className="max-w-full truncate text-text"><span className="text-text-3">المطلوب: </span>{need}</span> : null}
       </span>
@@ -135,7 +135,7 @@ export function RollNext({ h, today }: { h: HearingWithCase; today: string }) {
       {needLine ? <div className="mt-4 border-t border-border-2 pt-3.25 sm:hidden">{needLine}</div> : null}
       {canDecide ? (
         <button type="button" onClick={() => open?.(h)} aria-haspopup="dialog"
-          className="bg-primary-fill mt-3.5 inline-flex h-11 w-full shrink-0 items-center justify-center rounded-full px-5.5 text-base font-bold transition hover:opacity-90 sm:mt-0 sm:h-[46px] sm:w-auto sm:self-end">
+          className="bg-primary-fill mt-3.5 inline-flex h-11 w-full shrink-0 items-center justify-center rounded-full px-5.5 text-base font-bold transition hover:opacity-90 sm:mt-0 sm:h-control-xl sm:w-auto sm:self-end">
           سجّل قرار الجلسة دي
         </button>
       ) : null}
@@ -165,7 +165,7 @@ function Sheet({ h, today, onClose }: { h: HearingWithCase; today: string; onClo
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end sm:block" role="dialog" aria-modal="true" aria-labelledby="roll-sheet-title">
       <button type="button" aria-label="إغلاق" tabIndex={-1} onClick={onClose} className="fade-enter absolute inset-0 bg-backdrop" />
-      <div className="relative flex max-h-[90dvh] flex-col overflow-hidden rounded-t-xl border border-border-2 bg-card shadow-pop animate-[sheet-up_260ms_cubic-bezier(0.32,0.72,0,1)] sm:absolute sm:inset-y-4 sm:end-4 sm:max-h-none sm:w-[440px] sm:rounded-xl sm:animate-[fade-in_180ms_ease-out]">
+      <div className="relative flex max-h-[90dvh] flex-col overflow-hidden rounded-t-xl border border-border-2 bg-card shadow-pop animate-[sheet-up_260ms_cubic-bezier(0.32,0.72,0,1)] sm:absolute sm:inset-y-4 sm:end-4 sm:max-h-none sm:w-110 sm:rounded-xl sm:animate-[fade-in_180ms_ease-out]" /* ds-allow: dvh: the sheet is at most 90% of the visible screen */>
         <div className="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-border sm:hidden" aria-hidden />
         <header className="flex items-start gap-4 border-b border-border-2 px-5 pb-4 pt-3 sm:px-6 sm:pt-6">
           <CircuitNum h={h} size="sheet" />

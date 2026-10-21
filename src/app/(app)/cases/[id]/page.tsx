@@ -61,7 +61,7 @@ export default async function CasePage({ params, searchParams }: { params: Promi
   ];
 
   return (
-    <div className="mx-auto flex w-full max-w-[1360px] flex-1 flex-col px-4 sm:px-10">
+    <div className="mx-auto flex w-full max-w-page flex-1 flex-col px-4 sm:px-10">
       {view ? (
         <>
           <CaseSubHeader cf={cf} caseId={id} title={VIEWS[view]} />

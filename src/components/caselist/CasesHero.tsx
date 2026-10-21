@@ -16,7 +16,7 @@ function Stat({ s }: { s: HeroStat }) {
     <>
       <div className={`stat-num text-xl sm:text-2xl ${gold ? "text-gold" : "text-title"}`}>{typeof s.value === "number" ? two(s.value) : s.value}</div>
       <div className={`mt-1.5 flex items-center gap-1.25 text-xs leading-[15px] sm:mt-2 sm:gap-1.5 sm:text-sm sm:leading-[17px] ${gold ? "text-gold" : "text-text-3"}`}>
-        {gold ? <span aria-hidden className="size-[5px] rounded-full bg-gold sm:size-1.5" /> : null}{s.label}
+        {gold ? <span aria-hidden className="size-dot rounded-full bg-gold sm:size-1.5" /> : null}{s.label}
       </div>
     </>
   );

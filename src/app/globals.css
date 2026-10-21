@@ -246,6 +246,42 @@
   --radius-xl: 26px;
 }
 
+/*
+ * Widths (DESIGN.md «Spacing»): the --container-* names read as w-/min-w-/max-w-/basis- utilities (max-w-page, max-w-chat …).
+ * A width used in two or more places for the same job is named here; a one-off uses a spacing step or carries a ds-allow reason.
+ */
+@theme {
+  --container-page: 1360px;        /* desktop page column: Cases, Case, Roll */
+  --container-home: 960px;         /* Home column */
+  --container-chat: 820px;         /* Chat column */
+  --container-composer: 780px;     /* the composer, on Home and over a chat */
+  --container-bubble: 88%;         /* a chat bubble's widest share of the column, on mobile */
+  --container-bubble-sm: 72%;      /* the same on desktop */
+}
+
+/*
+ * Sizes (DESIGN.md «Spacing»): the --spacing-* names read as size-/h-/w-/min-h-/p-/gap-/inset-… utilities (size-control, h-chip …).
+ * A size used in two or more places for the same job is named here; the other steps are the plain 0.25 spacing scale.
+ */
+@theme {
+  /* controls: round buttons, pills, the composer's input row */
+  --spacing-control: 38px;         /* compact control on mobile and in composers: send, plus, pill, skeleton twins */
+  --spacing-control-lg: 42px;      /* glass round button in headers; the chat's case pill */
+  --spacing-control-xl: 46px;      /* header round buttons on desktop, the sheet's save button, a composer's input row */
+  --spacing-chip: 34px;            /* filter chip height on desktop */
+  /* the «C» mark and its small round cousins */
+  --spacing-mark-sm: 22px;         /* the mark beside a composer on mobile */
+  --spacing-mark: 26px;            /* the mark in headings, the case header, a composer on desktop */
+  --spacing-mark-lg: 30px;         /* the mark beside a Home message and a page hero on desktop */
+  --spacing-tick: 22px;            /* round tick / state button in a proposal card */
+  /* status dots */
+  --spacing-dot: 5px;              /* the dot before a status word, a hearing count dot */
+  --spacing-dot-lg: 7px;           /* a hearing's dot on a timeline */
+  /* icon glyphs inside a control */
+  --spacing-glyph-sm: 15px;        /* a pill's icon (Home chips, the header's tab icons on mobile) */
+  --spacing-glyph: 18px;           /* the arrow and plus inside a round button */
+}
+
 html { background-color: var(--bg); }
 body {
   background-color: var(--bg);

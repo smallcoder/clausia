@@ -30,11 +30,11 @@ const CARD = "rounded-xl border border-border-2 bg-card shadow-card";
 
 /** «مقترحة · راجعها»: a 5px gold dot + 11px gold word (needs the lawyer's action). */
 export const Suggested = ({ label = "مقترحة · راجعها" }: { label?: string }) => (
-  <span className="inline-flex items-center gap-1.25 text-xs font-semibold text-gold"><span aria-hidden className="size-[5px] rounded-full bg-gold" />{label}</span>
+  <span className="inline-flex items-center gap-1.25 text-xs font-semibold text-gold"><span aria-hidden className="size-dot rounded-full bg-gold" />{label}</span>
 );
 
 /** The Clausia «C» mark (mockup: 32px / 11px radius / 15px on desktop, 26px / 9px / 12px on mobile; a hairline + inner light in dark). */
-const MARK = "mark font-num inline-flex shrink-0 items-center justify-center font-extrabold size-[26px] rounded-sm text-sm lg:size-8 lg:rounded-md lg:text-md dark:border dark:border-white/8 dark:shadow-[var(--mark-shadow)]";
+const MARK = "mark font-num inline-flex shrink-0 items-center justify-center font-extrabold size-mark rounded-sm text-sm lg:size-8 lg:rounded-md lg:text-md dark:border dark:border-white/8 dark:shadow-[var(--mark-shadow)]";
 
 function pendingOf<T>(cf: CaseFile, table: string): T[] {
   return cf.pending_suggestions.filter((p) => p.table === table).map((p) => p.item as T);
@@ -104,11 +104,11 @@ function FactRow({ f, last, cf }: { f: Fact; last: boolean; cf: CaseFile }) {
   const dated = f.date && f.date_precision !== "unknown";
   return (
     <span className="flex gap-3.5">
-      <span className={`font-num w-16 shrink-0 pt-1 text-sm font-semibold lg:w-[78px] ${dated ? "text-text" : "text-text-4"}`}>
+      <span className={`font-num w-16 shrink-0 pt-1 text-sm font-semibold lg:w-19.5 ${dated ? "text-text" : "text-text-4"}`}>
         <span className={f.date_precision === "day" ? "num" : ""}>{factDate(f.date, f.date_precision)}</span>
       </span>
-      <span className="flex w-[9px] shrink-0 flex-col items-center" aria-hidden>
-        <span className={`mt-2.25 size-[7px] shrink-0 rounded-full ${suggested ? "bg-gold" : "bg-text-3"}`} />
+      <span className="flex w-2.25 shrink-0 flex-col items-center" aria-hidden>
+        <span className={`mt-2.25 size-dot-lg shrink-0 rounded-full ${suggested ? "bg-gold" : "bg-text-3"}`} />
         {!last ? <span className="mt-1 w-px flex-1 bg-border-2" /> : null}
       </span>
       <span className="min-w-0 flex-1 pb-4.5">
@@ -178,7 +178,7 @@ function TextItem({ cf, caseId, table, item, kindLabel }: { cf: CaseFile; caseId
 function SideLabel({ tone, children }: { tone: "good" | "bad"; children: ReactNode }) {
   return (
     <h2 className={`flex items-center gap-1.5 text-xs font-semibold lg:text-sm ${tone === "good" ? "text-good" : "text-bad"}`}>
-      <span aria-hidden className={`size-[5px] rounded-full lg:size-1.5 ${tone === "good" ? "bg-good" : "bg-bad"}`} />{children}
+      <span aria-hidden className={`size-dot rounded-full lg:size-1.5 ${tone === "good" ? "bg-good" : "bg-bad"}`} />{children}
     </h2>
   );
 }
@@ -268,7 +268,7 @@ function HearingCard({ cf, hs, today, caseId, className }: { cf: CaseFile; hs: H
           {where ? <div className="mt-0.5 hidden text-sm text-text-3 lg:block">{where}</div> : null}
           {needed ? (
             <div className="mt-1 flex items-center gap-1.5 text-sm text-text lg:hidden">
-              <span aria-hidden className={`size-[5px] shrink-0 rounded-full ${upcoming ? "bg-gold" : "bg-text-4"}`} />
+              <span aria-hidden className={`size-dot shrink-0 rounded-full ${upcoming ? "bg-gold" : "bg-text-4"}`} />
               <span className="min-w-0">{upcoming ? "" : "كان المطلوب: "}{needed}</span>
             </div>
           ) : null}

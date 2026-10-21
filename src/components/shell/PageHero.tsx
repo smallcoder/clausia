@@ -31,7 +31,7 @@ export function StatTile({ s }: { s: HeroStat }) {
     </>
   );
   // hairline between stats on the logical start side (RTL-safe), none before the first
-  const cls = "block min-w-0 flex-1 border-s border-border-2 px-4 first:border-s-0 first:ps-0 sm:min-w-[88px] sm:flex-none sm:px-7";
+  const cls = "block min-w-0 flex-1 border-s border-border-2 px-4 first:border-s-0 first:ps-0 sm:min-w-22 sm:flex-none sm:px-7";
   if (!s.href) return <div className={cls}>{body}</div>;
   // a same-page hash (e.g. #item-…) must fire hashchange so the item sheet opens: plain <a>
   return s.href.includes("#") ? <a href={s.href} className={`${cls} transition hover:opacity-80`}>{body}</a> : <Link href={s.href} className={`${cls} transition hover:opacity-80`}>{body}</Link>;
@@ -47,7 +47,7 @@ export function StatRow({ stats, className = "" }: { stats: HeroStat[]; classNam
 
 export function BackBtn({ href }: { href: string }) {
   return (
-    <Link href={href} aria-label="رجوع" className="tap glass glass-icon inline-flex size-[42px] shrink-0 items-center justify-center rounded-full sm:size-11">
+    <Link href={href} aria-label="رجوع" className="tap glass glass-icon inline-flex size-control-lg shrink-0 items-center justify-center rounded-full sm:size-11">
       <ChevronRight size={20} strokeWidth={2} aria-hidden />
     </Link>
   );
@@ -87,7 +87,7 @@ export function PageHero({ back, action, eyebrow, title, subtitle, stats, classN
 /** v2 status: a small dot + a word. needs decision = gold · today = gold outline · active = green · reserved/done = muted · against us = red */
 export function StatusChip({ tone, children }: { tone: "good" | "warn" | "neutral" | "bad" | "accent"; children: ReactNode }) {
   if (tone === "accent")
-    return <span className="inline-flex h-[22px] items-center rounded-full border border-gold-edge px-2.5 text-xs font-bold text-gold">{children}</span>;
+    return <span className="inline-flex h-5.5 items-center rounded-full border border-gold-edge px-2.5 text-xs font-bold text-gold">{children}</span>;
   const c = { good: ["bg-good", "text-good"], warn: ["bg-gold", "text-gold"], neutral: ["bg-text-4", "text-text-3"], bad: ["bg-bad", "text-bad"] }[tone];
   return (
     <span className={`inline-flex items-center gap-1.5 text-sm font-semibold ${c[1]}`}>
@@ -100,7 +100,7 @@ export function StatusChip({ tone, children }: { tone: "good" | "warn" | "neutra
 export function ClausiaSays({ children, label, size = "lg" }: { children: ReactNode; label?: string; size?: "lg" | "md" }) {
   return (
     <div className="flex items-start gap-3">
-      <span className={`mark font-num inline-flex shrink-0 items-center justify-center font-black shadow-mark ${size === "lg" ? "size-[30px] rounded-sm text-base" : "size-[26px] rounded-sm text-sm"}`}>C</span>
+      <span className={`mark font-num inline-flex shrink-0 items-center justify-center font-black shadow-mark ${size === "lg" ? "size-mark-lg rounded-sm text-base" : "size-mark rounded-sm text-sm"}`}>C</span>
       <div className="min-w-0 flex-1 pt-0.5">
         {label ? <div className="text-sm font-bold text-gold">{label}</div> : null}
         <div className={`leading-[1.85] text-text-3 ${size === "lg" ? "text-md sm:text-lg" : "text-md"}`}>{children}</div>

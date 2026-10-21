@@ -50,7 +50,7 @@ export default async function ChatHome() {
   const waitingCount = rows.filter((r) => waiting.has(r.t.id)).length;
 
   return (
-    <div className="mx-auto flex w-full flex-1 flex-col gap-4.5 px-3.5 pt-2.5 sm:max-w-[820px] sm:gap-5.5 sm:px-6 sm:pt-5">
+    <div className="mx-auto flex w-full flex-1 flex-col gap-4.5 px-3.5 pt-2.5 sm:max-w-chat sm:gap-5.5 sm:px-6 sm:pt-5">
       {/* the thread's header language: one small centered glass pill (what this is · how many), nothing else */}
       <div className="glass inline-flex h-8 max-w-full items-center gap-2 self-center rounded-md px-3.5 text-sm">
         <h1 className="shrink-0 font-semibold text-text">المحادثات</h1>
@@ -78,7 +78,7 @@ export default async function ChatHome() {
             const preview = m ? `${m.role === "user" ? "أنت: " : ""}${m.content.replace(/\*\*/g, "").replace(/\s+/g, " ").slice(0, 140)}` : "لا رسائل بعد";
             return (
               <li key={t.id} className="not-first:border-t not-first:border-border-2">
-                <Link href={`/chat/${t.id}`} className="flex min-h-[68px] items-center gap-3.5 px-4 py-3.5 transition hover:bg-card-2 sm:px-5.5">
+                <Link href={`/chat/${t.id}`} className="flex min-h-17 items-center gap-3.5 px-4 py-3.5 transition hover:bg-card-2 sm:px-5.5">
                   {c ? (
                     <span aria-hidden className="inline-flex size-9 shrink-0 items-center justify-center rounded-md border border-border-2 bg-card-2 text-text-3"><FolderClosed size={17} strokeWidth={1.9} /></span>
                   ) : (
@@ -101,7 +101,7 @@ export default async function ChatHome() {
         </ul>
       )}
 
-      <div className="min-h-[30px] flex-1" />
+      <div className="min-h-7.5 flex-1" />
       <NewChatComposer placeholder="محادثة جديدة؟ احكي لـ Clausia، أو ارفع الصحيفة وهي تعمل الملف" />
     </div>
   );

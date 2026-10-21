@@ -28,7 +28,7 @@ function StatusPill({ status }: { status: string }) {
 }
 
 /** Mobile mockup: 42px round glass buttons. */
-const ROUND = "tap glass glass-icon inline-flex size-[42px] shrink-0 items-center justify-center rounded-full";
+const ROUND = "tap glass glass-icon inline-flex size-control-lg shrink-0 items-center justify-center rounded-full";
 
 /** Desktop mockup card, stats part: 0 24px each, a hairline on the start side except the first; 32px light number,
  *  11.5px label 7px below (a 5px gold dot when it needs action). Gold only when the count is above zero. */
@@ -38,7 +38,7 @@ function StatCell({ s, first }: { s: HeroStat; first: boolean }) {
     <>
       <div className={`stat-num text-xl tracking-normal ${gold ? "text-gold" : "text-title"}`}>{typeof s.value === "number" ? two(s.value) : s.value}</div>
       <div className={`mt-1.75 flex items-center gap-1.25 text-xs leading-4 ${gold ? "text-gold" : "text-text-3"}`}>
-        {gold ? <span aria-hidden className="size-[5px] rounded-full bg-gold" /> : null}{s.label}
+        {gold ? <span aria-hidden className="size-dot rounded-full bg-gold" /> : null}{s.label}
       </div>
     </>
   );
@@ -60,7 +60,7 @@ export function CaseHeader({ cf, caseId, chatHref, stats }: { cf: CaseFile; case
       {/* mobile: back + more at 14px from the top and the sides */}
       <div className="-mx-0.5 flex items-center justify-between pt-3.5 sm:hidden">
         <Link href="/cases" aria-label="رجوع" className={ROUND}><ChevronRight size={20} strokeWidth={2} aria-hidden /></Link>
-        <CaseMenu caseId={caseId} chatHref={chatHref} align="end" className="size-[42px]" />
+        <CaseMenu caseId={caseId} chatHref={chatHref} align="end" className="size-control-lg" />
       </div>
 
       {/* desktop row 1: 40px back · breadcrumb … status chip · «…» (owner decision: «…» next to the chip) */}

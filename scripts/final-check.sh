@@ -4,9 +4,9 @@ set -u
 cd "$(dirname "$0")/.."
 T="npx tsx --conditions=react-server --env-file=.env.local"
 status=0
-# design system first: no colour literals, no off-scale text sizes or radii in src/**/*.tsx (no DB, no LLM)
+# design system first: no colour literals, no off-scale text sizes, radii, sizes or spacing in src/**/*.tsx (no DB, no LLM); the self-test proves the rules
 echo "=== check-design-system"
-if npx tsx scripts/check-design-system.ts; then echo "PASS check-design-system"; else echo "FAIL check-design-system"; status=1; fi
+if npx tsx scripts/check-design-system.ts --self-test && npx tsx scripts/check-design-system.ts; then echo "PASS check-design-system"; else echo "FAIL check-design-system"; status=1; fi
 for s in test-rls test-next-hearing test-no-guess test-card-modes test-intake test-docs; do
   if [ -f "scripts/$s.ts" ]; then
     echo "=== $s"

@@ -41,7 +41,7 @@ function Tag({ tone, children }: { tone: "warn" | "neutral" | "bad"; children: R
   const [dot, text] = { warn: ["bg-gold", "text-gold"], neutral: ["bg-text-3", "text-text-3"], bad: ["bg-bad", "text-bad"] }[tone];
   return (
     <span className={`inline-flex items-center gap-1 text-xs font-semibold leading-[15px] md:gap-1.75 md:text-sm md:leading-[17px] ${text}`}>
-      <span aria-hidden className={`size-[5px] shrink-0 rounded-full md:size-1.5 ${dot}`} />{children}
+      <span aria-hidden className={`size-dot shrink-0 rounded-full md:size-1.5 ${dot}`} />{children}
     </span>
   );
 }

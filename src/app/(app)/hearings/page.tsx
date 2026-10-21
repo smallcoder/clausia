@@ -80,14 +80,14 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
   // the undecided count: the side card on desktop (lg+), this pill below it (the mockup draws it on mobile)
   const pill = undecidedCount > 0 && !undecidedMode ? (
     <Link href="/hearings?filter=undecided" className="inline-flex h-11 shrink-0 items-center lg:hidden" aria-label={`${nHearings(undecidedCount)} محتاجة قرار`}>
-      <span className="inline-flex h-[36px] items-center gap-1.5 rounded-full border border-gold-edge px-3 text-sm font-semibold text-gold transition hover:bg-gold-bg">
+      <span className="inline-flex h-9 items-center gap-1.5 rounded-full border border-gold-edge px-3 text-sm font-semibold text-gold transition hover:bg-gold-bg">
         <span aria-hidden className="size-1.5 rounded-full bg-gold" /><span className="font-num">{undecidedCount}</span> محتاجة قرار
       </span>
     </Link>
   ) : null;
 
   return (
-    <div className="mx-auto flex w-full max-w-[1360px] flex-1 flex-col px-4 sm:px-10">
+    <div className="mx-auto flex w-full max-w-page flex-1 flex-col px-4 sm:px-10">
       <RollSheet today={today}>
         {undecidedMode ? (
           <>

@@ -47,7 +47,7 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
   const sorted = [...rows].sort(byNextHearing);
 
   return (
-    <div className="mx-auto flex w-full max-w-[1360px] flex-1 flex-col px-4 sm:px-10">
+    <div className="mx-auto flex w-full max-w-page flex-1 flex-col px-4 sm:px-10">
       <CasesHero
         eyebrow="كل قضايا المكتب"
         title="القضايا"

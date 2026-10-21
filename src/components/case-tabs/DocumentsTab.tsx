@@ -49,7 +49,7 @@ export async function DocumentsTab({ caseId }: { caseId: string }) {
           </h2>
           <UploadDocument caseId={caseId} />
         </div>
-        <p className="max-w-[640px] px-5 pt-3.5 text-sm leading-6 text-text-3">
+        <p className="max-w-160 px-5 pt-3.5 text-sm leading-6 text-text-3">
           صحيفة، مذكرة، محضر جلسة أو صورة بالموبايل (PDF أو صورة لحد 25 م.ب). Clausia بيقرا كل صفحة ويقترح اللي لقاه في محادثة القضية، ومش بيتحفظ حاجة قبل ما تأكد.
         </p>
         {docs?.length ? (
@@ -124,7 +124,7 @@ export async function DocumentsTab({ caseId }: { caseId: string }) {
                             <span className="text-doc min-w-0 flex-1 truncate text-sm text-text-3">{firstWords(p.text)}…</span>
                             <ChevronDown aria-hidden size={15} strokeWidth={2} className="shrink-0 text-text-4 transition-transform group-open/page:rotate-180" />
                           </summary>
-                          <div className="text-doc max-h-[60vh] overflow-y-auto whitespace-pre-wrap break-words border-t border-border-2 bg-field px-4 py-3 text-md text-text sm:px-6">
+                          <div className="text-doc max-h-[60vh] overflow-y-auto whitespace-pre-wrap break-words border-t border-border-2 bg-field px-4 py-3 text-md text-text sm:px-6" /* ds-allow: a share of the screen height (vh), not a length: long court text scrolls inside it */>
                             {p.text || "—"}
                           </div>
                         </details>
