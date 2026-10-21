@@ -17,8 +17,8 @@ const TABS = [
 
 export function ClausiaMark({ size = 30 }: { size?: number }) {
   return (
-    <span style={{ width: size, height: size, fontSize: size * 0.57, borderRadius: size * 0.27 }}
-      className="mark font-num inline-flex shrink-0 items-center justify-center font-black">
+    <span style={{ width: size, height: size, fontSize: size * 0.53, borderRadius: size * 0.3 }}
+      className="mark font-num inline-flex shrink-0 items-center justify-center font-extrabold">
       C
     </span>
   );
@@ -47,8 +47,8 @@ export function AppHeader({ initials, officeName, email, alerts }: { initials: s
         <span className="sm:hidden"><ClausiaMark size={40} /></span>
         <span className="hidden sm:inline-flex"><ClausiaMark size={36} /></span>
         <span className="hidden min-w-0 leading-tight sm:block">
-          <span className="font-num block text-[18px] font-extrabold tracking-[-0.02em] text-title">Clausia</span>
-          {officeName ? <span className="block max-w-48 truncate text-[11px] text-text-3">{officeName}</span> : null}
+          <span className="font-num block text-[18px] font-bold tracking-[-0.02em] text-title">Clausia</span>
+          {officeName ? <span className="block max-w-48 truncate text-[11px] text-text-4">{officeName}</span> : null}
         </span>
       </Link>
 
@@ -57,7 +57,7 @@ export function AppHeader({ initials, officeName, email, alerts }: { initials: s
           const active = on === href;
           return (
             <Link key={href} href={href} aria-label={label} aria-current={active ? "page" : undefined}
-              className={`inline-flex h-9 items-center gap-2 rounded-[18px] text-[13px] transition sm:h-10 sm:rounded-[20px] sm:px-[18px] sm:text-[14px] ${active ? "bg-selected px-3 font-semibold text-on-selected" : "glass-icon px-2.5 font-medium hover:text-text"}`}>
+              className={`inline-flex h-9 items-center gap-2 rounded-[18px] text-[13px] transition sm:h-10 sm:rounded-[20px] sm:px-[18px] sm:text-[14px] ${active ? "bg-selected px-3 font-semibold text-on-selected shadow-[var(--tab-shadow)]" : "glass-icon px-2.5 font-medium hover:text-text"}`}>
               <Icon size={16} strokeWidth={1.9} aria-hidden className="size-[15px] sm:size-4" />
               <span className={active ? "" : "hidden sm:inline"}>{label}</span>
             </Link>
@@ -68,7 +68,7 @@ export function AppHeader({ initials, officeName, email, alerts }: { initials: s
       <div className="flex items-center gap-2 justify-self-end">
         <Link href="/hearings?filter=undecided" aria-label={alerts ? `${alerts} جلسات محتاجة قرار` : "التنبيهات"}
           className="glass glass-icon relative hidden size-[46px] items-center justify-center rounded-full sm:inline-flex">
-          <Bell size={18} strokeWidth={1.9} aria-hidden />
+          <Bell size={19} strokeWidth={1.9} aria-hidden />
           {alerts ? <span aria-hidden className="absolute end-2.5 top-2.5 size-2 rounded-full bg-gold" /> : null}
         </Link>
         <div ref={menu} className="relative">
