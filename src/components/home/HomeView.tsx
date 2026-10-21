@@ -11,8 +11,8 @@ import { UndecidedRow, UndecidedTile } from "./Undecided";
 
 const CHIPS = [
   { label: "+ موكل وقضية جديدة", text: "موكل جديد: " },
-  { label: "سجّل قرار جلسة النهارده", text: "قرار جلسة النهارده في قضية " },
-  { label: "إيه المطلوب مني الأسبوع ده؟", text: "إيه المطلوب مني الأسبوع ده؟" },
+  { label: "سجّل قرار جلسة النهارده", short: "سجّل قرار جلسة", text: "قرار جلسة النهارده في قضية " },
+  { label: "إيه المطلوب مني الأسبوع ده؟", short: "مطلوب مني إيه؟", text: "إيه المطلوب مني الأسبوع ده؟" },
 ];
 
 export function HomeView({ data, displayName }: { data: HomeData; displayName: string }) {
@@ -40,7 +40,8 @@ export function HomeView({ data, displayName }: { data: HomeData; displayName: s
       <div className="min-h-10 flex-1" />
 
       <div className="sticky bottom-0 z-20 -mx-1.5 bg-gradient-to-t from-bg from-60% to-transparent px-1.5 pb-[calc(26px+env(safe-area-inset-bottom))] pt-[30px] sm:mx-0 sm:px-0 sm:pb-7 sm:pt-5">
-        <Composer size="hero" target={{ kind: "new" }} chips={CHIPS} />
+        {/* this wrapper gives the mockup's fade and bottom spacing, so the composer's own sticky is off (no double) */}
+        <Composer size="hero" target={{ kind: "new" }} chips={CHIPS} sticky={false} />
       </div>
     </div>
   );

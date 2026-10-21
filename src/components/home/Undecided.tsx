@@ -4,7 +4,7 @@ import Link from "next/link";
 import { two } from "@/components/shell/PageHero";
 
 const HREF = "/hearings?filter=undecided";
-const GOLD = "border border-gold-text/25 bg-accent-grad text-ink-solid shadow-accent transition hover:brightness-105";
+const GOLD = "border border-gold-text/25 bg-accent-grad dark:border-border text-ink-solid shadow-accent transition hover:brightness-105";
 const QUIET = "border border-border-2 bg-card text-text shadow-card";
 
 export function UndecidedTile({ count, className = "" }: { count: number; className?: string }) {

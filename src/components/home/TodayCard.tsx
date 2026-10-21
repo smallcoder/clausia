@@ -12,7 +12,7 @@ function Row({ h }: { h: HearingWithCase }) {
   return (
     <Link href={`/cases/${h.case_id}`} className="group flex items-center gap-2.5 py-[9px] sm:gap-3 sm:py-[11px]">
       <span title={h.case.circuit ?? undefined}
-        className="font-num inline-flex size-[34px] shrink-0 items-center justify-center rounded-[10px] border border-[var(--accent-edge)] bg-ink-solid text-[14px] font-extrabold text-gold sm:size-[38px] sm:rounded-[11px] sm:text-[15px]">
+        className="font-num inline-flex size-[34px] shrink-0 items-center justify-center rounded-[10px] bg-ink-solid text-[14px] font-extrabold text-gold sm:size-[38px] sm:rounded-[11px] sm:text-[15px] dark:border dark:border-[var(--accent-edge)] dark:bg-card-3">
         {circuitNo(h.case.circuit)}
       </span>
       <span className="min-w-0 flex-1">
