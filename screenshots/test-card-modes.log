@@ -1,7 +1,6 @@
-[llm] chat gemini-3.8-flash in=5210 out=23 $0.00399 3125ms
-[llm] chat gemini-3.8-flash in=5247 out=26 $0.00403 2480ms
-[llm] chat gemini-3.8-flash in=5287 out=345 $0.00526 4089ms
-[llm] chat gemini-3.8-flash in=5910 out=95 $0.00479 4163ms
+[llm] chat gemini-3.8-flash in=5210 out=49 $0.00409 2232ms
+[llm] chat gemini-3.8-flash in=5285 out=354 $0.00529 3709ms
+[llm] chat gemini-3.8-flash in=5909 out=107 $0.00483 2492ms
 PASS  one card proposed  (1)
 PASS  nothing saved before the tap
 PASS  card has create_client + create_case  (create_client,create_case,add_party,add_party)
@@ -13,8 +12,8 @@ PASS  save as suggestions → review_status suggested  (suggested)
 PASS  unedited op stays created_by model  (model)
 PASS  @ref resolved to the client confirmed earlier in the same card
 PASS  card closed and linked to the case  (confirmed case)
-[llm] chat gemini-3.8-flash in=6304 out=90 $0.00507 2365ms
-[llm] chat gemini-3.8-flash in=6465 out=35 $0.00498 3920ms
+[llm] chat gemini-3.8-flash in=6315 out=94 $0.00509 2974ms
+[llm] chat gemini-3.8-flash in=6480 out=62 $0.00509 2251ms
 PASS  hearing card proposed
 PASS  reject all saves nothing  (0 → 0)
 PASS  card marked rejected  (rejected)

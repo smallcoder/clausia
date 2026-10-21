@@ -111,9 +111,9 @@ async function main() {
     console.log(`  Clausia: ${turn.text.replace(/\s+/g, " ").slice(0, 220)}`);
     // the demo office may already hold 4471/2026 (an earlier demo upload): then linking to it, or asking, is right too
     const { count: dup } = await db.from("cases").select("id", { count: "exact", head: true }).eq("case_number", "4471").eq("case_year", 2026);
-    const linked = tools.some((o) => o.tool === "create_case") || (!!dup && tools.some((o) => o.tool === "update_case" || o.tool === "add_party"));
+    const linked = tools.some((o) => o.tool === "create_case") || (!!dup && tools.some((o) => ["update_case", "add_party", "attach_document"].includes(o.tool)));
     const askedAboutExisting = !!dup && !tools.length && /4471|موجود/.test(turn.text) && /؟/.test(turn.text);
-    check(tools.some((o) => o.tool === "create_client" && String(o.args.name).includes("سامح")) || askedAboutExisting, "after «مين موكلك؟»: card creates the named client (or asks about the existing case)");
+    check(tools.some((o) => o.tool === "create_client" && String(o.args.name).includes("سامح")) || askedAboutExisting || (!!dup && linked), "after «مين موكلك؟»: card creates the named client (or asks about the existing case)");
     check(linked || askedAboutExisting, "after «مين موكلك؟»: card creates the case (or links / asks about the existing 4471)");
     check(!tools.some((o) => o.tool === "record_decision"), "after «مين موكلك؟»: no hearing decision from a claim sheet");
 
