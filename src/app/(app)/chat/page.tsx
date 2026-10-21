@@ -1,8 +1,8 @@
-// The conversations with Clausia: hero, one row per conversation (latest first), and the composer for a new one.
+// The conversations with Clausia (v2): page header, one row per conversation (latest first), and the composer for a new one.
 import { ChevronLeft, FolderClosed } from "lucide-react";
 import Link from "next/link";
 import { Composer } from "@/components/shell/Composer";
-import { PageHero, StatusChip } from "@/components/shell/PageHero";
+import { ClausiaSays, PageHero, StatusChip } from "@/components/shell/PageHero";
 import { formatDmy } from "@/lib/dates";
 import { caseLabel } from "@/lib/labels";
 import type { ProposalOp } from "@/lib/proposals";
@@ -44,7 +44,7 @@ export default async function ChatHome() {
     .sort((a, b) => b.at.localeCompare(a.at));
 
   return (
-    <div className="mx-auto flex w-full max-w-[1024px] flex-1 flex-col gap-4 px-2.5 pt-2.5 sm:px-8 sm:pt-5">
+    <div className="mx-auto flex w-full max-w-[1024px] flex-1 flex-col gap-7 px-3.5 pt-2.5 sm:gap-9 sm:px-8 sm:pt-5">
       <PageHero
         back="/"
         icon={<span className="font-num text-[25px] font-black sm:text-[30px]">C</span>}
@@ -58,28 +58,31 @@ export default async function ChatHome() {
       />
 
       {rows.length === 0 ? (
-        <p className="rounded-[22px] border border-border-2 bg-card px-5 py-6 text-center text-[15px] text-text-3 shadow-card">
-          لسه مافيش محادثات. احكي لـ Clausia عن موكل أو قضية من تحت، أو ارفع ورقة.
-        </p>
+        <div className="rounded-[24px] border border-border-2 bg-card px-5 py-6 shadow-card">
+          <ClausiaSays size="md">لسه مافيش محادثات. احكي لـ Clausia عن موكل أو قضية من تحت، أو ارفع ورقة.</ClausiaSays>
+        </div>
       ) : (
-        <ul className="overflow-hidden rounded-[22px] border border-border-2 bg-card shadow-card">
-          {rows.map(({ t, m, at }, i) => {
+        <ul className="overflow-hidden rounded-[24px] border border-border-2 bg-card shadow-card">
+          {rows.map(({ t, m, at }) => {
             const c = t.case_id ? caseById.get(t.case_id) : null;
             const preview = m ? `${m.role === "user" ? "أنت: " : ""}${m.content.replace(/\*\*/g, "").replace(/\s+/g, " ").slice(0, 140)}` : "لا رسائل بعد";
             return (
-              <li key={t.id} className={i ? "border-t border-border-2" : undefined}>
-                <Link href={`/chat/${t.id}`} className="flex items-center gap-3 px-4 py-3 transition hover:bg-card-2 sm:px-5">
+              <li key={t.id} className="not-first:border-t not-first:border-[var(--hairline-v2)]">
+                <Link href={`/chat/${t.id}`} className="flex min-h-[68px] items-center gap-3.5 px-4 py-3.5 transition hover:bg-card-2 sm:px-[22px]">
                   {c ? (
-                    <span aria-hidden className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-card-3 text-text-2"><FolderClosed size={17} strokeWidth={2} /></span>
+                    <span aria-hidden className="inline-flex size-9 shrink-0 items-center justify-center rounded-[12px] border border-border-2 bg-card-2 text-text-3"><FolderClosed size={17} strokeWidth={1.9} /></span>
                   ) : (
-                    <span aria-hidden className="mark font-num inline-flex size-9 shrink-0 items-center justify-center rounded-full text-[15px] font-black">C</span>
+                    <span aria-hidden className="mark font-num inline-flex size-9 shrink-0 items-center justify-center rounded-[12px] text-[15px] font-extrabold">C</span>
                   )}
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[14.5px] font-bold text-text">{c ? caseLabel(c) : t.title || "محادثة عامة"}</span>
-                    <span className="block truncate text-xs text-text-3">{c?.court ? `${c.court} · ` : ""}{preview}</span>
+                    <span className="block truncate text-[15px] font-semibold text-title">{c ? caseLabel(c) : t.title || "محادثة عامة"}</span>
+                    <span className="mt-0.5 block truncate text-[12.5px] text-text-3">{c?.court ? `${c.court} · ` : ""}{preview}</span>
                   </span>
-                  {waiting.has(t.id) ? <StatusChip tone="warn">فيها بطاقة</StatusChip> : null}
-                  <span className="num font-num shrink-0 text-[13px] font-semibold text-text-3">{formatDmy(cairoDay(at))}</span>
+                  {waiting.has(t.id) ? <span className="hidden sm:inline-flex"><StatusChip tone="warn">فيها بطاقة</StatusChip></span> : null}
+                  <span className="flex shrink-0 flex-col items-end gap-1">
+                    <span className="num font-num text-[12.5px] text-text-4">{formatDmy(cairoDay(at))}</span>
+                    {waiting.has(t.id) ? <span role="img" aria-label="فيها بطاقة" className="size-1.5 rounded-full bg-gold sm:hidden" /> : null}
+                  </span>
                   <ChevronLeft aria-hidden size={18} strokeWidth={1.8} className="hidden shrink-0 text-text-4 sm:block" />
                 </Link>
               </li>
