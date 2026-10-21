@@ -1,5 +1,7 @@
 // Side by side: mockup (left) next to the real screen (right) → screenshots/compare/<Mockup>.png
+// Also the next-batch pairs (docs/design/next, 1920x1080) → screenshots/compare/next/<Mockup>.png
 // Needs the app running. Run: npx tsx --env-file=.env.local scripts/compare-shots.ts [baseUrl]
+// ONLY=Roll,Case limits the screens; ONLY=next runs just the next-batch pairs; NEXT=0 skips them.
 // Mockups are rendered from docs/design/*.dc.html (support.js fills the templates).
 import { chromium, type Browser } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
@@ -8,6 +10,7 @@ import { resolve } from "node:path";
 
 const BASE = process.argv[2] ?? "http://localhost:3000";
 mkdirSync("screenshots/compare", { recursive: true });
+mkdirSync("screenshots/compare/next", { recursive: true });
 mkdirSync("screenshots/app", { recursive: true });
 
 async function ids() {
@@ -36,7 +39,7 @@ async function session(browser: Browser) {
 }
 
 async function shootApp(browser: Browser, path: string, mobile: boolean, dark: boolean, out: string, width = 1440) {
-  const ctx = await browser.newContext({ storageState: await session(browser), viewport: { width: mobile ? 390 : 1440, height: mobile ? 844 : 960 }, deviceScaleFactor: mobile ? 2 : 1, locale: "ar-EG", timezoneId: "Africa/Cairo", colorScheme: dark ? "dark" : "light" });
+  const ctx = await browser.newContext({ storageState: await session(browser), viewport: { width: mobile ? 390 : width, height: mobile ? 844 : 960 }, deviceScaleFactor: mobile ? 2 : 1, locale: "ar-EG", timezoneId: "Africa/Cairo", colorScheme: dark ? "dark" : "light" });
   const page = await ctx.newPage();
   console.log(new Date().toISOString().slice(11, 19), "goto", path, mobile ? "mobile" : "desktop", dark ? "dark" : "light");
   // the local server sometimes stalls one request; retry once
@@ -67,12 +70,46 @@ async function shootLoading(browser: Browser, path: string, mobile: boolean, dar
   await ctx.close();
 }
 
+/** Next-batch pairs: the 1920x1080 mockup (left) and the real screen at the same viewport (right). Viewport shot, not full page, so a sticky composer shows as the mockup does. */
+const NEXT_PAIRS = [
+  { mock: "GridLightHome", path: "/", dark: false },
+  { mock: "GridDarkHome", path: "/", dark: true },
+  { mock: "HeadLightCases", path: "/cases", dark: false },
+  { mock: "HeadDarkCases", path: "/cases", dark: true },
+];
+
+async function shootNext(browser: Browser) {
+  for (const { mock, path, dark } of NEXT_PAIRS) {
+    const app = resolve(`screenshots/app/next-${mock}.png`);
+    const ctx = await browser.newContext({ storageState: await session(browser), viewport: { width: 1920, height: 1080 }, locale: "ar-EG", timezoneId: "Africa/Cairo", colorScheme: dark ? "dark" : "light" });
+    const page = await ctx.newPage();
+    try { await page.goto(BASE + path, { waitUntil: "domcontentloaded", timeout: 40_000 }); }
+    catch { await page.goto(BASE + path, { waitUntil: "domcontentloaded", timeout: 60_000 }); }
+    await page.waitForLoadState("load", { timeout: 15_000 }).catch(() => {});
+    await page.waitForTimeout(1200);
+    await page.screenshot({ path: app });
+    await ctx.close();
+    const html = `<html><body style="margin:0;background:${dark ? "#05070c" : "#dfe2e8"};font:600 14px -apple-system,sans-serif;color:${dark ? "#ccc" : "#333"}">
+      <div style="display:flex;gap:24px;padding:16px;align-items:flex-start">
+        <div><div style="padding:0 0 8px">Mockup · ${mock} (1920px)</div><img src="data:image/png;base64,${readFileSync(resolve(`screenshots/mockups/next/${mock}.png`)).toString("base64")}" style="width:1920px;display:block;border-radius:12px"></div>
+        <div><div style="padding:0 0 8px">App · ${path} (1920px)</div><img src="data:image/png;base64,${readFileSync(app).toString("base64")}" style="width:1920px;display:block;border-radius:12px"></div>
+      </div></body></html>`;
+    const c2 = await browser.newContext({ viewport: { width: 3920, height: 800 } });
+    const p2 = await c2.newPage();
+    await p2.setContent(html, { waitUntil: "load" });
+    await p2.screenshot({ path: `screenshots/compare/next/${mock}.png`, fullPage: true });
+    await c2.close();
+    console.log("next", mock, path);
+  }
+}
+
 async function main() {
   const { caseId, threadId } = await ids();
   const routes: Record<string, string> = { Home: "/", Chat: `/chat/${threadId}`, Case: `/cases/${caseId}`, Roll: "/hearings", Cases: "/cases" };
   const browser = await chromium.launch();
   // desktop at 1440 and 1920 (mockups are 1440 wide), mobile at 390; ONLY=Roll,Case limits the screens
   const only = process.env.ONLY?.split(",");
+  if (process.env.NEXT !== "0" && (!only || only.includes("next"))) await shootNext(browser);
   const shots: { mobile: boolean; width: number }[] = [{ mobile: false, width: 1440 }, { mobile: false, width: 1920 }, { mobile: true, width: 390 }];
   for (const [screen, path] of Object.entries(routes)) {
     if (only && !only.includes(screen)) continue;
