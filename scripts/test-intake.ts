@@ -39,6 +39,13 @@ async function main() {
   const { data: member } = await db.from("office_members").select("office_id").eq("user_id", auth.user.id).single();
   if (!member) throw new Error("no office");
 
+  // start clean: the previous run's intake (kept as a demo) would make Clausia say «مسجلة بالفعل» — correct, but not a test
+  {
+    const { data: oldClients } = await db.from("clients").select("id").eq("name", "عادل منصور التجريبي");
+    await db.from("cases").delete().eq("case_number", "4521").eq("case_year", 2026);
+    if (oldClients?.length) await db.from("clients").delete().in("id", oldClients.map((c) => c.id));
+    await db.from("chat_threads").delete().eq("title", "اختبار الاستقبال بالمحادثة");
+  }
   const threadId = await createGeneralThread(db, "اختبار الاستقبال بالمحادثة");
   console.log(`thread ${threadId}\n`);
   const turnLog: { i: number; proposals: Proposal[]; text: string; rounds: number }[] = [];

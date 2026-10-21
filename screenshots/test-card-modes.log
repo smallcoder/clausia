@@ -1,0 +1,22 @@
+[llm] chat gemini-3.8-flash in=5117 out=23 $0.00392 2326ms
+[llm] chat gemini-3.8-flash in=5154 out=26 $0.00396 1847ms
+[llm] chat gemini-3.8-flash in=5194 out=264 $0.00489 3512ms
+[llm] chat gemini-3.8-flash in=5664 out=98 $0.00462 2767ms
+PASS  one card proposed  (1)
+PASS  nothing saved before the tap
+PASS  card has create_client + create_case  (create_client,create_case,add_party)
+PASS  edited value saved  (01000000088)
+PASS  edited op saved as the lawyer's  (lawyer)
+PASS  confirmed, source chat + message
+PASS  card partially confirmed  (partially_confirmed)
+PASS  save as suggestions → review_status suggested  (suggested)
+PASS  unedited op stays created_by model  (model)
+PASS  @ref resolved to the client confirmed earlier in the same card
+PASS  card closed and linked to the case  (confirmed case)
+[llm] chat gemini-3.8-flash in=5994 out=90 $0.00483 2716ms
+[llm] chat gemini-3.8-flash in=6153 out=63 $0.00485 2155ms
+PASS  hearing card proposed
+PASS  reject all saves nothing  (0 → 0)
+PASS  card marked rejected  (rejected)
+
+all checks passed
