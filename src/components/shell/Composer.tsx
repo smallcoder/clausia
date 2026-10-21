@@ -135,7 +135,7 @@ export function Composer({ target, placeholder = "اكتب لـ Clausia… ما 
               placeholder={short && placeholderShort ? placeholderShort : placeholder}
               aria-label="رسالة إلى Clausia"
               onKeyDown={onKey}
-              className="block h-11 min-w-0 flex-1 resize-none bg-transparent px-1 py-[10px] text-[16px] leading-6 text-text placeholder:text-text-4 focus:outline-none"
+              className="block h-11 min-w-0 flex-1 resize-none bg-transparent px-1 py-[10px] [&:placeholder-shown]:overflow-hidden [&:placeholder-shown]:text-ellipsis [&:placeholder-shown]:whitespace-nowrap text-[16px] leading-6 text-text placeholder:text-text-4 focus:outline-none"
             />
             <SendBtn onClick={send} disabled={pending || !text.trim()} />
           </div>
