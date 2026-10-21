@@ -309,8 +309,8 @@ body {
   .tap { position: relative; }
   .tap::after { content: ""; position: absolute; inset-block: min(0px, calc((100% - 44px) / 2)); inset-inline: min(0px, calc((100% - 44px) / 2)); }
 }
-/* the soft fade behind the floating composer */
-.bg-fade { background: var(--fade); }
+/* the soft fade behind the floating composer (a utility, so a variant like max-sm:bg-fade works) */
+@utility bg-fade { background: var(--fade); }
 /* big light stat numbers */
 @layer components {
 .stat-num { font-family: -apple-system, "SF Pro Display", system-ui, var(--font-inter), sans-serif; font-weight: 300; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }

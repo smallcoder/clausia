@@ -32,7 +32,7 @@ function ClausiaLine({ children }: { children: ReactNode }) {
 export function HomeView({ data, displayName }: { data: HomeData; displayName: string }) {
   const line = clausiaLine({ today: data.todays, tomorrow: data.tomorrows, undecided: data.undecided });
   return (
-    <div className="mx-auto flex w-full max-w-narrow flex-1 flex-col px-5 pt-3 leading-[normal] sm:px-6 sm:pt-13">
+    <div className="mx-auto flex w-full max-w-narrow flex-1 flex-col px-5 pt-3 leading-[normal] sm:justify-center sm:px-6 sm:pt-10">
       <p className="text-sm font-semibold leading-4 tracking-[0.02em] text-text-3 sm:leading-[17px]">{formatLongDay(data.today)}</p>
       <h1 className="mt-1.5 text-xl font-bold leading-[1.2] text-title sm:mt-2 sm:text-2xl sm:leading-[1.15] sm:tracking-[-0.01em]">
         <Greeting text={greeting(displayName)} />
@@ -49,7 +49,7 @@ export function HomeView({ data, displayName }: { data: HomeData; displayName: s
         <UndecidedCard count={data.undecided} className="order-first md:order-none" />
       </div>
 
-      <div className="min-h-8 flex-1" />
+      <div className="min-h-8 flex-1 sm:hidden" />
 
       <HomeComposer />
     </div>
