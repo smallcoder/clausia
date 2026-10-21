@@ -18,7 +18,7 @@ const TABS = [
 export function ClausiaMark({ size = 30 }: { size?: number }) {
   return (
     <span style={{ width: size, height: size, fontSize: size * 0.57, borderRadius: size * 0.27 }}
-      className="mark font-num inline-flex shrink-0 items-center justify-center font-black shadow-mark">
+      className="mark font-num inline-flex shrink-0 items-center justify-center font-black">
       C
     </span>
   );
@@ -52,13 +52,13 @@ export function AppHeader({ initials, officeName, email, alerts }: { initials: s
         </span>
       </Link>
 
-      <nav aria-label="الأقسام" className="glass flex items-center gap-0.5 rounded-[24px] p-1">
+      <nav aria-label="الأقسام" className="glass flex items-center gap-0.5 rounded-[22px] p-1 sm:rounded-[24px]">
         {TABS.map(({ href, label, Icon }) => {
           const active = on === href;
           return (
             <Link key={href} href={href} aria-label={label} aria-current={active ? "page" : undefined}
-              className={`inline-flex h-11 items-center gap-2 rounded-[20px] px-3.5 text-[14px] transition sm:px-4 ${active ? "bg-selected font-bold text-on-selected shadow-[0_6px_14px_-6px_rgba(15,22,38,0.45)]" : "glass-icon hover:text-text"}`}>
-              <Icon size={18} strokeWidth={1.9} aria-hidden />
+              className={`inline-flex h-9 items-center gap-2 rounded-[18px] text-[13px] transition sm:h-10 sm:rounded-[20px] sm:px-[18px] sm:text-[14px] ${active ? "bg-selected px-3 font-semibold text-on-selected" : "glass-icon px-2.5 font-medium hover:text-text"}`}>
+              <Icon size={16} strokeWidth={1.9} aria-hidden className="size-[15px] sm:size-4" />
               <span className={active ? "" : "hidden sm:inline"}>{label}</span>
             </Link>
           );
@@ -73,7 +73,7 @@ export function AppHeader({ initials, officeName, email, alerts }: { initials: s
         </Link>
         <div ref={menu} className="relative">
           <button type="button" onClick={() => setOpen(!open)} aria-label="الحساب" aria-expanded={open}
-            className="glass inline-flex size-11 items-center justify-center rounded-full text-[13px] font-bold text-text sm:size-[46px]">
+            className="glass inline-flex size-[42px] items-center justify-center rounded-full text-[13px] font-bold text-text sm:size-[46px]">
             {initials}
           </button>
           {open ? (

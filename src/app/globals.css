@@ -313,6 +313,8 @@ body {
 .font-num { font-family: -apple-system, "SF Pro Display", system-ui, var(--font-inter), sans-serif; font-variant-numeric: tabular-nums; }
 /* The Clausia «C» mark (logo tile, Clausia avatar): ink in light, champagne in dark */
 .mark { background: var(--mark-bg); color: var(--mark-fg); }
+.dark .mark, :root[data-theme="dark"] .mark { box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mark { box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06); } }
 /* v2: no gradient fills on buttons (kept as a plain primary fill for old call sites) */
 .bg-accent-grad { background: var(--primary-bg); color: var(--on-primary); }
 /* Glass: floating controls only (top bar, tab capsule, composer, round buttons, chips) */
