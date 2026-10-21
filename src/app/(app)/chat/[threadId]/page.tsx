@@ -38,7 +38,7 @@ export default async function ThreadPage({ params }: { params: Promise<{ threadI
         icon={<span className="font-num text-[25px] font-black sm:text-[30px]">C</span>}
         eyebrow={eyebrow}
         title={title}
-        subtitle={c ? <Link href={`/cases/${c.id}`} className="font-semibold text-gold-text hover:underline">{c.court ? `${c.court} · ` : ""}فتح ملف القضية ←</Link> : undefined}
+        subtitle={c ? <Link href={`/cases/${c.id}`} className="inline-flex min-h-11 items-center font-semibold text-gold-text hover:underline"><span className="hidden sm:inline">{c.court ? `${c.court} · ` : ""}</span><span className="whitespace-nowrap">فتح ملف القضية ←</span></Link> : undefined}
         stats={[
           { value: data.stats.docsRead, label: "ورقة اتقرت" },
           { value: data.stats.readyOps, label: "عناصر جاهزة" },

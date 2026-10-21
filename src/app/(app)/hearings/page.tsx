@@ -144,7 +144,7 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
             <div className="inline-flex rounded-full border border-border bg-card-2 p-[3px] text-[13px]">
               {(["day", "week"] as const).map((v) => (
                 <Link key={v} href={href(v, date)} aria-current={v === view ? "page" : undefined}
-                  className={cx("inline-flex h-10 items-center rounded-full px-4 transition sm:h-[30px]", v === view ? "bg-card font-bold text-text shadow-soft" : "text-text-3 hover:text-text")}>
+                  className={cx("inline-flex h-11 items-center rounded-full px-4 transition sm:h-10", v === view ? "bg-card font-bold text-text shadow-soft" : "text-text-3 hover:text-text")}>
                   {v === "day" ? "يوم" : "أسبوع"}
                 </Link>
               ))}

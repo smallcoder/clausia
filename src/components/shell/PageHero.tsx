@@ -65,7 +65,7 @@ export function PageHero({ back, action, icon, eyebrow, title, subtitle, stats, 
       ) : null}
       <div className="flex min-w-0 flex-[1_1_380px] items-center gap-3 sm:gap-4">
         {back ? (<span className="hidden sm:contents"><BackBtn href={back} /></span>) : null}
-        <div className="mark inline-flex size-12 shrink-0 items-center justify-center rounded-[16px] shadow-[0_12px_26px_-10px_rgba(18,26,43,0.55)] sm:size-[60px] sm:rounded-[19px]">
+        <div className="mark inline-flex size-12 shrink-0 items-center justify-center rounded-[16px] shadow-tile sm:size-[60px] sm:rounded-[19px]">
           {icon}
         </div>
         <div className="min-w-0">
@@ -74,7 +74,6 @@ export function PageHero({ back, action, icon, eyebrow, title, subtitle, stats, 
           {subtitle ? <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[13px] text-text-3">{subtitle}</div> : null}
         </div>
       </div>
-      {action ? <div className="hidden sm:block">{action}</div> : null}
       {stats?.length ? (
         <div className="grid w-full flex-[0_1_470px] grid-cols-3 gap-2.5">
           {stats.map((s) => <StatTile key={s.label} s={s} />)}

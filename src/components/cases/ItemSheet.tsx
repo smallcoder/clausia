@@ -25,7 +25,7 @@ export function TapItem({ id, title, row, children, className = "" }: { id: stri
   return (
     <div id={`item-${id}`} className="scroll-mt-24">
       <button type="button" onClick={() => ref.current?.showModal()} aria-haspopup="dialog"
-        className={`block w-full cursor-pointer text-start transition-colors hover:bg-card-2/60 focus-visible:bg-card-2/60 ${className}`}>
+        className={`block min-h-11 w-full cursor-pointer text-start transition-colors hover:bg-card-2/60 focus-visible:bg-card-2/60 ${className}`}>
         {row}
       </button>
       <dialog ref={ref} aria-label={title}

@@ -81,7 +81,7 @@ export function Composer({ target, placeholder = "اكتب لـ Clausia… ما 
       {chips.length ? (
         <div className="no-scrollbar -mx-1 mb-3 flex gap-2 overflow-x-auto px-1 sm:flex-wrap">
           {chips.map((c) => {
-            const cls = `inline-flex h-9 shrink-0 items-center rounded-full px-3.5 text-[13px] transition disabled:cursor-not-allowed ${c.accent ? "bg-tile-hi font-bold shadow-soft" : c.ghost ? "border border-dashed border-gold/60 text-gold-text" : "border border-border bg-chip text-text-2 shadow-soft hover:text-text"} ${c.disabled ? "opacity-60" : ""}`;
+            const cls = `inline-flex h-11 sm:h-9 shrink-0 items-center rounded-full px-3.5 text-[13px] transition disabled:cursor-not-allowed ${c.accent ? "bg-tile-hi font-bold shadow-soft" : c.ghost ? "border border-dashed border-gold/60 text-gold-text" : "border border-border bg-chip text-text-2 shadow-soft hover:text-text"} ${c.disabled ? "opacity-60" : ""}`;
             const label = c.short ? <><span className="sm:hidden">{c.short}</span><span className="hidden sm:inline">{c.label}</span></> : c.label;
             if (c.href && !c.disabled) return <a key={c.label} href={c.href} className={cls}>{label}</a>;
             return (

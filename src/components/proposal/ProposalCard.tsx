@@ -323,7 +323,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
                     </div>
 
                     {o.status === "failed" && o.error ? <p className="rounded-xl bg-bad-bg px-3 py-2 text-[13px] text-bad">{o.error}</p> : null}
-                    {o.result_id && o.tool === "create_case" ? <Link href={`/cases/${o.result_id}`} className="inline-block text-[13.5px] font-semibold text-gold-text hover:underline">فتح ملف القضية ←</Link> : null}
+                    {o.result_id && o.tool === "create_case" ? <Link href={`/cases/${o.result_id}`} className="inline-flex min-h-11 items-center text-[13.5px] font-semibold text-gold-text hover:underline">فتح ملف القضية ←</Link> : null}
 
                     {live ? (
                       <div className="flex flex-wrap items-center gap-2">
@@ -384,7 +384,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
           ) : (
             <p className="text-[13.5px] text-text-2">{decisionSummary(p)}</p>
           )}
-          {caseLink ? <Link href={`/cases/${caseLink}`} className={cx("text-[13.5px] font-semibold text-gold-text hover:underline", openOps.length ? "self-center" : "sm:ms-auto")}>فتح ملف القضية ←</Link> : null}
+          {caseLink ? <Link href={`/cases/${caseLink}`} className={cx("inline-flex min-h-11 items-center text-[13.5px] font-semibold text-gold-text hover:underline", openOps.length ? "self-center" : "sm:ms-auto")}>فتح ملف القضية ←</Link> : null}
         </div>
       </div>
     );
