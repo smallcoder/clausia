@@ -25,7 +25,7 @@ function CourtCard({ court, items, today }: { court: string; items: HearingWithC
   const circuits = [...new Set(items.map((h) => h.case.circuit?.trim()).filter(Boolean))] as string[];
   return (
     <section className="overflow-hidden rounded-[20px] border border-border-2 bg-card shadow-card sm:rounded-[22px]">
-      <header className="flex items-center justify-between gap-3 border-b border-border-2 bg-linear-to-b from-gold/15 to-transparent px-3.5 py-[11px] sm:block sm:px-4 sm:py-3">
+      <header className="flex items-center justify-between gap-3 border-b border-border-2 bg-linear-to-b from-gold/15 to-transparent px-3.5 dark:bg-none py-[11px] sm:block sm:px-4 sm:py-3">
         <h3 className="min-w-0 truncate text-[13.5px] font-bold text-text sm:text-[14px]">{court}</h3>
         <div className="shrink-0 truncate text-[11px] text-text-3 sm:mt-px sm:text-[11.5px]">
           {circuits.length ? circuits.join(" · ") : nHearings(items.length)}
@@ -106,7 +106,7 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
             : <>{when} فيه {nHearings(rows.length)} في {nCourts(nCourt)}.</>;
 
   const chips = [
-    ...(firstUndecided ? [{ label: `سجّل قرار جلسة ${hearingTitle(firstUndecided).split(" — ")[0]} (${dmy(firstUndecided.hearing_date)})`, text: `قرار جلسة ${hearingTitle(firstUndecided)} يوم ${dmy(firstUndecided.hearing_date)}: ` }] : []),
+    ...(firstUndecided ? [{ label: `سجّل قرار جلسة ${hearingTitle(firstUndecided).split(" — ")[0]} (${dmy(firstUndecided.hearing_date)})`, short: `سجّل قرار جلسة ${dmy(firstUndecided.hearing_date)}`, text: `قرار جلسة ${hearingTitle(firstUndecided)} يوم ${dmy(firstUndecided.hearing_date)}: ` }] : []),
     { label: "إيه المطلوب مني بكرة؟", text: "إيه المطلوب مني بكرة؟" },
     { label: "اتأجلت لـ…", text: "اتأجلت لـ " },
     { label: "اتحجزت للحكم", text: "اتحجزت للحكم لجلسة " },
@@ -208,7 +208,7 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
 
       <div className="min-h-6 flex-1" />
       {/* the page fades out under the composer, so the chips never sit on top of a row */}
-      <div className="sticky bottom-0 z-20 -mx-2.5 bg-linear-to-t from-bg from-60% to-transparent px-3 pb-[calc(12px+env(safe-area-inset-bottom))] pt-6 sm:-mx-10 sm:px-10 sm:pb-7">
+      <div className="sticky bottom-0 z-20 -mx-2.5 bg-linear-to-t from-bg from-70% to-transparent px-3 pb-[calc(12px+env(safe-area-inset-bottom))] pt-6 sm:-mx-10 sm:px-10 sm:pb-7">
         <div className="mx-auto w-full max-w-[820px]">
         <Composer target={{ kind: "new" }} sticky={false} chips={chips}
           placeholder="اكتب قرار أي جلسة… مثلاً: الإخلاء اتأجلت 5/11" />

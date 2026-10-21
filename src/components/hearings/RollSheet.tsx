@@ -32,7 +32,7 @@ export function RollSheet({ today, children }: { today: string; children: ReactN
 export function CircuitTile({ h }: { h: HearingWithCase }) {
   const n = circuitNumber(h);
   return (
-    <span aria-hidden className="flex size-10 shrink-0 flex-col items-center justify-center rounded-[12px] border border-[var(--accent-edge)] bg-ink-solid leading-none sm:size-11 sm:rounded-[13px]">
+    <span aria-hidden className="flex size-10 shrink-0 flex-col items-center justify-center rounded-[12px] border border-transparent bg-ink-solid shadow-[0_4px_10px_-2px_var(--backdrop)] dark:border-[var(--accent-edge)] dark:shadow-none leading-none sm:size-11 sm:rounded-[13px]">
       <span className="text-[8.5px] text-gold/70 sm:text-[9px]">دائرة</span>
       <span className="font-num mt-0.5 text-[16px] font-extrabold text-gold sm:text-[17px]">{n ?? "—"}</span>
     </span>
@@ -83,7 +83,7 @@ export function RollRow({ h, today, showDate = false, showCourt = false }: { h: 
           </span>
         ) : null}
         {need ? (
-          <span className="mt-2.5 hidden h-[26px] max-w-full items-center truncate rounded-full bg-warn-bg px-2.5 text-[11.5px] font-bold text-gold-text sm:inline-flex">
+          <span className="mt-2.5 hidden h-[26px] max-w-full items-center truncate rounded-full bg-(image:--accent-grad) px-2.5 text-[11.5px] font-bold text-text sm:inline-flex dark:bg-warn-bg dark:bg-none dark:font-semibold dark:text-gold-text">
             المطلوب: {need}
           </span>
         ) : null}
