@@ -1,5 +1,6 @@
-// Cases list, laid out exactly as docs/design/*Cases.dc.html: header with real stats, status capsules (?status=,
-// ?review=1; ?stage= and ?q= keep working as links and show as clearable pills), one solid table of cases, and the
+// Cases list, laid out exactly as docs/design/*Cases.dc.html: header with real stats (the third, «محتاجة قرار», links
+// to ?decision=1), status capsules (?status=; ?decision=1, ?review=1, ?stage= and ?q= keep working as links and show
+// as clearable pills), one solid table of cases, and the
 // shared Composer at the bottom with no chips (the mockup draws none): it searches, asks and adds a case.
 import Link from "next/link";
 import { CaseListHeader, CaseListRow } from "@/components/caselist/CaseListRow";
@@ -24,23 +25,24 @@ function byNextHearing(a: CaseRow, b: CaseRow) {
 export default async function CasesPage({ searchParams }: { searchParams: Promise<RawSP> }) {
   const raw = await searchParams;
   const stage = one(raw.stage), status = one(raw.status);
-  // unknown stage/status/review values are dropped so the capsules and the query agree
+  // unknown stage/status/review/decision values are dropped so the capsules and the query agree
   const sp: ListParams = {
     q: one(raw.q)?.trim() || undefined,
     stage: stage && isKey(STAGE, stage) ? stage : undefined,
     status: status && isKey(CASE_STATUS, status) ? status : undefined,
     review: one(raw.review) === "1" ? "1" : undefined,
+    decision: one(raw.decision) === "1" ? "1" : undefined,
   };
   const db = await createClient();
   const [rows, review, decision, counts, week] = await Promise.all([
-    listCases(db, { q: sp.q, stage: sp.stage, status: sp.status, review: Boolean(sp.review) }),
+    listCases(db, { q: sp.q, stage: sp.stage, status: sp.status, review: Boolean(sp.review), decision: Boolean(sp.decision) }),
     casesNeedingReview(db),
     casesNeedingDecision(db),
     officeCaseCounts(db),
     weekHearingsCount(db),
   ]);
   const against = await judgedAgainstUs(db, rows.filter((r) => r.status === "judged" || r.status === "closed").map((r) => r.id));
-  const filtered = Boolean(sp.q || sp.stage || sp.status || sp.review);
+  const filtered = Boolean(sp.q || sp.stage || sp.status || sp.review || sp.decision);
   const today = todayIso();
   const sorted = [...rows].sort(byNextHearing);
 
@@ -52,17 +54,17 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
         stats={[
           { value: counts.total, label: "قضية عندك", href: "/cases" },
           { value: week, label: "جلسات الأسبوع", href: "/hearings?view=week" },
-          { value: review.size, label: "محتاجة مراجعة", highlight: true, href: "/cases?review=1" },
+          { value: decision.size, label: "محتاجة قرار", highlight: true, href: "/cases?decision=1" },
         ]}
       />
 
-      <FilterChips sp={sp} counts={counts} review={review.size} />
+      <FilterChips sp={sp} counts={counts} />
 
       {filtered ? (
         <p className="mt-1 px-1 text-xs text-text-3 sm:mt-2" aria-live="polite">
           <span className="font-num">{rows.length}</span> {rows.length === 1 ? "قضية" : "قضايا"}
           {sp.q ? <> تطابق «{sp.q}»</> : null}
-          {" · "}<Link href="/cases" className="font-semibold text-text underline-offset-2 hover:underline">مسح التصفية</Link>
+          {" · "}<Link href="/cases" className="tap font-semibold text-text underline-offset-2 hover:underline">مسح التصفية</Link>
         </p>
       ) : null}
 
