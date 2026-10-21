@@ -38,6 +38,8 @@ export interface ProcessResult {
   dropped: { tool: string; reason: string }[];
   suspicious: { page: number; quote: string }[];
   extraction: Extraction | null;
+  /** a new case whose client the paper does not name: Clausia asked «مين موكلك؟» and made no card yet */
+  needsClient?: boolean;
   error?: string;
 }
 
@@ -297,7 +299,11 @@ export function extractionToOps({ ex, documentId, caseId, pages, existing }: Ops
   for (const a of ex.arguments ?? []) push("add_argument", { case: caseRef, side: a.side === "ours" ? "ours" : "opponent", kind: clean(a.kind) || undefined, text: clean(a.text) }, a.page, clean(a.quote));
 
   let h = 0;
-  for (const hr of ex.hearings ?? []) {
+  const claimSheet = ex.doc_type === "claim_sheet";
+  for (const raw of ex.hearings ?? []) {
+    // owner decision 2026-10-21: a past hearing found in a claim sheet is shown as «needs decision», never as an outcome
+    const hr = claimSheet && clean(raw.decision) ? { ...raw, decision: "", decision_text: "", next_date: "" } : raw;
+    if (hr !== raw) dropped.push({ tool: "record_decision", reason: "صحيفة الدعوى لا تثبت قرار جلسة: تبقى الجلسة «تحتاج قرارًا»" });
     const pageText = pageOk(hr.page) ? pages[hr.page - 1] : "";
     const date = clean(hr.date) ? writtenDate(clean(hr.date), "", pageText) : null;
     if (!date) { dropped.push({ tool: "add_hearing", reason: `تاريخ الجلسة غير مكتوب بوضوح: «${hr.date}»` }); continue; }
@@ -348,7 +354,6 @@ export function summaryText(fileName: string, pageCount: number, ex: Extraction 
   } else {
     lines.push("لم أجد في المستند بيانات واضحة أقترح حفظها. النص محفوظ ويمكنك الرجوع إليه في تبويب المستندات.");
   }
-  if (!hasCase && counts.has("create_case") && !counts.has("create_client")) lines.push("لم يحدد المستند من هو موكلنا، فلم أقترح موكلًا. حدده عند تأكيد الدعوى.");
   if (suspicious.length) {
     lines.push(`تنبيه: في المستند ${suspicious.length === 1 ? "سطر يبدو" : "أسطر تبدو"} كتعليمات موجهة للمساعد، ${suspicious.length === 1 ? "فتجاهلته ولم أنفذ منه" : "فتجاهلتها ولم أنفذ منها"} شيئًا:`);
     for (const s of suspicious.slice(0, 3)) lines.push(`ص ${s.page}: «${s.quote.slice(0, 160)}»`);
@@ -460,6 +465,16 @@ export async function processDocument(db: Db, documentId: string, opts: { thread
   const { data: msg, error: me } = await db.from("chat_messages").insert({ thread_id: threadId, role: "assistant", content }).select("id").single();
   if (me) throw new Error(me.message);
   result.messageId = msg.id;
+
+  const needsClient = !doc.case_id && result.ops.some((o) => o.tool === "create_case") && !result.ops.some((o) => o.tool === "create_client");
+  if (needsClient) {
+    // owner decision 2026-10-21: when the client is unclear, Clausia asks before creating anything
+    result.needsClient = true;
+    const names = [...new Set(result.ops.filter((o) => o.tool === "add_party").map((o) => String(o.args.name)))].slice(0, 4);
+    const ask = names.length ? `قبل ما أجهّز ملف القضية: مين موكلك؟ ${names.map((n) => `«${n}»`).join(" ولا ")}؟` : "قبل ما أجهّز ملف القضية: مين موكلك؟";
+    await db.from("chat_messages").update({ content: `${content}\n\n${ask}` }).eq("id", msg.id);
+    return result;
+  }
 
   if (result.ops.length) {
     const p = await createProposal(db, { threadId, messageId: msg.id, caseId: doc.case_id, documentId, ops: result.ops, sourceTexts: pages });

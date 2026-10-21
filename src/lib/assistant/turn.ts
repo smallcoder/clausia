@@ -98,7 +98,7 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promis
     const { data: am, error: ae } = await db.from("chat_messages")
       .insert({ thread_id: thread.id, role: "assistant", content: res.text ?? "", tool_calls: stored as unknown as Json })
       .select("id").single();
-    if (ae || !am) throw new Error(ae?.message ?? "تعذّر حفظ رد المساعد");
+    if (ae || !am) throw new Error(ae?.message ?? "تعذّر حفظ رد Clausia");
     out.assistantMessageIds.push(am.id);
     if (res.text) out.text = out.text ? `${out.text}\n${res.text}` : res.text;
     messages.push({ role: "assistant", text: res.text ?? "", toolCalls: calls, raw: res.raw });

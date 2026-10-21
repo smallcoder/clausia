@@ -38,8 +38,8 @@ export default async function ChatHome() {
   return (
     <>
       <PageHeader
-        title="المساعد"
-        subtitle="املأ ملف الدعوى بالمحادثة. كل ما يقترحه المساعد يُعرض عليك للتأكيد قبل الحفظ."
+        title="Clausia"
+        subtitle="املأ ملف الدعوى بالمحادثة. كل ما يقترحه Clausia يُعرض عليك للتأكيد قبل الحفظ."
         actions={<form action={newThreadAction}><Button type="submit" variant="secondary">محادثة فارغة</Button></form>}
       />
       <StartChat />

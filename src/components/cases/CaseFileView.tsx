@@ -172,7 +172,7 @@ export async function CaseFileView({ caseId }: { caseId: string }) {
               );
             })}
           </Group>
-        ) : <Empty text="لا توجد وقائع بعد. احكِ للمساعد في المحادثة ما حدث وتواريخه، أو ارفع صحيفة الدعوى." />}
+        ) : <Empty text="لا توجد وقائع بعد. احكِ لـ Clausia في المحادثة ما حدث وتواريخه، أو ارفع صحيفة الدعوى." />}
       </Section>
 
       <Section title="الأطراف">
@@ -192,7 +192,7 @@ export async function CaseFileView({ caseId }: { caseId: string }) {
                 </>} />
             ))}
           </Group>
-        ) : <Empty text="لا توجد أطراف بعد. اذكر للمساعد أطراف الدعوى وصفاتهم." />}
+        ) : <Empty text="لا توجد أطراف بعد. اذكر لـ Clausia أطراف الدعوى وصفاتهم." />}
       </Section>
 
       <Section title="الطلبات والدفوع">

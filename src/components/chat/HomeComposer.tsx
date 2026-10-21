@@ -48,7 +48,7 @@ export function HomeComposer() {
             <Paperclip size={20} strokeWidth={1.5} />
           </button>
           <span className="text-caption text-ink-3">
-            {uploading ? "جارٍ رفع الورقة وقراءتها…" : pending ? "المساعد يكتب…" : err || state?.error ? <span className="text-danger">{err ?? state?.error}</span> : "لن يُحفظ شيء قبل أن تؤكده."}
+            {uploading ? "جارٍ رفع الورقة وقراءتها…" : pending ? "Clausia بيكتب…" : err || state?.error ? <span className="text-danger">{err ?? state?.error}</span> : "لن يُحفظ شيء قبل أن تؤكده."}
           </span>
         </div>
         <button disabled={busy} aria-label="إرسال"

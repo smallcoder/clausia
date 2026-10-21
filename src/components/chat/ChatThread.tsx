@@ -131,7 +131,7 @@ export function ChatThread({ threadId, caseId, items, lookup }: { threadId: stri
             )}
           </li>
         ))}
-        {sending ? <li className="text-callout text-ink-3" aria-live="polite"><span className="inline-block animate-pulse">المساعد يكتب…</span></li> : null}
+        {sending ? <li className="text-callout text-ink-3" aria-live="polite"><span className="inline-block animate-pulse">Clausia بيكتب…</span></li> : null}
         {uploading ? <li className="text-callout text-ink-3" aria-live="polite"><span className="inline-block animate-pulse">جارٍ رفع المستند وقراءته…</span></li> : null}
       </ol>
       <div ref={endRef} />
@@ -152,7 +152,7 @@ export function ChatThread({ threadId, caseId, items, lookup }: { threadId: stri
                 <path d="M21 11.5 12.6 19.9a5 5 0 0 1-7.1-7.1l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7l-8.5 8.5a1.7 1.7 0 0 1-2.4-2.4l7.8-7.8" />
               </svg>
             </label>
-            <textarea ref={boxRef} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={onKey} rows={1} placeholder="اكتب للمساعد…" aria-label="رسالة للمساعد"
+            <textarea ref={boxRef} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={onKey} rows={1} placeholder="اكتب لـ Clausia…" aria-label="رسالة لـ Clausia"
               className="max-h-40 min-h-11 flex-1 resize-none rounded-[22px] border border-hairline bg-surface px-4 py-2.5 text-body leading-6 text-ink shadow-1 placeholder:text-ink-3 focus:border-accent focus:outline-none [field-sizing:content]" />
             <button type="button" onClick={send} disabled={!text.trim() || sending}
               className="h-11 shrink-0 rounded-[var(--radius-sm)] bg-accent px-5 text-body font-semibold text-accent-ink transition hover:opacity-90 disabled:opacity-40">

@@ -35,7 +35,7 @@ export async function DocumentsTab({ caseId }: { caseId: string }) {
         <div className="min-w-0">
           <h2 className="font-semibold text-ink">إضافة مستند</h2>
           <p className="mt-1 text-callout leading-relaxed text-ink-2">
-            صحيفة، مذكرة، محضر جلسة أو صورة بالهاتف (PDF أو صورة حتى 25 م.ب). يقرأ المساعد كل صفحة ويقترح ما وجده في بطاقة داخل محادثة الدعوى؛ لا يُحفظ شيء قبل تأكيدك.
+            صحيفة، مذكرة، محضر جلسة أو صورة بالهاتف (PDF أو صورة حتى 25 م.ب). يقرأ Clausia كل صفحة ويقترح ما وجده في بطاقة داخل محادثة الدعوى؛ لا يُحفظ شيء قبل تأكيدك.
           </p>
         </div>
         <div className="shrink-0"><UploadDocument caseId={caseId} /></div>
@@ -44,7 +44,7 @@ export async function DocumentsTab({ caseId }: { caseId: string }) {
       <section>
         <SectionTitle>المستندات{docs?.length ? <>{" "}<span className="num font-normal text-ink-3">({docs.length})</span></> : null}</SectionTitle>
         {!docs?.length ? (
-          <EmptyState title="لا توجد مستندات في هذه الدعوى بعد" hint="ارفع أول مستند وسيقرأه المساعد صفحة صفحة." />
+          <EmptyState title="لا توجد مستندات في هذه الدعوى بعد" hint="ارفع أول مستند وسيقرأه Clausia صفحة صفحة." />
         ) : (
           <ul className="space-y-3">
             {docs.map((d) => {
@@ -73,7 +73,7 @@ export async function DocumentsTab({ caseId }: { caseId: string }) {
 
                     {hasPending.has(d.id) ? (
                       <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-sm)] border border-suggest/25 bg-suggest-soft px-3 py-2">
-                        <span className="text-callout text-suggest">استخرج المساعد بيانات من هذا المستند بانتظار تأكيدك.</span>
+                        <span className="text-callout text-suggest">استخرج Clausia بيانات من هذا المستند بانتظار تأكيدك.</span>
                         <Link href={`/cases/${caseId}?tab=chat`} className="text-callout font-semibold text-suggest underline-offset-4 hover:underline">مراجعة المقترحات</Link>
                       </div>
                     ) : null}

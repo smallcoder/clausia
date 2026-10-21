@@ -21,7 +21,7 @@ export async function HearingsTab({ caseId }: { caseId: string }) {
 
       <DecisionNotices>
       {rows.length === 0 ? (
-        <EmptyState title="لا جلسات مسجلة لهذه الدعوى" hint="أضف أول جلسة بتاريخها، أو أخبر المساعد في تبويب المحادثة." />
+        <EmptyState title="لا جلسات مسجلة لهذه الدعوى" hint="أضف أول جلسة بتاريخها، أو أخبر Clausia في تبويب المحادثة." />
       ) : (
         <ol className="relative border-s border-line-strong ps-5">
           {rows.map((h) => {

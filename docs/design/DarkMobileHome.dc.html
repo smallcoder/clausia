@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>داكن حديث · الرئيسية (موبايل)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&amp;family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#000000}
+a{color:#EEF0F3;text-decoration:none}a:hover{color:#FFFFFF}
+textarea::placeholder{color:#7D8492}
+button{font:inherit;cursor:pointer}
+</style>
+</helmet>
+<div dir="rtl" style="width: 390px; height: 844px; position: relative; overflow: hidden; background: radial-gradient(900px 480px at 50% -10%, rgba(214,192,143,0.07), transparent 70%), #0B0F18; color: #EEF0F3; font-family: -apple-system, BlinkMacSystemFont, 'SF Arabic', 'SF Pro Text', system-ui, 'Vazirmatn', sans-serif">
+
+  <header style="height: 56px; padding: 0 14px; display: flex; align-items: center; gap: 6px">
+    <div style="display: flex; align-items: center; gap: 8px; flex: 1">
+      <div style="width: 28px; height: 28px; border-radius: 8px; background: {{accentGrad}}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 4px 12px {{accentShadow}}; color: #121A2B; display: flex; align-items: center; justify-content: center; font-family: -apple-system, 'SF Pro Display', system-ui, 'Inter', sans-serif; font-weight: 900; font-size: 16px">C</div>
+      <span style="font-family: -apple-system, 'SF Pro Display', system-ui, 'Inter', sans-serif; font-size: 17px; font-weight: 800; letter-spacing: -0.02em">Clausia</span>
+    </div>
+    <a href="#" aria-label="الجلسات" style="width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #C3C8D0; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.07)">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+    </a>
+    <a href="#" aria-label="القضايا" style="width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #C3C8D0; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.07)">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+    </a>
+    <button aria-label="الحساب" style="width: 36px; height: 36px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.1); background: #222A3D; color: #EEF0F3; font-size: 12px; font-weight: 700; margin-right: 2px">أت</button>
+  </header>
+
+  <div style="padding: 10px 18px 0">
+    <div style="font-size: 12px; font-weight: 600; color: #9BA2AE">الثلاثاء 20 أكتوبر</div>
+    <h1 style="margin: 2px 0 0; font-size: 22px; line-height: 1.3; font-weight: 800; color: #FFFFFF">مساء الخير، أستاذ تجريبي</h1>
+
+    <div style="display: flex; gap: 10px; margin-top: 18px">
+      <div style="width: 28px; height: 28px; flex: 0 0 28px; border-radius: 14px; background: {{accentGrad}}; color: #121A2B; display: flex; align-items: center; justify-content: center; font-family: -apple-system, 'SF Pro Display', system-ui, 'Inter', sans-serif; font-weight: 900; font-size: 13px; box-shadow: 0 0 14px {{accentShadow}}">C</div>
+      <div style="flex: 1; min-width: 0">
+        <p style="margin: 3px 0 0; font-size: 15px; line-height: 1.75; color: #E4E6EA">عندك 3 جلسات النهارده، أولها في استئناف القاهرة. وفيه 4 جلسات فاتت لسه قرارها متسجلش. تحب نبدأ بيها؟</p>
+
+        <div style="margin-top: 12px; border-radius: 18px; background: #141A27; border: 1px solid rgba(255,255,255,0.07); box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 18px 36px -18px rgba(0,0,0,0.7); padding: 4px 12px">
+          <sc-for list="{{today}}" as="item" hint-placeholder-count="3">
+            <a href="#" style="display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: {{item.line}}">
+              <div style="width: 34px; height: 34px; flex: 0 0 34px; border-radius: 10px; background: #1D2436; border: 1px solid {{accentEdge}}; display: flex; align-items: center; justify-content: center; font-family: -apple-system, 'SF Pro Display', system-ui, 'Inter', sans-serif; font-size: 14px; font-weight: 800; color: {{accent}}">{{item.circuit}}</div>
+              <div style="flex: 1; min-width: 0">
+                <div style="font-size: 13.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{item.title}}</div>
+                <div style="font-size: 11.5px; color: #9BA2AE; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{item.meta}}</div>
+              </div>
+            </a>
+          </sc-for>
+        </div>
+
+        <a href="#" style="display: flex; align-items: center; gap: 10px; margin-top: 8px; border-radius: 16px; padding: 10px 12px; background: {{accentGrad}}; color: #121A2B; box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 12px 26px -12px {{accentShadow}}">
+          <span style="font-family: -apple-system, 'SF Pro Display', system-ui, 'Inter', sans-serif; font-size: 22px; font-weight: 800; letter-spacing: -0.03em">04</span>
+          <span style="flex: 1; font-size: 13px; font-weight: 700">جلسات محتاجة قرار · سجّلها دلوقتي</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 30px 12px 26px; background: linear-gradient(to top, #070A11 62%, rgba(7,10,17,0))">
+    <div style="display: flex; gap: 8px; overflow: hidden; padding: 0 4px 10px">
+      <button style="flex: 0 0 auto; height: 34px; padding: 0 14px; border-radius: 17px; border: 1px solid rgba(255,255,255,0.1); background: #171D2B; color: #D6D9DF; font-size: 13px">+ موكل وقضية جديدة</button>
+      <button style="flex: 0 0 auto; height: 34px; padding: 0 14px; border-radius: 17px; border: 1px solid rgba(255,255,255,0.1); background: #171D2B; color: #D6D9DF; font-size: 13px">سجّل قرار جلسة</button>
+      <button style="flex: 0 0 auto; height: 34px; padding: 0 14px; border-radius: 17px; border: 1px solid rgba(255,255,255,0.1); background: #171D2B; color: #D6D9DF; font-size: 13px">مطلوب مني إيه؟</button>
+    </div>
+    <div style="border-radius: 27px; padding: 1px; background: rgba(255,255,255,0.10); box-shadow: 0 -10px 40px rgba(0,0,0,0.5)">
+      <div style="border-radius: 26px; background: #171E2D; padding: 14px 14px 10px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.07)">
+        <textarea aria-label="اكتب لـ Clausia" placeholder="اكتب لـ Clausia… ما حدث في الجلسة، موكل جديد، أو أي سؤال" style="display: block; width: 100%; height: 58px; border: 0; resize: none; font: inherit; font-size: 16px; line-height: 1.55; color: #EEF0F3; background: transparent; outline: none; padding: 0; box-sizing: border-box"></textarea>
+        <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px">
+          <button aria-label="إرفاق ورقة" style="width: 40px; height: 40px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); background: #1E2535; color: #D6D9DF; display: flex; align-items: center; justify-content: center">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          </button>
+          <button aria-label="تصوير ورقة" style="width: 40px; height: 40px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); background: #1E2535; color: #D6D9DF; display: flex; align-items: center; justify-content: center">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+          </button>
+          <div style="flex: 1; font-size: 11px; color: #7D8492; text-align: center">لن يُحفظ شيء قبل تأكيدك</div>
+          <button aria-label="رسالة صوتية" style="width: 40px; height: 40px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); background: #1E2535; color: #D6D9DF; display: flex; align-items: center; justify-content: center">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><path d="M12 18v4"/></svg>
+          </button>
+          <button aria-label="إرسال" style="width: 44px; height: 44px; border-radius: 22px; border: 0; background: {{accentGrad}}; color: #121A2B; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 8px 20px {{accentShadow}}">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","options":["#D6C08F","#C9D1D9","#BCD0C3","#D4FF3A"],"default":"#D6C08F"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var accent = this.props.accent ?? '#D6C08F';
+    var hex = accent.replace('#', '');
+    var r = parseInt(hex.substr(0, 2), 16), g = parseInt(hex.substr(2, 2), 16), b = parseInt(hex.substr(4, 2), 16);
+    var rgba = function (a) { return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')'; };
+    var mix = function (t, to) { return 'rgb(' + Math.round(r + (to - r) * t) + ',' + Math.round(g + (to - g) * t) + ',' + Math.round(b + (to - b) * t) + ')'; };
+    var today = [
+      { circuit: '7', title: 'كريم المثالي — صحة ونفاذ عقد', meta: 'استئناف القاهرة · 8833/2024' },
+      { circuit: '5', title: 'منى الافتراضية — فصل تعسفي', meta: 'الجيزة الابتدائية · 1290/2025' },
+      { circuit: '3', title: 'عادل النموذجي — إخلاء', meta: 'شمال القاهرة · 772/2025' }
+    ];
+    return {
+      accent: accent, accentWash: rgba(0.14), accentEdge: rgba(0.45), accentShadow: rgba(0.35), accentGlow: rgba(0.10),
+      accentGrad: 'linear-gradient(135deg, ' + mix(0.16, 255) + ' 0%, ' + accent + ' 45%, ' + mix(0.08, 40) + ' 100%)',
+      today: today.map(function (x, i) { return Object.assign({}, x, { line: i < today.length - 1 ? '1px solid rgba(255,255,255,0.06)' : '0' }); })
+    };
+  }
+}
+</script>
+</body>
+</html>

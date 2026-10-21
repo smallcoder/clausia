@@ -85,7 +85,7 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
           <EmptyState title="لا توجد قضايا مطابقة" hint="جرّب رقم الدعوى وحده، أو جزءًا من اسم الموكل، أو أزل عوامل التصفية."
             action={<Link href="/cases" className="text-sm font-medium text-accent hover:underline">عرض كل القضايا</Link>} />
         ) : (
-          <EmptyState title="لا توجد قضايا بعد" hint="اكتب للمساعد في المحادثة عن موكل أو دعوى جديدة، وسيقترح إنشاءها لتؤكدها."
+          <EmptyState title="لا توجد قضايا بعد" hint="اكتب لـ Clausia في المحادثة عن موكل أو دعوى جديدة، وسيقترح إنشاءها لتؤكدها."
             action={<Link href="/chat" className="text-sm font-medium text-accent hover:underline">ابدأ محادثة</Link>} />
         )
       ) : (

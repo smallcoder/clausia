@@ -16,7 +16,7 @@ export async function JudgmentsTab({ caseId }: { caseId: string }) {
     .select("id, judgment_date, kind, operative_text, outcome, appeal_deadline, appeal_deadline_note, review_status, created_by_kind, source_kind, source_page, source_quote, document:documents!judgments_source_document_id_fkey(file_name)")
     .eq("case_id", caseId).neq("review_status", "rejected").order("judgment_date", { ascending: false });
   const rows = data ?? [];
-  if (!rows.length) return <EmptyState title="لم يصدر حكم مسجل بعد" hint="عند صدور حكم، أخبر المساعد بمنطوقه أو ارفع صورة الحكم." />;
+  if (!rows.length) return <EmptyState title="لم يصدر حكم مسجل بعد" hint="عند صدور حكم، أخبر Clausia بمنطوقه أو ارفع صورة الحكم." />;
 
   return (
     <ul className="space-y-4">
@@ -41,7 +41,7 @@ export async function JudgmentsTab({ caseId }: { caseId: string }) {
                   {j.appeal_deadline_note ? <span className="mt-1 block text-ink-3">{j.appeal_deadline_note}</span> : null}
                 </p>
               ) : (
-                <p className="text-ink-3">ميعاد الطعن لم يُسجل. Clausia لا يحسبه تلقائيًا؛ اذكره للمساعد إن أردت تسجيله.</p>
+                <p className="text-ink-3">ميعاد الطعن لم يُسجل. Clausia لا يحسبه تلقائيًا؛ اذكره لـ Clausia إن أردت تسجيله.</p>
               )}
             </div>
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2">

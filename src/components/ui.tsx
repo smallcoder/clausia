@@ -163,7 +163,7 @@ export function SourceBadge({ row, documentName }: {
   return (
     <span className="inline-flex flex-wrap items-center gap-1">
       {suggested ? <Badge tone="suggest">مقترح · بانتظار التأكيد</Badge> : null}
-      <Badge tone={row.created_by_kind === "model" ? "accent" : "neutral"}>{row.created_by_kind === "model" ? "صاغه المساعد" : "المحامي"}</Badge>
+      <Badge tone={row.created_by_kind === "model" ? "accent" : "neutral"}>{row.created_by_kind === "model" ? "صاغه Clausia" : "المحامي"}</Badge>
       <span className="text-xs text-ink-3">{from}</span>
     </span>
   );

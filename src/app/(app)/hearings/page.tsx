@@ -83,7 +83,7 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
       {rows.length === 0 ? (
         <EmptyState
           title={view === "week" ? "لا جلسات في هذا الأسبوع" : "لا جلسات في هذا اليوم"}
-          hint="تظهر هنا الجلسات المضافة لدعاوى المكتب. أضف جلسة من تبويب «الجلسات» في صفحة الدعوى، أو أخبر المساعد بها."
+          hint="تظهر هنا الجلسات المضافة لدعاوى المكتب. أضف جلسة من تبويب «الجلسات» في صفحة الدعوى، أو أخبر Clausia بها."
         />
       ) : view === "day" ? (
         <div className="space-y-3">

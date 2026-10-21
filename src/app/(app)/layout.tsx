@@ -1,18 +1,22 @@
 import { redirect } from "next/navigation";
-import { AppNav } from "@/components/AppNav";
+import { AppHeader } from "@/components/shell/AppHeader";
 import { createClient, getSession } from "@/lib/supabase/server";
 
+function initialsOf(name: string) {
+  const w = name.replace(/^(أ\.|أستاذ|الأستاذ)\s*/u, "").trim().split(/\s+/).filter(Boolean);
+  return (w.length > 1 ? w[0][0] + w[1][0] : (w[0] ?? "C").slice(0, 2)) || "C";
+}
+
+/** Shell: the mockups' top bar; each page owns its width (chat column 820px, content ≤1120px). */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const db = await createClient();
   const session = await getSession(db);
   if (!session) redirect("/login");
   const { data: office } = await db.from("offices").select("name").eq("id", session.officeId).single();
   return (
-    <div className="min-h-dvh">
-      <AppNav officeName={office?.name ?? ""} userLabel={session.user.email ?? ""} />
-      <div className="lg:pr-52">
-        <main className="mx-auto w-full max-w-5xl px-4 pb-[calc(6rem+env(safe-area-inset-bottom))] pt-6 lg:px-10 lg:pb-12 lg:pt-12">{children}</main>
-      </div>
+    <div className="flex min-h-dvh flex-col">
+      <AppHeader initials={initialsOf(session.displayName || "أ ت")} officeName={office?.name ?? ""} email={session.user.email ?? ""} />
+      <main className="flex w-full flex-1 flex-col">{children}</main>
     </div>
   );
 }

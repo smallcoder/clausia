@@ -22,7 +22,7 @@ export function StartChat() {
         }}
       />
       <div className="mt-2 flex items-center justify-between gap-3">
-        <p className="text-caption text-ink-3">{pending ? "المساعد يكتب…" : state?.error ? <span className="text-danger">{state.error}</span> : "لن يُحفظ شيء قبل أن تؤكده."}</p>
+        <p className="text-caption text-ink-3">{pending ? "Clausia بيكتب…" : state?.error ? <span className="text-danger">{state.error}</span> : "لن يُحفظ شيء قبل أن تؤكده."}</p>
         <button disabled={pending} className="min-h-11 rounded-[var(--radius-sm)] bg-accent px-5 text-callout font-semibold text-accent-ink transition hover:opacity-90 disabled:opacity-60">
           {pending ? "…" : "إرسال"}
         </button>
