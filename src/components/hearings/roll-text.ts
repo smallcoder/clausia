@@ -57,25 +57,28 @@ export function hearingStatus(h: HearingWithCase, today: string): { tone: RollTo
 }
 
 const utc = (iso: string) => { const [y, m, d] = iso.slice(0, 10).split("-").map(Number); return new Date(Date.UTC(y, m - 1, d)); };
-const longFmt = new Intl.DateTimeFormat("ar-EG-u-nu-latn", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
-const shortFmt = new Intl.DateTimeFormat("ar-EG-u-nu-latn", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
-const dayMonthFmt = new Intl.DateTimeFormat("ar-EG-u-nu-latn", { day: "numeric", month: "long", timeZone: "UTC" });
+/**
+ * Month names as ar-EG writes them. Built by hand, not with Intl: these strings render on the server and again on the
+ * client, and engines' Intl output differs (WebKit writes «الأربعاء، 21 أكتوبر، 2026»), which broke hydration.
+ */
+const MONTHS = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+const ymd = (iso: string) => iso.slice(0, 10).split("-").map(Number);
 
 /** «الثلاثاء 20 أكتوبر 2026» (with the year) / «الثلاثاء 20 أكتوبر» — the roll's eyebrow. Latin digits. */
 export function arDate(iso: string, withYear = true): string {
-  return (withYear ? longFmt : shortFmt).format(utc(iso)).replace("،", "");
+  return `${WEEKDAY_LONG[weekdayOf(iso)]} ${arDayMonth(iso)}${withYear ? ` ${ymd(iso)[0]}` : ""}`;
 }
-
-const monthYearFmt = new Intl.DateTimeFormat("ar-EG-u-nu-latn", { month: "long", year: "numeric", timeZone: "UTC" });
 
 /** «أكتوبر 2026» — the label above the roll's day strip. */
 export function arMonthYear(iso: string): string {
-  return monthYearFmt.format(utc(iso));
+  const [y, m] = ymd(iso);
+  return `${MONTHS[m - 1]} ${y}`;
 }
 
 /** «20 أكتوبر» */
 export function arDayMonth(iso: string): string {
-  return dayMonthFmt.format(utc(iso));
+  const [, m, d] = ymd(iso);
+  return `${d} ${MONTHS[m - 1]}`;
 }
 
 /** Day-strip weekday names (Sun … Sat): full on desktop, the spoken short form on mobile. */
