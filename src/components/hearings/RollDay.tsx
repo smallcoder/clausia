@@ -49,6 +49,8 @@ class Cache {
   rows = new Map<string, HearingWithCase[]>();
   weeks = new Map<string, "fresh" | "stale">();
   busy = new Set<string>();
+  /** bumped when the server sends fresh rows: reads started before that are dropped when they land */
+  gen = 0;
   put(from: string, to: string, rows: HearingWithCase[]) {
     for (let w = weekStart(from); w <= to; w = addDaysIso(w, 7)) {
       this.weeks.set(w, "fresh");
@@ -116,10 +118,12 @@ export function RollDay({ today, from, to, rows, pill, side }: Props) {
     for (const r of runs) {
       r.forEach((w) => cache.busy.add(w));
       const a = r[0], b = addDaysIso(r[r.length - 1], 6);
+      const gen = cache.gen;
       hearingsRangeAction(a, b)
-        .then((got) => { cache.put(a, b, got); setVer((v) => v + 1); })
+        // a read from before the latest server render may hold pre-decision rows: drop it
+        .then((got) => { if (gen !== cache.gen) return; cache.put(a, b, got); setVer((v) => v + 1); })
         .catch(() => {}) // tried again the next time these weeks come into view
-        .finally(() => r.forEach((w) => cache.busy.delete(w)));
+        .finally(() => { if (gen === cache.gen) r.forEach((w) => cache.busy.delete(w)); });
     }
   }, [cache, center]);
 
@@ -128,15 +132,21 @@ export function RollDay({ today, from, to, rows, pill, side }: Props) {
     ensure(first, last);
   }, [ensure]);
 
-  // a new server render (after revalidatePath): its rows win, everything else is read again when in view
-  const firstProps = useRef(true);
+  // a new server render (after revalidatePath): its rows win, everything else is read again when in view.
+  // Keyed on `rows` only (from/to arrive with it); ensure is read through a ref so a strip re-centre does not re-run this.
+  const ensureRef = useRef(ensure);
+  ensureRef.current = ensure;
+  const seenRows = useRef(rows);
   useEffect(() => {
-    if (firstProps.current) { firstProps.current = false; return; }
+    if (seenRows.current === rows) return;
+    seenRows.current = rows;
+    cache.gen++;
+    cache.busy.clear(); // their results will be dropped; these weeks may be read again now
     for (const w of cache.weeks.keys()) cache.weeks.set(w, "stale");
     cache.put(from, to, rows);
     setVer((v) => v + 1);
-    ensure(visible.current.first, visible.current.last);
-  }, [rows, from, to, cache, ensure]);
+    ensureRef.current(visible.current.first, visible.current.last);
+  }, [rows, from, to, cache]);
 
   // ---- selection ---------------------------------------------------------------------------------------------------
   const change = useCallback((next: Sel, how: SelectHow | "history") => {
