@@ -69,7 +69,7 @@ export function clausiaSentence({ today, tomorrow, undecided }: { today: Hearing
 
   let late = "";
   if (undecided === 1) late = " وفيه جلسة فاتت لسه قرارها متسجلش. تحب نبدأ بيها؟";
-  else if (undecided === 2) late = " وفيه جلستين فاتوا لسه قرارهم متسجلش. تحب نبدأ بيهم؟";
+  else if (undecided === 2) late = " وفيه جلستين فاتت لسه قرارها متسجلش. تحب نبدأ بيها؟";
   else if (undecided > 2) late = ` وفيه ${hearingsCount(undecided)} فاتت لسه قرارها متسجلش. تحب نبدأ بيها؟`;
   else if (!today.length && !tomorrow.length) late = " اكتبلي عن موكل جديد أو اسألني عن أي قضية.";
   return roll + late;
