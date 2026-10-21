@@ -170,7 +170,7 @@ function Sheet({ h, today, onClose }: { h: HearingWithCase; today: string; onClo
         <header className="flex items-start gap-4 border-b border-[var(--hairline-v2)] px-5 pb-4 pt-3 sm:px-6 sm:pt-6">
           <CircuitNum h={h} size="sheet" />
           <div className="min-w-0 flex-1 border-s border-[var(--hairline-v2)] ps-4">
-            <div className="truncate text-[12px] font-semibold text-text-3">{courtOf(h)}{c.circuit ? ` · ${c.circuit}` : ""}</div>
+            <div className="truncate text-[12px] font-semibold text-text-3">{[courtOf(h), h.location?.trim() || c.circuit?.trim()].filter(Boolean).join(" · ")}</div>
             <h2 id="roll-sheet-title" className="mt-0.5 text-[17px] font-bold leading-snug text-title">{hearingTitle(h)}</h2>
             <div className="mt-1 text-[13px] text-text-3">
               {num ? <><span>{num}</span> · </> : null}جلسة {formatDayLabel(h.hearing_date)}
