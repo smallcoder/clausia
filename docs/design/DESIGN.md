@@ -6,7 +6,7 @@ The 20 `*.dc.html` files here are the approved screens: Home, Chat, Case, Roll a
 - Chat-first. Clausia (never "مساعد") does everything. There is one input per screen, the composer; it searches, asks and adds. There is no separate search bar.
 - Calm luxury: lots of space, few boxes, large light numbers, and gold only for things that need the lawyer's action.
 - Glass only on floating controls: the top bar, tab capsule, composer, round buttons and suggestion chips. Content (cards, tables, lists) is solid. Content scrolls under the floating composer, which has a soft fade behind it.
-- RTL Arabic. Desktop pages are at most 1360px wide (Home 960px; Chat 820px; the composer 780px), centered. Below 1280px, full width with 32px side padding.
+- RTL Arabic. Desktop pages are at most 1360px wide (`max-w-page`; Home 960px `max-w-home`; Chat 820px `max-w-chat`; the composer 780px `max-w-composer`), centered. Below 1280px, full width with 32px side padding.
 
 ## Type
 - UI: `-apple-system, BlinkMacSystemFont, 'SF Arabic', 'SF Pro Text', system-ui, 'Vazirmatn', sans-serif`
@@ -48,8 +48,33 @@ No step carries a line-height: text inherits it (body 1.6) or sets `leading-*` n
 
 Tailwind's own `rounded-xs…4xl` are switched off (`--radius-*: initial`).
 
-## Spacing
-Tailwind's spacing scale (`--spacing: 4px`; any 0.25 step works, e.g. `px-4.5` = 18px, `mt-0.75` = 3px). An arbitrary spacing value is kept only where no step fits, with a `ds-allow:` comment on the line: the safe-area `calc(…env(safe-area-inset-bottom))` paddings, the case menu's `top-[calc(100%+8px)]`, the facts timeline dot's `-start-[1.6rem]`.
+## Spacing and sizes
+Tailwind's spacing scale (`--spacing: 4px`; any 0.25 step works, e.g. `w-110` = 440px, `px-4.5` = 18px, `mt-0.75` = 3px). Use this order for every width, height, padding, margin, gap and offset:
+1. The same value used in two or more places for the same job is a **named token** in `globals.css` (`@theme`), even when it also sits on the scale. Name it by meaning, not by number.
+2. A one-off value that sits on the scale uses the plain scale class (`max-w-175`, `sm:w-105`, `min-h-5.75`).
+3. A one-off value that no step can say (`calc()`, `%`, `vh`/`dvh`, `cqi`, `env(safe-area-…)`) keeps the arbitrary value and a `ds-allow: <why>` comment on the line.
+
+Tailwind v4 reads a token from the namespace its utility uses, so the name reads well in the class:
+
+| Namespace | Utilities it feeds | Tokens |
+|---|---|---|
+| `--container-*` | `w-` `min-w-` `max-w-` `basis-` | `page` 1360px (Cases, Case, Roll; `max-w-page`), `home` 960px, `chat` 820px, `composer` 780px (Home and chat composer, and the composer skeleton), `bubble` 88% (mobile) and `bubble-sm` 72% (desktop) of a chat bubble's column |
+| `--spacing-*` | `size-` `h-` `w-` `min-h-` `p-` `gap-` `inset-` … | see below |
+
+| Token | Size | Use |
+|---|---|---|
+| `control` | 38px | compact control on mobile and in composers: send, plus, pill, and their skeleton twins (`size-control`, `h-control`, `min-h-control`) |
+| `control-lg` | 42px | glass round button in headers, the chat's case pill |
+| `control-xl` | 46px | header round buttons on desktop, the roll sheet's save button, a composer's input row (`min-h-control-xl`) |
+| `chip` | 34px | filter chip height on desktop (`sm:h-chip`) |
+| `mark-sm` / `mark` / `mark-lg` | 22 / 26 / 30px | the «C» mark: beside a composer on mobile / in headings and on desktop composers / beside a Home message and in a page hero on desktop |
+| `tick` | 22px | the round tick or state button in a proposal card |
+| `dot` / `dot-lg` | 5 / 7px | the dot before a status word and the hearing count dots / a hearing's dot on a timeline |
+| `glyph-sm` / `glyph` | 15 / 18px | an icon inside a pill / the arrow and plus inside a round button |
+
+Do not add a number-named token (`--spacing-11`): it would shadow the bare multiplier (`size-11`).
+
+The `.tap` areas stay 44px (`globals.css`): the control sizes above are the drawn sizes.
 
 ## Color (one identity, navy ink and champagne)
 | Token | Light | Dark |
@@ -85,7 +110,16 @@ Every colour literal lives in `globals.css`. Light values are on `:root`; dark v
 Removed in the 2026-10-21 cleanup (do not bring back): the v1 / legacy names `paper`, `surface(-2)`, `ink`, `ink-2`, `ink-3`, `line`, `line-strong`, `hairline`, `hairline-v2`, `accent`, `accent-ink`, `accent-soft`, `accent-base`, `accent-text`, `accent-wash`, `accent-ring`, `accent-edge`, `accent-grad`, `accent-shadow`, `brass(-soft)`, `suggest(-soft)`, `ok(-soft)`, `danger(-soft)`, `warn(-bg)`, `amber(-bg/-text)`, `gold-text`, `primary-bg`, `page`, `chrome`, `court-tint`, `hero*`, `tile*`, `shadow-1/2/3`, `shadow-accent`, `shadow-tile`, `radius`, `radius-card`, the old `text-display/title/headline/body/callout/caption` sizes.
 
 ### Rules for code
-`scripts/check-design-system.ts` (run by `scripts/final-check.sh`) fails on any of these in `src/**/*.tsx`: a hex colour, `rgb(` / `rgba(` / `hsl(`, an arbitrary `text-[…px]`, an arbitrary `rounded…-[…]`. A real exception carries `// ds-allow: <why>` (or `/* ds-allow: <why> */`) on the same line. Today: the `theme-color` meta in `layout.tsx` and the `rounded-[inherit]` link overlay in `CaseOverview.tsx`.
+`scripts/check-design-system.ts` (run by `scripts/final-check.sh`, with `--self-test` first) fails on any of these in `src/**/*.tsx`:
+- a hex colour, `rgb(` / `rgba(` / `hsl(`;
+- an arbitrary `text-[…px]`, an arbitrary `rounded…-[…]`;
+- an arbitrary size or spacing value, with any variant prefix (`sm:`, `dark:`, `hover:`, `data-[…]:`) and a leading `-`: `w- h- size- min-w- min-h- max-w- max-h-`, `p*- m*-`, `gap*- space-x/y-`, `inset*- top- bottom- start- end- left- right-`, `translate*- basis- scroll-p*- scroll-m*-` followed by `[…]`.
+
+Not checked: grid templates (`grid-cols-[…]`), `[mask…]`, `leading-[…]`, `shadow-[…]`, `bg-[…]`, `aspect-[…]`, `animate-[…]`, `transition-[…]`, arbitrary properties, and `w-(--x)` var shorthands. A real exception carries `// ds-allow: <why>` (or `/* ds-allow: <why> */`) on the same line; the reason must not be empty and covers the whole line, so keep one arbitrary value per line or name each in the reason. `npx tsx scripts/check-design-system.ts --self-test` proves each rule catches its kind and leaves the allowed forms alone.
+
+Today's exceptions: the `theme-color` meta in `layout.tsx`; the `rounded-[inherit]` link overlay in `CaseOverview.tsx`; the safe-area `calc(…env(safe-area-inset-bottom))` paddings (Composer, HomeComposer, ChatDock, PageSkeleton ×2, ItemSheet, RollSheet, ProposalCard); the case menu's `top-[calc(100%+8px)]`; the facts timeline dot's `-start-[1.6rem]`; the sheets' `dvh` heights (ItemSheet 85, RollSheet 90, ProposalCard 88); the court text's `max-h-[60vh]`; the roll strip's `cqi` tile widths; the shares of a row or column (`max-w-[34%]` Today card, `max-w-[38%]` roll sheet, `w-[70%]` skeleton bubble, the paper thumbnail's 55 / 88 / 94% text lines).
+
+To see that a CSS refactor changed nothing, `scripts/compare-styles.ts` saves the computed sizes, padding, margin, gap, inset and transform of every element on the 5 screens (1440 and 390, light and dark) and diffs two runs: `snap <dir> [baseUrl]`, then `diff <dirA> <dirB>`.
 
 ## Glass recipe
 - Dark: a radial white sheen 15%→4% over `rgba(32,37,50,0.5)`, backdrop blur 30px, saturate 160%; a 1px white border at 9%; an inset top-left highlight; a deep shadow.
