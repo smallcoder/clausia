@@ -24,19 +24,20 @@ export function StatTile({ s }: { s: HeroStat }) {
   const gold = s.highlight && !isZero(s.value);
   const body = (
     <>
-      <div className={`stat-num text-[40px] sm:text-[44px] ${gold ? "text-gold" : "text-title"}`}>{typeof s.value === "number" ? two(s.value) : s.value}</div>
+      <div className={`stat-num text-[32px] sm:text-[44px] ${gold ? "text-gold" : "text-title"}`}>{typeof s.value === "number" ? two(s.value) : s.value}</div>
       <div className={`mt-2 flex items-center gap-1.5 text-[12px] ${gold ? "font-semibold text-gold" : "text-text-3"}`}>
         {gold ? <span aria-hidden className="size-1.5 rounded-full bg-gold" /> : null}{s.label}
       </div>
     </>
   );
-  const cls = "block min-w-[88px] px-5 first:ps-0 sm:px-7";
+  // hairline between stats on the logical start side (RTL-safe), none before the first
+  const cls = "block min-w-0 flex-1 border-s border-[var(--hairline-v2)] px-4 first:border-s-0 first:ps-0 sm:min-w-[88px] sm:flex-none sm:px-7";
   return s.href ? <Link href={s.href} className={`${cls} transition hover:opacity-80`}>{body}</Link> : <div className={cls}>{body}</div>;
 }
 
 export function StatRow({ stats, className = "" }: { stats: HeroStat[]; className?: string }) {
   return (
-    <div className={`flex items-end divide-x divide-x-reverse divide-[var(--hairline-v2)] ${className}`}>
+    <div className={`flex w-full items-end sm:w-auto ${className}`}>
       {stats.map((s) => <StatTile key={s.label} s={s} />)}
     </div>
   );
@@ -72,7 +73,7 @@ export function PageHero({ back, action, eyebrow, title, subtitle, stats, classN
         </div>
       </div>
       {action || stats?.length ? (
-        <div className="flex items-end gap-5">
+        <div className="flex w-full items-end gap-5 sm:w-auto">
           {stats?.length ? <StatRow stats={stats} /> : null}
           {action}
         </div>

@@ -26,12 +26,12 @@ function caseNumber(r: CaseRow): string {
   return r.case_year ? `${r.case_number} لسنة ${r.case_year}` : r.case_number;
 }
 
-/** today «النهارده», tomorrow «بكرة», else «5/11» (the year only when it is not this year, e.g. «3/1/2027»). */
+/** today «النهارده», tomorrow «بكرة», else d/m/yyyy (CLAUDE.md: dates always d/m/yyyy). */
 function dateLabel(iso: string, today: string): { text: string; today: boolean; word: boolean } {
   if (iso === today) return { text: "النهارده", today: true, word: true };
   if (iso === addDaysIso(today, 1)) return { text: "بكرة", today: false, word: true };
   const [y, m, d] = iso.split("-").map(Number);
-  return { text: y === Number(today.slice(0, 4)) ? `${d}/${m}` : `${d}/${m}/${y}`, today: false, word: false };
+  return { text: `${d}/${m}/${y}`, today: false, word: false };
 }
 
 export interface RowFlags { decision: boolean; review: boolean; againstUs: boolean }

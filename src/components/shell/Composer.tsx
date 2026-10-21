@@ -194,7 +194,7 @@ function SendBtn({ onClick, disabled }: { onClick: () => void; disabled: boolean
 function RoundBtn({ label, onClick, disabled, className = "", children }: { label: string; onClick?: () => void; disabled?: boolean; className?: string; children: React.ReactNode }) {
   return (
     <button type="button" aria-label={label} title={label} onClick={onClick} disabled={disabled}
-      className={`glass glass-icon inline-flex size-10 shrink-0 items-center justify-center rounded-full transition hover:text-text disabled:opacity-40 ${className}`}>
+      className={`glass glass-icon ${className.includes("hidden") ? "" : "inline-flex"} size-10 shrink-0 items-center justify-center rounded-full transition hover:text-text disabled:opacity-40 ${className}`}>
       {children}
     </button>
   );
