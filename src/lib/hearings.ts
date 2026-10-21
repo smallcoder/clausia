@@ -113,6 +113,28 @@ export const NO_CIRCUIT = "دائرة غير محددة";
 export const courtOf = (h: HearingWithCase) => h.case.court?.trim() || NO_COURT;
 export const circuitOf = (h: HearingWithCase) => h.case.circuit?.trim() || NO_CIRCUIT;
 
+/** How many past hearings (before today in Cairo) still have no decision — the roll's «محتاجة قرار» tile. */
+export async function undecidedPastCount(db: Db): Promise<number> {
+  const r = await db.from("hearings").select("id", { count: "exact", head: true }).lt("hearing_date", todayIso()).is("decision_type", null).neq("review_status", "rejected");
+  if (r.error) throw new Error(r.error.message);
+  return r.count ?? 0;
+}
+
+/** Short circuit label for the roll's circuit tile: the first number in «الدائرة 7 مدني» → «7»; otherwise null. */
+export function circuitNumber(h: HearingWithCase): string | null {
+  const c = h.case.circuit?.trim();
+  if (!c) return null;
+  const n = c.replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d))).match(/\d+/);
+  return n ? n[0] : null;
+}
+
+/** Hearings per day (ISO date → count), for the roll's day strip. */
+export function countByDay(rows: HearingWithCase[]): Map<string, number> {
+  const m = new Map<string, number>();
+  for (const h of rows) m.set(h.hearing_date, (m.get(h.hearing_date) ?? 0) + 1);
+  return m;
+}
+
 /** Saturday-start week (Egyptian courts work Sat–Thu) containing iso. */
 export function weekStart(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);
