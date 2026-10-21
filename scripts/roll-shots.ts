@@ -35,6 +35,8 @@ for (const scheme of ["light", "dark"] as const) for (const kind of ["desktop", 
     await page.goto(`${BASE}${path}`, { waitUntil: "load" });
     if (page.url().includes("/login")) throw new Error("not logged in");
     await page.waitForTimeout(600);
+    const [sw, iw] = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
+    if (sw > iw) console.log(`  OVERFLOW ${name} ${scheme} ${kind}: ${sw} > ${iw}`);
     await page.screenshot({ path: `screenshots/v3/roll-${tag}${name}-${scheme}-${kind}.png`, fullPage: full });
     console.log(name, scheme, kind);
   };

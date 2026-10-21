@@ -57,17 +57,17 @@ function DayStrip({ days, date, view, today, counts, wk }: { days: string[]; dat
 
 /** Mobile: moving through the roll (the strip has no room for arrows). */
 function MobileNav({ view, date, wk, today, isCurrent }: { view: View; date: string; wk: string; today: string; isCurrent: boolean }) {
-  const btn = "inline-flex h-11 items-center gap-1 px-2 text-[12.5px] text-text-3 hover:text-text";
+  const btn = "inline-flex h-11 items-center gap-1 px-2 text-[12.5px] hover:text-text";
   return (
     <nav aria-label="التنقل في الرول" className="mt-1 flex items-center justify-between sm:hidden">
-      <Link href={href(view, addDaysIso(wk, -7))} className={btn}><ChevronRight size={16} strokeWidth={1.9} aria-hidden />اللي فات</Link>
+      <Link href={href(view, addDaysIso(wk, -7))} className={cx(btn, "text-text-3")}><ChevronRight size={16} strokeWidth={1.9} aria-hidden />اللي فات</Link>
       <span className="flex items-center">
-        {isCurrent ? null : <Link href={href("day", today)} className={cx(btn, "font-semibold text-gold")}>النهارده</Link>}
-        <Link href={view === "week" ? href("day", date) : href("week", date)} className={cx(btn, view === "week" && "font-semibold text-text")}>
+        {isCurrent ? null : <Link href={href("day", today)} className={cx(btn, "font-semibold text-text")}>النهارده</Link>}
+        <Link href={view === "week" ? href("day", date) : href("week", date)} className={cx(btn, view === "week" ? "font-semibold text-text" : "text-text-3")}>
           {view === "week" ? "يوم واحد" : "الأسبوع كله"}
         </Link>
       </span>
-      <Link href={href(view, addDaysIso(wk, 7))} className={btn}>اللي جاي<ChevronLeft size={16} strokeWidth={1.9} aria-hidden /></Link>
+      <Link href={href(view, addDaysIso(wk, 7))} className={cx(btn, "text-text-3")}>اللي جاي<ChevronLeft size={16} strokeWidth={1.9} aria-hidden /></Link>
     </nav>
   );
 }
@@ -203,7 +203,7 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
     ...(undecidedCount && !undecidedMode ? [{ label: `${undecidedCount} ${undecidedCount === 1 ? "جلسة فاتت محتاجة قرار" : undecidedCount <= 10 ? "جلسات فاتت محتاجة قرار" : "جلسة فاتت محتاجة قرار"}`, short: `${undecidedCount} محتاجة قرار`, accent: true, href: "/hearings?filter=undecided" }] : []),
     { label: "اتأجلت لـ…", text: "اتأجلت لـ " },
     { label: "اتحجزت للحكم", text: "اتحجزت للحكم لجلسة " },
-    { label: "ارفع محضر الجلسة", short: "صوّر المحضر", attach: true },
+    { label: "ارفع محضر الجلسة", short: "صوّر المحضر", attach: true, icon: "file" },
   ];
 
   const pill = undecidedCount > 0 && !undecidedMode ? (
@@ -221,7 +221,7 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
     </Link>
   );
   const todayLink = isCurrent || undecidedMode ? null : (
-    <Link href={href("day", today)} className="hidden h-11 items-center text-[13px] font-semibold text-gold hover:underline sm:inline-flex">النهارده</Link>
+    <Link href={href("day", today)} className="hidden h-11 items-center text-[13px] font-semibold text-text hover:underline sm:inline-flex">النهارده</Link>
   );
 
   const eyebrow = undecidedMode
@@ -242,7 +242,7 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
 
       <RollSheet today={today}>
         {undecidedMode ? (
-          <div className="mt-6 grid gap-7 lg:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)]">
+          <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-7 lg:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)]">
             <div>
               {undecidedRows.length ? (
                 <ul className="space-y-2.5 sm:space-y-3">
@@ -250,14 +250,14 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
                 </ul>
               ) : <Empty>مفيش جلسات فاتت من غير قرار.</Empty>}
             </div>
-            <div className="order-first px-2 lg:order-none"><ClausiaSays>{says}</ClausiaSays></div>
+            <div className="order-first px-2 lg:order-none"><ClausiaSays size="md">{says}</ClausiaSays></div>
           </div>
         ) : (
           <>
             <DayStrip days={days} date={date} view={view} today={today} counts={counts} wk={wk} />
             <MobileNav view={view} date={date} wk={wk} today={today} isCurrent={isCurrent} />
 
-            <div className="mt-1 grid items-start gap-7 sm:mt-[30px] lg:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)]">
+            <div className="mt-1 grid grid-cols-[minmax(0,1fr)] items-start gap-7 sm:mt-[30px] lg:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)]">
               <div className="min-w-0">
                 {view === "week" ? (
                   weekRows.length ? (
@@ -296,7 +296,7 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
 
               <aside className="hidden space-y-5 lg:block">
                 {undecidedCount > 0 ? <SideCard count={undecidedCount} rows={undecidedRows} /> : null}
-                <div className="px-2"><ClausiaSays>{says}</ClausiaSays></div>
+                <div className="px-2"><ClausiaSays size="md">{says}</ClausiaSays></div>
               </aside>
             </div>
           </>
