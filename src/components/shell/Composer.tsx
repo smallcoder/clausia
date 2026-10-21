@@ -12,7 +12,7 @@ import { composerSendAction, composerUploadAction, type ComposerTarget } from "@
 /** Chip icons by name (server pages can't pass components to this client component). */
 const CHIP_ICONS = { user: User, gavel: Gavel, list: List, file: File, calendar: CalendarDays, search: Search, plus: Plus, camera: Camera, clock: Clock, check: Check } as const;
 export type ChipIcon = keyof typeof CHIP_ICONS;
-export interface ComposerChip { label: string; short?: string; text?: string; ghost?: boolean; accent?: boolean; disabled?: boolean; attach?: boolean; href?: string; icon?: ChipIcon }
+export interface ComposerChip { label: string; short?: string; text?: string; ghost?: boolean; accent?: boolean; disabled?: boolean; attach?: boolean; href?: string; icon?: ChipIcon; /** a small gold dot instead of an icon (needs action) */ dot?: boolean }
 
 export function Composer({ target, placeholder = "اكتب لـ Clausia… ما حدث في الجلسة، موكل جديد، أو أي سؤال عن قضاياك", placeholderShort, chips = [], size = "dock", sticky = true }: {
   target: ComposerTarget;
@@ -87,7 +87,7 @@ export function Composer({ target, placeholder = "اكتب لـ Clausia… ما 
             const cls = `glass inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full px-4 text-[13.5px] transition disabled:cursor-not-allowed sm:h-10 ${c.accent ? "font-bold text-gold" : c.ghost ? "text-text-3" : "text-text-2 hover:text-text"} ${c.disabled ? "opacity-60" : ""}`;
             const Icon = c.icon ? CHIP_ICONS[c.icon] : null;
             const text = c.short ? <><span className="sm:hidden">{c.short}</span><span className="hidden sm:inline">{c.label}</span></> : c.label;
-            const label = <>{Icon ? <Icon size={15} strokeWidth={1.9} aria-hidden /> : null}{text}</>;
+            const label = <>{c.dot ? <span aria-hidden className="size-1.5 rounded-full bg-gold" /> : Icon ? <Icon size={15} strokeWidth={1.9} aria-hidden /> : null}{text}</>;
             if (c.href && !c.disabled) return <a key={c.label} href={c.href} className={cls}>{label}</a>;
             return (
               <button key={c.label} type="button" disabled={pending || c.disabled} aria-disabled={c.disabled}

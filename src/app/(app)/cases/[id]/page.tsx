@@ -53,7 +53,7 @@ export default async function CasePage({ params, searchParams }: { params: Promi
     ...(pending.length ? [{
       label: onlyFacts ? (pending.length === 1 ? "راجع الواقعة المقترحة" : "راجع الوقائع المقترحة") : "راجع المقترحات",
       short: pending.length === 1 ? "راجع المقترحة" : "راجع المقترحات",
-      text: "راجع معايا الحاجات المقترحة في القضية دي", accent: true,
+      text: "راجع معايا الحاجات المقترحة في القضية دي", accent: true, dot: true,
     }] : []),
     { label: "أضف مستند", attach: true, icon: "file" },
     { label: "اكتب رأي قانوني · قريبًا", short: "رأي قانوني · قريبًا", ghost: true, disabled: true },

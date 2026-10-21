@@ -32,7 +32,9 @@ export function StatTile({ s }: { s: HeroStat }) {
   );
   // hairline between stats on the logical start side (RTL-safe), none before the first
   const cls = "block min-w-0 flex-1 border-s border-[var(--hairline-v2)] px-4 first:border-s-0 first:ps-0 sm:min-w-[88px] sm:flex-none sm:px-7";
-  return s.href ? <Link href={s.href} className={`${cls} transition hover:opacity-80`}>{body}</Link> : <div className={cls}>{body}</div>;
+  if (!s.href) return <div className={cls}>{body}</div>;
+  // a same-page hash (e.g. #item-…) must fire hashchange so the item sheet opens: plain <a>
+  return s.href.includes("#") ? <a href={s.href} className={`${cls} transition hover:opacity-80`}>{body}</a> : <Link href={s.href} className={`${cls} transition hover:opacity-80`}>{body}</Link>;
 }
 
 export function StatRow({ stats, className = "" }: { stats: HeroStat[]; className?: string }) {
