@@ -47,6 +47,8 @@
   --tile-border: rgba(18,26,43,0.06);
   --mark-bg: #141C2E;
   --amber: #C98A1E;                          /* suggested (not yet confirmed) marker */
+  --amber-bg: #FFF1DB;                       /* «محتاجة قرار» chip: amber, distinct from the champagne accent */
+  --amber-text: #9A5B00;
   --paper-thumb: #F4F1EA;                    /* document thumbnail paper */
   --court-tint: linear-gradient(180deg, rgba(214,192,143,0.14), transparent);
   --mark-fg: #D6C08F;
@@ -105,6 +107,8 @@
   --tile-border: rgba(255,255,255,0.1);
   --mark-bg: var(--accent-grad);
   --amber: #E8A93B;
+  --amber-bg: rgba(232,169,59,0.16);
+  --amber-text: #F2B95A;
   --paper-thumb: #ECE7DC;
   --court-tint: none;
   --mark-fg: #121A2B;
@@ -153,6 +157,8 @@
   --tile-border: rgba(255,255,255,0.1);
   --mark-bg: var(--accent-grad);
   --amber: #E8A93B;
+  --amber-bg: rgba(232,169,59,0.16);
+  --amber-text: #F2B95A;
   --paper-thumb: #ECE7DC;
   --court-tint: none;
   --mark-fg: #121A2B;

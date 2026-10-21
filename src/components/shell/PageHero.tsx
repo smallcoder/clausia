@@ -85,8 +85,8 @@ export function PageHero({ back, action, icon, eyebrow, title, subtitle, stats, 
 }
 
 /** Status chip used in heroes and rows: good (active / upcoming), warn (needs a decision), neutral (done). */
-export function StatusChip({ tone, children }: { tone: "good" | "warn" | "neutral" | "bad"; children: ReactNode }) {
-  const cls = { good: "bg-good-bg text-good", warn: "bg-warn-bg text-warn", neutral: "bg-card-2 text-text-3", bad: "bg-bad-bg text-bad" }[tone];
+export function StatusChip({ tone, children }: { tone: "good" | "warn" | "neutral" | "bad" | "accent"; children: ReactNode }) {
+  const cls = { good: "bg-good-bg text-good", warn: "bg-[var(--amber-bg)] text-[var(--amber-text)]", neutral: "bg-card-2 text-text-3", bad: "bg-bad-bg text-bad", accent: "bg-[var(--accent-wash)] text-gold-text" }[tone];
   return <span className={`inline-flex h-[22px] items-center rounded-full px-2.5 text-[11px] font-bold ${cls}`}>{children}</span>;
 }
 

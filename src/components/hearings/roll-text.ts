@@ -43,11 +43,15 @@ export function caseNumber(h: HearingWithCase, short = false): string | null {
   return short ? `${n}/${y}` : `${n} لسنة ${y}`;
 }
 
-export type RollTone = "warn" | "good" | "neutral";
+export type RollTone = "warn" | "good" | "neutral" | "accent";
 
-/** needs a decision (held, nothing recorded) = warn · upcoming = good · decided = neutral with the decision and next date */
+/**
+ * Owner rule 2026-10-21: today = «النهارده» (accent; the decision can be recorded all day) · before today with no
+ * decision = «محتاجة قرار» (amber, flips at the end of its day, Africa/Cairo) · later = «قادمة» · decided = neutral.
+ */
 export function hearingStatus(h: HearingWithCase, today: string): { tone: RollTone; label: string; next?: string } {
   if (h.decision_type) return { tone: "neutral", label: DECISION[h.decision_type], next: h.next_date ? formatDmy(h.next_date) : undefined };
-  if (h.hearing_date <= today) return { tone: "warn", label: "محتاجة قرار" };
+  if (h.hearing_date === today) return { tone: "accent", label: "النهارده" };
+  if (h.hearing_date < today) return { tone: "warn", label: "محتاجة قرار" };
   return { tone: "good", label: "قادمة" };
 }

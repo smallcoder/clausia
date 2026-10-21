@@ -9,7 +9,7 @@ import { RecordDecision } from "./RecordDecision";
 export function DecisionBadge({ h, today }: { h: { decision_type: HearingWithCase["decision_type"]; next_date: string | null; hearing_date: string }; today: string }) {
   if (!h.decision_type) {
     if (h.hearing_date < today) return <Badge tone="brass">بلا قرار بعد</Badge>;
-    return h.hearing_date === today ? <Badge>بلا قرار بعد</Badge> : <Badge>قادمة</Badge>;
+    return h.hearing_date === today ? <Badge tone="accent">النهارده</Badge> : <Badge>قادمة</Badge>;
   }
   return (
     <Badge tone={h.decision_type === "judgment" || h.decision_type === "reserved_for_judgment" ? "accent" : "ok"}>

@@ -89,7 +89,7 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
 
   // Clausia's line: a sentence templated from the counts (not an LLM call)
   const nCourt = new Set(rows.map(courtOf)).size;
-  const pending = rows.filter((h) => !h.decision_type && h.hearing_date <= today).length;
+  const pending = rows.filter((h) => !h.decision_type && h.hearing_date < today).length;
   const when = date === today ? "النهارده" : `يوم ${formatDayLabel(date)}`;
   const says = undecidedMode
     ? rows.length
