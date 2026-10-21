@@ -48,6 +48,12 @@ export function rowTitle(h: HearingWithCase): string {
   return client || subject || caseNumber(h, "long") || "دعوى بلا رقم";
 }
 
+/** Where the hearing is: «استئناف القاهرة · الدائرة 7 مدني» (the schema has no floor/hall, so the circuit stands in). */
+export function placeLine(h: HearingWithCase): string {
+  const circuit = h.case.circuit?.trim();
+  return [shortCourt(h.case.court), circuit].filter(Boolean).join(" · ");
+}
+
 /** «8833 لسنة 2024» (desktop) or «8833/2024» (mobile). */
 export function caseNumber(h: HearingWithCase, style: "long" | "short"): string {
   const { case_number: n, case_year: y } = h.case;
@@ -56,23 +62,39 @@ export function caseNumber(h: HearingWithCase, style: "long" | "short"): string 
   return style === "long" ? `${n} لسنة ${y}` : `${n}/${y}`;
 }
 
-/** The Clausia line: today's (or tomorrow's) roll, then the hearings that still need a decision. */
-export function clausiaSentence({ today, tomorrow, undecided }: { today: HearingWithCase[]; tomorrow: HearingWithCase[]; undecided: number }): string {
+/**
+ * The Clausia line, in parts so the view can bold the gold bit and drop the long bits on mobile:
+ * `roll` + `where` (desktop only) + «.» + ` وفيه ` + `late.gold` (bold gold) + `late.tail` + `ask` (desktop only).
+ * `late` is null when nothing is waiting for a decision; then `calm` (no gold) is said instead.
+ */
+export interface ClausiaLine {
+  roll: string;
+  where: string;
+  late: { gold: string; tail: string } | null;
+  calm: string;
+  ask: string;
+}
+
+export function clausiaLine({ today, tomorrow, undecided }: { today: HearingWithCase[]; tomorrow: HearingWithCase[]; undecided: number }): ClausiaLine {
   const firstCourt = (hs: HearingWithCase[]) => shortCourt(hs[0].case.court);
   const allSameCourt = (hs: HearingWithCase[]) => new Set(hs.map((h) => shortCourt(h.case.court))).size === 1;
   const where = (hs: HearingWithCase[]) => (hs.length === 1 ? ` في ${firstCourt(hs)}` : allSameCourt(hs) ? `، ${hs.length === 2 ? "الاتنين" : "كلها"} في ${firstCourt(hs)}` : `، أولها في ${firstCourt(hs)}`);
 
   let roll: string;
-  if (today.length) roll = `عندك ${hearingsCount(today.length)} النهارده${where(today)}.`;
-  else if (tomorrow.length) roll = `مفيش جلسات النهارده. بكره عندك ${hearingsCount(tomorrow.length)}${where(tomorrow)}.`;
-  else roll = "مفيش جلسات النهارده ولا بكره.";
+  let at = "";
+  if (today.length) { roll = `عندك ${hearingsCount(today.length)} النهارده`; at = where(today); }
+  else if (tomorrow.length) { roll = `مفيش جلسات النهارده. بكره عندك ${hearingsCount(tomorrow.length)}`; at = where(tomorrow); }
+  else roll = "مفيش جلسات النهارده ولا بكره";
 
-  let late = "";
-  if (undecided === 1) late = " وفيه جلسة فاتت لسه قرارها متسجلش. تحب نبدأ بيها؟";
-  else if (undecided === 2) late = " وفيه جلستين فاتت لسه قرارها متسجلش. تحب نبدأ بيها؟";
-  else if (undecided > 2) late = ` وفيه ${hearingsCount(undecided)} فاتت لسه قرارها متسجلش. تحب نبدأ بيها؟`;
-  else if (!today.length && !tomorrow.length) late = " اكتبلي عن موكل جديد أو اسألني عن أي قضية.";
-  return roll + late;
+  let late: ClausiaLine["late"] = null;
+  let ask = "";
+  let calm = "";
+  if (undecided === 1) { late = { gold: "جلسة فاتت", tail: " لسه قرارها متسجلش." }; ask = " تحب نبدأ بيها؟"; }
+  else if (undecided === 2) { late = { gold: "جلستين فاتوا", tail: " لسه قرارهم متسجلش." }; ask = " تحب نبدأ بيهم؟"; }
+  else if (undecided > 2) { late = { gold: `${hearingsCount(undecided)} فاتت`, tail: " لسه قرارها متسجلش." }; ask = " تحب نبدأ بيها؟"; }
+  else if (today.length || tomorrow.length) calm = " وكل الجلسات اللي فاتت قراراتها متسجلة.";
+  else calm = " اكتبلي عن موكل جديد أو اسألني عن أي قضية.";
+  return { roll, where: at, late, calm, ask };
 }
 
 /* ---------- «آخر ما سجّلته» ---------- */

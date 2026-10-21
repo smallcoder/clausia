@@ -1,4 +1,4 @@
-// Home: Clausia first — today's roll, what needs a decision, the last saved card, and the big composer.
+// Home: Clausia first — today's roll, «محتاجة قرار», and the floating hero composer (v2).
 import { loadHome } from "@/components/home/data";
 import { HomeView } from "@/components/home/HomeView";
 import { createClient, getSession } from "@/lib/supabase/server";
