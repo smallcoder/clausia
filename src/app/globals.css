@@ -331,8 +331,11 @@ body {
 .glass { background: var(--glass-bg); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); border: var(--glass-border); box-shadow: var(--glass-shadow); }
 .glass-icon { color: var(--glass-icon); }
 /* invisible 44px tap area around a control drawn smaller (owner decision: draw as the mockup, tap at 44px) */
-.tap { position: relative; }
-.tap::after { content: ""; position: absolute; inset-block: min(0px, calc((100% - 44px) / 2)); inset-inline: min(0px, calc((100% - 44px) / 2)); }
+@layer components {
+  /* layered, so utilities like sr-only / absolute still win over position: relative */
+  .tap { position: relative; }
+  .tap::after { content: ""; position: absolute; inset-block: min(0px, calc((100% - 44px) / 2)); inset-inline: min(0px, calc((100% - 44px) / 2)); }
+}
 /* the soft fade behind the floating composer */
 .bg-fade { background: var(--fade); }
 /* big light stat numbers */
