@@ -10,7 +10,7 @@ import "server-only";
 import { formatDmy, normalizeDigits, parseDmy, todayIso } from "@/lib/dates";
 import type { Json } from "@/lib/db/types";
 import { caseLabel } from "@/lib/labels";
-import { getLlm, LlmUnavailableError, SpendCapError, type LlmMessage, type LlmToolCall } from "@/lib/llm";
+import { getLlm, LlmUnavailableError, SpendCapError, type ChatRequest, type LlmMessage, type LlmToolCall } from "@/lib/llm";
 import { UNAVAILABLE_TEXT } from "@/lib/llm/unavailable";
 import { createProposal, normalizeForMatch, type DraftOp, type Proposal, type ResolvedFrom } from "@/lib/proposals";
 import { cairoDateOf, resolveRelativeDays, type RelativeDay } from "@/lib/relative-days";
@@ -47,16 +47,46 @@ export class TurnError extends Error {
 
 type TurnInput = { threadId: string; userText: string; userId: string; officeId: string };
 
-export async function runAssistantTurn(db: Db, input: TurnInput): Promise<TurnResult> {
-  const state = { saved: false };
-  try {
-    return await turn(db, input, state);
-  } catch (e) {
-    throw new TurnError(e instanceof Error ? e.message : String(e), state.saved);
+/** A whole chat turn — every model and tool call in it — gets 2 minutes (owner decision 2026-10-21). */
+export const TURN_LIMIT_MS = 120_000;
+
+/** The turn's time limit passed between model calls (no call in flight). Handled like any «not available now». */
+export class TurnTimeLimitError extends LlmUnavailableError {
+  constructor(limitMs: number) {
+    super(`chat turn time limit (${limitMs}ms) passed`);
+    this.name = "TurnTimeLimitError";
   }
 }
 
-async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promise<TurnResult> {
+/** The turn's clock: `signal` aborts when the limit passes (it cancels the model call in flight). */
+interface Clock { signal: AbortSignal; deadline: number; limitMs: number }
+
+/** `opts.turnLimitMs`: the whole turn's limit (default TURN_LIMIT_MS; tests pass a short one). */
+export async function runAssistantTurn(db: Db, input: TurnInput, opts: { turnLimitMs?: number } = {}): Promise<TurnResult> {
+  const state = { saved: false };
+  const limitMs = opts.turnLimitMs ?? TURN_LIMIT_MS;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), limitMs);
+  try {
+    return await turn(db, input, state, { signal: ctrl.signal, deadline: Date.now() + limitMs, limitMs });
+  } catch (e) {
+    throw new TurnError(e instanceof Error ? e.message : String(e), state.saved);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Waits for `work` (a read tool) but not past the turn's limit. */
+function withinTurn<T>(work: Promise<T>, clock: Clock): Promise<T> {
+  if (clock.signal.aborted) return Promise.reject(new TurnTimeLimitError(clock.limitMs));
+  return new Promise<T>((resolve, reject) => {
+    const stop = () => reject(new TurnTimeLimitError(clock.limitMs));
+    clock.signal.addEventListener("abort", stop, { once: true });
+    work.then(resolve, reject).finally(() => clock.signal.removeEventListener("abort", stop));
+  });
+}
+
+async function turn(db: Db, input: TurnInput, state: { saved: boolean }, clock: Clock): Promise<TurnResult> {
   const text = input.userText.trim();
   if (!text) throw new Error("الرسالة فارغة");
   const { data: thread, error: te } = await db.from("chat_threads").select("id, case_id, title").eq("id", input.threadId).single();
@@ -92,29 +122,42 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promis
   const meta = { purpose: "chat" as const, officeId: input.officeId, userId: input.userId, threadId: thread.id };
   const out: TurnResult = { userMessageId: userMsg.id, assistantMessageIds: [], proposalIds: [], text: "", rounds: 0 };
 
+  /** The model call for this turn: under the turn's limit, and never more than the provider's own 60s per call. */
+  const chat = (req: Omit<ChatRequest, "signal" | "timeoutMs">) => {
+    if (clock.signal.aborted) return Promise.reject(new TurnTimeLimitError(clock.limitMs));
+    return getLlm().chat({ ...req, signal: clock.signal, timeoutMs: clock.deadline - Date.now() });
+  };
+
+  /** The turn ends early: the model failed, or the turn's time limit passed. */
+  const cutShort = async (e: unknown): Promise<TurnResult> => {
+    // a model call that failed is already logged once in llm_calls (getLlm); one notice in the chat, no retry.
+    // The time limit passing with no call in flight has no llm_calls row (no call was made): it is logged here.
+    const msg = e instanceof Error ? e.message : String(e);
+    if (clock.signal.aborted) console.warn(`[turn] ${thread.id}: the ${clock.limitMs}ms turn limit passed (${msg})`);
+    // a turn cut short leaves nothing half-done: drop this turn's cards (nothing in them is saved — they wait for
+    // the tap) and its partial replies, so the thread shows the lawyer's message and the notice only
+    if (out.proposalIds.length) await db.from("proposals").delete().in("id", out.proposalIds).eq("status", "pending");
+    if (out.assistantMessageIds.length) await db.from("chat_messages").delete().eq("thread_id", thread.id).in("role", ["assistant", "tool"]).gt("created_at", userMsg.created_at);
+    out.proposalIds = [];
+    out.assistantMessageIds = [];
+    // only "not available now" (402 / 429 / 5xx / timeout / network / the turn's limit) gets the notice; any other error
+    // (a bad request, a blocked reply) is a fault to fix, so it keeps a plain message and its reason in llm_calls
+    const friendly = e instanceof SpendCapError ? "مش هقدر أرد دلوقتي: وصلنا لحد الصرف التجريبي."
+      : e instanceof LlmUnavailableError ? UNAVAILABLE_TEXT
+      : "حصلت مشكلة وأنا بجهّز الرد. جرّب تكتبها تاني بشكل مختلف.";
+    const { data: m } = await db.from("chat_messages").insert({ thread_id: thread.id, role: "assistant", content: friendly }).select("id").single();
+    if (m) out.assistantMessageIds.push(m.id);
+    out.text = friendly;
+    out.error = msg;
+    return out;
+  };
+
   for (let round = 0; round < MAX_ROUNDS; round++) {
     let res;
     try {
-      res = await getLlm().chat({ system, messages, tools, meta });
+      res = await chat({ system, messages, tools, meta });
     } catch (e) {
-      // already logged once in llm_calls (getLlm); one notice in the chat, no retry
-      const msg = e instanceof Error ? e.message : String(e);
-      // a turn cut short leaves nothing half-done: drop this turn's cards (nothing in them is saved — they wait for
-      // the tap) and its partial replies, so the thread shows the lawyer's message and the notice only
-      if (out.proposalIds.length) await db.from("proposals").delete().in("id", out.proposalIds).eq("status", "pending");
-      if (round > 0) await db.from("chat_messages").delete().eq("thread_id", thread.id).in("role", ["assistant", "tool"]).gt("created_at", userMsg.created_at);
-      out.proposalIds = [];
-      out.assistantMessageIds = [];
-      // only "not available now" (402 / 429 / 5xx / timeout / network) gets the notice; any other error (a bad request,
-      // a blocked reply) is a fault to fix, so it keeps a plain message and its reason in llm_calls
-      const friendly = e instanceof SpendCapError ? "مش هقدر أرد دلوقتي: وصلنا لحد الصرف التجريبي."
-        : e instanceof LlmUnavailableError ? UNAVAILABLE_TEXT
-        : "حصلت مشكلة وأنا بجهّز الرد. جرّب تكتبها تاني بشكل مختلف.";
-      const { data: m } = await db.from("chat_messages").insert({ thread_id: thread.id, role: "assistant", content: friendly }).select("id").single();
-      if (m) out.assistantMessageIds.push(m.id);
-      out.text = friendly;
-      out.error = msg;
-      return out;
+      return cutShort(e);
     }
     out.rounds = round + 1;
     const calls = res.toolCalls;
@@ -135,8 +178,9 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promis
     for (const call of calls) {
       if (isReadTool(call.name)) {
         try {
-          results.set(call.id, await runReadTool(db, call.name, call.args));
+          results.set(call.id, await withinTurn(runReadTool(db, call.name, call.args), clock));
         } catch (e) {
+          if (e instanceof TurnTimeLimitError) return cutShort(e);
           results.set(call.id, { error: e instanceof Error ? e.message : String(e) });
         }
         continue;
@@ -206,10 +250,11 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promis
       reply = "جهّزت لك بطاقة تأكيد. راجعها، ولما توافق أحفظها. مفيش حاجة اتحفظت لسه.";
     } else {
       try {
-        const r = await getLlm().chat({ system: `${system}\n\nاكتب دلوقتي رد قصير للمحامي بالعامية المصرية: لقيت إيه ومحتاج منه إيه، من غير ما تستدعي أدوات.`, messages: [...messages, { role: "user", text: "لخّص لي اللي وصلتله وقولّي محتاج مني إيه." }], meta });
+        const r = await chat({ system: `${system}\n\nاكتب دلوقتي رد قصير للمحامي بالعامية المصرية: لقيت إيه ومحتاج منه إيه، من غير ما تستدعي أدوات.`, messages: [...messages, { role: "user", text: "لخّص لي اللي وصلتله وقولّي محتاج مني إيه." }], meta });
         reply = r.text?.trim() ?? "";
       } catch (e) {
-        if (e instanceof LlmUnavailableError) reply = UNAVAILABLE_TEXT;
+        // not available now, or the turn's limit passed: the same single notice and cleanup as any other round
+        if (e instanceof LlmUnavailableError) return cutShort(e);
       }
       if (!reply) reply = "راجعت اللي عندي ولسه محتاج خطوة كمان. اكتب «كمّل» وأنا أجهّز البطاقة.";
     }

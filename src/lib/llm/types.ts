@@ -59,6 +59,10 @@ export interface ChatRequest {
   temperature?: number;
   maxOutputTokens?: number;
   meta: CallMeta;
+  /** Cancels the request (the chat turn's own time limit). Aborting = LlmUnavailableError. */
+  signal?: AbortSignal;
+  /** This call's time limit; the provider uses at most its own chat limit (60s). */
+  timeoutMs?: number;
 }
 
 export interface ChatResponse extends CallInfo {

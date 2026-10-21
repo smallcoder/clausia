@@ -7,6 +7,8 @@ import type {
 } from "./types";
 
 const API = "https://generativelanguage.googleapis.com/v1beta/models";
+/** One chat call's limit (owner decision 2026-10-21). */
+const CHAT_CALL_MS = 60_000;
 
 const CHAT_MODEL = () => process.env.LLM_CHAT_MODEL ?? "gemini-3.8-flash";
 const DOC_MODEL = () => process.env.LLM_DOC_MODEL ?? "gemini-3.5-flash-lite";
@@ -59,11 +61,18 @@ function cleanSchema(s: unknown): unknown {
   return s;
 }
 
-/** One request, no retries (owner decision): 402 / 429 / 5xx, a timeout or a network failure → LlmUnavailableError. */
-async function post(model: string, body: unknown, timeoutMs = 120_000): Promise<{ res: GeminiResponse; latencyMs: number }> {
+/**
+ * One request, no retries (owner decision): 402 / 429 / 5xx, a timeout or a network failure → LlmUnavailableError.
+ * `signal` (the chat turn's time limit) cancels it too, the same way.
+ */
+async function post(model: string, body: unknown, timeoutMs = 120_000, signal?: AbortSignal): Promise<{ res: GeminiResponse; latencyMs: number }> {
   const started = Date.now();
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  const timer = setTimeout(() => ctrl.abort(), Math.max(0, timeoutMs));
+  const cancel = () => ctrl.abort();
+  if (signal?.aborted) ctrl.abort();
+  else signal?.addEventListener("abort", cancel, { once: true });
+  const why = () => (signal?.aborted ? "Gemini call cancelled: the chat turn's time limit passed" : `Gemini timeout after ${timeoutMs}ms`);
   try {
     let r: Response;
     try {
@@ -74,14 +83,14 @@ async function post(model: string, body: unknown, timeoutMs = 120_000): Promise<
         signal: ctrl.signal,
       });
     } catch (e) {
-      throw new LlmUnavailableError(ctrl.signal.aborted ? `Gemini timeout after ${timeoutMs}ms` : `Gemini network error: ${e instanceof Error ? e.message : String(e)}`);
+      throw new LlmUnavailableError(ctrl.signal.aborted ? why() : `Gemini network error: ${e instanceof Error ? e.message : String(e)}`);
     }
     let json: GeminiResponse;
     try {
       json = (await r.json()) as GeminiResponse;
     } catch (e) {
       // the time limit can hit while the body is read; a body that is not JSON is a provider fault, never an empty reply
-      if (ctrl.signal.aborted) throw new LlmUnavailableError(`Gemini timeout after ${timeoutMs}ms`);
+      if (ctrl.signal.aborted) throw new LlmUnavailableError(why());
       if (isUnavailableStatus(r.status)) throw new LlmUnavailableError(`Gemini ${r.status}: no JSON body`, r.status);
       throw new GeminiError(`Gemini ${r.status}: response is not JSON (${e instanceof Error ? e.message : String(e)})`, r.status);
     }
@@ -93,6 +102,7 @@ async function post(model: string, body: unknown, timeoutMs = 120_000): Promise<
     return { res: json, latencyMs: Date.now() - started };
   } finally {
     clearTimeout(timer);
+    signal?.removeEventListener("abort", cancel);
   }
 }
 
@@ -145,8 +155,9 @@ export const gemini: LlmProvider = {
         : {}),
       generationConfig: genConfig(model, { temperature: req.temperature ?? 0.2, maxOutputTokens: req.maxOutputTokens ?? 8192 }),
     };
-    // a chat turn waits at most 60s for the model, then the chat shows the «not available» notice
-    const { res, latencyMs } = await post(model, body, 60_000);
+    // a chat call waits at most 60s for the model (less when the turn's own 2-minute limit is nearer), then the
+    // chat shows the «not available» notice
+    const { res, latencyMs } = await post(model, body, Math.min(CHAT_CALL_MS, req.timeoutMs ?? CHAT_CALL_MS), req.signal);
     const content = res.candidates?.[0]?.content ?? { role: "model", parts: [] };
     const parts = content.parts ?? [];
     const text = parts.filter((p) => typeof p.text === "string" && !p.thought).map((p) => p.text as string).join("");
