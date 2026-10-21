@@ -59,6 +59,7 @@
   --amber-bg: rgba(137,112,56,0.10);
   --amber-text: #897038;
   --paper-thumb: #F4F1EA;
+  --paper-thumb-ink: #7A2A20;              /* PDF / IMG label on a paper thumbnail */
   --court-tint: none;
   --hero: transparent;
   --hero-border: transparent;
@@ -137,6 +138,7 @@
   --amber-bg: rgba(214,192,143,0.10);
   --amber-text: #D6C08F;
   --paper-thumb: #ECE7DC;
+  --paper-thumb-ink: #7A2A20;
   --tile-hi-text: #D6C08F;
   --tile-hi-sub: #D6C08F;
   --shadow-card: inset 0 1px 0 rgba(255,255,255,0.04), 0 30px 60px -30px rgba(0,0,0,0.8);
@@ -194,6 +196,7 @@
   --amber-bg: rgba(214,192,143,0.10);
   --amber-text: #D6C08F;
   --paper-thumb: #ECE7DC;
+  --paper-thumb-ink: #7A2A20;
   --tile-hi-text: #D6C08F;
   --tile-hi-sub: #D6C08F;
   --shadow-card: inset 0 1px 0 rgba(255,255,255,0.04), 0 30px 60px -30px rgba(0,0,0,0.8);
