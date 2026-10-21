@@ -60,6 +60,7 @@
   --amber-text: #897038;
   --paper-thumb: #ECE7DC;
   --tab-shadow: 0 4px 10px -4px rgba(18,26,43,0.5);
+  --mark-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
   --paper-thumb-ink: #7A2A20;              /* PDF / IMG label on a paper thumbnail */
   --court-tint: none;
   --hero: transparent;
@@ -124,7 +125,8 @@
   --primary-bg: #F2F2F4;
   --on-primary: #111113;
   --primary-shadow: 0 6px 16px -6px rgba(0,0,0,0.7);
-  --tab-shadow: 0 4px 10px -4px rgba(0,0,0,0.5);
+  --tab-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 4px 10px -4px rgba(0,0,0,0.5);
+  --mark-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
   --gold: #D6C08F;
   --accent-base: #D6C08F;
   --accent-text: #D6C08F;
@@ -185,7 +187,8 @@
   --primary-bg: #F2F2F4;
   --on-primary: #111113;
   --primary-shadow: 0 6px 16px -6px rgba(0,0,0,0.7);
-  --tab-shadow: 0 4px 10px -4px rgba(0,0,0,0.5);
+  --tab-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 4px 10px -4px rgba(0,0,0,0.5);
+  --mark-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
   --gold: #D6C08F;
   --accent-base: #D6C08F;
   --accent-text: #D6C08F;

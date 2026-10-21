@@ -1,0 +1,11 @@
+PASS  a year the lawyer didn't say is refused
+PASS  a place is not a court
+PASS  stated number, year, court and circuit pass
+PASS  a stated numeric date passes
+PASS  a stated date with a month name passes
+PASS  a changed day is refused
+PASS  a changed case number is refused
+PASS  adding «الابتدائية» to a named court passes
+PASS  a stated year passes
+
+all checks passed

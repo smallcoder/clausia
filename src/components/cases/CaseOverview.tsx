@@ -34,7 +34,7 @@ export const Suggested = ({ label = "مقترحة · راجعها" }: { label?: 
 );
 
 /** The Clausia «C» mark (mockup: 32px / 11px radius / 15px on desktop, 26px / 9px / 12px on mobile; a hairline + inner light in dark). */
-const MARK = "mark font-num inline-flex shrink-0 items-center justify-center font-extrabold size-[26px] rounded-[9px] text-[12px] lg:size-8 lg:rounded-[11px] lg:text-[15px] dark:border dark:border-white/8 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]";
+const MARK = "mark font-num inline-flex shrink-0 items-center justify-center font-extrabold size-[26px] rounded-[9px] text-[12px] lg:size-8 lg:rounded-[11px] lg:text-[15px] dark:border dark:border-white/8 dark:shadow-[var(--mark-shadow)]";
 
 function pendingOf<T>(cf: CaseFile, table: string): T[] {
   return cf.pending_suggestions.filter((p) => p.table === table).map((p) => p.item as T);

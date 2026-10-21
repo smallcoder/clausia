@@ -16,7 +16,7 @@ async function ids() {
   const { data: c } = await db.from("cases").select("id").eq("case_number", "772").limit(1).maybeSingle();
   const { data: p } = await db.from("proposals").select("thread_id").not("document_id", "is", null).not("thread_id", "is", null).order("created_at", { ascending: false }).limit(1).maybeSingle();
   const { data: anyp } = await db.from("proposals").select("thread_id").not("thread_id", "is", null).order("created_at", { ascending: false }).limit(1).maybeSingle();
-  return { caseId: c?.id as string, threadId: (p?.thread_id ?? anyp?.thread_id) as string };
+  return { caseId: c?.id as string, threadId: (process.env.CHAT_THREAD ?? p?.thread_id ?? anyp?.thread_id) as string };
 }
 
 let state: Awaited<ReturnType<import("@playwright/test").BrowserContext["storageState"]>> | null = null;
@@ -55,6 +55,9 @@ async function shootLoading(browser: Browser, path: string, mobile: boolean, dar
   await page.goto(BASE + (path === "/" ? "/cases" : "/"), { waitUntil: "domcontentloaded", timeout: 60_000 });
   await page.waitForTimeout(1500);
   await page.route(/_rsc=/, async (r) => { await new Promise((ok) => setTimeout(ok, 15_000)); await r.continue().catch(() => {}); });
+  // prefetch first, as a real <Link> would, so the target route's own loading boundary is the one shown
+  await page.evaluate((p) => (window as unknown as { next: { router: { prefetch: (p: string) => void } } }).next.router.prefetch(p), path);
+  await page.waitForTimeout(400);
   await page.evaluate((p) => (window as unknown as { next: { router: { push: (p: string) => void } } }).next.router.push(p), path);
   await page.waitForSelector('[aria-busy="true"]', { timeout: 10_000 }).catch(() => {});
   await page.waitForTimeout(900);

@@ -313,13 +313,13 @@ export function extractionToOps({ ex, documentId, caseId, pages, existing }: Ops
     let hearingRef: string;
     if (have) {
       if (!clean(hr.decision)) { dropped.push({ tool: "add_hearing", reason: `الجلسة ${date} موجودة بالفعل في الدعوى` }); continue; }
-      if (clean(hr.location) && pageText.includes(clean(hr.location).split(/\s+/)[0])) push("set_hearing_location", { hearing: have.id, location: clean(hr.location) }, hr.page, clean(hr.quote));
+      if (clean(hr.location) && verifyQuote(clean(hr.location), [pageText])) push("set_hearing_location", { hearing: have.id, location: clean(hr.location) }, hr.page, clean(hr.quote));
       if (have.decided) { dropped.push({ tool: "record_decision", reason: `جلسة ${date} مسجّل لها قرار بالفعل` }); continue; }
       hearingRef = have.id;
     } else {
       const ref = `hearing${++h}`;
       const before = ops.length;
-      push("add_hearing", { ref, case: caseRef, date, purpose: clean(hr.next_requirements) && !clean(hr.decision) ? clean(hr.next_requirements) : undefined, location: clean(hr.location) && pageText.includes(clean(hr.location).split(/\s+/)[0]) ? clean(hr.location) : undefined }, hr.page, clean(hr.quote));
+      push("add_hearing", { ref, case: caseRef, date, purpose: clean(hr.next_requirements) && !clean(hr.decision) ? clean(hr.next_requirements) : undefined, location: clean(hr.location) && verifyQuote(clean(hr.location), [pageText]) ? clean(hr.location) : undefined }, hr.page, clean(hr.quote));
       if (ops.length === before || !clean(hr.decision)) continue;
       hearingRef = `@${ref}`;
     }
