@@ -7,12 +7,13 @@ import "server-only";
  * Storage: assistant rows keep tool_calls = {calls, raw} (raw = provider parts incl. thought signatures,
  * sent back unchanged); tool rows keep tool_calls = {results}. A card's proposal points at its assistant row.
  */
-import { formatDmy, normalizeDigits, todayIso } from "@/lib/dates";
+import { formatDmy, normalizeDigits, parseDmy, todayIso } from "@/lib/dates";
 import type { Json } from "@/lib/db/types";
 import { caseLabel } from "@/lib/labels";
 import { getLlm, LlmUnavailableError, SpendCapError, type LlmMessage, type LlmToolCall } from "@/lib/llm";
 import { UNAVAILABLE_TEXT } from "@/lib/llm/unavailable";
-import { createProposal, normalizeForMatch, type DraftOp, type Proposal } from "@/lib/proposals";
+import { createProposal, normalizeForMatch, type DraftOp, type Proposal, type ResolvedFrom } from "@/lib/proposals";
+import { resolveRelativeDays, type RelativeDay } from "@/lib/relative-days";
 import type { Db } from "@/lib/supabase/server";
 import { isReadTool, READ_TOOL_SPECS, runReadTool } from "@/lib/tools/read";
 import { isWriteTool, OP_TITLE, WRITE_TOOL_ARGS, writeToolSpecs } from "@/lib/tools/registry";
@@ -328,14 +329,32 @@ async function loadSourceTexts(db: Db, threadId: string): Promise<string[]> {
 const DATE_KEYS = ["date", "facts_date", "next_date", "appeal_deadline"] as const;
 const AR_MONTHS = ["يناير", "فبراير", "مارس", "أبريل|ابريل", "مايو", "يونيو", "يوليو", "أغسطس|اغسطس", "سبتمبر", "أكتوبر|اكتوبر", "نوفمبر", "ديسمبر"];
 
-/** Which proposed values are not backed by the source texts (lawyer's messages + attached papers). */
-export function notInSource(args: Record<string, unknown>, texts: string[]): string[] {
+/** The resolved relative day a proposed full date equals, per date arg (next_date → «بكرة» = 22/10/2026). */
+export function resolvedDatesOf(args: Record<string, unknown>, resolved: RelativeDay[]): Record<string, ResolvedFrom> {
+  const out: Record<string, ResolvedFrom> = {};
+  for (const k of DATE_KEYS) {
+    const v = args[k];
+    const p = typeof v === "string" ? parseDmy(v) : null;
+    const hit = p?.precision === "day" ? resolved.find((r) => r.iso === p.iso) : undefined;
+    if (hit) out[k] = { word: hit.word, iso: hit.iso, label: hit.label };
+  }
+  return out;
+}
+
+/**
+ * Which proposed values are not backed by the source texts (lawyer's messages + attached papers).
+ * `resolved`: relative days worked out by code from the LAWYER's words (never a paper's); a full date equal to
+ * one of them counts as stated.
+ */
+export function notInSource(args: Record<string, unknown>, texts: string[], resolved: RelativeDay[] = []): string[] {
   const src = normalizeDigits(texts.join("\n"));
   const norm = normalizeForMatch(src);
   const out: string[] = [];
+  const fromWords = resolvedDatesOf(args, resolved);
   for (const k of DATE_KEYS) {
     const v = args[k];
     if (typeof v !== "string" || !v.trim()) continue;
+    if (fromWords[k]) continue;
     const p = normalizeDigits(v).split(/[/\-.]/).map((x) => x.trim()).filter(Boolean);
     const year = p.at(-1) ?? "";
     if (year && !src.includes(year)) { out.push(`السنة ${year} في «${v}» مش مذكورة`); continue; }
