@@ -49,6 +49,10 @@ export function Composer({ target, placeholder = "اكتب لـ Clausia… ما 
     });
   }
 
+  function onKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); }
+  }
+
   function upload(f?: File) {
     if (!f || pending) return;
     setError(null);
@@ -90,34 +94,63 @@ export function Composer({ target, placeholder = "اكتب لـ Clausia… ما 
           })}
         </div>
       ) : null}
-      <div className={`border border-border bg-field ${hero ? "rounded-[28px] p-4 shadow-pop" : "rounded-[24px] p-3 shadow-card"}`}>
-        <textarea
-          ref={area}
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          rows={hero ? 3 : 1}
-          disabled={pending}
-          placeholder={short && placeholderShort ? placeholderShort : placeholder}
-          aria-label="رسالة إلى Clausia"
-          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }}
-          className={`block w-full resize-none bg-transparent px-2 text-text placeholder:text-text-4 focus:outline-none ${hero ? "min-h-[72px] py-1 text-[16px] leading-7" : "py-2 text-[15px] leading-6"}`}
-        />
-        <div className="mt-2 flex items-center gap-2">
-          <input ref={fileRef} type="file" accept="application/pdf,image/*" className="sr-only" onChange={(e) => upload(e.target.files?.[0] ?? undefined)} />
-          <input ref={camRef} type="file" accept="image/*" capture="environment" className="sr-only" onChange={(e) => upload(e.target.files?.[0] ?? undefined)} />
-          <RoundBtn label="إرفاق ورقة" onClick={() => fileRef.current?.click()} disabled={pending}><Paperclip size={19} strokeWidth={1.9} /></RoundBtn>
-          <RoundBtn label="تصوير ورقة" onClick={() => camRef.current?.click()} disabled={pending} className="sm:hidden"><Camera size={19} strokeWidth={1.9} /></RoundBtn>
-          <RoundBtn label="ملاحظة صوتية (قريبًا)" disabled><Mic size={19} strokeWidth={1.9} /></RoundBtn>
-          <div className="min-w-0 flex-1 truncate text-xs text-text-4" aria-live="polite">
-            {error ? <span className="text-bad">{error}</span> : status ?? "لن يُحفظ شيء قبل تأكيدك"}
+      <input ref={fileRef} type="file" accept="application/pdf,image/*" className="sr-only" onChange={(e) => upload(e.target.files?.[0] ?? undefined)} />
+      <input ref={camRef} type="file" accept="image/*" capture="environment" className="sr-only" onChange={(e) => upload(e.target.files?.[0] ?? undefined)} />
+      {hero ? (
+        <div className="rounded-[28px] border border-border bg-field p-4 shadow-pop">
+          <textarea
+            ref={area}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            rows={3}
+            disabled={pending}
+            placeholder={short && placeholderShort ? placeholderShort : placeholder}
+            aria-label="رسالة إلى Clausia"
+            onKeyDown={onKey}
+            className="block min-h-[72px] w-full resize-none bg-transparent px-2 py-1 text-[16px] leading-7 text-text placeholder:text-text-4 focus:outline-none"
+          />
+          <div className="mt-2 flex items-center gap-2">
+            <RoundBtn label="إرفاق ورقة" onClick={() => fileRef.current?.click()} disabled={pending}><Paperclip size={19} strokeWidth={1.9} /></RoundBtn>
+            <RoundBtn label="تصوير ورقة" onClick={() => camRef.current?.click()} disabled={pending} className="sm:hidden"><Camera size={19} strokeWidth={1.9} /></RoundBtn>
+            <RoundBtn label="ملاحظة صوتية (قريبًا)" disabled><Mic size={19} strokeWidth={1.9} /></RoundBtn>
+            <div className="min-w-0 flex-1 truncate text-xs text-text-4" aria-live="polite">
+              {error ? <span className="text-bad">{error}</span> : status ?? "لن يُحفظ شيء قبل تأكيدك"}
+            </div>
+            <SendBtn onClick={send} disabled={pending || !text.trim()} />
           </div>
-          <button type="button" onClick={send} disabled={pending || !text.trim()} aria-label="إرسال"
-            className="bg-primary-fill inline-flex size-11 shrink-0 items-center justify-center rounded-full transition disabled:opacity-50">
-            <ArrowUp size={20} strokeWidth={2.6} />
-          </button>
         </div>
-      </div>
+      ) : (
+        <>
+          {error || status ? <div className="mb-2 px-3 text-xs text-text-4" aria-live="polite">{error ? <span className="text-bad">{error}</span> : status}</div> : null}
+          {/* one-row pill (Roll / Case / Cases mockups): attach + mic at the start, input, send at the end */}
+          <div className="flex items-center gap-2 rounded-[26px] border border-border bg-field p-2 shadow-pop">
+            <RoundBtn label="إرفاق ورقة" onClick={() => fileRef.current?.click()} disabled={pending}><Paperclip size={18} strokeWidth={1.9} /></RoundBtn>
+            <RoundBtn label="ملاحظة صوتية (قريبًا)" disabled className="hidden sm:inline-flex"><Mic size={18} strokeWidth={1.9} /></RoundBtn>
+            <textarea
+              ref={area}
+              value={text}
+              onChange={(e) => { setText(e.target.value); e.currentTarget.style.height = "auto"; e.currentTarget.style.height = `${Math.min(e.currentTarget.scrollHeight, 140)}px`; }}
+              rows={1}
+              disabled={pending}
+              placeholder={short && placeholderShort ? placeholderShort : placeholder}
+              aria-label="رسالة إلى Clausia"
+              onKeyDown={onKey}
+              className="block h-11 min-w-0 flex-1 resize-none bg-transparent px-1 py-[10px] text-[16px] leading-6 text-text placeholder:text-text-4 focus:outline-none"
+            />
+            <SendBtn onClick={send} disabled={pending || !text.trim()} />
+          </div>
+        </>
+      )}
     </div>
+  );
+}
+
+function SendBtn({ onClick, disabled }: { onClick: () => void; disabled: boolean }) {
+  return (
+    <button type="button" onClick={onClick} disabled={disabled} aria-label="إرسال"
+      className="bg-primary-fill inline-flex size-11 shrink-0 items-center justify-center rounded-full transition disabled:opacity-50">
+      <ArrowUp size={20} strokeWidth={2.6} />
+    </button>
   );
 }
 

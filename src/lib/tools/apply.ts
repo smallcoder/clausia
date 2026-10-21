@@ -3,7 +3,7 @@ import "server-only";
  * Execute ONE write op (after the lawyer confirmed it, or for the lawyer's own inline edits).
  * Uses the caller's RLS-bound client, so a user can only ever write into their own office.
  */
-import { parseDmy } from "@/lib/dates";
+import { formatDmy, parseDmy, todayIso } from "@/lib/dates";
 import type { Db } from "@/lib/supabase/server";
 import type { Database } from "@/lib/db/types";
 import { WRITE_TOOL_ARGS, type WriteArgs, type WriteTool } from "./registry";
@@ -145,6 +145,9 @@ export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Prov
     case "record_decision": {
       const x = a as WriteArgs<"record_decision">;
       const id = resolveRef(x.hearing, refs)!;
+      // a decision can only be recorded for a hearing that has happened (today or before, Africa/Cairo)
+      const { data: hh } = await db.from("hearings").select("hearing_date").eq("id", id).maybeSingle();
+      if (hh && hh.hearing_date > todayIso()) throw new Error(`لا يمكن تسجيل قرار لجلسة لم تُعقد بعد (${formatDmy(hh.hearing_date)})`);
       const nd = date(x.next_date);
       const { data, error } = await db.rpc("record_hearing_decision", {
         p_hearing_id: id, p_decision: x.decision, p_decision_text: x.decision_text ?? undefined,

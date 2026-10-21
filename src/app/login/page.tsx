@@ -14,7 +14,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <div className="flex items-center justify-center gap-2.5">
-            <span className="mark font-num inline-flex size-10 items-center justify-center rounded-xl text-[22px] font-black shadow-[0_4px_10px_rgba(18,26,43,0.3)]">C</span>
+            <span className="mark font-num inline-flex size-10 items-center justify-center rounded-xl text-[22px] font-black shadow-mark">C</span>
             <span className="font-num text-[28px] font-extrabold tracking-[-0.02em] text-text">Clausia</span>
           </div>
           <p className="mt-3 text-[15px] text-text-3">ملف القضية، يُملأ بالمحادثة مع Clausia</p>

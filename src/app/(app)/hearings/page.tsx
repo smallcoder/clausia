@@ -1,6 +1,6 @@
 // OWNER: roll agent — رول الجلسات (docs/design/*Roll.dc.html): hero with real counts, the week's day strip,
 // hearings grouped by court, a decision sheet per row, and the Clausia composer. ?view=week, ?filter=undecided.
-import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, ListFilter } from "lucide-react";
 import Link from "next/link";
 import { RollRow, RollSheet } from "@/components/hearings/RollSheet";
 import { nCourts, nHearings, dayCount, hearingTitle } from "@/components/hearings/roll-text";
@@ -106,6 +106,8 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
             : <>{when} فيه {nHearings(rows.length)} في {nCourts(nCourt)}.</>;
 
   const chips = [
+    // mockup: the accent chip with the real count of past hearings that still need a decision
+    ...(undecidedCount ? [{ label: `${undecidedCount} ${undecidedCount === 1 ? "جلسة فاتت محتاجة قرار" : undecidedCount <= 10 ? "جلسات فاتت محتاجة قرار" : "جلسة فاتت محتاجة قرار"}`, short: `${undecidedCount} محتاجة قرار`, accent: true, href: "/hearings?filter=undecided" }] : []),
     ...(firstUndecided ? [{ label: `سجّل قرار جلسة ${hearingTitle(firstUndecided).split(" — ")[0]} (${dmy(firstUndecided.hearing_date)})`, short: `سجّل قرار جلسة ${dmy(firstUndecided.hearing_date)}`, text: `قرار جلسة ${hearingTitle(firstUndecided)} يوم ${dmy(firstUndecided.hearing_date)}: ` }] : []),
     { label: "إيه المطلوب مني بكرة؟", text: "إيه المطلوب مني بكرة؟" },
     { label: "اتأجلت لـ…", text: "اتأجلت لـ " },
@@ -114,11 +116,12 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
 
   const isCurrent = view === "week" ? wk === thisWk : date === today;
   const step = view === "week" ? 7 : 1;
-  const navBtn = "inline-flex size-9 items-center justify-center rounded-full border border-border bg-chip text-text-2 shadow-soft transition hover:text-text";
+  const navBtn = "inline-flex size-11 sm:size-9 items-center justify-center rounded-full border border-border bg-chip text-text-2 shadow-soft transition hover:text-text";
 
   return (
     <div className="mx-auto flex w-full max-w-[1040px] flex-1 flex-col px-2.5 pt-2.5 sm:px-10 sm:pt-4">
       <PageHero
+        action={<Link href="/hearings?filter=undecided" aria-label="الجلسات المحتاجة قرار" title="الجلسات المحتاجة قرار" className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-card-2 text-text"><ListFilter size={19} strokeWidth={2} aria-hidden /></Link>}
         back="/"
         icon={<CalendarDays size={28} strokeWidth={2} aria-hidden />}
         eyebrow={<>{period}{office && !undecidedMode ? <span className="hidden sm:inline"> · {office}</span> : null}</>}
@@ -141,7 +144,7 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
             <div className="inline-flex rounded-full border border-border bg-card-2 p-[3px] text-[13px]">
               {(["day", "week"] as const).map((v) => (
                 <Link key={v} href={href(v, date)} aria-current={v === view ? "page" : undefined}
-                  className={cx("inline-flex h-[30px] items-center rounded-full px-4 transition", v === view ? "bg-card font-bold text-text shadow-soft" : "text-text-3 hover:text-text")}>
+                  className={cx("inline-flex h-10 items-center rounded-full px-4 transition sm:h-[30px]", v === view ? "bg-card font-bold text-text shadow-soft" : "text-text-3 hover:text-text")}>
                   {v === "day" ? "يوم" : "أسبوع"}
                 </Link>
               ))}
@@ -150,7 +153,7 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
           {undecidedMode ? null : (
             <div className="flex items-center gap-1.5">
               <Link href={href(view, addDaysIso(date, -step))} aria-label={view === "week" ? "الأسبوع السابق" : "اليوم السابق"} className={navBtn}><ChevronRight size={18} strokeWidth={2} aria-hidden /></Link>
-              {isCurrent ? null : <Link href={href(view, today)} className="inline-flex h-9 items-center rounded-full border border-border bg-chip px-3.5 text-[13px] font-semibold text-text shadow-soft">النهارده</Link>}
+              {isCurrent ? null : <Link href={href(view, today)} className="inline-flex h-11 sm:h-9 items-center rounded-full border border-border bg-chip px-3.5 text-[13px] font-semibold text-text shadow-soft">النهارده</Link>}
               <Link href={href(view, addDaysIso(date, step))} aria-label={view === "week" ? "الأسبوع التالي" : "اليوم التالي"} className={navBtn}><ChevronLeft size={18} strokeWidth={2} aria-hidden /></Link>
             </div>
           )}

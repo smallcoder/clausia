@@ -46,6 +46,15 @@ export async function composerUploadAction(target: ComposerTarget, form: FormDat
   form.set("threadId", threadId);
   if (target.kind === "case") form.set("caseId", target.caseId);
   const r = await uploadDocumentAction(form);
+  if (!r.ok && !r.warning) {
+    // a failed upload into a brand-new conversation must not leave an empty thread behind
+    if (target.kind === "new") {
+      const { count } = await db.from("chat_messages").select("id", { count: "exact", head: true }).eq("thread_id", threadId);
+      if (!count) await db.from("chat_threads").delete().eq("id", threadId);
+      return { error: r.error ?? "تعذّر رفع الملف" };
+    }
+    return { threadId, error: r.error };
+  }
   revalidatePath(`/chat/${threadId}`);
-  return r.ok || r.warning ? { threadId } : { threadId, error: r.error };
+  return { threadId };
 }

@@ -1,6 +1,6 @@
 // Case page (docs/design/*Case.dc.html): hero, then the case overview (default) or one of the reachable views
 // (?tab=hearings | documents | details; ?tab=chat goes to the case thread). The Clausia composer is at the bottom.
-import { ChevronRight, Scale } from "lucide-react";
+import { ChevronRight, Scale, Ellipsis } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { DocumentsTab } from "@/components/case-tabs/DocumentsTab";
@@ -57,6 +57,7 @@ export default async function CasePage({ params, searchParams }: { params: Promi
   return (
     <div className="mx-auto flex w-full max-w-[1120px] flex-1 flex-col px-2.5 pt-2.5 sm:px-10 sm:pt-4">
       <PageHero
+        action={<Link href={`/cases/${id}?tab=details`} aria-label="بيانات الدعوى" title="بيانات الدعوى" className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-card-2 text-text"><Ellipsis size={19} strokeWidth={2} aria-hidden /></Link>}
         back="/cases"
         icon={<Scale className="size-[27px] sm:size-[30px]" strokeWidth={2} aria-hidden />}
         eyebrow={heroEyebrow(cf)}
@@ -70,7 +71,7 @@ export default async function CasePage({ params, searchParams }: { params: Promi
         stats={[
           { value: cf.facts.length, label: "وقائع", href: `/cases/${id}#facts` },
           { value: cf.documents.length, label: "مستندات", href: `/cases/${id}?tab=documents` },
-          { value: pending, label: "محتاجة مراجعة", highlight: pending > 0, href: pending ? `/cases/${id}${pendingHref(cf)}` : undefined },
+          { value: pending, label: "محتاجة مراجعة", highlight: true, href: pending ? `/cases/${id}${pendingHref(cf)}` : undefined },
         ]}
       />
 

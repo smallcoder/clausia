@@ -13,7 +13,7 @@ const NAV = [
 export function ClausiaMark({ size = 30 }: { size?: number }) {
   return (
     <span style={{ width: size, height: size, fontSize: size * 0.57 }}
-      className="font-num inline-flex shrink-0 items-center justify-center mark rounded-lg font-black shadow-[0_4px_10px_rgba(18,26,43,0.3)]">
+      className="font-num inline-flex shrink-0 items-center justify-center mark rounded-lg font-black shadow-mark">
       C
     </span>
   );
@@ -31,7 +31,7 @@ export function AppHeader({ initials, officeName, email }: { initials: string; o
     return () => document.removeEventListener("mousedown", close);
   }, [open]);
   return (
-    <header className={`mx-auto ${path.startsWith("/chat/") ? "hidden sm:flex" : "flex"} h-14 w-full max-w-[1240px] items-center gap-1.5 px-3.5 sm:h-[72px] sm:gap-2.5 sm:px-10`}>
+    <header className={`mx-auto ${path === "/" ? "flex" : "hidden sm:flex"} h-14 w-full max-w-[1240px] items-center gap-1.5 px-3.5 sm:h-[72px] sm:gap-2.5 sm:px-10`}>
       <Link href="/" className="flex flex-1 items-center gap-2 sm:gap-2.5" aria-label="Clausia — الرئيسية">
         <ClausiaMark />
         <span className="font-num text-[17px] font-extrabold tracking-[-0.02em] text-text sm:text-lg">Clausia</span>

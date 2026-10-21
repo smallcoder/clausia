@@ -14,7 +14,7 @@ type Tone = "good" | "gold" | "warn" | "neutral" | "bad";
 const TONE: Record<Tone, string> = {
   good: "bg-good-bg text-good",
   gold: "bg-[var(--accent-wash)] text-gold-text",
-  warn: "bg-warn-bg text-warn",
+  warn: "bg-[var(--amber-bg)] text-[var(--amber-text)]",
   neutral: "bg-card-2 text-text-3",
   bad: "bg-bad-bg text-bad",
 };
@@ -49,7 +49,8 @@ export function CaseListRow({ r, today, needsReview }: { r: CaseRow; today: stri
   const title = caseTitle(r);
   const where = [r.court, r.circuit].filter(Boolean).join(" · ");
   const next = r.next_hearing ? dateLabel(r.next_hearing, today) : null;
-  const status = needsReview ? <Chip tone="warn">محتاجة مراجعة</Chip> : <Chip tone={STATUS_TONE[r.status]}>{CASE_STATUS[r.status]}</Chip>;
+  // the real status always shows; «needs review» is an extra amber marker (Fable review)
+  const status = <span className="inline-flex flex-wrap items-center gap-1.5"><Chip tone={STATUS_TONE[r.status]}>{CASE_STATUS[r.status]}</Chip>{needsReview ? <Chip tone="warn">محتاجة مراجعة</Chip> : null}</span>;
   return (
     <li className="border-b border-border-2 last:border-b-0">
       <Link href={`/cases/${r.id}`}
@@ -86,9 +87,8 @@ export function CaseListRow({ r, today, needsReview }: { r: CaseRow; today: stri
           <span className={`block text-xs font-bold ${next ? (next.soon ? "text-gold-text" : "text-text-2") : "font-normal text-text-4"}`}>
             {next ? <span className={next.soon ? "" : "num font-num"}>{next.text}</span> : "لا جلسة"}
           </span>
-          <span className={`mt-px block text-[10px] ${needsReview ? "font-bold text-warn" : "text-text-4"}`}>
-            {needsReview ? "محتاجة مراجعة" : CASE_STATUS[r.status]}
-          </span>
+          <span className="mt-px block text-[10px] text-text-4">{CASE_STATUS[r.status]}</span>
+          {needsReview ? <span className="mt-px block text-[10px] font-bold text-[var(--amber-text)]">محتاجة مراجعة</span> : null}
         </span>
       </Link>
     </li>

@@ -1,7 +1,7 @@
 // Cases list (docs/design/*Cases.dc.html): hero with real stats, search (?q=) across number, year, title, court,
 // circuit, client and party names; chips for status (?status=), «محتاجة مراجعة» (?review=1) and stage (?stage=);
 // one row per case; the shared Composer for a new case at the bottom.
-import { FolderClosed } from "lucide-react";
+import { FolderClosed, ListFilter } from "lucide-react";
 import Link from "next/link";
 import { CaseListHeader, CaseListRow } from "@/components/caselist/CaseListRow";
 import { FilterChips, StageMenu, type ListParams } from "@/components/caselist/FilterChips";
@@ -49,6 +49,7 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
   return (
     <div className="mx-auto flex w-full max-w-[1040px] flex-1 flex-col px-4 pt-2 sm:px-10 sm:pt-4">
       <PageHero
+        action={<Link href="/cases?review=1" aria-label="القضايا المحتاجة مراجعة" title="القضايا المحتاجة مراجعة" className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-card-2 text-text"><ListFilter size={19} strokeWidth={2} aria-hidden /></Link>}
         className="-mx-1.5 sm:mx-0"
         back="/"
         icon={<FolderClosed size={28} strokeWidth={2} aria-hidden />}

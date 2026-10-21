@@ -21,11 +21,11 @@ function Chip({ on, to, tone = "plain", children }: { on: boolean; to: string; t
   const cls = on
     ? "bg-primary-fill border-transparent font-bold"
     : tone === "warn"
-      ? "border-border bg-warn-bg text-warn shadow-soft"
+      ? "border-border bg-[var(--amber-bg)] text-[var(--amber-text)] shadow-soft"
       : "border-border bg-chip text-text-2 shadow-soft hover:text-text";
   return (
     <Link href={to} aria-current={on ? "true" : undefined}
-      className={`inline-flex h-8 shrink-0 items-center whitespace-nowrap rounded-full border px-3 text-[12.5px] font-semibold transition sm:h-[34px] sm:px-3.5 sm:text-[13px] ${cls}`}>
+      className={`inline-flex h-11 shrink-0 items-center whitespace-nowrap rounded-full border px-3 text-[12.5px] font-semibold transition sm:h-[34px] sm:px-3.5 sm:text-[13px] ${cls}`}>
       {children}
     </Link>
   );
@@ -38,7 +38,7 @@ export function FilterChips({ sp, counts, review }: { sp: ListParams; counts: Co
   const statuses = (Object.keys(CASE_STATUS) as (keyof typeof CASE_STATUS)[]).filter((k) => counts.status[k] > 0 || sp.status === k);
   return (
     <nav aria-label="تصفية حسب الحالة"
-      className="no-scrollbar -mx-4 mt-2 flex items-center gap-1.5 overflow-x-auto px-4 py-1 sm:mx-0 sm:mt-2.5 sm:gap-2 sm:px-0">
+      className="mt-2 flex flex-wrap items-center gap-1.5 py-1 sm:mx-0 sm:mt-2.5 sm:gap-2 sm:px-0">
       <Chip on={!sp.status && !sp.review} to={casesHref(sp, { status: undefined, review: undefined })}>الكل<Count n={counts.total} /></Chip>
       {statuses.map((k) => (
         <Chip key={k} on={sp.status === k} to={casesHref(sp, { status: k, review: undefined })}>{CASE_STATUS[k]}<Count n={counts.status[k]} /></Chip>
@@ -57,7 +57,7 @@ export function StageMenu({ sp, counts }: { sp: ListParams; counts: Counts }) {
   return (
     <details className="group relative shrink-0">
       <summary aria-label="تصفية حسب الدرجة"
-        className={`flex h-8 cursor-pointer list-none items-center gap-1 rounded-full border px-3 text-[12.5px] font-semibold [&::-webkit-details-marker]:hidden ${current ? "bg-primary-fill border-transparent" : "border-border bg-card-2 text-text-2"}`}>
+        className={`flex h-11 cursor-pointer list-none items-center gap-1 rounded-full border px-3 text-[12.5px] font-semibold [&::-webkit-details-marker]:hidden ${current ? "bg-primary-fill border-transparent" : "border-border bg-card-2 text-text-2"}`}>
         {current ? current : <><ListFilter size={15} strokeWidth={2.1} aria-hidden className="sm:hidden" /><span className="hidden sm:inline">كل الدرجات</span></>}
         <ChevronDown size={14} strokeWidth={2.2} aria-hidden className={`transition group-open:rotate-180 ${current ? "" : "hidden sm:block"}`} />
       </summary>
