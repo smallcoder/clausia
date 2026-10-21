@@ -472,7 +472,8 @@ export async function processDocument(db: Db, documentId: string, opts: { thread
     result.needsClient = true;
     const names = [...new Set(result.ops.filter((o) => o.tool === "add_party").map((o) => String(o.args.name)))].slice(0, 4);
     const ask = names.length ? `قبل ما أجهّز ملف القضية: مين موكلك؟ ${names.map((n) => `«${n}»`).join(" ولا ")}؟` : "قبل ما أجهّز ملف القضية: مين موكلك؟";
-    await db.from("chat_messages").update({ content: `${content}\n\n${ask}` }).eq("id", msg.id);
+    const said = content.split("\n").filter((l) => !l.includes("البطاقة")).join("\n").trim(); // no card yet
+    await db.from("chat_messages").update({ content: `${said}\n\n${ask}` }).eq("id", msg.id);
     return result;
   }
 
