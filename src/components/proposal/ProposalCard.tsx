@@ -2,10 +2,10 @@
 /**
  * Confirmation card (docs/design/*Chat*.dc.html v2, «ملف قضية جديد»): a solid card with hairline rows, one per op:
  * kind · value (source under it) · a thin gold check that selects it. Only fact rows carry their quote (Naskh,
- * clamped); every row's full verbatim quote is in its expand (tap the row). At rest the footer is exactly the
- * mockup's pair: «احفظ · N» (ink/white, no gold) saves the selected rows, «عدّل» opens every row; with the rows open
- * (and in the mobile sheet) «احفظ كمقترحات» / «ارفض الكل» sit quietly under the pair. Each row expands to its
- * fields, its source and quote, and ✓ / تعديل / ✗ for that row alone. Nothing is saved without a tap.
+ * clamped); every row's full verbatim quote is in its expand (tap the row). «احفظ · N» (ink/white, no gold) saves
+ * the selected rows and «عدّل» opens every row; «احفظ كمقترحات» / «ارفض الكل» sit quietly under the pair (not in the
+ * mockup: kept pending an owner decision). Each row expands to its fields, its source and quote, and ✓ / تعديل / ✗
+ * for that row alone. Nothing is saved without a tap.
  * Mobile (<1024px): the card shows its first rows inline; «عدّل» / «كل العناصر» open it in a bottom sheet.
  * A decided card collapses to one line «اتحفظ N عنصر · افتح الملف» (expandable).
  * Other features render it by passing the proposal object (+ a lookup of uuid → display name, `buildProposalLookup`).
@@ -360,7 +360,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
 
         {error ? <p className="mx-4 mt-3 shrink-0 rounded-xl bg-bad-bg px-3 py-2 text-[13.5px] text-bad sm:mx-[22px]">{error}</p> : null}
 
-        <div className={cx("shrink-0 border-t border-[var(--hairline-v2)] px-4 pt-3.5 sm:px-[22px]", openOps.length && (inSheet || allOpenExpanded) ? "pb-2" : "pb-4", inSheet && "pb-[calc(0.5rem+env(safe-area-inset-bottom))]")}>
+        <div className={cx("shrink-0 border-t border-[var(--hairline-v2)] px-4 pt-3.5 sm:px-[22px]", openOps.length ? "pb-2" : "pb-4", inSheet && "pb-[calc(0.5rem+env(safe-area-inset-bottom))]")}>
           {openOps.length ? (
             <>
               <div className="flex gap-2">
@@ -376,14 +376,14 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
                   )}
                 </button>
               </div>
-              {/* the other decisions: under the pair once «عدّل» has opened the rows (and always in the sheet); at rest
-                  the footer is only the mockup's pair */}
-              {inSheet || allOpenExpanded ? <div className="mt-1 flex flex-wrap items-center justify-center gap-x-1">
+              {/* the other decisions stay one tap away, quietly, under the main pair (not in the mockup's footer:
+                  kept until the owner decides where they go) */}
+              <div className="mt-1 flex flex-wrap items-center justify-center gap-x-1">
                 <button type="button" disabled={pending || !chosen.length} onClick={() => decide("suggest", chosen.map((o) => o.op_id))} className={quiet}>احفظ كمقترحات</button>
                 <span aria-hidden className="text-text-4">·</span>
                 <button type="button" disabled={pending} onClick={() => decide("reject", openOps.map((o) => o.op_id))} className={cx(quiet, "hover:text-bad")}>ارفض الكل</button>
                 {caseLink ? <><span aria-hidden className="text-text-4">·</span><Link href={`/cases/${caseLink}`} className={cx(quiet, "font-semibold text-text-2")}>فتح ملف القضية ←</Link></> : null}
-              </div> : null}
+              </div>
             </>
           ) : (
             <div className="flex flex-wrap items-center justify-between gap-2">
