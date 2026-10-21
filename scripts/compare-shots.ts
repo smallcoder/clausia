@@ -48,6 +48,20 @@ async function shootApp(browser: Browser, path: string, mobile: boolean, dark: b
   await ctx.close();
 }
 
+/** The loading skeleton: navigate in-app from Home with the page's data request held back, then shoot. */
+async function shootLoading(browser: Browser, path: string, mobile: boolean, dark: boolean, out: string) {
+  const ctx = await browser.newContext({ storageState: await session(browser), viewport: { width: mobile ? 390 : 1440, height: mobile ? 844 : 960 }, deviceScaleFactor: mobile ? 2 : 1, locale: "ar-EG", timezoneId: "Africa/Cairo", colorScheme: dark ? "dark" : "light" });
+  const page = await ctx.newPage();
+  await page.goto(BASE + (path === "/" ? "/cases" : "/"), { waitUntil: "domcontentloaded", timeout: 60_000 });
+  await page.waitForTimeout(1500);
+  await page.route(/_rsc=/, async (r) => { await new Promise((ok) => setTimeout(ok, 15_000)); await r.continue().catch(() => {}); });
+  await page.evaluate((p) => (window as unknown as { next: { router: { push: (p: string) => void } } }).next.router.push(p), path);
+  await page.waitForSelector('[aria-busy="true"]', { timeout: 10_000 }).catch(() => {});
+  await page.waitForTimeout(900);
+  await page.screenshot({ path: out });
+  await ctx.close();
+}
+
 async function main() {
   const { caseId, threadId } = await ids();
   const routes: Record<string, string> = { Home: "/", Chat: `/chat/${threadId}`, Case: `/cases/${caseId}`, Roll: "/hearings", Cases: "/cases" };
@@ -75,6 +89,17 @@ async function main() {
       await page.screenshot({ path: `screenshots/compare/${name}.png`, fullPage: true });
       await ctx.close();
       console.log(name, path);
+      if (width === 1440 || mobile) {
+        const lapp = resolve(`screenshots/app/${base}-loading.png`);
+        await shootLoading(browser, path, mobile, dark, lapp);
+        const lhtml = html.replace(`App · ${path} (${width}px)`, `App loading · ${path} (${mobile ? 390 : 1440}px)`).replace(readFileSync(app).toString("base64"), readFileSync(lapp).toString("base64"));
+        const lctx = await browser.newContext({ viewport: { width: mw * 2 + 56, height: 800 } });
+        const lpage = await lctx.newPage();
+        await lpage.setContent(lhtml, { waitUntil: "load" });
+        await lpage.screenshot({ path: `screenshots/compare/${base}-loading.png`, fullPage: true });
+        await lctx.close();
+        console.log(`${base}-loading`, path);
+      }
     }
   }
   await browser.close();
