@@ -1,7 +1,7 @@
 // The roll's continuous day strip (owner request 2026-10-21), against a running server, logged in as the demo user.
 // Reads the demo hearings (publishable key + demo login, read-only) to pick the days and Fridays it checks.
-// Run: npx tsx --env-file=.env.local scripts/test-roll-strip.ts [baseUrl]   (default http://localhost:3100)
-import { chromium, type Browser, type BrowserContext, type Page } from "@playwright/test";
+// Run: npx tsx --env-file=.env.local scripts/test-roll-strip.ts [baseUrl]   (default http://localhost:3100; BROWSER=webkit for Safari's engine)
+import { chromium, webkit, type Browser, type BrowserContext, type Page } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 
 const BASE = process.argv[2] ?? "http://localhost:3100";
@@ -64,13 +64,22 @@ const firstInView = (page: Page) => page.evaluate(() => {
   const t = [...document.querySelectorAll<HTMLElement>("[data-day]")].find((el) => { const q = el.getBoundingClientRect(); return (q.left + q.right) / 2 < start; })!;
   return { day: t.dataset.day!, off: t.getBoundingClientRect().right - start, x: t.getBoundingClientRect().left };
 });
+/** the tile is fully inside the strip's view, scroll-padding (the arrow zones) excluded */
 const inView = (page: Page, iso: string) => page.evaluate((d) => {
-  const sc = document.querySelector<HTMLElement>("[data-roll-scroller]")!.getBoundingClientRect();
-  const el = document.querySelector<HTMLElement>(`[data-day="${d}"]`);
-  if (!el) return false;
-  const q = el.getBoundingClientRect();
-  return q.left >= sc.left - 1 && q.right <= sc.right + 1;
+  const el = document.querySelector<HTMLElement>("[data-roll-scroller]")!;
+  const sc = el.getBoundingClientRect();
+  const cs = getComputedStyle(el);
+  const pl = parseFloat(cs.scrollPaddingLeft) || 0, pr = parseFloat(cs.scrollPaddingRight) || 0;
+  const t = document.querySelector<HTMLElement>(`[data-day="${d}"]`);
+  if (!t) return false;
+  const q = t.getBoundingClientRect();
+  return q.left >= sc.left + pl - 1 && q.right <= sc.right - pr + 1;
 }, iso);
+/** x of every tile that overlaps the strip's view */
+const visibleXs = (page: Page) => page.evaluate(() => {
+  const sc = document.querySelector<HTMLElement>("[data-roll-scroller]")!.getBoundingClientRect();
+  return [...document.querySelectorAll<HTMLElement>("[data-day]")].map((t) => ({ d: t.dataset.day!, l: t.getBoundingClientRect().left, r: t.getBoundingClientRect().right })).filter((t) => t.r > sc.left && t.l < sc.right);
+});
 const tile = (page: Page, iso: string) => page.locator(`[data-day="${iso}"]`);
 const chip = (page: Page) => page.getByRole("button", { name: "النهارده", exact: true });
 
@@ -85,7 +94,8 @@ async function open(ctx: BrowserContext, path: string) {
 
 async function main() {
   const counts = await hearingDays();
-  const browser = await chromium.launch();
+  const browser = await (process.env.BROWSER === "webkit" ? webkit : chromium).launch();
+  console.log(`engine: ${browser.browserType().name()}`);
   const state = await login(browser);
   const ctxOpts = { storageState: state, locale: "ar-EG", timezoneId: "Africa/Cairo" } as const;
   const desktop = await browser.newContext({ ...ctxOpts, viewport: { width: 1440, height: 960 } });
@@ -177,6 +187,13 @@ async function main() {
     check("keyboard: URL follows", urlDate(page) === dmy(target), page.url());
   }
 
+  // ---- screen readers: a polite status with the month and the selected day ------------------------------------------
+  {
+    const st = page.locator("[data-roll-status]");
+    const txt = (await st.textContent())?.trim() ?? "";
+    check("live status: polite, names the month and the selected day", (await st.getAttribute("aria-live")) === "polite" && /\d{4}/.test(txt) && txt.includes(` ${Number(target.slice(8))} `), txt);
+  }
+
   // ---- «النهارده» chip --------------------------------------------------------------------------------------------
   {
     for (let i = 0; i < 2; i++) { await page.getByRole("button", { name: "الأسبوع الجاي" }).click(); await page.waitForTimeout(450); }
@@ -222,13 +239,30 @@ async function main() {
     const far = add(sat(today), 7 * 12);
     await page.evaluate((d) => document.querySelector<HTMLElement>(`[data-day="${d}"]`)!.scrollIntoView({ inline: "start", block: "nearest", behavior: "instant" }), far);
     await page.waitForTimeout(50);
-    const f0 = await firstInView(page);
+    const x0 = await visibleXs(page);
     await page.waitForTimeout(2500);
-    const f1 = await firstInView(page);
-    check("far week: the view stays still while counts load", f0.day === f1.day && Math.abs(f0.x - f1.x) < 1, `${JSON.stringify(f0)} → ${JSON.stringify(f1)}`);
+    const x1 = await visibleXs(page);
+    const moved = x0.filter((a) => { const b = x1.find((t) => t.d === a.d); return !b || Math.abs(a.l - b.l) >= 1; });
+    check("far week: no tile in view moves (or appears/disappears) while counts load", moved.length === 0 && x0.length === x1.length, `${moved.map((m) => m.d)} · ${x0.length}→${x1.length}`);
     const want = Array.from({ length: 7 }, (_, i) => add(far, i)).filter((d) => wd(d) !== 5).map((d) => counts.get(d) ?? 0);
     const got = await page.evaluate((d) => [0, 1, 2, 3, 4, 6].map((i) => { const [y, m, dd] = d.split("-").map(Number); const t = new Date(Date.UTC(y, m - 1, dd + i)); const iso = t.toISOString().slice(0, 10); return document.querySelectorAll(`[data-day="${iso}"] > span[aria-hidden] > span`).length; }), far);
     check("far week: its dots match the database", JSON.stringify(got) === JSON.stringify(want.map((n) => Math.min(n, 6))), `${got} vs ${want}`);
+  }
+
+  // ---- the ends of the range: the button that cannot move is disabled ------------------------------------------------
+  {
+    const p6 = await open(desktop, `/hearings?view=day&date=${dmy(today)}`);
+    const next = p6.getByRole("button", { name: "الأسبوع الجاي" });
+    check("next enabled in the middle of the range", (await next.getAttribute("aria-disabled")) === null);
+    await p6.evaluate(() => { const t = [...document.querySelectorAll<HTMLElement>("[data-day]")].pop()!; t.scrollIntoView({ inline: "end", block: "nearest", behavior: "instant" }); });
+    await p6.waitForTimeout(500);
+    const f0 = await firstInView(p6);
+    check("next disabled at the end of the range", (await next.getAttribute("aria-disabled")) === "true");
+    await next.click({ force: true });
+    await p6.waitForTimeout(400);
+    check("a disabled next does nothing", (await firstInView(p6)).day === f0.day);
+    check("prev still enabled there", (await p6.getByRole("button", { name: "الأسبوع اللي فات" }).getAttribute("aria-disabled")) === null);
+    await p6.close();
   }
 
   // ---- Friday ------------------------------------------------------------------------------------------------------
@@ -294,7 +328,7 @@ async function main() {
     await ctx.close();
   }
 
-  // ---- mobile: touch scroll moves the strip, a tap selects ---------------------------------------------------------
+  // ---- mobile: no week buttons; a tap selects (touch scrolling itself is native and not driven here) ---------------
   {
     const ctx = await browser.newContext({ ...ctxOpts, viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
     const p = await open(ctx, `/hearings?view=day&date=${dmy(today)}`);
