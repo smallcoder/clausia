@@ -7,8 +7,9 @@
  * - Scrolling: native momentum with snap to days (touch drag, trackpad, shift+wheel); a mouse drag scrolls too, and a
  *   drag never also selects the day it ends on.
  * - Desktop prev/next glass buttons scroll one week (~300ms, ease-out) so that week's Saturday lands at the strip's
- *   start. Every scroll is measured from tile rects and applied with scrollBy (never scrollLeft math: RTL scrollLeft
- *   differs across engines). prefers-reduced-motion → instant.
+ *   start. Every distance comes from tile rects (viewport pixels, the same in every engine) and is applied as a
+ *   relative scrollBy; the absolute scrollLeft, whose RTL value differs across engines, is never read or set.
+ *   prefers-reduced-motion → instant. At the ends of the range the buttons are disabled.
  * - One selected pill inside the scroller slides (transform) between the tiles' measured positions.
  * - Above the strip: the month label of the days in view and, when today is out of view, an «النهارده» chip.
  * - Keyboard: roving tabindex; ArrowLeft = next day, ArrowRight = previous day (left is the future in RTL); Enter /
@@ -21,7 +22,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { cx } from "@/components/ui";
 import { addDaysIso, formatDmy } from "@/lib/dates";
 import { weekStart } from "@/lib/hearings";
-import { arMonthYear, dayCount, WEEKDAY_LONG, WEEKDAY_SHORT, weekdayOf } from "./roll-text";
+import { arDayMonth, arMonthYear, dayCount, WEEKDAY_LONG, WEEKDAY_SHORT, weekdayOf } from "./roll-text";
 
 /** Weeks rendered on each side of the week the strip was opened on. */
 export const STRIP_WEEKS = 26;
@@ -71,7 +72,7 @@ export function RollStrip({ center, selected, focusDay, today, counts, pinned, o
   // weeks are revealed in a layout effect with the scroll compensated, so nothing moves on screen.
   const [ready, setReady] = useState(false);
   const [measured, setMeasured] = useState(false);
-  const [vis, setVis] = useState({ first: center, last: addDaysIso(center, 6) });
+  const [vis, setVis] = useState({ first: center, last: addDaysIso(center, 6), canPrev: true, canNext: true });
 
   const range = useMemo(() => stripRange(center), [center]);
   const days = useMemo(() => {
@@ -217,14 +218,27 @@ export function RollStrip({ center, selected, focusDay, today, counts, pinned, o
     reveal(selected);
   }, [selected, ready, reveal]);
 
-  // what is in view → month label, today chip, and RollDay's loader
+  /** the Saturday a prev/next press would bring to the start, or null at the end of the range */
+  const stepTarget = useCallback((dir: 1 | -1, v: NonNullable<ReturnType<typeof inView>>) => {
+    const base = weekStart(v.list[v.i].dataset.day!);
+    const sat = tileOf(base);
+    const aligned = !!sat && Math.abs(toStart(sat, v.e)) < sat.offsetWidth / 2;
+    const target = dir > 0 ? addDaysIso(base, 7) : aligned ? addDaysIso(base, -7) : base;
+    // the far end tile already fully in view → the strip cannot scroll further that way
+    const edge = dir > 0 ? v.list[v.list.length - 1] : v.list[0];
+    if (!tileOf(target) || toNearest(edge, v.e) === 0) return null;
+    return target;
+  }, [tileOf]);
+
+  // what is in view → month label, today chip, the buttons' ends, and RollDay's loader
   const report = useCallback(() => {
     const v = inView();
     if (!v) return;
     const first = v.list[v.i].dataset.day!, last = v.list[v.j].dataset.day!;
-    setVis((o) => (o.first === first && o.last === last ? o : { first, last }));
+    const canPrev = stepTarget(-1, v) !== null, canNext = stepTarget(1, v) !== null;
+    setVis((o) => (o.first === first && o.last === last && o.canPrev === canPrev && o.canNext === canNext ? o : { first, last, canPrev, canNext }));
     onVisible(first, last);
-  }, [inView, onVisible]);
+  }, [inView, onVisible, stepTarget]);
   useEffect(() => {
     const sc = scroller.current;
     if (!sc || !ready) return;
@@ -242,12 +256,8 @@ export function RollStrip({ center, selected, focusDay, today, counts, pinned, o
   // ---- prev / next week ----------------------------------------------------------------------------------------
   const step = (dir: 1 | -1) => {
     const v = inView();
-    if (!v) return;
-    const base = weekStart(v.list[v.i].dataset.day!);
-    const sat = tileOf(base);
-    const aligned = !!sat && Math.abs(toStart(sat, v.e)) < sat.offsetWidth / 2;
-    const target = dir > 0 ? addDaysIso(base, 7) : aligned ? addDaysIso(base, -7) : base;
-    if (!tileOf(target)) return;
+    const target = v ? stepTarget(dir, v) : null;
+    if (!target) return;
     bring(target, "start");
     onWeekStep?.(target);
   };
@@ -309,12 +319,17 @@ export function RollStrip({ center, selected, focusDay, today, counts, pinned, o
   const tabStop = selected ?? focusDay;
   const todayOut = today < vis.first || today > vis.last;
   const mid = vis.first <= vis.last ? midDay(vis.first, vis.last) : vis.first;
-  const arrow = "glass glass-icon tap absolute top-1/2 z-10 hidden size-9 -translate-y-1/2 items-center justify-center rounded-full transition hover:text-text sm:inline-flex";
+  const arrow = "glass glass-icon tap absolute top-1/2 z-10 hidden size-9 -translate-y-1/2 items-center justify-center rounded-full transition hover:text-text aria-disabled:cursor-default aria-disabled:text-text-4 aria-disabled:opacity-50 aria-disabled:hover:text-text-4 sm:inline-flex";
 
   return (
     <div className="mt-[18px] leading-[normal] sm:mt-[26px]">
       <div className="flex h-7 items-center justify-between gap-3 px-1 sm:px-2">
         <span className="text-[12.5px] text-text-3" data-roll-month>{arMonthYear(mid)}</span>
+        {/* screen readers: the month in view and the selected day, announced politely when they change */}
+        <div role="status" aria-live="polite" className="sr-only" data-roll-status>
+          <span>{arMonthYear(mid)}</span>
+          {selected ? <span>، {WEEKDAY_LONG[weekdayOf(selected)]} {arDayMonth(selected)}{counts.has(selected) ? ` · ${dayCount(counts.get(selected) ?? 0)}` : ""}</span> : null}
+        </div>
         {todayOut ? (
           <button type="button" onClick={() => { pick(today, "today"); bring(tileOf(weekStart(today)) ? weekStart(today) : today, "start"); }}
             className="tap fade-enter inline-flex h-7 items-center rounded-full border border-[var(--accent-edge)] px-3 text-[12px] font-semibold text-gold transition hover:bg-[var(--accent-wash)]">
@@ -323,7 +338,7 @@ export function RollStrip({ center, selected, focusDay, today, counts, pinned, o
         ) : null}
       </div>
       <nav aria-label="أيام الرول" className="relative mt-2 sm:overflow-hidden sm:rounded-[30px] sm:border sm:border-border-2 sm:bg-card sm:shadow-card">
-        <button type="button" onClick={() => step(-1)} aria-label="الأسبوع اللي فات" className={cx(arrow, "start-1.5")}><ChevronRight size={16} strokeWidth={1.9} aria-hidden /></button>
+        <button type="button" onClick={() => step(-1)} aria-label="الأسبوع اللي فات" aria-disabled={!vis.canPrev || undefined} className={cx(arrow, "start-1.5")}><ChevronRight size={16} strokeWidth={1.9} aria-hidden /></button>
         <div ref={scroller} data-roll-scroller
           className="no-scrollbar @container snap-x snap-mandatory overflow-x-auto overscroll-x-contain sm:scroll-px-12 sm:data-[dragging]:cursor-grabbing"
           onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag}
@@ -358,7 +373,7 @@ export function RollStrip({ center, selected, focusDay, today, counts, pinned, o
             })}
           </div>
         </div>
-        <button type="button" onClick={() => step(1)} aria-label="الأسبوع الجاي" className={cx(arrow, "end-1.5")}><ChevronLeft size={16} strokeWidth={1.9} aria-hidden /></button>
+        <button type="button" onClick={() => step(1)} aria-label="الأسبوع الجاي" aria-disabled={!vis.canNext || undefined} className={cx(arrow, "end-1.5")}><ChevronLeft size={16} strokeWidth={1.9} aria-hidden /></button>
       </nav>
     </div>
   );
