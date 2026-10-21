@@ -21,25 +21,27 @@ export function casesHref(sp: ListParams, patch: Partial<ListParams>) {
   return s ? `/cases?${s}` : "/cases";
 }
 
-/** 44px tap target on phones, the visible capsule is 32/34px as in the mockups. */
+/** 44px tap target on phones, the visible capsule is 32/34px as in the mockups (on phones the row's box is 6px
+ * taller each side, so the page offsets its margins by 6px and the visible capsule lands where it is drawn). */
 function Capsule({ on, to, children }: { on: boolean; to: string; children: React.ReactNode }) {
   return (
     <Link href={to} aria-current={on ? "true" : undefined} className="group inline-flex h-11 shrink-0 items-center sm:h-[34px]">
-      <span className={`inline-flex h-8 items-center whitespace-nowrap rounded-full px-[13px] text-[12.5px] transition sm:h-[34px] sm:px-[15px] sm:text-[13px] ${on ? "bg-selected font-semibold text-on-selected shadow-soft" : "font-medium text-text-3 group-hover:text-text"}`}>
-        {children}
+      <span className={`inline-flex h-8 items-center whitespace-nowrap rounded-full px-[13px] text-[12.5px] transition sm:h-[34px] sm:px-[15px] sm:text-[13px] ${on ? "bg-selected font-semibold text-on-selected shadow-[0_4px_10px_-4px_rgba(18,26,43,0.5)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_4px_10px_-4px_rgba(0,0,0,0.5)]" : "font-medium text-[var(--glass-icon)] group-hover:text-text"}`}>
+        {/* one inline run, so the spaces around «·» survive (bare flex items trim them) */}
+        <span>{children}</span>
       </span>
     </Link>
   );
 }
 
-/** «الكل · 12» */
-const Count = ({ n }: { n: number }) => <><span aria-hidden className="mx-1">·</span><span className="sr-only"> </span><span className="font-num">{n}</span></>;
+/** «الكل · 12»: plain spaces around the dot, as the mockup sets it */
+const Count = ({ n }: { n: number }) => <>{" "}<span aria-hidden>·</span>{" "}{n}</>;
 
 export function FilterChips({ sp, counts, review }: { sp: ListParams; counts: Counts; review: number }) {
   const statuses = (Object.keys(CASE_STATUS) as (keyof typeof CASE_STATUS)[]).filter((k) => counts.status[k] > 0 || sp.status === k);
   const stage = sp.stage ? STAGE[sp.stage as keyof typeof STAGE] : null;
   return (
-    <nav aria-label="تصفية القضايا" className="no-scrollbar -mx-4 mt-5 flex items-center gap-0.5 overflow-x-auto px-4 sm:mx-0 sm:mt-[34px] sm:gap-1 sm:px-1">
+    <nav aria-label="تصفية القضايا" className="no-scrollbar mt-4 flex items-center gap-0.5 overflow-x-auto sm:mt-[34px] sm:gap-1 sm:px-1">
       <Capsule on={!sp.status && !sp.review} to={casesHref(sp, { status: undefined, review: undefined })}>الكل<Count n={counts.total} /></Capsule>
       {statuses.map((k) => (
         <Capsule key={k} on={sp.status === k} to={casesHref(sp, { status: k, review: undefined })}>
