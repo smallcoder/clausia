@@ -1,9 +1,11 @@
 // Case page (docs/design/*Case.dc.html, v2): who-first header with the spec sheet and stats, then the case overview
-// (default) or one of the reachable views (?tab=hearings | documents | details; ?tab=chat goes to the case thread).
+// (default) or one of the reachable views (?tab=hearings — hearings then judgments | documents | details; ?tab=chat
+// goes to the case thread). The views and the JSON download are reached from the header's «…» menu.
 // The Clausia composer is fixed at the bottom; its chips come from the case's real state.
 import { notFound, redirect } from "next/navigation";
 import { DocumentsTab } from "@/components/case-tabs/DocumentsTab";
 import { HearingsTab } from "@/components/case-tabs/HearingsTab";
+import { JudgmentsTab } from "@/components/case-tabs/JudgmentsTab";
 import { CaseDetails } from "@/components/cases/CaseDetails";
 import { CaseHeader, CaseSubHeader } from "@/components/cases/CaseHeader";
 import { CaseOverview } from "@/components/cases/CaseOverview";
@@ -64,17 +66,17 @@ export default async function CasePage({ params, searchParams }: { params: Promi
         <>
           <CaseSubHeader cf={cf} caseId={id} title={VIEWS[view]} />
           <div className="mt-5 sm:mt-8">
-            {view === "hearings" ? <HearingsTab caseId={id} /> : view === "documents" ? <DocumentsTab caseId={id} /> : <CaseDetails cf={cf} />}
+            {view === "hearings" ? <><HearingsTab caseId={id} /><JudgmentsTab cf={cf} caseId={id} /></> : view === "documents" ? <DocumentsTab caseId={id} /> : <CaseDetails cf={cf} />}
           </div>
         </>
       ) : (
         <>
-          <CaseHeader cf={cf} caseId={id} stats={[
+          <CaseHeader cf={cf} caseId={id} chatHref={chatHref} stats={[
             { value: cf.facts.length + pending.filter((p) => p.table === "case_facts").length, label: "وقائع", href: `/cases/${id}#facts` },
             { value: cf.documents.length, label: "مستندات", href: `/cases/${id}?tab=documents` },
             { value: review, label: "محتاجة مراجعة", highlight: true, href: reviewHref },
           ]} />
-          <CaseOverview cf={cf} hs={hs} today={today} caseId={id} chatHref={chatHref} />
+          <CaseOverview cf={cf} hs={hs} today={today} caseId={id} />
         </>
       )}
 

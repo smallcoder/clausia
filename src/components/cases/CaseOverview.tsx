@@ -1,6 +1,7 @@
 // The case page's default view (docs/design/{Light,Dark}{,Mobile}Case.dc.html, v2), built from getCaseFile.
-// Desktop: main column (Clausia summary, facts timeline, لنا/ضدنا, judgments) + side column (next hearing,
-// parties, documents), all solid cards. Mobile: one column in the mobile mockup's order — the two columns become
+// Desktop: main column (Clausia summary, facts timeline, لنا/ضدنا) + side column (next hearing, parties,
+// documents), all solid cards. Judgments live in the hearings view and the case links in the «…» menu (owner
+// decisions). Mobile: one column in the mobile mockup's order — the two columns become
 // `display: contents` and `order-*` sorts them — with Facts / Docs / Parties as tabs (CaseTabs).
 // Rows show no edit links: tapping an item opens its actions (confirm / reject / edit) in the sheet (ItemSheet).
 import { ChevronLeft } from "lucide-react";
@@ -9,10 +10,8 @@ import type { ReactNode } from "react";
 import { SegBar, Seg, TabScope } from "@/components/cases/CaseTabs";
 import { SheetEditText, SheetReview, TapItem } from "@/components/cases/ItemSheet";
 import { pagesLabel } from "@/components/documents/DocThumb";
-import { StatusChip } from "@/components/shell/PageHero";
 import type { CaseFile } from "@/lib/case-file";
 import { formatDayLabel, formatDmy } from "@/lib/dates";
-import { JUDGMENT_KIND } from "@/lib/labels";
 import {
   MONTHS, READ_SHORT, agoLabel, daysBetween, docName, factDate, partyRows, pendingHref, pendingWords, shortDmy, sourceText,
   summarySegments, untilLabel, type HearingState,
@@ -22,19 +21,15 @@ type Fact = CaseFile["facts"][number];
 type Req = CaseFile["requests"][number];
 type Arg = CaseFile["arguments"][number];
 type Party = CaseFile["parties"][number];
-type Judgment = CaseFile["judgments"][number];
 
 const REQUEST_KIND: Record<string, string> = { primary: "طلب أصلي", alternative: "طلب احتياطي", precautionary: "طلب تحفظي" };
 const ARG_KIND: Record<string, string> = { formal_defense: "دفع شكلي", substantive_defense: "دفع موضوعي", argument: "دفاع" };
-const OUTCOME: Record<string, { label: string; tone: "good" | "bad" | "neutral" }> = {
-  for_us: { label: "لصالحنا", tone: "good" }, against_us: { label: "ضدنا", tone: "bad" }, partial: { label: "لصالحنا جزئيًا", tone: "neutral" },
-};
 
 /** Solid content card (mockup: 24–26px radius, hairline, deep soft shadow). */
 const CARD = "rounded-[24px] border border-border-2 bg-card shadow-card lg:rounded-[26px]";
 
 /** «مقترحة · راجعها»: a 5px gold dot + 11px gold word (needs the lawyer's action). */
-const Suggested = ({ label = "مقترحة · راجعها" }: { label?: string }) => (
+export const Suggested = ({ label = "مقترحة · راجعها" }: { label?: string }) => (
   <span className="inline-flex items-center gap-[5px] text-[11px] font-semibold text-gold"><span aria-hidden className="size-[5px] rounded-full bg-gold" />{label}</span>
 );
 
@@ -217,46 +212,6 @@ function Sides({ cf, caseId, className }: { cf: CaseFile; caseId: string; classN
   );
 }
 
-// ---------- Judgments ----------
-
-function Judgments({ cf, caseId, className }: { cf: CaseFile; caseId: string; className: string }) {
-  const rows = [...cf.judgments, ...pendingOf<Judgment>(cf, "judgments")].sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
-  if (!rows.length) return null;
-  return (
-    <section className={`${CARD} ${className}`} aria-label="الأحكام">
-      <h2 className="px-[18px] pt-4 text-[17px] font-bold text-title lg:px-6 lg:pt-[18px]">الأحكام</h2>
-      <ul className="divide-y divide-border-2">
-        {rows.map((j) => {
-          const outcome = j.outcome ? OUTCOME[j.outcome] : null;
-          const suggested = j.review_status === "suggested";
-          return (
-            <li key={j.id} id={`item-${j.id}`} className="scroll-mt-24 space-y-3 px-[18px] py-4 lg:px-6">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className="text-[15px] font-bold text-text">{j.date ? <>حكم <span className="num font-num">{formatDmy(j.date)}</span></> : "حكم (التاريخ مش متسجل)"}</span>
-                <StatusChip tone="neutral">{JUDGMENT_KIND[j.kind as keyof typeof JUDGMENT_KIND] ?? j.kind}</StatusChip>
-                {outcome ? <StatusChip tone={outcome.tone}>{outcome.label}</StatusChip> : null}
-                {suggested ? <Suggested /> : null}
-              </div>
-              <div className="rounded-2xl bg-card-2 px-4 py-3">
-                <p className="text-xs text-text-4">المنطوق</p>
-                <p className="text-doc mt-1 text-[16px] text-text">{j.operative_text}</p>
-              </div>
-              <p className="text-[13.5px] text-text-2">
-                {j.appeal_deadline ? <>آخر ميعاد للطعن: <span className="num font-num font-bold">{formatDmy(j.appeal_deadline)}</span> <span className="text-text-4">· كما ذكره المحامي</span>{j.appeal_deadline_note ? <span className="mt-1 block text-text-4">{j.appeal_deadline_note}</span> : null}</>
-                  : <span className="text-text-4">ميعاد الطعن مش متسجل. Clausia مش بيحسبه؛ قوله لـ Clausia لو عايز تسجله.</span>}
-              </p>
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-[11px] text-text-4">{sourceText(j.source, cf.documents)}</span>
-                {suggested ? <div className="w-full sm:w-64"><SheetReview table="judgments" id={j.id} caseId={caseId} /></div> : null}
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
-  );
-}
-
 // ---------- Side column ----------
 
 /** Big light day + month, then the hearing's lines (mockup: next-hearing card). */
@@ -285,6 +240,8 @@ function HearingCard({ cf, hs, today, caseId, className }: { cf: CaseFile; hs: H
       </div>
     );
   }
+  // «circuit · location» when the hearing's location is stored; never guessed (owner decision)
+  const where = [circuit, h.location].filter(Boolean).join(" · ");
   const upcoming = h === hs.next;
   const [y, m, d] = h.date.split("-").map(Number);
   const weekday = formatDayLabel(h.date).split(" ")[0];
@@ -306,9 +263,9 @@ function HearingCard({ cf, hs, today, caseId, className }: { cf: CaseFile; hs: H
           <div className="text-[11.5px] text-text-3 lg:text-[12px]">{when}</div>
           <div className="mt-[3px] text-[15px] font-bold text-text lg:mt-1 lg:text-[16px]">
             {weekday} <span className="num font-num lg:hidden">{d}/{m}</span><span className="num font-num hidden lg:inline">{d}/{m}/{y}</span>
-            {circuit ? <span className="lg:hidden"> · {circuit}</span> : null}
+            {where ? <span className="lg:hidden"> · {where}</span> : null}
           </div>
-          {circuit ? <div className="mt-0.5 hidden text-[12.5px] text-text-3 lg:block">{circuit}</div> : null}
+          {where ? <div className="mt-0.5 hidden text-[12.5px] text-text-3 lg:block">{where}</div> : null}
           {needed ? (
             <div className="mt-1 flex items-center gap-1.5 text-[12.5px] text-text lg:hidden">
               <span aria-hidden className={`size-[5px] shrink-0 rounded-full ${upcoming ? "bg-gold" : "bg-text-4"}`} />
@@ -410,7 +367,7 @@ function Docs({ cf, caseId }: { cf: CaseFile; caseId: string }) {
 
 // ---------- Page body ----------
 
-export function CaseOverview({ cf, hs, today, caseId, chatHref }: { cf: CaseFile; hs: HearingState; today: string; caseId: string; chatHref: string }) {
+export function CaseOverview({ cf, hs, today, caseId }: { cf: CaseFile; hs: HearingState; today: string; caseId: string }) {
   const parties = partyRows(cf.parties, pendingOf<Party>(cf, "case_parties")).length;
   const facts = cf.facts.length + pendingOf<Fact>(cf, "case_facts").length;
   return (
@@ -426,16 +383,6 @@ export function CaseOverview({ cf, hs, today, caseId, chatHref }: { cf: CaseFile
           ]} />
           <Seg k="facts" className="order-5 lg:order-none"><Facts cf={cf} caseId={caseId} /></Seg>
           <Sides cf={cf} caseId={caseId} className="order-6 lg:order-none" />
-          <Judgments cf={cf} caseId={caseId} className="order-7 lg:order-none" />
-          <p className="order-8 flex flex-wrap gap-x-1 px-2 text-xs text-text-4 lg:order-none">
-            <Link href={`/cases/${caseId}?tab=details`} className="-my-2 inline-flex min-h-11 items-center hover:text-text-2 hover:underline">بيانات الدعوى</Link>
-            <span className="self-center">·</span>
-            <Link href={`/cases/${caseId}?tab=hearings`} className="-my-2 inline-flex min-h-11 items-center hover:text-text-2 hover:underline">الجلسات</Link>
-            <span className="self-center">·</span>
-            <Link href={chatHref} className="-my-2 inline-flex min-h-11 items-center hover:text-text-2 hover:underline">محادثة القضية</Link>
-            <span className="self-center">·</span>
-            <a href={`/api/cases/${caseId}/case-file?download`} className="-my-2 inline-flex min-h-11 items-center hover:text-text-2 hover:underline">تنزيل ملف القضية (JSON)</a>
-          </p>
         </div>
         <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-[18px]">
           <HearingCard cf={cf} hs={hs} today={today} caseId={caseId} className="order-1 lg:order-none" />
