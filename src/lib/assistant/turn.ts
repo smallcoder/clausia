@@ -7,12 +7,13 @@ import "server-only";
  * Storage: assistant rows keep tool_calls = {calls, raw} (raw = provider parts incl. thought signatures,
  * sent back unchanged); tool rows keep tool_calls = {results}. A card's proposal points at its assistant row.
  */
-import { formatDmy, normalizeDigits, todayIso } from "@/lib/dates";
+import { formatDmy, normalizeDigits, parseDmy, todayIso } from "@/lib/dates";
 import type { Json } from "@/lib/db/types";
 import { caseLabel } from "@/lib/labels";
-import { getLlm, LlmUnavailableError, SpendCapError, type LlmMessage, type LlmToolCall } from "@/lib/llm";
+import { getLlm, LlmUnavailableError, SpendCapError, type ChatRequest, type LlmMessage, type LlmToolCall } from "@/lib/llm";
 import { UNAVAILABLE_TEXT } from "@/lib/llm/unavailable";
-import { createProposal, normalizeForMatch, type DraftOp, type Proposal } from "@/lib/proposals";
+import { createProposal, normalizeForMatch, type DraftOp, type Proposal, type ResolvedFrom } from "@/lib/proposals";
+import { cairoDateOf, resolveRelativeDays, type RelativeDay } from "@/lib/relative-days";
 import type { Db } from "@/lib/supabase/server";
 import { isReadTool, READ_TOOL_SPECS, runReadTool } from "@/lib/tools/read";
 import { isWriteTool, OP_TITLE, WRITE_TOOL_ARGS, writeToolSpecs } from "@/lib/tools/registry";
@@ -46,16 +47,46 @@ export class TurnError extends Error {
 
 type TurnInput = { threadId: string; userText: string; userId: string; officeId: string };
 
-export async function runAssistantTurn(db: Db, input: TurnInput): Promise<TurnResult> {
-  const state = { saved: false };
-  try {
-    return await turn(db, input, state);
-  } catch (e) {
-    throw new TurnError(e instanceof Error ? e.message : String(e), state.saved);
+/** A whole chat turn — every model and tool call in it — gets 2 minutes (owner decision 2026-10-21). */
+export const TURN_LIMIT_MS = 120_000;
+
+/** The turn's time limit passed between model calls (no call in flight). Handled like any «not available now». */
+export class TurnTimeLimitError extends LlmUnavailableError {
+  constructor(limitMs: number) {
+    super(`chat turn time limit (${limitMs}ms) passed`);
+    this.name = "TurnTimeLimitError";
   }
 }
 
-async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promise<TurnResult> {
+/** The turn's clock: `signal` aborts when the limit passes (it cancels the model call in flight). */
+interface Clock { signal: AbortSignal; deadline: number; limitMs: number }
+
+/** `opts.turnLimitMs`: the whole turn's limit (default TURN_LIMIT_MS; tests pass a short one). */
+export async function runAssistantTurn(db: Db, input: TurnInput, opts: { turnLimitMs?: number } = {}): Promise<TurnResult> {
+  const state = { saved: false };
+  const limitMs = opts.turnLimitMs ?? TURN_LIMIT_MS;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), limitMs);
+  try {
+    return await turn(db, input, state, { signal: ctrl.signal, deadline: Date.now() + limitMs, limitMs });
+  } catch (e) {
+    throw new TurnError(e instanceof Error ? e.message : String(e), state.saved);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Waits for `work` (a read tool) but not past the turn's limit. */
+function withinTurn<T>(work: Promise<T>, clock: Clock): Promise<T> {
+  if (clock.signal.aborted) return Promise.reject(new TurnTimeLimitError(clock.limitMs));
+  return new Promise<T>((resolve, reject) => {
+    const stop = () => reject(new TurnTimeLimitError(clock.limitMs));
+    clock.signal.addEventListener("abort", stop, { once: true });
+    work.then(resolve, reject).finally(() => clock.signal.removeEventListener("abort", stop));
+  });
+}
+
+async function turn(db: Db, input: TurnInput, state: { saved: boolean }, clock: Clock): Promise<TurnResult> {
   const text = input.userText.trim();
   if (!text) throw new Error("الرسالة فارغة");
   const { data: thread, error: te } = await db.from("chat_threads").select("id, case_id, title").eq("id", input.threadId).single();
@@ -66,7 +97,7 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promis
   state.saved = true;
   await db.from("chat_threads").update({ updated_at: new Date().toISOString() }).eq("id", thread.id);
 
-  const [history, caseContext, cardNotes, docs, sourceTexts, docPages] = await Promise.all([
+  const [history, caseContext, cardNotes, docs, { texts: sourceTexts, lawyer }, docPages] = await Promise.all([
     loadHistory(db, thread.id),
     thread.case_id ? loadCaseContext(db, thread.case_id) : Promise.resolve(null),
     loadCardNotes(db, thread.id),
@@ -75,35 +106,58 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promis
     loadDocPages(db, thread.id),
   ]);
 
-  const system = buildSystemPrompt({ caseContext, cardNotes, documents: docs });
+  // relative days («بكرة»، «الخميس الجاي») in the lawyer's own messages, each from its own time in Cairo — worked
+  // out here, never by the model, never from a paper. This message first, then older ones (newest first).
+  const relativeDays = {
+    current: resolveRelativeDays(text, userMsg.created_at),
+    earlier: lawyer.filter((m) => m.id !== userMsg.id).reverse()
+      .map((m) => ({ date: cairoDateOf(m.created_at), days: resolveRelativeDays(m.content, m.created_at) }))
+      .filter((e) => e.days.length),
+  };
+  const resolved = [...relativeDays.current, ...relativeDays.earlier.flatMap((e) => e.days)];
+
+  const system = buildSystemPrompt({ caseContext, cardNotes, documents: docs, relativeDays });
   const tools = [...READ_TOOL_SPECS, ...writeToolSpecs()];
   const messages: LlmMessage[] = history;
   const meta = { purpose: "chat" as const, officeId: input.officeId, userId: input.userId, threadId: thread.id };
   const out: TurnResult = { userMessageId: userMsg.id, assistantMessageIds: [], proposalIds: [], text: "", rounds: 0 };
 
+  /** The model call for this turn: under the turn's limit, and never more than the provider's own 60s per call. */
+  const chat = (req: Omit<ChatRequest, "signal" | "timeoutMs">) => {
+    if (clock.signal.aborted) return Promise.reject(new TurnTimeLimitError(clock.limitMs));
+    return getLlm().chat({ ...req, signal: clock.signal, timeoutMs: clock.deadline - Date.now() });
+  };
+
+  /** The turn ends early: the model failed, or the turn's time limit passed. */
+  const cutShort = async (e: unknown): Promise<TurnResult> => {
+    // a model call that failed is already logged once in llm_calls (getLlm); one notice in the chat, no retry.
+    // The time limit passing with no call in flight has no llm_calls row (no call was made): it is logged here.
+    const msg = e instanceof Error ? e.message : String(e);
+    if (clock.signal.aborted) console.warn(`[turn] ${thread.id}: the ${clock.limitMs}ms turn limit passed (${msg})`);
+    // a turn cut short leaves nothing half-done: drop this turn's cards (nothing in them is saved — they wait for
+    // the tap) and its partial replies, so the thread shows the lawyer's message and the notice only
+    if (out.proposalIds.length) await db.from("proposals").delete().in("id", out.proposalIds).eq("status", "pending");
+    if (out.assistantMessageIds.length) await db.from("chat_messages").delete().eq("thread_id", thread.id).in("role", ["assistant", "tool"]).gt("created_at", userMsg.created_at);
+    out.proposalIds = [];
+    out.assistantMessageIds = [];
+    // only "not available now" (402 / 429 / 5xx / timeout / network / the turn's limit) gets the notice; any other error
+    // (a bad request, a blocked reply) is a fault to fix, so it keeps a plain message and its reason in llm_calls
+    const friendly = e instanceof SpendCapError ? "مش هقدر أرد دلوقتي: وصلنا لحد الصرف التجريبي."
+      : e instanceof LlmUnavailableError ? UNAVAILABLE_TEXT
+      : "حصلت مشكلة وأنا بجهّز الرد. جرّب تكتبها تاني بشكل مختلف.";
+    const { data: m } = await db.from("chat_messages").insert({ thread_id: thread.id, role: "assistant", content: friendly }).select("id").single();
+    if (m) out.assistantMessageIds.push(m.id);
+    out.text = friendly;
+    out.error = msg;
+    return out;
+  };
+
   for (let round = 0; round < MAX_ROUNDS; round++) {
     let res;
     try {
-      res = await getLlm().chat({ system, messages, tools, meta });
+      res = await chat({ system, messages, tools, meta });
     } catch (e) {
-      // already logged once in llm_calls (getLlm); one notice in the chat, no retry
-      const msg = e instanceof Error ? e.message : String(e);
-      // a turn cut short leaves nothing half-done: drop this turn's cards (nothing in them is saved — they wait for
-      // the tap) and its partial replies, so the thread shows the lawyer's message and the notice only
-      if (out.proposalIds.length) await db.from("proposals").delete().in("id", out.proposalIds).eq("status", "pending");
-      if (round > 0) await db.from("chat_messages").delete().eq("thread_id", thread.id).in("role", ["assistant", "tool"]).gt("created_at", userMsg.created_at);
-      out.proposalIds = [];
-      out.assistantMessageIds = [];
-      // only "not available now" (402 / 429 / 5xx / timeout / network) gets the notice; any other error (a bad request,
-      // a blocked reply) is a fault to fix, so it keeps a plain message and its reason in llm_calls
-      const friendly = e instanceof SpendCapError ? "مش هقدر أرد دلوقتي: وصلنا لحد الصرف التجريبي."
-        : e instanceof LlmUnavailableError ? UNAVAILABLE_TEXT
-        : "حصلت مشكلة وأنا بجهّز الرد. جرّب تكتبها تاني بشكل مختلف.";
-      const { data: m } = await db.from("chat_messages").insert({ thread_id: thread.id, role: "assistant", content: friendly }).select("id").single();
-      if (m) out.assistantMessageIds.push(m.id);
-      out.text = friendly;
-      out.error = msg;
-      return out;
+      return cutShort(e);
     }
     out.rounds = round + 1;
     const calls = res.toolCalls;
@@ -124,8 +178,9 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promis
     for (const call of calls) {
       if (isReadTool(call.name)) {
         try {
-          results.set(call.id, await runReadTool(db, call.name, call.args));
+          results.set(call.id, await withinTurn(runReadTool(db, call.name, call.args), clock));
         } catch (e) {
+          if (e instanceof TurnTimeLimitError) return cutShort(e);
           results.set(call.id, { error: e instanceof Error ? e.message : String(e) });
         }
         continue;
@@ -153,7 +208,8 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promis
         continue;
       }
       // never guess: a date / year / number / court / circuit must be in the lawyer's words or an attached paper
-      const unsupported = notInSource(call.args, [text, ...sourceTexts]);
+      // (a date equal to one worked out from the lawyer's «بكرة» / «الخميس الجاي» counts as said)
+      const unsupported = notInSource(call.args, [text, ...sourceTexts], resolved);
       if (unsupported.length) {
         results.set(call.id, { error: `لم يُقترح: ${unsupported.join("؛ ")}. اسأل المحامي سؤال واحد قصير ومتخمّنش.` });
         continue;
@@ -162,7 +218,10 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promis
       if (typeof ref === "string" && ref) refsInCard.add(ref);
       drafts.push({
         call,
-        op: { tool: call.name, args: call.args, source: sourceOf((call.args.quote as string | undefined) ?? null, text, userMsg.id, docPages) },
+        op: {
+          tool: call.name, args: call.args, source: sourceOf((call.args.quote as string | undefined) ?? null, text, userMsg.id, docPages),
+          resolved_from: fromRelativeWords(call.args, [text, ...sourceTexts], resolved),
+        },
       });
     }
 
@@ -191,10 +250,11 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promis
       reply = "جهّزت لك بطاقة تأكيد. راجعها، ولما توافق أحفظها. مفيش حاجة اتحفظت لسه.";
     } else {
       try {
-        const r = await getLlm().chat({ system: `${system}\n\nاكتب دلوقتي رد قصير للمحامي بالعامية المصرية: لقيت إيه ومحتاج منه إيه، من غير ما تستدعي أدوات.`, messages: [...messages, { role: "user", text: "لخّص لي اللي وصلتله وقولّي محتاج مني إيه." }], meta });
+        const r = await chat({ system: `${system}\n\nاكتب دلوقتي رد قصير للمحامي بالعامية المصرية: لقيت إيه ومحتاج منه إيه، من غير ما تستدعي أدوات.`, messages: [...messages, { role: "user", text: "لخّص لي اللي وصلتله وقولّي محتاج مني إيه." }], meta });
         reply = r.text?.trim() ?? "";
       } catch (e) {
-        if (e instanceof LlmUnavailableError) reply = UNAVAILABLE_TEXT;
+        // not available now, or the turn's limit passed: the same single notice and cleanup as any other round
+        if (e instanceof LlmUnavailableError) return cutShort(e);
       }
       if (!reply) reply = "راجعت اللي عندي ولسه محتاج خطوة كمان. اكتب «كمّل» وأنا أجهّز البطاقة.";
     }
@@ -310,32 +370,68 @@ async function loadCardNotes(db: Db, threadId: string): Promise<string[]> {
   });
 }
 
-/** Texts the quotes may come from: every lawyer message in the thread + pages of documents uploaded here. */
-async function loadSourceTexts(db: Db, threadId: string): Promise<string[]> {
+/**
+ * Texts the quotes may come from: every lawyer message in the thread + pages of documents uploaded here.
+ * `lawyer` = the lawyer's messages alone, oldest first (their relative days are resolved; a paper's never are).
+ */
+async function loadSourceTexts(db: Db, threadId: string): Promise<{ texts: string[]; lawyer: { id: string; content: string; created_at: string }[] }> {
   const [{ data: msgs }, { data: docs }] = await Promise.all([
-    db.from("chat_messages").select("content").eq("thread_id", threadId).eq("role", "user"),
+    db.from("chat_messages").select("id, content, created_at, attachments").eq("thread_id", threadId).eq("role", "user").order("created_at"),
     db.from("documents").select("id").eq("thread_id", threadId),
   ]);
-  const texts = (msgs ?? []).map((m) => m.content);
+  const rows = msgs ?? [];
+  const texts = rows.map((m) => m.content);
+  // relative days come only from the lawyer's own sentences in the recent window: not from an upload row
+  // («أرفقتُ مستندًا: جلسة بكرة.pdf» is a file name), and not from weeks-old messages beyond the history window
+  const lawyer = rows
+    .filter((m) => !(Array.isArray(m.attachments) && m.attachments.length))
+    .slice(-HISTORY)
+    .map(({ id, content, created_at }) => ({ id, content, created_at }));
   const ids = (docs ?? []).map((d) => d.id);
   if (ids.length) {
     const { data: pages } = await db.from("document_pages").select("text").in("document_id", ids);
     for (const p of pages ?? []) texts.push(p.text);
   }
-  return texts;
+  return { texts, lawyer };
 }
 
 const DATE_KEYS = ["date", "facts_date", "next_date", "appeal_deadline"] as const;
 const AR_MONTHS = ["يناير", "فبراير", "مارس", "أبريل|ابريل", "مايو", "يونيو", "يوليو", "أغسطس|اغسطس", "سبتمبر", "أكتوبر|اكتوبر", "نوفمبر", "ديسمبر"];
 
-/** Which proposed values are not backed by the source texts (lawyer's messages + attached papers). */
-export function notInSource(args: Record<string, unknown>, texts: string[]): string[] {
+/** The resolved relative day a proposed full date equals, per date arg (next_date → «بكرة» = 22/10/2026). */
+export function resolvedDatesOf(args: Record<string, unknown>, resolved: RelativeDay[]): Record<string, ResolvedFrom> {
+  const out: Record<string, ResolvedFrom> = {};
+  for (const k of DATE_KEYS) {
+    const v = args[k];
+    const p = typeof v === "string" ? parseDmy(v) : null;
+    const hit = p?.precision === "day" ? resolved.find((r) => r.iso === p.iso) : undefined;
+    if (hit) out[k] = { word: hit.word, iso: hit.iso, label: hit.label };
+  }
+  return out;
+}
+
+/**
+ * The card's «بكرة = الخميس 22/10/2026» notes: date args whose value is not written in the texts but equals a day
+ * resolved from the lawyer's words. A date the lawyer also wrote out in full needs no note.
+ */
+export function fromRelativeWords(args: Record<string, unknown>, texts: string[], resolved: RelativeDay[]): Record<string, ResolvedFrom> {
+  return Object.fromEntries(Object.entries(resolvedDatesOf(args, resolved)).filter(([k]) => notInSource({ [k]: args[k] }, texts).length > 0));
+}
+
+/**
+ * Which proposed values are not backed by the source texts (lawyer's messages + attached papers).
+ * `resolved`: relative days worked out by code from the LAWYER's words (never a paper's); a full date equal to
+ * one of them counts as stated.
+ */
+export function notInSource(args: Record<string, unknown>, texts: string[], resolved: RelativeDay[] = []): string[] {
   const src = normalizeDigits(texts.join("\n"));
   const norm = normalizeForMatch(src);
   const out: string[] = [];
+  const fromWords = resolvedDatesOf(args, resolved);
   for (const k of DATE_KEYS) {
     const v = args[k];
     if (typeof v !== "string" || !v.trim()) continue;
+    if (fromWords[k]) continue;
     const p = normalizeDigits(v).split(/[/\-.]/).map((x) => x.trim()).filter(Boolean);
     const year = p.at(-1) ?? "";
     if (year && !src.includes(year)) { out.push(`السنة ${year} في «${v}» مش مذكورة`); continue; }

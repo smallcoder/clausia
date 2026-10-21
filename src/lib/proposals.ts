@@ -29,7 +29,15 @@ export interface ProposalOp {
   result_id?: string | null;
   error?: string | null;
   edited?: boolean;
+  /**
+   * Date args that code worked out from a relative word in the lawyer's message (src/lib/relative-days.ts):
+   * arg key → the word and its date. The card shows «بكرة = الخميس 22/10/2026» next to that field; the lawyer's
+   * edit of that field drops it.
+   */
+  resolved_from?: Record<string, ResolvedFrom>;
 }
+
+export interface ResolvedFrom { word: string; iso: string; label: string }
 
 export interface Proposal {
   id: string;
@@ -63,6 +71,7 @@ export interface DraftOp {
   tool: string;
   args: Record<string, unknown>;
   source: OpSource;
+  resolved_from?: Record<string, ResolvedFrom>;
 }
 
 /**
@@ -86,6 +95,7 @@ export async function createProposal(
       source: { ...o.source, quote },
       quote_verified: verifyQuote(quote, input.sourceTexts),
       status: "pending",
+      ...(o.resolved_from && Object.keys(o.resolved_from).length ? { resolved_from: o.resolved_from } : {}),
     };
   });
   const { data, error } = await db.from("proposals").insert({
@@ -94,6 +104,15 @@ export async function createProposal(
   }).select("*").single();
   if (error) throw new Error(error.message);
   return data as unknown as Proposal;
+}
+
+/** The «بكرة = …» notes that still hold after an edit: a field whose value the lawyer changed loses its note. */
+export function withoutEdited(
+  resolved: Record<string, ResolvedFrom> | undefined, args: Record<string, unknown>, edit: Record<string, unknown>,
+): Record<string, ResolvedFrom> | undefined {
+  if (!resolved) return undefined;
+  const kept = Object.entries(resolved).filter(([k]) => !(k in edit) || edit[k] === args[k]);
+  return kept.length ? Object.fromEntries(kept) : undefined;
 }
 
 export async function getProposal(db: Db, id: string): Promise<Proposal | null> {
@@ -124,7 +143,7 @@ export async function decideProposal(
 
   // all or nothing (owner decision 2026-10-21): if one chosen op fails, the ops already applied in this tap are
   // undone and the card stays as it was, so a failure never leaves a half-saved card
-  const before = p.ops.map((o) => ({ status: o.status, result_id: o.result_id, error: o.error, args: o.args, edited: o.edited }));
+  const before = p.ops.map((o) => ({ status: o.status, result_id: o.result_id, error: o.error, args: o.args, edited: o.edited, resolved_from: o.resolved_from }));
   const undos: Undo[] = [];
   let failure: { index: number; title: string; error: string } | null = null;
 
@@ -149,7 +168,13 @@ export async function decideProposal(
       o.status = decision.mode === "suggest" ? "suggested" : "confirmed";
       o.result_id = res.id;
       o.error = null;
-      if (edit) { o.args = args; o.edited = true; }
+      if (edit) {
+        // a date the lawyer changed is the lawyer's own now, not the one worked out from «بكرة»
+        const resolved = withoutEdited(o.resolved_from, o.args, edit);
+        o.args = args;
+        o.edited = true;
+        if (resolved) o.resolved_from = resolved; else delete o.resolved_from;
+      }
       const r = args.ref as string | undefined;
       if (r) refs[r] = res.id;
     } catch (e) {
