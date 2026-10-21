@@ -1,7 +1,8 @@
 "use client";
 /**
- * Confirmation card (docs/design/*Chat*.dc.html, «ملف قضية جديد»). One row per op: kind · value (+ the verbatim
- * quote in Naskh) · source · a check that selects it. «احفظ · N» saves the selected rows; each row expands to its
+ * Confirmation card (docs/design/*Chat*.dc.html, «ملف قضية جديد»). One compact row per op: kind · value · source ·
+ * a check that selects it. Only fact rows carry a one-line truncated quote; every row's full verbatim quote is in
+ * its expand (the chevron). «احفظ · N» saves the selected rows; each row expands to its
  * fields, its source and quote, and ✓ / تعديل / ✗ for that row alone. Nothing is saved without a tap.
  * Mobile (<1024px): the card shows its first rows inline; «عدّل حاجة» / «كل العناصر» open it in a bottom sheet.
  * Other features render it by passing the proposal object (+ a lookup of uuid → display name, `buildProposalLookup`).
@@ -257,30 +258,35 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
             const lone = live ? blockedBy(o) : null;
             const hard = live ? blockedBy(o, true) : null;
             const sel = selected.has(o.op_id);
-            const quote = o.source.kind === "document" ? o.source.quote : null;
+            // only fact rows show their quote (one truncated line); the rest keep it in the expand
+            const factQuote = o.tool === "add_fact" && o.source.kind === "document" ? o.source.quote : null;
+            const tagList = [
+              edits[o.op_id] || o.edited ? <Tag key="e" tone="neutral">معدّل</Tag> : null,
+              !o.quote_verified && live ? <Tag key="q" tone="warn">راجع المصدر</Tag> : null,
+              o.status === "suggested" ? <Tag key="s" tone="warn">مقترح</Tag> : null,
+              o.status === "failed" ? <Tag key="f" tone="bad">ما اتحفظش</Tag> : null,
+            ].filter(Boolean);
+            const tags = tagList.length ? tagList : null;
             return (
               <li key={o.op_id} className={cx("border-b border-border-2", o.status === "rejected" && "opacity-55", limit && i >= MOBILE_ROWS && "lg:block hidden")}>
-                <div className="flex gap-2.5 px-3.5 py-2.5 sm:gap-3.5 sm:px-[18px] sm:py-3">
-                  <span className="w-[60px] shrink-0 pt-0.5 text-[11px] font-semibold text-text-3 sm:w-[74px] sm:text-xs">{kindOf(o)}</span>
+                <div className="flex min-h-12 items-start gap-2.5 px-3.5 py-2.5 sm:gap-3.5 sm:px-[18px]">
+                  <span className="w-[60px] shrink-0 pt-0.5 text-[11px] font-semibold leading-5 text-text-3 sm:w-[74px] sm:text-xs sm:leading-[22px]">{kindOf(o)}</span>
                   <button type="button" onClick={() => toggle(o.op_id)} aria-expanded={isOpen} className="min-w-0 flex-1 text-right">
-                    <span className="block text-[13.5px] font-semibold leading-[1.5] text-text sm:text-[14.5px]">
-                      {summaryOf({ ...o, args: merged }) || OP_TITLE[o.tool]}
-                      <ChevronDown aria-hidden size={14} strokeWidth={2} className={cx("ms-1 inline-block align-[-2px] text-text-4 transition-transform", isOpen && "rotate-180")} />
+                    <span className="flex items-start gap-1 text-[13.5px] font-semibold leading-[22px] text-text sm:text-[14.5px]">
+                      <span className={cx("min-w-0", !isOpen && "line-clamp-1")}>{summaryOf({ ...o, args: merged }) || OP_TITLE[o.tool]}</span>
+                      <ChevronDown aria-hidden size={14} strokeWidth={2} className={cx("mt-1 shrink-0 text-text-4 transition-transform", isOpen && "rotate-180")} />
                     </span>
-                    {quote && !isOpen ? <span className="text-doc mt-0.5 line-clamp-2 block text-[12.5px] leading-[1.7] text-text-3 sm:text-[13.5px] sm:leading-[1.75]">«{quote}»</span> : null}
-                    <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
-                      <span className="text-[10.5px] text-text-4 sm:hidden">{o.source.kind === "document" ? `من ${sourceShort(o)}` : sourceShort(o)}</span>
-                      {edits[o.op_id] || o.edited ? <Tag tone="neutral">معدّل</Tag> : null}
-                      {!o.quote_verified && live ? <Tag tone="warn">راجع المصدر</Tag> : null}
-                      {o.status === "suggested" ? <Tag tone="warn">مقترح</Tag> : null}
-                      {o.status === "failed" ? <Tag tone="bad">ما اتحفظش</Tag> : null}
+                    {factQuote && !isOpen ? <span className="text-doc block truncate text-[12.5px] leading-5 text-text-3 sm:text-[13px]">«{factQuote}»</span> : null}
+                    <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className="text-[11px] leading-[18px] text-text-4 sm:hidden">{o.source.kind === "document" ? `من ${sourceShort(o)}` : sourceShort(o)}</span>
+                      {tags}
                     </span>
                   </button>
-                  <span className="hidden max-w-[9.5rem] shrink-0 truncate pt-[3px] text-[11.5px] text-text-4 sm:block">{sourceShort(o)}</span>
+                  <span className="hidden max-w-[9.5rem] shrink-0 truncate text-[11.5px] leading-[22px] text-text-4 sm:block">{sourceShort(o)}</span>
                   {live ? (
                     <button type="button" role="checkbox" aria-checked={sel} aria-label={sel ? `شيل ${kindOf(o)} من الحفظ` : `ضيف ${kindOf(o)} للحفظ`}
                       onClick={() => toggleSelect(o)} disabled={pending || (!sel && !!lone && lone.includes("مرفوض"))}
-                      className={cx("mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full transition disabled:opacity-40 sm:mt-0 sm:size-[22px]", sel ? "mark" : "border border-border bg-card-2 text-transparent hover:text-text-4")}>
+                      className={cx("relative mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full transition before:absolute before:-inset-3 before:content-[''] disabled:opacity-40 sm:mt-0 sm:size-[22px]", sel ? "mark" : "border border-border bg-card-2 text-transparent hover:text-text-4")}>
                       <Check aria-hidden size={12} strokeWidth={3.2} />
                     </button>
                   ) : (
