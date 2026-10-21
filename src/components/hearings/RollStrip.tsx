@@ -66,6 +66,7 @@ export function RollStrip({ center, selected, focusDay, today, counts, pinned, o
   const drag = useRef<{ x: number; last: number; id: number; moved: boolean } | null>(null);
   const suppressClick = useRef(false);
   const prevSelected = useRef<string | null>(null);
+  const pillAt = useRef("");
   // SSR and the first client render start at the chosen week (scroll position 0 is the start edge); the earlier
   // weeks are revealed in a layout effect with the scroll compensated, so nothing moves on screen.
   const [ready, setReady] = useState(false);
@@ -178,7 +179,11 @@ export function RollStrip({ center, selected, focusDay, today, counts, pinned, o
     const p = pill.current;
     const el = selected ? tileOf(selected) : null;
     if (!p) return;
-    if (!el) { p.style.opacity = "0"; return; }
+    if (!el) { p.style.opacity = "0"; pillAt.current = ""; return; }
+    // same place → leave it alone (re-placing with no transition would cut a slide that is still running)
+    const at = `${el.offsetLeft},${el.offsetTop},${el.offsetWidth},${el.offsetHeight}`;
+    if (at === pillAt.current) return;
+    pillAt.current = at;
     if (!animate) p.style.transition = "none";
     p.style.transform = `translate(${el.offsetLeft}px, ${el.offsetTop}px)`;
     p.style.width = `${el.offsetWidth}px`;
@@ -336,16 +341,16 @@ export function RollStrip({ center, selected, focusDay, today, counts, pinned, o
                 <a key={d} href={dayHref(d)} data-day={d} draggable={false} tabIndex={d === tabStop ? 0 : -1}
                   aria-current={on ? "date" : undefined}
                   onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return; e.preventDefault(); pick(d, "tap"); }}
-                  className={cx("relative w-[calc(100cqi/7)] shrink-0 snap-start rounded-[18px] pb-[7px] pt-2 text-center transition-colors duration-200 focus-visible:outline-offset-[-2px] sm:w-[calc((100cqi-132px)/7)] sm:rounded-[22px] sm:pb-[11px] sm:pt-3",
-                    on ? "text-on-selected" : "text-text hover:bg-card-2",
+                  className={cx("relative w-[calc(100cqi/7)] shrink-0 snap-start rounded-[18px] pb-[7px] pt-2 text-center transition-[color] focus-visible:outline-offset-[-2px] sm:w-[calc((100cqi-132px)/7)] sm:rounded-[22px] sm:pb-[11px] sm:pt-3",
+                    on ? "text-on-selected duration-200 delay-100" : "text-text duration-0 hover:bg-card-2",
                     solid && "bg-selected shadow-[0_4px_10px_-4px_var(--backdrop)]",
                     !on && d === today && "ring-1 ring-inset ring-[var(--accent-edge)]")}>
-                  <span className={cx("block text-[10.5px] transition-colors duration-200 sm:text-[12px]", on ? "text-on-selected/80" : d === today ? "font-semibold text-gold" : "text-text-3")}>
+                  <span className={cx("block text-[10.5px] transition-colors sm:text-[12px]", on ? "text-on-selected/80 duration-200 delay-100" : cx("duration-0", d === today ? "font-semibold text-gold" : "text-text-3"))}>
                     <span className="sm:hidden">{WEEKDAY_SHORT[wd]}</span><span className="hidden sm:inline">{WEEKDAY_LONG[wd]}</span>
                   </span>
                   <span className={cx("font-num mt-0.5 block text-[19px] leading-[1.1] sm:mt-[3px] sm:text-[26px]", on ? "font-medium" : "font-light")}>{Number(d.slice(8))}</span>
                   <span aria-hidden className="mt-[5px] flex h-1 justify-center gap-[2px] sm:mt-1.5 sm:h-[5px] sm:gap-[3px]">
-                    {Array.from({ length: Math.min(n, 6) }, (_, i) => <span key={i} className={cx("size-1 rounded-full transition-colors duration-200 sm:size-[5px]", on ? "bg-on-selected/85" : "bg-text-4")} />)}
+                    {Array.from({ length: Math.min(n, 6) }, (_, i) => <span key={i} className={cx("size-1 rounded-full transition-colors sm:size-[5px]", on ? "bg-on-selected/85 duration-200 delay-100" : "bg-text-4 duration-0")} />)}
                   </span>
                   <span className="sr-only">{d === today ? "النهارده، " : ""}{formatDmy(d)}، {counts.has(d) ? dayCount(n) : ""}</span>
                 </a>

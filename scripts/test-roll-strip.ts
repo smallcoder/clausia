@@ -119,8 +119,13 @@ async function main() {
   const target = weekDays.find((d) => (counts.get(d) ?? 0) !== (counts.get(today) ?? 0)) ?? weekDays[0];
   {
     const before = await page.locator("[data-roll-day]").first().innerText();
+    const pillX = () => page.evaluate(() => document.querySelector<HTMLElement>("[data-roll-scroller] span[aria-hidden].absolute")!.getBoundingClientRect().left);
+    const tileX = (d: string) => page.evaluate((x) => document.querySelector<HTMLElement>(`[data-day="${x}"]`)!.getBoundingClientRect().left, d);
+    const [p0, t1] = [await pillX(), await tileX(target)];
     await tile(page, target).click();
     await page.waitForTimeout(40);
+    const pm = await pillX();
+    check("tap: the pill slides (between the two tiles ~40ms after the tap)", Math.min(p0, t1) + 2 < pm && pm < Math.max(p0, t1) - 2, `${p0} → ${pm} → ${t1}`);
     check("tap: the new day's hearings are on screen within 40ms (no round-trip)", (await shownDay(page)) === target, String(await shownDay(page)));
     await page.waitForTimeout(400);
     check("tap: the tile is selected", (await selected(page)) === target);
