@@ -1,7 +1,7 @@
 /**
  * Home, laid out exactly as docs/design/{Light,Dark}{,Mobile}Home.dc.html: date eyebrow + big greeting, the Clausia
  * line built from real counts (no LLM), today's roll next to «محتاجة قرار» (stacked on mobile, «محتاجة قرار» first),
- * then the fixed Home composer. Text line heights are set to the px the mockups render with `line-height: normal`,
+ * then the Home composer (in the stack on desktop, sticky at the bottom; fixed on mobile). Text line heights are set to the px the mockups render with `line-height: normal`,
  * so block heights match whichever Arabic font loads.
  * Writes only via confirmation cards.
  */

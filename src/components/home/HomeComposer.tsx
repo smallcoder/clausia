@@ -1,8 +1,9 @@
 "use client";
 /**
  * The Home composer, drawn as docs/design/*Home.dc.html (a Home-only variant of shell/Composer's hero size):
- * starter chips, then the glass box — C mark + 2-line field, attach and mic at the start, send at the end.
- * Desktop: the «Clausia بتجهّز…» line under the box, no fade. Mobile: the short reminder sits inside the
+ * starter chips, then the glass box — C mark + 2-line field, attach at the start, send at the end (no mic, owner decision).
+ * Desktop: the «Clausia بتجهّز…» line under the box; the composer is part of the Home stack and sticks to the bottom
+ * only when the content is long (see Dock). Mobile: the short reminder sits inside the
  * button row, the dock fades the page under it. Same send / upload actions as the shared composer.
  */
 import { ArrowUp, File, Gavel, List, Plus, User } from "lucide-react";

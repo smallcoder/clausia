@@ -6,7 +6,7 @@ The 20 `*.dc.html` files here are the approved screens: Home, Chat, Case, Roll a
 - Chat-first. Clausia (never "مساعد") does everything. There is one input per screen, the composer; it searches, asks and adds. There is no separate search bar.
 - Calm luxury: lots of space, few boxes, large light numbers, and gold only for things that need the lawyer's action.
 - Glass only on floating controls: the top bar, tab capsule, composer, round buttons and suggestion chips. Content (cards, tables, lists) is solid. Content scrolls under the floating composer, which has a soft fade behind it.
-- RTL Arabic. Desktop pages are at most 1360px wide (`max-w-page`; Home 960px `max-w-home`; Chat 820px `max-w-chat`; the composer 780px `max-w-composer`), centered. Below 1280px, full width with 32px side padding.
+- RTL Arabic. One content column per page, centered: Home and Chat are 960px (`max-w-narrow`: 912px of content plus 24px side gutters); every other page is 1280px of content (`max-w-page` 1360px = 1280 plus 40px side gutters). The top bar takes the same column as its page (the same `max-w-*` and side padding), so the logo meets the title edge and the account the far edge. The docked composer on inner pages and over a chat is 780px (`max-w-composer`). Below the column, full width with the gutters.
 
 ## Type
 - UI: `-apple-system, BlinkMacSystemFont, 'SF Arabic', 'SF Pro Text', system-ui, 'Vazirmatn', sans-serif`
@@ -58,7 +58,7 @@ Tailwind v4 reads a token from the namespace its utility uses, so the name reads
 
 | Namespace | Utilities it feeds | Tokens |
 |---|---|---|
-| `--container-*` | `w-` `min-w-` `max-w-` `basis-` | `page` 1360px (Cases, Case, Roll; `max-w-page`), `home` 960px, `chat` 820px, `composer` 780px (Home and chat composer, and the composer skeleton), `bubble` 88% (mobile) and `bubble-sm` 72% (desktop) of a chat bubble's column |
+| `--container-*` | `w-` `min-w-` `max-w-` `basis-` | `page` 1360px (the 1280 column of Cases, Case, Roll plus 40px gutters; also the top bar there), `narrow` 960px (the Home and Chat column plus 24px gutters; also the top bar there), `composer` 780px (the docked composer on inner pages and over a chat, and its skeleton), `bubble` 88% (mobile) and `bubble-sm` 72% (desktop) of a chat bubble's column |
 | `--spacing-*` | `size-` `h-` `w-` `min-h-` `p-` `gap-` `inset-` … | see below |
 
 | Token | Size | Use |
@@ -126,7 +126,7 @@ To see that a CSS refactor changed nothing, `scripts/compare-styles.ts` saves th
 - Light: a white gradient 78%→52%, backdrop blur 24px, saturate 190%; a white border; a 0.5px ink outline at 10%; a white top inset highlight; a soft inner bottom shade; a drop shadow.
 
 ## Screen notes
-- Top bar: the brand plus office name, a centered glass tab capsule (Home, Hearings, Cases), and glass circles for alerts and account. On mobile it shows the logo, the capsule (active tab labeled, the others icon-only) and the account.
+- Top bar: as wide as its page's column (see Principles); the brand plus office name, a centered glass tab capsule (Home, Hearings, Cases), and glass circles for alerts and account. On mobile it shows the logo, the capsule (active tab labeled, the others icon-only) and the account.
 - Case: who first (client big, «ضد» opponent below), then a spec sheet (number, court, circuit, type), then the next hearing, the Clausia summary, the needs-review banner, and tabs (Facts, Docs, Parties) on mobile.
 - Roll: a day strip with dots per hearing, then a timeline by court; the next hearing is expanded with a "سجّل قرار الجلسة دي" button. On desktop, a side card lists past hearings that need a decision, each with a record button.
 
@@ -137,7 +137,8 @@ To see that a CSS refactor changed nothing, `scripts/compare-styles.ts` saves th
 - Hearing location («الدور 4 · قاعة 12», «العباسية») is a stored field. Clausia proposes it from a paper or the chat through a confirmation card and never guesses it; when it is empty the circuit is shown.
 - Dates stay d/m/yyyy.
 - States the mockups don't draw (empty, a past hearing with no decision, tomorrow's hearings) stay as built.
-- Every screen has the same soft fade behind the floating composer and chips (Home too).
+- Every screen has the same soft fade behind the floating composer and chips. On Home desktop the fade shows only while the composer is stuck to the bottom.
+- Layout grid (2026-10-22, desktop): Home's greeting, cards, chips and composer are one stack, centered in the screen; the composer sits right under the content (44px under the cards, the column wide) and sticks to the bottom only when the content is long. Tables use fixed column widths: Cases 460 / 400 / 150 / the rest (24px apart; the last column never goes under 120px). Mobile is unchanged.
 - Home mobile chips scroll sideways.
 - Case: judgments live in the hearings view; the links (case details, hearings, case chat, JSON) live in the «…» menu; long court / case-type names are one line with «…» on mobile.
 - Case desktop header: back · breadcrumb … status chip · «…» (the menu sits at the end of the row, next to the chip). The header card keeps the mockup's widths: 4 wider data cells and 3 narrower stat cells, aligned on one line and split by hairlines.
