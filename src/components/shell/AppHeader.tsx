@@ -67,7 +67,7 @@ export function AppHeader({ initials, officeName, email, alerts }: { initials: s
         })}
       </nav>
 
-      <div className="flex items-center gap-2 justify-self-end">
+      <div className="flex items-center gap-2.5 justify-self-end">
         <Link href="/hearings?filter=undecided" aria-label={alerts ? `${alerts} جلسات محتاجة قرار` : "التنبيهات"}
           className="glass glass-icon relative hidden size-control-xl items-center justify-center rounded-full sm:inline-flex">
           <Bell size={19} strokeWidth={1.9} aria-hidden />
