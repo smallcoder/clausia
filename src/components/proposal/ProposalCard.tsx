@@ -332,7 +332,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
                               <dt className="text-text-3">{f.label}</dt>
                               <dd className="min-w-0 break-words text-text">
                                 {f.type === "date" || f.type === "number" ? <span className="num">{v}</span> : v}
-                                {notes[f.key] ? <span className="ms-2 text-sm font-semibold text-text-2">({notes[f.key]})</span> : null}
+                                {notes[f.key] ? <span className="mt-0.5 block text-sm font-semibold text-text-2">{notes[f.key]}</span> : null}
                               </dd>
                             </div>
                           );
