@@ -56,7 +56,7 @@ export interface Extraction {
   facts: { date: string; date_text: string; text: string; page: number; quote: string }[];
   requests: { text: string; kind: string; page: number; quote: string }[];
   arguments: { side: string; kind: string; text: string; page: number; quote: string }[];
-  hearings: { date: string; decision: string; decision_text: string; next_date: string; next_requirements: string; page: number; quote: string }[];
+  hearings: { date: string; decision: string; decision_text: string; next_date: string; next_requirements: string; location: string; page: number; quote: string }[];
   suspicious_lines: { page: number; quote: string }[];
 }
 
@@ -76,7 +76,7 @@ export const EXTRACTION_SCHEMA: JsonSchema = obj({
   facts: arr({ date: S, date_text: S, text: S, page: I, quote: S }),
   requests: arr({ text: S, kind: S, page: I, quote: S }),
   arguments: arr({ side: { type: "string", enum: ["opponent", "ours"] }, kind: S, text: S, page: I, quote: S }),
-  hearings: arr({ date: S, decision: { type: "string", enum: [...DECISIONS, ""] }, decision_text: S, next_date: S, next_requirements: S, page: I, quote: S }),
+  hearings: arr({ date: S, decision: { type: "string", enum: [...DECISIONS, ""] }, decision_text: S, next_date: S, next_requirements: S, location: S, page: I, quote: S }),
   suspicious_lines: arr({ page: I, quote: S }),
 });
 
@@ -93,7 +93,7 @@ export const EXTRACT_SYSTEM = [
   "author_side: من كتب المستند: plaintiff_side (المدعي أو وكيله، مثل صحيفة الدعوى)، defendant_side (المدعى عليه أو وكيله، مثل مذكرة دفاع المدعى عليه)، court (المحكمة: محضر جلسة، حكم، قرار)، other.",
   "الطلبات (requests): الطلبات الختامية لكاتب المستند كما وردت (kind: أصلي / احتياطي / مستعجل إن ذُكر). لا تجعل طلبات الحضور أو الأجل في محضر الجلسة طلبات؛ ضعها في decision_text أو الوقائع.",
   "الدفوع (arguments): الدفوع والدفاع الوارد في المستند. side = opponent إن كان المستند من الخصم (مثل مذكرة دفاع المدعى عليه)، وours إن كان من جانبنا؛ إن لم يتضح فاجعلها opponent. kind: دفع شكلي / دفع موضوعي / دفاع.",
-  "الجلسات (hearings): كل جلسة مذكور تاريخها، وقرارها إن ذُكر (postponed للتأجيل مع next_date تاريخ الجلسة التالية، وغير ذلك)، وسبب القرار أو المطلوب في decision_text / next_requirements.",
+  "الجلسات (hearings): كل جلسة مذكور تاريخها، وقرارها إن ذُكر (postponed للتأجيل مع next_date تاريخ الجلسة التالية، وغير ذلك)، وسبب القرار أو المطلوب في decision_text / next_requirements، ومكان الجلسة (الدور / القاعة / المبنى) في location فقط إن كان مكتوبًا حرفيًا، وإلا اتركه فارغًا.",
   "doc_type: claim_sheet صحيفة دعوى، opponent_memo مذكرة الخصم، our_memo مذكرتنا، judgment حكم فقط، contract عقد، وهكذا. محضر الجلسة أو قرار التأجيل ليس حكمًا: اجعل doc_type = other وtitle = «محضر جلسة». title: عنوان المستند كما ورد.",
 ].join("\n");
 
@@ -313,12 +313,13 @@ export function extractionToOps({ ex, documentId, caseId, pages, existing }: Ops
     let hearingRef: string;
     if (have) {
       if (!clean(hr.decision)) { dropped.push({ tool: "add_hearing", reason: `الجلسة ${date} موجودة بالفعل في الدعوى` }); continue; }
+      if (clean(hr.location) && verifyQuote(clean(hr.location), [pageText])) push("set_hearing_location", { hearing: have.id, location: clean(hr.location) }, hr.page, clean(hr.quote));
       if (have.decided) { dropped.push({ tool: "record_decision", reason: `جلسة ${date} مسجّل لها قرار بالفعل` }); continue; }
       hearingRef = have.id;
     } else {
       const ref = `hearing${++h}`;
       const before = ops.length;
-      push("add_hearing", { ref, case: caseRef, date, purpose: clean(hr.next_requirements) && !clean(hr.decision) ? clean(hr.next_requirements) : undefined }, hr.page, clean(hr.quote));
+      push("add_hearing", { ref, case: caseRef, date, purpose: clean(hr.next_requirements) && !clean(hr.decision) ? clean(hr.next_requirements) : undefined, location: clean(hr.location) && verifyQuote(clean(hr.location), [pageText]) ? clean(hr.location) : undefined }, hr.page, clean(hr.quote));
       if (ops.length === before || !clean(hr.decision)) continue;
       hearingRef = `@${ref}`;
     }
@@ -338,7 +339,7 @@ function oursName(ex: Extraction): string { return clean(ex.our_client?.name); }
 
 const COUNT_LABEL: Record<string, string> = {
   create_case: "بيانات دعوى جديدة", add_party: "أطراف", add_fact: "وقائع", add_request: "طلبات", add_argument: "دفوع",
-  add_hearing: "جلسات", record_decision: "قرارات جلسات", create_client: "موكل",
+  add_hearing: "جلسات", set_hearing_location: "أماكن جلسات", record_decision: "قرارات جلسات", create_client: "موكل",
 };
 
 export function summaryText(fileName: string, pageCount: number, ex: Extraction | null, ops: DraftOp[], suspicious: { page: number; quote: string }[], hasCase: boolean, totalPages = pageCount): string {

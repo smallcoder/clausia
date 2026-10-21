@@ -7,7 +7,7 @@ import "server-only";
  * Storage: assistant rows keep tool_calls = {calls, raw} (raw = provider parts incl. thought signatures,
  * sent back unchanged); tool rows keep tool_calls = {results}. A card's proposal points at its assistant row.
  */
-import { formatDmy, todayIso } from "@/lib/dates";
+import { formatDmy, normalizeDigits, todayIso } from "@/lib/dates";
 import type { Json } from "@/lib/db/types";
 import { caseLabel } from "@/lib/labels";
 import { getLlm, type LlmMessage, type LlmToolCall } from "@/lib/llm";
@@ -138,6 +138,12 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promis
       const badId = Object.entries(call.args).filter(([k, v]) => REF_KEYS.includes(k) && typeof v === "string" && !v.startsWith("@") && !UUID.test(v));
       if (badId.length) {
         results.set(call.id, { error: `لم يُقترح: ${badId.map(([k]) => k).join("، ")} يجب أن يكون معرّفًا (uuid) أو «@مرجع». ابحث عنه أولًا.` });
+        continue;
+      }
+      // never guess: a date / year / number / court / circuit must be in the lawyer's words or an attached paper
+      const unsupported = notInSource(call.args, [text, ...sourceTexts]);
+      if (unsupported.length) {
+        results.set(call.id, { error: `لم يُقترح: ${unsupported.join("؛ ")}. اسأل المحامي سؤال واحد قصير ومتخمّنش.` });
         continue;
       }
       const ref = call.args.ref;
@@ -303,4 +309,57 @@ async function loadSourceTexts(db: Db, threadId: string): Promise<string[]> {
     for (const p of pages ?? []) texts.push(p.text);
   }
   return texts;
+}
+
+const DATE_KEYS = ["date", "facts_date", "next_date", "appeal_deadline"] as const;
+const AR_MONTHS = ["يناير", "فبراير", "مارس", "أبريل|ابريل", "مايو", "يونيو", "يوليو", "أغسطس|اغسطس", "سبتمبر", "أكتوبر|اكتوبر", "نوفمبر", "ديسمبر"];
+
+/** Which proposed values are not backed by the source texts (lawyer's messages + attached papers). */
+export function notInSource(args: Record<string, unknown>, texts: string[]): string[] {
+  const src = normalizeDigits(texts.join("\n"));
+  const norm = normalizeForMatch(src);
+  const out: string[] = [];
+  for (const k of DATE_KEYS) {
+    const v = args[k];
+    if (typeof v !== "string" || !v.trim()) continue;
+    const p = normalizeDigits(v).split(/[/\-.]/).map((x) => x.trim()).filter(Boolean);
+    const year = p.at(-1) ?? "";
+    if (year && !src.includes(year)) { out.push(`السنة ${year} في «${v}» مش مذكورة`); continue; }
+    if (p.length === 3) {
+      const [d, m] = p;
+      const numeric = new RegExp(`(^|\\D)0?${d}\\s*[/\\-.]\\s*0?${m}(\\D|$)`).test(src);
+      const named = new RegExp(`(^|\\D)0?${d}\\s+(${AR_MONTHS[Number(m) - 1] ?? "x"})`).test(src);
+      const iso = new RegExp(`${year}\\s*-\\s*0?${m}\\s*-\\s*0?${d}(\\D|$)`).test(src);
+      if (!numeric && !named && !iso) out.push(`التاريخ «${v}» مش مذكور كده`);
+    }
+  }
+  for (const k of ["case_number", "case_year"] as const) {
+    const v = args[k];
+    if (v !== undefined && v !== null && String(v).trim() && !src.includes(normalizeDigits(String(v)).trim())) out.push(`${k === "case_number" ? "رقم الدعوى" : "سنة الدعوى"} «${v}» مش مذكور`);
+  }
+  {
+    // court: must be named AS a court («محكمة جنوب الجيزة …» / «المحكمة الاقتصادية …»), not just a place
+    // («بمدينة نصر»). Also accepted: the name alone when it says what kind of court it is («استئناف القاهرة»,
+    // «جنوب الجيزة الابتدائية»).
+    const v = args.court;
+    if (typeof v === "string" && v.trim()) {
+      const fold = (x: string) => normalizeForMatch(x.replace(/(^|\s)المحكم[ةه](?=\s)/g, "$1محكمة"));
+      const srcF = fold(src);
+      const base = v.trim().replace(/^(ال)?محكم[ةه]\s+/, "");
+      const short = base.replace(/\s+(الابتدائي[ةه]|الجزئي[ةه]|الكلي[ةه])(?=\s|$)/g, "").trim();
+      const kind = /استئناف|ابتدائي|جزئي|كلي|اقتصادي|إداري|اداري|أسر[ةه]|اسر[ةه]|نقض|جنايات|جنح|عمال/.test(base);
+      const ok = [`محكمة ${base}`, `محكمة ${short}`].some((x) => srcF.includes(fold(x))) || (kind && base.split(/\s+/).length > 1 && srcF.includes(fold(base)));
+      if (!ok) out.push(`المحكمة «${v}» مش مذكورة بالاسم`);
+    }
+    // circuit: its number / name must be there, next to the word «دائرة» when it is only a number
+    const c = args.circuit;
+    if (typeof c === "string" && c.trim()) {
+      const core = normalizeForMatch(c.replace(/الدائر[ةه]|دائر[ةه]|مدني|كلي/g, " "));
+      const found = /^\d+$/.test(core)
+        ? new RegExp(`دائر[ةه]\\s*(رقم\\s*)?${core}(\\D|$)`).test(norm)
+        : !!core && norm.includes(core);
+      if (core && !found) out.push(`الدائرة «${c}» مش مذكورة`);
+    }
+  }
+  return out;
 }

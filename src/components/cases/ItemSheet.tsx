@@ -10,7 +10,8 @@ import { editItemText, reviewItem } from "@/app/(app)/cases/actions";
 
 const CloseCtx = createContext<() => void>(() => {});
 
-export function TapItem({ id, title, row, children, className = "" }: { id: string; title: string; row: ReactNode; children: ReactNode; className?: string }) {
+/** `tight`: no 44px minimum, the row is exactly as tall as the mockup draws it (fact timeline, لنا / ضدنا lines). */
+export function TapItem({ id, title, row, children, className = "", tight = false }: { id: string; title: string; row: ReactNode; children: ReactNode; className?: string; tight?: boolean }) {
   const ref = useRef<HTMLDialogElement>(null);
   const hash = `#item-${id}`;
   const close = useCallback(() => ref.current?.close(), []);
@@ -25,7 +26,7 @@ export function TapItem({ id, title, row, children, className = "" }: { id: stri
   return (
     <div id={`item-${id}`} className="scroll-mt-24">
       <button type="button" onClick={() => ref.current?.showModal()} aria-haspopup="dialog"
-        className={`block min-h-11 w-full cursor-pointer text-start transition-colors hover:bg-card-2/60 focus-visible:bg-card-2/60 ${className}`}>
+        className={`block ${tight ? "" : "min-h-11"} w-full cursor-pointer text-start transition-colors hover:bg-card-2/60 focus-visible:bg-card-2/60 ${className}`}>
         {row}
       </button>
       <dialog ref={ref} aria-label={title}
@@ -91,7 +92,7 @@ export function SheetEditText({ table, id, caseId, initial }: { table: string; i
     <form action={action} className="space-y-2">
       <Hidden v={{ table, id, case_id: caseId }} />
       <textarea name="value" defaultValue={initial} rows={4} autoFocus aria-label="نص البند"
-        className="text-doc block w-full resize-y rounded-2xl border border-border bg-field px-3.5 py-2.5 text-[15px] text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)]" />
+        className="text-doc block w-full resize-y rounded-2xl border border-border bg-field px-3.5 py-2.5 text-[15px] text-text focus:outline-none focus:border-gold" />
       {state?.error ? <p className="text-[13px] text-bad">{state.error}</p> : null}
       <div className="flex gap-2">
         <button disabled={pending} className="bg-primary-fill h-11 flex-1 rounded-full text-[15px] font-bold disabled:opacity-50">{pending ? "بيتحفظ…" : "حفظ"}</button>

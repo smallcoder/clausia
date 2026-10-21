@@ -1,11 +1,9 @@
 /**
  * Home wording, built from real data (no LLM call): the long date, the greeting, Arabic counts,
- * the Clausia sentence and the «آخر ما سجّلته» line. Pure functions — no DB access.
+ * and the Clausia sentence. Pure functions — no DB access.
  */
-import { formatDmy, normalizeDigits, parseDmy } from "@/lib/dates";
+import { normalizeDigits } from "@/lib/dates";
 import type { HearingWithCase } from "@/lib/hearings";
-import { DECISION } from "@/lib/labels";
-import type { ProposalOp } from "@/lib/proposals";
 
 const AR_WEEKDAYS = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
 const AR_MONTHS = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
@@ -48,6 +46,12 @@ export function rowTitle(h: HearingWithCase): string {
   return client || subject || caseNumber(h, "long") || "دعوى بلا رقم";
 }
 
+/** Where the hearing is: «استئناف القاهرة · الدائرة 7 مدني» (the schema has no floor/hall, so the circuit stands in). */
+export function placeLine(h: HearingWithCase): string {
+  const circuit = h.case.circuit?.trim();
+  return [shortCourt(h.case.court), circuit].filter(Boolean).join(" · ");
+}
+
 /** «8833 لسنة 2024» (desktop) or «8833/2024» (mobile). */
 export function caseNumber(h: HearingWithCase, style: "long" | "short"): string {
   const { case_number: n, case_year: y } = h.case;
@@ -56,87 +60,37 @@ export function caseNumber(h: HearingWithCase, style: "long" | "short"): string 
   return style === "long" ? `${n} لسنة ${y}` : `${n}/${y}`;
 }
 
-/** The Clausia line: today's (or tomorrow's) roll, then the hearings that still need a decision. */
-export function clausiaSentence({ today, tomorrow, undecided }: { today: HearingWithCase[]; tomorrow: HearingWithCase[]; undecided: number }): string {
+/**
+ * The Clausia line, in parts so the view can bold the gold bit and drop the long bits on mobile:
+ * `roll` + `where` (desktop only) + «.» + ` وفيه ` + `late.gold` (bold gold) + `late.tail` + `ask` (desktop only).
+ * `late` is null when nothing is waiting for a decision; then `calm` (no gold) is said instead.
+ */
+export interface ClausiaLine {
+  roll: string;
+  where: string;
+  late: { gold: string; tail: string } | null;
+  calm: string;
+  ask: string;
+}
+
+export function clausiaLine({ today, tomorrow, undecided }: { today: HearingWithCase[]; tomorrow: HearingWithCase[]; undecided: number }): ClausiaLine {
   const firstCourt = (hs: HearingWithCase[]) => shortCourt(hs[0].case.court);
   const allSameCourt = (hs: HearingWithCase[]) => new Set(hs.map((h) => shortCourt(h.case.court))).size === 1;
   const where = (hs: HearingWithCase[]) => (hs.length === 1 ? ` في ${firstCourt(hs)}` : allSameCourt(hs) ? `، ${hs.length === 2 ? "الاتنين" : "كلها"} في ${firstCourt(hs)}` : `، أولها في ${firstCourt(hs)}`);
 
   let roll: string;
-  if (today.length) roll = `عندك ${hearingsCount(today.length)} النهارده${where(today)}.`;
-  else if (tomorrow.length) roll = `مفيش جلسات النهارده. بكره عندك ${hearingsCount(tomorrow.length)}${where(tomorrow)}.`;
-  else roll = "مفيش جلسات النهارده ولا بكره.";
+  let at = "";
+  if (today.length) { roll = `عندك ${hearingsCount(today.length)} النهارده`; at = where(today); }
+  else if (tomorrow.length) { roll = `مفيش جلسات النهارده. بكره عندك ${hearingsCount(tomorrow.length)}`; at = where(tomorrow); }
+  else roll = "مفيش جلسات النهارده ولا بكره";
 
-  let late = "";
-  if (undecided === 1) late = " وفيه جلسة فاتت لسه قرارها متسجلش. تحب نبدأ بيها؟";
-  else if (undecided === 2) late = " وفيه جلستين فاتت لسه قرارها متسجلش. تحب نبدأ بيها؟";
-  else if (undecided > 2) late = ` وفيه ${hearingsCount(undecided)} فاتت لسه قرارها متسجلش. تحب نبدأ بيها؟`;
-  else if (!today.length && !tomorrow.length) late = " اكتبلي عن موكل جديد أو اسألني عن أي قضية.";
-  return roll + late;
-}
-
-/* ---------- «آخر ما سجّلته» ---------- */
-
-const s = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
-const d = (v: unknown) => { const p = parseDmy(s(v)); return p ? formatDmy(p.iso, p.precision) : null; };
-
-/** One confirmed op in Clausia's voice (past tense, first person). */
-function describeOp(o: ProposalOp): string {
-  const a = o.args;
-  switch (o.tool) {
-    case "create_client": return s(a.name) ? `أضفت الموكل ${s(a.name)}` : "أضفت موكلًا جديدًا";
-    case "create_case": {
-      const no = s(a.case_number) ?? (typeof a.case_number === "number" ? String(a.case_number) : null);
-      return no ? `فتحت الدعوى ${no}${a.case_year ? ` لسنة ${a.case_year}` : ""}` : "فتحت دعوى جديدة";
-    }
-    case "update_case": return "عدّلت بيانات الدعوى";
-    case "add_party": return s(a.name) ? `أضفت ${s(a.name)} طرفًا في الدعوى` : "أضفت طرفًا في الدعوى";
-    case "add_fact": return "أضفت واقعة";
-    case "add_request": return "أضفت طلبًا لموكلنا";
-    case "add_argument": return a.side === "ours" ? "أضفت دفاعًا لنا" : "أضفت دفعًا للخصم";
-    case "add_hearing": return d(a.date) ? `أضفت جلسة ${d(a.date)}` : "أضفت جلسة";
-    case "record_decision": {
-      const label = DECISION[a.decision as keyof typeof DECISION];
-      const next = d(a.next_date);
-      return `سجّلت قرار الجلسة${label ? ` «${label}»` : ""}${next ? ` لجلسة ${next}` : ""}`;
-    }
-    case "add_judgment": return "سجّلت الحكم";
-    case "attach_document": return "ربطت مستندًا بالدعوى";
-    default: return "سجّلت بندًا";
-  }
-}
-
-/** «وبند تاني» / «وبندين كمان» / «و4 بنود تانية» */
-function others(n: number): string {
-  if (n === 1) return " وبند تاني";
-  if (n === 2) return " وبندين كمان";
-  return n <= 10 ? ` و${n} بنود تانية` : ` و${n} بند تاني`;
-}
-
-/** Cairo clock time «11:42 ص» (with «d/m/yyyy» first when it was not today). */
-export function clockLabel(ts: string, todayIsoCairo: string): string {
-  const at = new Date(ts);
-  const day = new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Cairo", year: "numeric", month: "2-digit", day: "2-digit" }).format(at);
-  const parts = new Intl.DateTimeFormat("en-US", { timeZone: "Africa/Cairo", hour: "numeric", minute: "2-digit", hour12: true }).formatToParts(at);
-  const hh = parts.find((p) => p.type === "hour")?.value ?? "";
-  const mm = parts.find((p) => p.type === "minute")?.value ?? "";
-  const pm = parts.find((p) => p.type === "dayPeriod")?.value.toUpperCase() === "PM";
-  const time = `${hh}:${mm} ${pm ? "م" : "ص"}`;
-  return day === todayIsoCairo ? time : `${formatDmy(day)} ${time}`;
-}
-
-/**
- * «أضفت جلسة 5/11/2026 لقضية عادل النموذجي، بعد تأكيدك» from the confirmed ops of the latest decided card.
- * `caseName` is left out when the card itself opened the case.
- */
-export function describeProposal(ops: ProposalOp[], caseName: string | null): string | null {
-  const done = ops.filter((o) => o.status === "confirmed");
-  if (!done.length) return null;
-  const openedCase = done.some((o) => o.tool === "create_case" || o.tool === "create_client");
-  // the op that says most about the card leads; the rest are counted
-  const lead = done.find((o) => o.tool === "record_decision") ?? done.find((o) => o.tool === "create_client") ?? done.find((o) => o.tool === "create_case")
-    ?? done.find((o) => o.tool === "add_hearing") ?? done.find((o) => o.tool === "add_judgment") ?? done[0];
-  const rest = done.length - 1;
-  const forCase = caseName && !openedCase ? ` لقضية ${caseName}` : "";
-  return `${describeOp(lead)}${forCase}${rest ? others(rest) : ""}، بعد تأكيدك`;
+  let late: ClausiaLine["late"] = null;
+  let ask = "";
+  let calm = "";
+  if (undecided === 1) { late = { gold: "جلسة فاتت", tail: " لسه قرارها متسجلش." }; ask = " تحب نبدأ بيها؟"; }
+  else if (undecided === 2) { late = { gold: "جلستين فاتوا", tail: " لسه قرارهم متسجلش." }; ask = " تحب نبدأ بيهم؟"; }
+  else if (undecided > 2) { late = { gold: `${hearingsCount(undecided)} فاتت`, tail: " لسه قرارها متسجلش." }; ask = " تحب نبدأ بيها؟"; }
+  else if (today.length || tomorrow.length) calm = " وكل الجلسات اللي فاتت قراراتها متسجلة.";
+  else calm = " اكتبلي عن موكل جديد أو اسألني عن أي قضية.";
+  return { roll, where: at, late, calm, ask };
 }

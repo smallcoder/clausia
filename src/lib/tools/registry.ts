@@ -106,6 +106,12 @@ export const WRITE_TOOL_ARGS = {
     case: ref("الدعوى"),
     date: dmy("تاريخ الجلسة"),
     purpose: z.string().optional().describe("الغرض من الجلسة أو المطلوب فيها، إن ذُكر"),
+    location: z.string().optional().describe("مكان الجلسة كما كُتب أو قيل حرفيًا (الدور، القاعة، المبنى)، مثل «الدور 4 · قاعة 12». لا تخمّنه."),
+    quote,
+  }),
+  set_hearing_location: z.object({
+    hearing: ref("الجلسة"),
+    location: z.string().min(2).describe("مكان الجلسة كما كُتب في الورقة أو قاله المحامي حرفيًا (الدور، القاعة، المبنى). لا تخمّنه."),
     quote,
   }),
   record_decision: z.object({
@@ -149,7 +155,8 @@ export const WRITE_TOOL_DESCRIPTIONS: Record<WriteTool, string> = {
   add_fact: "اقتراح إضافة واقعة مؤرخة إلى الدعوى.",
   add_request: "اقتراح إضافة طلب من طلبات موكلنا.",
   add_argument: "اقتراح إضافة دفع أو دفاع (للخصم أو لنا).",
-  add_hearing: "اقتراح إضافة جلسة بتاريخها.",
+  add_hearing: "اقتراح إضافة جلسة بتاريخها (ومكانها إن ذُكر).",
+  set_hearing_location: "اقتراح تسجيل مكان جلسة موجودة (الدور / القاعة / المبنى) كما ذُكر فقط.",
   record_decision: "اقتراح تسجيل قرار جلسة. عند التأجيل يجب ذكر تاريخ الجلسة القادمة، وتُنشأ تلقائيًا.",
   add_judgment: "اقتراح تسجيل حكم أو قرار صادر. ميعاد الطعن فقط إن ذكره المحامي.",
   attach_document: "اقتراح ربط مستند مرفوع بدعوى وتحديد نوعه.",
@@ -170,6 +177,7 @@ export const OP_TITLE: Record<WriteTool, string> = {
   add_request: "طلب لموكلنا",
   add_argument: "دفع / دفاع",
   add_hearing: "جلسة",
+  set_hearing_location: "مكان الجلسة",
   record_decision: "قرار جلسة",
   add_judgment: "حكم",
   attach_document: "ربط مستند",
@@ -240,6 +248,11 @@ export const OP_FIELDS: Record<WriteTool, FieldSpec[]> = {
     { key: "case", label: "الدعوى", type: "ref" },
     { key: "date", label: "تاريخ الجلسة", type: "date" },
     { key: "purpose", label: "الغرض / المطلوب", type: "text" },
+    { key: "location", label: "المكان", type: "text" },
+  ],
+  set_hearing_location: [
+    { key: "hearing", label: "الجلسة", type: "ref" },
+    { key: "location", label: "المكان", type: "text" },
   ],
   record_decision: [
     { key: "hearing", label: "الجلسة", type: "ref" },

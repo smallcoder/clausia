@@ -19,6 +19,8 @@ export interface HearingCase {
   client_role: E["party_role"] | null;
   status: E["case_status"];
   client_name: string | null;
+  /** «مدني» / «عمال» … free text, shown after the case number in the roll */
+  case_type: string | null;
 }
 
 export interface HearingRow {
@@ -26,6 +28,7 @@ export interface HearingRow {
   case_id: string;
   hearing_date: string;
   purpose: string | null;
+  location: string | null;
   decision_type: E["hearing_decision"] | null;
   decision_text: string | null;
   next_requirements: string | null;
@@ -44,8 +47,8 @@ export interface HearingWithCase extends HearingRow {
 }
 
 const HEARING_COLS =
-  "id, case_id, hearing_date, purpose, decision_type, decision_text, next_requirements, previous_hearing_id, next_hearing_id, review_status, created_by_kind, source_kind, source_page";
-const WITH_CASE = `${HEARING_COLS}, cases!inner(id, case_number, case_year, title, court, circuit, client_role, status, clients(name))`;
+  "id, case_id, hearing_date, purpose, location, decision_type, decision_text, next_requirements, previous_hearing_id, next_hearing_id, review_status, created_by_kind, source_kind, source_page";
+const WITH_CASE = `${HEARING_COLS}, cases!inner(id, case_number, case_year, title, court, circuit, client_role, status, case_type, clients(name))`;
 
 type RawCase = Omit<HearingCase, "client_name"> & { clients: { name: string } | null };
 type Raw = HearingRow & { cases: RawCase };
@@ -142,4 +145,13 @@ export function weekStart(iso: string): string {
   const back = (wd + 1) % 7; // days since Saturday
   const dt = new Date(Date.UTC(y, m - 1, d - back));
   return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}-${String(dt.getUTCDate()).padStart(2, "0")}`;
+}
+
+/**
+ * The roll's «الجلسة الجاية»: the first hearing in `rows` (display order) with no decision yet, with its
+ * 1-based position and the total. null when every hearing in `rows` is decided (or there are none).
+ */
+export function nextUndecided(rows: HearingWithCase[]): { h: HearingWithCase; index: number; total: number } | null {
+  const i = rows.findIndex((h) => !h.decision_type);
+  return i < 0 ? null : { h: rows[i], index: i + 1, total: rows.length };
 }

@@ -1,25 +1,56 @@
-# Clausia design reference
+# Clausia design reference (v2)
 
-The 20 `*.dc.html` files here are the approved screens: Home, Chat, Case, Roll and Cases, in dark and light, on desktop and mobile. They are design mockups, not app code. Inline styles, `{{holes}}`, `sc-for` and `sc-if` are mockup templating. The sample data in `renderVals()` at the bottom of each file is fake.
+The 20 `*.dc.html` files here are the approved screens: Home, Chat, Case, Roll and Cases, in dark and light, on desktop and mobile. They are mockups, not app code: inline styles, `{{holes}}`, `sc-for` and `sc-if` are mockup templating, and the data in `renderVals()` is fake. This version replaces v1 completely.
 
 ## Principles
-- Chat-first. Clausia (never "مساعد") does everything. Every screen has the composer, and lists and pages are views of what Clausia saved.
-- Arabic RTL. The desktop chat column is 820px and centered, and desktop content is at most about 1040–1120px. Full-width layouts are not wanted.
-- The look is calm and solid: depth comes from soft shadows, 1px borders and inset highlights. No loud gradients, no background patterns.
+- Chat-first. Clausia (never "مساعد") does everything. There is one input per screen, the composer; it searches, asks and adds. There is no separate search bar.
+- Calm luxury: lots of space, few boxes, large light numbers, and gold only for things that need the lawyer's action.
+- Glass only on floating controls: the top bar, tab capsule, composer, round buttons and suggestion chips. Content (cards, tables, lists) is solid. Content scrolls under the floating composer, which has a soft fade behind it.
+- RTL Arabic. Desktop pages are at most 1360px wide (Home 960px; Chat 820px; the composer 780px), centered. Below 1280px, full width with 32px side padding.
 
 ## Type
 - UI: `-apple-system, BlinkMacSystemFont, 'SF Arabic', 'SF Pro Text', system-ui, 'Vazirmatn', sans-serif`
-- Numbers: `-apple-system, 'SF Pro Display', system-ui, 'Inter', sans-serif`
+- Numbers: `-apple-system, 'SF Pro Display', system-ui, 'Inter', sans-serif`. Stats are large and light (weight 200–300).
 - Quoted legal or court text: `'Noto Naskh Arabic', serif`
+- Page titles are 44–46px desktop and 30–36px mobile, weight 700. Eyebrows are 12–13px, muted.
 
-## Color
-- Accent (champagne): `#D6C08F`. Accent gradient, kept subtle: `linear-gradient(135deg, mix(accent→white,16%) 0%, accent 45%, mix(accent→#282828,8%) 100%)`
-- Ink: `#141C2E` (text `#121A2B`)
-- Dark background: `radial-gradient(900px 480px at 50% -10%, rgba(214,192,143,0.07), transparent 70%), #0B0F18`
-- Dark surfaces: `#141A27` (cards), `#151B29`, `#171E2D` (composer and inputs), `#171D2B` (chips), `#1E2535`
-- Light background: `linear-gradient(180deg, #FFFFFF 0px, #F4F5F8 380px)`. Light cards `#FFFFFF`; cool grays `#F1F3F6`, `#ECEFF3`, `#F4F6F9`. No beige.
-- Light-mode accent text: `#7A5E24`. Light mode uses ink with accent where dark mode uses the accent gradient.
+## Color (one identity, navy ink and champagne)
+| Token | Light | Dark |
+|---|---|---|
+| page | `#ECEEF2` + white top glow | `#14161C` + faint white top glow |
+| card | `#FFFFFF` | `#1C1F27` |
+| text / title | `#121A2B` / `#0F1626` | `#ECEDF0` / `#FFFFFF` |
+| muted / faint | `#6A6E76` / `#9A9EA6` | `#8C909A` / `#6A6E78` |
+| hairline | `rgba(18,26,43,0.06)` | `rgba(255,255,255,0.06)` |
+| brand mark, selected tab or filter or day | ink `#141C2E`, gold letter | `#222C44` mark, `#26314B` selected |
+| primary button (send, save, record) | ink `#141C2E`, white text | `#F2F2F4`, ink text |
+| gold (needs action) | `#897038` | `#D6C08F` |
 
-## Inner-page hero header (Roll, Case, Chat, Cases)
-- Back button, then an icon tile, an eyebrow line, a big title, and 3 stat tiles. The last tile holds the item that needs action and is highlighted.
-- Dark: a solid ink section with an accent edge. Light: a white card with gray tiles, and the highlighted tile in ink with accent text.
+- Never use a gold fill, a gradient or a glow on buttons. Gold is used for text, small dots, thin outlines and big light numbers only.
+- Status uses a small dot plus a word: needs decision is gold, reserved is muted, active is green (`#1F7A4A` light, `#7FD3A4` dark), and against-us is red (`#A23B3B` light, `#E9A0A0` dark).
+
+## Glass recipe
+- Dark: a radial white sheen 15%→4% over `rgba(32,37,50,0.5)`, backdrop blur 30px, saturate 160%; a 1px white border at 9%; an inset top-left highlight; a deep shadow.
+- Light: a white gradient 78%→52%, backdrop blur 24px, saturate 190%; a white border; a 0.5px ink outline at 10%; a white top inset highlight; a soft inner bottom shade; a drop shadow.
+
+## Screen notes
+- Top bar: the brand plus office name, a centered glass tab capsule (Home, Hearings, Cases), and glass circles for alerts and account. On mobile it shows the logo, the capsule (active tab labeled, the others icon-only) and the account.
+- Case: who first (client big, «ضد» opponent below), then a spec sheet (number, court, circuit, type), then the next hearing, the Clausia summary, the needs-review banner, and tabs (Facts, Docs, Parties) on mobile.
+- Roll: a day strip with dots per hearing, then a timeline by court; the next hearing is expanded with a "سجّل قرار الجلسة دي" button. On desktop, a side card lists past hearings that need a decision, each with a record button.
+
+## Owner decisions (2026-10-21)
+- Font: the system Arabic font (SF Arabic on Apple devices); no bundled Arabic web font.
+- Tap targets: controls are drawn at the mockup sizes (36–42px) and get an invisible 44px tap area (`.tap`).
+- No mic button until voice notes are built.
+- Hearing location («الدور 4 · قاعة 12», «العباسية») is a stored field. Clausia proposes it from a paper or the chat through a confirmation card and never guesses it; when it is empty the circuit is shown.
+- Dates stay d/m/yyyy.
+- States the mockups don't draw (empty, a past hearing with no decision, tomorrow's hearings) stay as built.
+- Every screen has the same soft fade behind the floating composer and chips (Home too).
+- Home mobile chips scroll sideways.
+- Case: judgments live in the hearings view; the links (case details, hearings, case chat, JSON) live in the «…» menu; long court / case-type names are one line with «…» on mobile.
+- Case desktop header: back · breadcrumb … status chip · «…» (the menu sits at the end of the row, next to the chip). The header card keeps the mockup's widths: 4 wider data cells and 3 narrower stat cells, aligned on one line and split by hairlines.
+- Cases: the third stat is «محتاجة قرار» with its own filter; each row keeps its review marker; extra status filters scroll on mobile; an active filter's clear pill comes first in the row (at the right).
+- Roll: on mobile, swipe the day strip to change the week (drag right → next week, as RTL); on desktop, two small quiet prev/next week buttons at the two ends of the strip (no separate row); the next-week arrow points left.
+- Roll: the strip shows Saturday–Thursday. Friday is hidden unless that week's Friday has a hearing (or is the chosen day).
+- Chat: the card footer's second line (save as suggestions · reject all · open case) shows only after «عدّل»; the /chat list uses the thread's style.
+- Loading: one shared skeleton in each page's real layout (title, stats, card or table shapes), card + hairline tokens, one calm shimmer, no spinners; the top bar and composer stay visible.

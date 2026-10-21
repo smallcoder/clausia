@@ -42,7 +42,7 @@ export function InlineEdit({
     return (
       <span className="inline-flex flex-wrap items-baseline gap-x-2">
         <span>{display}</span>
-        <button type="button" onClick={() => setOpen(true)} className="-my-2 inline-flex min-h-11 items-center px-2 text-[13px] font-semibold text-gold-text hover:underline">{label}</button>
+        <button type="button" onClick={() => setOpen(true)} className="-my-2 inline-flex min-h-11 items-center px-2 text-[13px] font-semibold text-text-2 hover:text-text hover:underline">{label}</button>
       </span>
     );
   }

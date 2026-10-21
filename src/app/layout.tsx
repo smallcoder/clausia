@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Noto_Naskh_Arabic, Vazirmatn } from "next/font/google";
+import { Inter, Noto_Naskh_Arabic } from "next/font/google";
 import "./globals.css";
 
-const vazir = Vazirmatn({ subsets: ["arabic", "latin"], weight: ["400", "500", "600", "700", "800", "900"], variable: "--font-vazir", display: "swap" });
 const inter = Inter({ subsets: ["latin"], weight: ["400", "600", "700", "800", "900"], variable: "--font-inter", display: "swap" });
 const naskh = Noto_Naskh_Arabic({ subsets: ["arabic"], weight: ["400", "600"], variable: "--font-naskh", display: "swap" });
 
@@ -22,7 +21,7 @@ const THEME_SCRIPT = `try{var t=localStorage.getItem("clausia-theme");if(t==="li
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ar" dir="rtl" className={`${vazir.variable} ${inter.variable} ${naskh.variable}`} suppressHydrationWarning>
+    <html lang="ar" dir="rtl" className={`${inter.variable} ${naskh.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
