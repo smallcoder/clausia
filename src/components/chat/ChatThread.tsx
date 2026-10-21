@@ -208,7 +208,7 @@ export function ChatThread({ threadId, caseId, items, lookup, docs = {} }: {
               {status ?? <span className="sm:hidden">مفيش حاجة بتتحفظ من غير موافقتك</span>}
             </div>
             <button type="button" onClick={() => send()} disabled={!text.trim() || sending} aria-label="إرسال"
-              className={cx(HIT, "bg-primary-fill inline-flex size-[38px] shrink-0 items-center justify-center rounded-full transition disabled:opacity-50 sm:size-10")}>
+              className={cx(HIT, "bg-primary-fill inline-flex size-[38px] shrink-0 items-center justify-center rounded-full transition disabled:cursor-not-allowed sm:size-10")}>
               <ArrowUp aria-hidden size={19} strokeWidth={2.4} />
             </button>
           </div>
