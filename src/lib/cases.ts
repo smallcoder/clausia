@@ -2,7 +2,8 @@ import "server-only";
 /** Case queries for the list, search and case header. All take an RLS-bound `db` (no cookies here). */
 import type { Database } from "@/lib/db/types";
 import type { Db } from "@/lib/supabase/server";
-import { normalizeDigits, todayIso } from "@/lib/dates";
+import { addDaysIso, normalizeDigits, todayIso } from "@/lib/dates";
+import { weekStart } from "@/lib/hearings";
 import { CASE_STATUS, STAGE } from "@/lib/labels";
 
 type E = Database["public"]["Enums"];
@@ -46,8 +47,14 @@ export async function nextHearings(db: Db, caseIds: string[]): Promise<Map<strin
   return out;
 }
 
-export async function listCases(db: Db, opts: { q?: string; stage?: string; status?: string } = {}): Promise<CaseRow[]> {
+export async function listCases(db: Db, opts: { q?: string; stage?: string; status?: string; review?: boolean } = {}): Promise<CaseRow[]> {
   let query = db.from("cases").select(CASE_COLS).neq("review_status", "rejected").order("updated_at", { ascending: false }).limit(200);
+  // ?review=1: only the cases that need the lawyer's review (the same set as the «محتاجة مراجعة» tile)
+  if (opts.review) {
+    const ids = [...(await casesNeedingReview(db))];
+    if (!ids.length) return [];
+    query = query.in("id", ids);
+  }
   // URL params: only known enum values filter; anything else is ignored (an unknown value would make PostgREST error)
   if (opts.stage && isKey(STAGE, opts.stage)) query = query.eq("stage", opts.stage as E["case_stage"]);
   if (opts.status && isKey(CASE_STATUS, opts.status)) query = query.eq("status", opts.status as E["case_status"]);
@@ -127,4 +134,44 @@ export async function caseCounts(db: Db, caseId: string) {
     count("case_facts"), count("case_parties"), count("hearings"), count("documents"), count("case_requests"), count("case_arguments"), count("judgments"),
   ]);
   return { facts, parties, hearings, documents, requests, arguments: args, judgments };
+}
+
+/** Tables whose rows Clausia saves as `suggested` until the lawyer confirms them. */
+const REVIEW_TABLES = ["case_parties", "case_facts", "case_requests", "case_arguments", "judgments", "hearings", "documents"] as const;
+
+/**
+ * Cases that need the lawyer's review: the case itself or any of its items is still `suggested`
+ * (saved by Clausia, not yet confirmed), or it has a past hearing with no decision recorded
+ * (same rule as `undecidedPastHearings`). One definition for the cases-list tile, filter and row chip.
+ */
+export async function casesNeedingReview(db: Db): Promise<Set<string>> {
+  const [own, undecided, ...items] = await Promise.all([
+    db.from("cases").select("id").eq("review_status", "suggested"),
+    db.from("hearings").select("case_id").lt("hearing_date", todayIso()).is("decision_type", null).neq("review_status", "rejected"),
+    ...REVIEW_TABLES.map((t) => db.from(t).select("case_id").eq("review_status", "suggested")),
+  ]);
+  const ids = new Set<string>((own.data ?? []).map((c) => c.id));
+  for (const r of [undecided, ...items]) for (const row of (r.data ?? []) as { case_id: string | null }[]) if (row.case_id) ids.add(row.case_id);
+  if (!ids.size) return ids;
+  // keep only cases the list shows (not rejected)
+  const { data } = await db.from("cases").select("id").in("id", [...ids]).neq("review_status", "rejected");
+  return new Set((data ?? []).map((c) => c.id));
+}
+
+/** Office-wide case counts per status and stage (cases-list chips; not affected by the current filter). */
+export async function officeCaseCounts(db: Db) {
+  const { data, error } = await db.from("cases").select("status, stage").neq("review_status", "rejected");
+  if (error) throw new Error(error.message);
+  const status = Object.fromEntries(Object.keys(CASE_STATUS).map((k) => [k, 0])) as Record<E["case_status"], number>;
+  const stage = Object.fromEntries(Object.keys(STAGE).map((k) => [k, 0])) as Record<E["case_stage"], number>;
+  for (const r of data ?? []) { status[r.status]++; stage[r.stage]++; }
+  return { total: (data ?? []).length, status, stage };
+}
+
+/** Hearings in the current Sat–Fri week (Cairo), counted like the roll's `?view=week`. */
+export async function weekHearingsCount(db: Db): Promise<number> {
+  const from = weekStart(todayIso());
+  const { count } = await db.from("hearings").select("id", { count: "exact", head: true })
+    .gte("hearing_date", from).lte("hearing_date", addDaysIso(from, 6)).neq("review_status", "rejected");
+  return count ?? 0;
 }
