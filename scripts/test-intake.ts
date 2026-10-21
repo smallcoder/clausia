@@ -57,7 +57,7 @@ async function main() {
     for (const pid of r.proposalIds) decided.push(await decideProposal(db, pid, { mode: "confirm" }));
     turnLog.push({ i, proposals: decided, text: r.text, rounds: r.rounds });
     console.log(`#${i + 1} المحامي: ${MESSAGES[i]}`);
-    console.log(`   المساعد (${r.rounds} جولة، ${Date.now() - t0}ms): ${r.text.replace(/\s+/g, " ").slice(0, 220)}${r.error ? `  [ERROR ${r.error}]` : ""}`);
+    console.log(`   Clausia (${r.rounds} جولة، ${Date.now() - t0}ms): ${r.text.replace(/\s+/g, " ").slice(0, 220)}${r.error ? `  [ERROR ${r.error}]` : ""}`);
     for (const p of decided) for (const o of p.ops) console.log(`   - ${o.op_id} ${o.tool} ${JSON.stringify(o.args)} → ${o.status}${o.error ? ` (${o.error})` : ""}${o.quote_verified ? "" : " [quote unverified]"}`);
   }
 

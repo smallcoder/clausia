@@ -92,6 +92,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const [sheet, setSheet] = useState(false);
+  const [showDecided, setShowDecided] = useState(false);
 
   // resync with a fresh prop after router.refresh() (card decided in another tab or by another feature);
   // keyed on the statuses so a local decision that the server already reflects is not thrown away
@@ -390,8 +391,27 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
     );
   };
 
+  // a decided card collapses to one line: «اتحفظ N عنصر · افتح الملف» (tap to expand it again)
+  if (!openOps.length && !showDecided) {
+    const saved = p.ops.filter((o) => o.status === "confirmed" || o.status === "suggested").length;
+    return (
+      <div className="flex min-h-12 items-center gap-2.5 rounded-2xl border border-border-2 bg-card px-3.5 py-2 text-[13.5px] shadow-soft">
+        <span aria-hidden className="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-good-bg text-good"><Check size={14} strokeWidth={2.6} /></span>
+        <button type="button" onClick={() => setShowDecided(true)} aria-expanded={false}
+          className="min-h-11 min-w-0 flex-1 truncate text-start font-semibold text-text-2 hover:text-text">
+          {saved ? `اتحفظ ${saved} ${saved === 1 ? "عنصر" : saved === 2 ? "عنصرين" : saved <= 10 ? "عناصر" : "عنصر"}` : decisionSummary(p)}
+          <span className="font-normal text-text-4"> · اعرض التفاصيل</span>
+        </button>
+        {caseLink ? <Link href={`/cases/${caseLink}`} className="inline-flex min-h-11 shrink-0 items-center font-semibold text-gold-text hover:underline">افتح الملف ←</Link> : null}
+      </div>
+    );
+  }
+
   return (
     <>
+      {!openOps.length ? (
+        <button type="button" onClick={() => setShowDecided(false)} className="mb-1.5 inline-flex min-h-11 items-center text-[13px] font-semibold text-text-3 hover:text-text">اطوِ البطاقة</button>
+      ) : null}
       {card(false)}
       {showSheet ? (
         <div className="fixed inset-0 z-50 flex flex-col justify-end lg:hidden" role="dialog" aria-modal="true" aria-labelledby={`sheet-title-${p.id}`}>

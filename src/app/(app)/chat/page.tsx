@@ -44,7 +44,7 @@ export default async function ChatHome() {
     .sort((a, b) => b.at.localeCompare(a.at));
 
   return (
-    <div className="mx-auto flex w-full max-w-[820px] flex-1 flex-col gap-4 px-2.5 pt-2.5 sm:px-6 sm:pt-5">
+    <div className="mx-auto flex w-full max-w-[1024px] flex-1 flex-col gap-4 px-2.5 pt-2.5 sm:px-8 sm:pt-5">
       <PageHero
         back="/"
         icon={<span className="font-num text-[25px] font-black sm:text-[30px]">C</span>}

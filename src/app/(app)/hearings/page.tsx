@@ -41,7 +41,7 @@ function CourtCard({ court, items, today }: { court: string; items: HearingWithC
 
 function CourtGrid({ rows, today }: { rows: HearingWithCase[]; today: string }) {
   return (
-    <div className="grid items-start gap-3.5 sm:grid-cols-[repeat(auto-fit,minmax(290px,1fr))]">
+    <div className="grid items-start gap-3.5 sm:grid-cols-[repeat(auto-fill,minmax(300px,1fr))]">
       {groupBy(rows, courtOf).map((g) => <CourtCard key={g.key} court={g.key} items={g.items} today={today} />)}
     </div>
   );
@@ -119,7 +119,7 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
   const navBtn = "inline-flex size-11 sm:size-9 items-center justify-center rounded-full border border-border bg-chip text-text-2 shadow-soft transition hover:text-text";
 
   return (
-    <div className="mx-auto flex w-full max-w-[1040px] flex-1 flex-col px-2.5 pt-2.5 sm:px-10 sm:pt-4">
+    <div className="mx-auto flex w-full max-w-[1424px] flex-1 flex-col px-2.5 pt-2.5 sm:px-8 sm:pt-4">
       <PageHero
         action={<Link href="/hearings?filter=undecided" aria-label="الجلسات المحتاجة قرار" title="الجلسات المحتاجة قرار" className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-card-2 text-text"><ListFilter size={19} strokeWidth={2} aria-hidden /></Link>}
         back="/"
@@ -210,13 +210,8 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
       </div>
 
       <div className="min-h-6 flex-1" />
-      {/* the page fades out under the composer, so the chips never sit on top of a row */}
-      <div className="sticky bottom-0 z-20 -mx-2.5 bg-linear-to-t from-bg from-70% to-transparent px-3 pb-[calc(12px+env(safe-area-inset-bottom))] pt-6 sm:-mx-10 sm:px-10 sm:pb-7">
-        <div className="mx-auto w-full max-w-[820px]">
-        <Composer target={{ kind: "new" }} sticky={false} chips={chips}
-          placeholder="اكتب قرار أي جلسة… مثلاً: الإخلاء اتأجلت 5/11" />
-        </div>
-      </div>
+      <Composer target={{ kind: "new" }} chips={chips}
+        placeholder="اكتب قرار أي جلسة… مثلاً: الإخلاء اتأجلت 5/11" />
     </div>
   );
 }

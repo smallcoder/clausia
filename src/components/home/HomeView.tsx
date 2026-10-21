@@ -17,7 +17,7 @@ const CHIPS = [
 
 export function HomeView({ data, displayName }: { data: HomeData; displayName: string }) {
   return (
-    <div className="mx-auto flex w-full max-w-[820px] flex-1 flex-col px-[18px] pt-2.5 sm:px-6 sm:pt-7">
+    <div className="mx-auto flex w-full max-w-[1024px] flex-1 flex-col px-[18px] pt-2.5 sm:px-8 sm:pt-7">
       <p className="text-xs font-semibold text-text-3 sm:text-[13px]">{formatLongDay(data.today)}</p>
       <h1 className="mt-0.5 text-[22px] font-extrabold leading-[1.3] text-text sm:mt-1 sm:text-[28px]">{greeting(displayName)}</h1>
 
@@ -39,10 +39,7 @@ export function HomeView({ data, displayName }: { data: HomeData; displayName: s
 
       <div className="min-h-10 flex-1" />
 
-      <div className="sticky bottom-0 z-20 -mx-1.5 bg-gradient-to-t from-bg from-60% to-transparent px-1.5 pb-[calc(26px+env(safe-area-inset-bottom))] pt-[30px] sm:mx-0 sm:px-0 sm:pb-7 sm:pt-5">
-        {/* this wrapper gives the mockup's fade and bottom spacing, so the composer's own sticky is off (no double) */}
-        <Composer size="hero" target={{ kind: "new" }} chips={CHIPS} sticky={false} />
-      </div>
+      <Composer size="hero" target={{ kind: "new" }} chips={CHIPS} />
     </div>
   );
 }

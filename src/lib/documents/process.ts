@@ -344,18 +344,18 @@ const COUNT_LABEL: Record<string, string> = {
 export function summaryText(fileName: string, pageCount: number, ex: Extraction | null, ops: DraftOp[], suspicious: { page: number; quote: string }[], hasCase: boolean, totalPages = pageCount): string {
   const lines: string[] = [];
   const pagesWord = pageCount === 1 ? "صفحة واحدة" : pageCount === 2 ? "صفحتين" : `${pageCount} صفحات`;
-  lines.push(`قرأتُ ${pagesWord} من «${fileName}»${ex ? ` — ${DOC_TYPE[(ex.doc_type as keyof typeof DOC_TYPE)] ?? DOC_TYPE.other}` : ""}.`);
-  if (totalPages > pageCount) lines.push(`المستند ${totalPages} صفحة، وقرأتُ أول ${pageCount} صفحة فقط. الصفحات التالية لم تُقرأ؛ ارفعها في ملف منفصل.`);
+  lines.push(`قريت ${pagesWord} من «${fileName}»${ex ? ` — ${DOC_TYPE[(ex.doc_type as keyof typeof DOC_TYPE)] ?? DOC_TYPE.other}` : ""}.`);
+  if (totalPages > pageCount) lines.push(`الورقة ${totalPages} صفحة، وقريت أول ${pageCount} بس. الباقي ما اتقراش؛ ارفعه في ملف لوحده.`);
   const counts = new Map<string, number>();
   for (const o of ops) if (COUNT_LABEL[o.tool]) counts.set(o.tool, (counts.get(o.tool) ?? 0) + 1);
   if (counts.size) {
-    lines.push(`وجدتُ: ${[...counts].map(([t, c]) => (t === "create_case" || t === "create_client" ? COUNT_LABEL[t] : `${COUNT_LABEL[t]} (${c})`)).join("، ")}.`);
-    lines.push("كل بند مأخوذ من صفحة محددة ومعه النص الذي يثبته. راجع البطاقة وأكّد ما يصح، بندًا بندًا أو الكل مرة واحدة — لن يُحفظ شيء قبل تأكيدك.");
+    lines.push(`لقيت: ${[...counts].map(([t, c]) => (t === "create_case" || t === "create_client" ? COUNT_LABEL[t] : `${COUNT_LABEL[t]} (${c})`)).join("، ")}.`);
+    lines.push("كل بند عليه صفحته والنص اللي بيثبته. راجع البطاقة وأكّد اللي صح، بند بند أو كله مرة واحدة — مفيش حاجة هتتحفظ قبل تأكيدك.");
   } else {
-    lines.push("لم أجد في المستند بيانات واضحة أقترح حفظها. النص محفوظ ويمكنك الرجوع إليه في تبويب المستندات.");
+    lines.push("ملقتش في الورقة بيانات واضحة أقترح أحفظها. النص محفوظ وتقدر ترجعله من تبويب المستندات.");
   }
   if (suspicious.length) {
-    lines.push(`تنبيه: في المستند ${suspicious.length === 1 ? "سطر يبدو" : "أسطر تبدو"} كتعليمات موجهة لـ Clausia، ${suspicious.length === 1 ? "فتجاهلته ولم أنفذ منه" : "فتجاهلتها ولم أنفذ منها"} شيئًا:`);
+    lines.push(`خلي بالك: في الورقة ${suspicious.length === 1 ? "سطر شكله" : "سطور شكلها"} تعليمات موجهة لـ Clausia، ${suspicious.length === 1 ? "فتجاهلته وما نفذتش منه" : "فتجاهلتها وما نفذتش منها"} حاجة:`);
     for (const s of suspicious.slice(0, 3)) lines.push(`ص ${s.page}: «${s.quote.slice(0, 160)}»`);
   }
   return lines.join("\n");
@@ -417,7 +417,7 @@ export async function processDocument(db: Db, documentId: string, opts: { thread
     await db.from("documents").update({ read_status: "failed", read_error: msg.slice(0, 500) }).eq("id", documentId);
     result.error = msg;
     if (threadId) {
-      const { data: m } = await db.from("chat_messages").insert({ thread_id: threadId, role: "assistant", content: `تعذرت قراءة «${doc.file_name}». جرّب رفعه مرة أخرى أو صوّره بإضاءة أوضح.` }).select("id").single();
+      const { data: m } = await db.from("chat_messages").insert({ thread_id: threadId, role: "assistant", content: `ماعرفتش أقرا «${doc.file_name}». جرّب ترفعه تاني، أو صوّره في نور أوضح.` }).select("id").single();
       result.messageId = m?.id ?? null;
     }
     return result;
@@ -461,7 +461,7 @@ export async function processDocument(db: Db, documentId: string, opts: { thread
   if (!threadId) return result;
   const content = ex
     ? summaryText(doc.file_name, result.pageCount, ex, result.ops, result.suspicious, Boolean(doc.case_id), totalPages)
-    : `قرأتُ ${result.pageCount} صفحة من «${doc.file_name}» وحفظتُ نصها، لكن تعذر استخراج البيانات منها الآن. يمكنك قراءة النص في تبويب المستندات.`;
+    : `قريت ${result.pageCount} صفحة من «${doc.file_name}» وحفظت نصها، بس ماعرفتش أطلّع منها بيانات دلوقتي. تقدر تقرا النص في تبويب المستندات.`;
   const { data: msg, error: me } = await db.from("chat_messages").insert({ thread_id: threadId, role: "assistant", content }).select("id").single();
   if (me) throw new Error(me.message);
   result.messageId = msg.id;

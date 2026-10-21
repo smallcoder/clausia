@@ -168,7 +168,7 @@ export function summarySentences(cf: CaseFile, hs: HearingState, today: string):
     const facts = p.every((x) => x.table === "case_facts");
     const what = facts ? count(p.length, "واقعة واحدة", "واقعتين", "وقائع", "واقعة") : count(p.length, "حاجة واحدة", "حاجتين", "حاجات", "حاجة");
     out.push(`فيه ${what} لسه ${p.length === 2 ? "مقترحين" : "مقترحة"}، ${p.length === 1 ? "محتاجة" : "محتاجين"} مراجعتك.`);
-  } else {
+  } else if (!hs.undecided) {
     out.push("ومفيش حاجة مستنية مراجعتك.");
   }
 

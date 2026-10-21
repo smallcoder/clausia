@@ -47,7 +47,7 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
   const sorted = [...rows].sort(byNextHearing);
 
   return (
-    <div className="mx-auto flex w-full max-w-[1040px] flex-1 flex-col px-4 pt-2 sm:px-10 sm:pt-4">
+    <div className="mx-auto flex w-full max-w-[1424px] flex-1 flex-col px-4 pt-2 sm:px-8 sm:pt-4">
       <PageHero
         action={<Link href="/cases?review=1" aria-label="القضايا المحتاجة مراجعة" title="القضايا المحتاجة مراجعة" className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-card-2 text-text"><ListFilter size={19} strokeWidth={2} aria-hidden /></Link>}
         className="-mx-1.5 sm:mx-0"
@@ -100,7 +100,7 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
       )}
 
       <div className="min-h-6 flex-1" />
-      <div className="mx-auto w-full max-w-[820px]">
+      <div>
         <Composer
           target={{ kind: "new" }}
           placeholder="قضية جديدة؟ احكيها لـ Clausia، أو ارفع الصحيفة وهي تعمل الملف"
