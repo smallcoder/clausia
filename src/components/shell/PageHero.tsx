@@ -19,6 +19,14 @@ export interface HeroStat {
 /** 3 → «03», like the mockups */
 export const two = (n: number) => (n >= 0 && n < 10 ? `0${n}` : String(n));
 
+function BackBtn({ href }: { href: string }) {
+  return (
+    <Link href={href} aria-label="رجوع" className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-card-2 text-text">
+      <ChevronRight size={20} strokeWidth={2.2} aria-hidden />
+    </Link>
+  );
+}
+
 export function StatTile({ s }: { s: HeroStat }) {
   const body = (
     <>
@@ -36,8 +44,10 @@ export function StatTile({ s }: { s: HeroStat }) {
   );
 }
 
-export function PageHero({ back, icon, eyebrow, title, subtitle, stats, className = "" }: {
+export function PageHero({ back, action, icon, eyebrow, title, subtitle, stats, className = "" }: {
   back?: string;
+  /** small button at the far end (e.g. the mobile «…» or filter); on mobile it shares the top row with back */
+  action?: ReactNode;
   icon: ReactNode;
   eyebrow?: ReactNode;
   title: ReactNode;
@@ -47,13 +57,14 @@ export function PageHero({ back, icon, eyebrow, title, subtitle, stats, classNam
 }) {
   return (
     <section className={`flex flex-wrap items-center gap-4 rounded-[24px] border border-[var(--hero-border)] bg-hero px-4 py-4 shadow-[var(--hero-shadow)] sm:gap-6 sm:rounded-[28px] sm:px-6 sm:py-[22px] ${className}`}>
+      {back || action ? (
+        <div className="flex w-full items-center justify-between sm:hidden">
+          {back ? <BackBtn href={back} /> : <span />}
+          {action}
+        </div>
+      ) : null}
       <div className="flex min-w-0 flex-[1_1_380px] items-center gap-3 sm:gap-4">
-        {back ? (
-          <Link href={back} aria-label="رجوع"
-            className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-card-2 text-text">
-            <ChevronRight size={20} strokeWidth={2.2} aria-hidden />
-          </Link>
-        ) : null}
+        {back ? (<span className="hidden sm:contents"><BackBtn href={back} /></span>) : null}
         <div className="mark inline-flex size-12 shrink-0 items-center justify-center rounded-[16px] shadow-[0_12px_26px_-10px_rgba(18,26,43,0.55)] sm:size-[60px] sm:rounded-[19px]">
           {icon}
         </div>
@@ -63,6 +74,7 @@ export function PageHero({ back, icon, eyebrow, title, subtitle, stats, classNam
           {subtitle ? <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[13px] text-text-3">{subtitle}</div> : null}
         </div>
       </div>
+      {action ? <div className="hidden sm:block">{action}</div> : null}
       {stats?.length ? (
         <div className="grid w-full flex-[0_1_470px] grid-cols-3 gap-2.5">
           {stats.map((s) => <StatTile key={s.label} s={s} />)}

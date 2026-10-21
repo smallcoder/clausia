@@ -46,6 +46,9 @@
   --tile: #F4F6F9;
   --tile-border: rgba(18,26,43,0.06);
   --mark-bg: #141C2E;
+  --amber: #C98A1E;                          /* suggested (not yet confirmed) marker */
+  --paper-thumb: #F4F1EA;                    /* document thumbnail paper */
+  --court-tint: linear-gradient(180deg, rgba(214,192,143,0.14), transparent);
   --mark-fg: #D6C08F;
   --hero-shadow: 0 1px 2px rgba(18,26,43,0.05), 0 22px 46px -24px rgba(18,26,43,0.25);
   --tile-hi-shadow: 0 10px 22px -10px rgba(18,26,43,0.5);
@@ -101,6 +104,9 @@
   --tile: rgba(255,255,255,0.06);
   --tile-border: rgba(255,255,255,0.1);
   --mark-bg: var(--accent-grad);
+  --amber: #E8A93B;
+  --paper-thumb: #ECE7DC;
+  --court-tint: none;
   --mark-fg: #121A2B;
   --hero-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 30px 60px -24px rgba(0,0,0,0.9);
   --tile-hi-shadow: var(--shadow-accent);
@@ -146,6 +152,9 @@
   --tile: rgba(255,255,255,0.06);
   --tile-border: rgba(255,255,255,0.1);
   --mark-bg: var(--accent-grad);
+  --amber: #E8A93B;
+  --paper-thumb: #ECE7DC;
+  --court-tint: none;
   --mark-fg: #121A2B;
   --hero-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 30px 60px -24px rgba(0,0,0,0.9);
   --tile-hi-shadow: var(--shadow-accent);
@@ -194,6 +203,8 @@
   --color-bad-bg: var(--bad-bg);
   --color-warn: var(--warn);
   --color-warn-bg: var(--warn-bg);
+  --color-amber: var(--amber);
+  --color-paper-thumb: var(--paper-thumb);
   /* legacy */
   --color-paper: var(--paper);
   --color-surface: var(--surface);

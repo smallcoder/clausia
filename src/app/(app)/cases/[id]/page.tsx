@@ -50,8 +50,8 @@ export default async function CasePage({ params, searchParams }: { params: Promi
   const chips = view ? [] : [
     ...(due ? [{ label: `سجّل قرار جلسة ${shortDmy(due.date)}`, short: "سجّل قرار الجلسة", text: `قرار جلسة ${shortDmy(due.date)}: ` }] : []),
     ...(pending ? [{ label: cf.pending_suggestions.every((p) => p.table === "case_facts") ? "راجع الوقائع المقترحة" : "راجع المقترحات", text: "راجع معايا الحاجات المقترحة في القضية دي" }] : []),
-    { label: "أضف مستند", text: "هرفع مستند للقضية دي: " },
-    { label: "اكتب رأي قانوني · قريبًا", text: "", ghost: true },
+    { label: "أضف مستند", attach: true },
+    { label: "اكتب رأي قانوني · قريبًا", ghost: true, disabled: true },
   ];
 
   return (

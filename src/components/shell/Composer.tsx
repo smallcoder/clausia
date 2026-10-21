@@ -5,13 +5,18 @@
  */
 import { ArrowUp, Camera, Mic, Paperclip } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { composerSendAction, composerUploadAction, type ComposerTarget } from "@/lib/assistant/composer-actions";
 
-export function Composer({ target, placeholder = "اكتب لـ Clausia… ما حدث في الجلسة، موكل جديد، أو أي سؤال عن قضاياك", chips = [], size = "dock", sticky = true }: {
+/** A starter chip: fills the box (text), opens the file picker (attach), or is a link (href). `disabled` = shown, not usable. */
+export interface ComposerChip { label: string; short?: string; text?: string; ghost?: boolean; accent?: boolean; disabled?: boolean; attach?: boolean; href?: string }
+
+export function Composer({ target, placeholder = "اكتب لـ Clausia… ما حدث في الجلسة، موكل جديد، أو أي سؤال عن قضاياك", placeholderShort, chips = [], size = "dock", sticky = true }: {
   target: ComposerTarget;
   placeholder?: string;
-  chips?: { label: string; short?: string; text: string; ghost?: boolean }[];
+  chips?: ComposerChip[];
+  /** shorter placeholder below 640px */
+  placeholderShort?: string;
   size?: "hero" | "dock";
   sticky?: boolean;
 }) {
@@ -59,17 +64,30 @@ export function Composer({ target, placeholder = "اكتب لـ Clausia… ما 
   }
 
   const hero = size === "hero";
+  const [short, setShort] = useState(false);
+  useEffect(() => {
+    const m = window.matchMedia("(max-width: 639px)");
+    const on = () => setShort(m.matches);
+    on();
+    m.addEventListener("change", on);
+    return () => m.removeEventListener("change", on);
+  }, []);
   return (
     <div className={sticky ? "sticky bottom-0 z-20 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3" : ""}>
       {chips.length ? (
         <div className="no-scrollbar -mx-1 mb-3 flex gap-2 overflow-x-auto px-1 sm:flex-wrap">
-          {chips.map((c) => (
-            <button key={c.label} type="button" disabled={pending}
-              onClick={() => { setText(c.text); area.current?.focus(); }}
-              className={`h-9 shrink-0 rounded-full px-3.5 text-[13px] transition ${c.ghost ? "border border-dashed border-gold/60 text-gold-text" : "border border-border bg-chip text-text-2 shadow-soft hover:text-text"}`}>
-              {c.short ? <><span className="sm:hidden">{c.short}</span><span className="hidden sm:inline">{c.label}</span></> : c.label}
-            </button>
-          ))}
+          {chips.map((c) => {
+            const cls = `inline-flex h-9 shrink-0 items-center rounded-full px-3.5 text-[13px] transition disabled:cursor-not-allowed ${c.accent ? "bg-tile-hi font-bold shadow-soft" : c.ghost ? "border border-dashed border-gold/60 text-gold-text" : "border border-border bg-chip text-text-2 shadow-soft hover:text-text"} ${c.disabled ? "opacity-60" : ""}`;
+            const label = c.short ? <><span className="sm:hidden">{c.short}</span><span className="hidden sm:inline">{c.label}</span></> : c.label;
+            if (c.href && !c.disabled) return <a key={c.label} href={c.href} className={cls}>{label}</a>;
+            return (
+              <button key={c.label} type="button" disabled={pending || c.disabled} aria-disabled={c.disabled}
+                onClick={() => { if (c.attach) fileRef.current?.click(); else if (c.text) { setText(c.text); area.current?.focus(); } }}
+                className={cls}>
+                {label}
+              </button>
+            );
+          })}
         </div>
       ) : null}
       <div className={`border border-border bg-field ${hero ? "rounded-[28px] p-4 shadow-pop" : "rounded-[24px] p-3 shadow-card"}`}>
@@ -79,7 +97,7 @@ export function Composer({ target, placeholder = "اكتب لـ Clausia… ما 
           onChange={(e) => setText(e.target.value)}
           rows={hero ? 3 : 1}
           disabled={pending}
-          placeholder={placeholder}
+          placeholder={short && placeholderShort ? placeholderShort : placeholder}
           aria-label="رسالة إلى Clausia"
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }}
           className={`block w-full resize-none bg-transparent px-2 text-text placeholder:text-text-4 focus:outline-none ${hero ? "min-h-[72px] py-1 text-[16px] leading-7" : "py-2 text-[15px] leading-6"}`}
