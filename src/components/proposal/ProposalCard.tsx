@@ -1,10 +1,12 @@
 "use client";
 /**
- * Confirmation card (docs/design/*Chat*.dc.html, «ملف قضية جديد»). One compact row per op: kind · value · source ·
- * a check that selects it. Only fact rows carry a one-line truncated quote; every row's full verbatim quote is in
- * its expand (the chevron). «احفظ · N» saves the selected rows; each row expands to its
- * fields, its source and quote, and ✓ / تعديل / ✗ for that row alone. Nothing is saved without a tap.
- * Mobile (<1024px): the card shows its first rows inline; «عدّل حاجة» / «كل العناصر» open it in a bottom sheet.
+ * Confirmation card (docs/design/*Chat*.dc.html v2, «ملف قضية جديد»): a solid card with hairline rows, one per op:
+ * kind · value (source under it) · a thin gold check that selects it. Only fact rows carry their quote (Naskh,
+ * clamped); every row's full verbatim quote is in its expand (the chevron). «احفظ · N» (ink/white, no gold) saves
+ * the selected rows; «احفظ كمقترحات» / «ارفض الكل» sit quietly under it. Each row expands to its fields, its source
+ * and quote, and ✓ / تعديل / ✗ for that row alone. Nothing is saved without a tap.
+ * Mobile (<1024px): the card shows its first rows inline; «عدّل» / «كل العناصر» open it in a bottom sheet.
+ * A decided card collapses to one line «اتحفظ N عنصر · افتح الملف» (expandable).
  * Other features render it by passing the proposal object (+ a lookup of uuid → display name, `buildProposalLookup`).
  */
 import Link from "next/link";
@@ -219,29 +221,32 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
     return `من الورقة: ${name}${o.source.page ? ` — صفحة ${o.source.page}` : ""}`;
   }
 
-  const btn2 = "inline-flex h-[38px] flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-border bg-chip px-3 sm:px-4 text-[13px] text-text-2 transition hover:text-text disabled:opacity-50 sm:h-10 sm:flex-none sm:text-[13.5px]";
+  /** quiet outline pill (the mockup's «عدّل»); per-row secondary actions use it too */
+  const btn2 = "inline-flex h-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-border-2 px-[18px] text-[13.5px] font-medium glass-icon transition hover:text-text disabled:opacity-50";
+  /** text-only actions on the card's second footer line (save as suggestions, reject all) */
+  const quiet = "inline-flex min-h-11 items-center rounded-full px-3 text-[12.5px] text-text-3 transition hover:text-text disabled:opacity-50";
 
   const card = (inSheet: boolean) => {
     const limit = !inSheet && p.ops.length > MOBILE_ROWS + 1 && openOps.length > 0;
     return (
       <div className={cx("bg-card", inSheet
-        ? "flex max-h-[88dvh] flex-col rounded-t-[22px] border-t border-border shadow-pop"
-        : cx("overflow-hidden rounded-[20px] border border-border sm:rounded-[22px]", openOps.length ? "shadow-pop dark:shadow-card" : "shadow-card"))}>
+        ? "flex max-h-[88dvh] flex-col rounded-t-[24px] border-t border-border-2 shadow-pop"
+        : "overflow-hidden rounded-[24px] border border-border-2 shadow-card")}>
         {inSheet ? <div aria-hidden className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-card-3" /> : null}
-        <div className={cx("flex shrink-0 items-center gap-2.5 border-b border-border-2 px-3.5 py-3 sm:gap-3 sm:px-[18px] sm:py-3.5", openOps.length > 0 && "bg-linear-to-b from-[var(--accent-ring)] to-transparent dark:bg-none")}>
-          <span className="mark inline-flex size-[30px] shrink-0 items-center justify-center rounded-[9px] sm:size-[34px] sm:rounded-[10px]">
-            <FolderClosed aria-hidden size={17} strokeWidth={2.2} />
+        <div className="flex shrink-0 items-center gap-3 border-b border-[var(--hairline-v2)] px-4 py-4 sm:px-[22px]">
+          <span className="mark inline-flex size-9 shrink-0 items-center justify-center rounded-[12px]">
+            <FolderClosed aria-hidden size={18} strokeWidth={2} />
           </span>
           <div className="min-w-0 flex-1">
-            <p id={inSheet ? `sheet-title-${p.id}` : undefined} className="text-[14px] font-bold text-text sm:text-[15px]">{titleOf(p)}</p>
-            <p className="text-[11px] text-text-3 sm:text-xs">
-              {openOps.length ? <>{itemsLabel(p.ops.length)} · مش هيتحفظ حاجة قبل ما تأكد</> : decisionSummary(p)}
+            <p id={inSheet ? `sheet-title-${p.id}` : undefined} className="text-[15px] font-bold text-title">{titleOf(p)}</p>
+            <p className="mt-0.5 text-[11.5px] text-text-3">
+              {openOps.length ? <><span className="font-num">{itemsLabel(p.ops.length)}</span> · مش هيتحفظ حاجة قبل ما تأكد</> : decisionSummary(p)}
             </p>
           </div>
           {openOps.length ? (
             warnings
-              ? <span className="hidden shrink-0 rounded-full bg-warn-bg px-2.5 py-0.5 text-[11.5px] font-semibold text-warn sm:inline">{warnings === 1 ? "عنصر محتاج مراجعة المصدر" : `${itemsLabel(warnings)} محتاجة مراجعة المصدر`}</span>
-              : <span className="hidden shrink-0 text-xs text-gold-text sm:inline">كل عنصر عليه مصدره</span>
+              ? <span className="hidden shrink-0 items-center gap-1.5 text-[12px] font-semibold text-gold sm:inline-flex"><span aria-hidden className="size-1.5 rounded-full bg-gold" />{warnings === 1 ? "عنصر محتاج مراجعة المصدر" : `${itemsLabel(warnings)} محتاجة مراجعة المصدر`}</span>
+              : <span className="hidden shrink-0 text-[11.5px] text-text-4 sm:inline">كل عنصر عليه مصدره</span>
           ) : null}
           {inSheet ? (
             <button type="button" onClick={() => setSheet(false)} aria-label="إغلاق" className="-me-2 flex size-11 items-center justify-center rounded-full text-text-3 hover:bg-card-2">
@@ -259,7 +264,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
             const lone = live ? blockedBy(o) : null;
             const hard = live ? blockedBy(o, true) : null;
             const sel = selected.has(o.op_id);
-            // only fact rows show their quote (one truncated line); the rest keep it in the expand
+            // only fact rows show their quote (clamped); the rest keep it in the expand
             const factQuote = o.tool === "add_fact" && o.source.kind === "document" ? o.source.quote : null;
             const tagList = [
               edits[o.op_id] || o.edited ? <Tag key="e" tone="neutral">معدّل</Tag> : null,
@@ -269,38 +274,39 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
             ].filter(Boolean);
             const tags = tagList.length ? tagList : null;
             return (
-              <li key={o.op_id} className={cx("border-b border-border-2", o.status === "rejected" && "opacity-55", limit && i >= MOBILE_ROWS && "lg:block hidden")}>
-                <div className="flex min-h-12 items-start gap-2.5 px-3.5 py-2.5 sm:gap-3.5 sm:px-[18px]">
-                  <span className="w-[60px] shrink-0 pt-0.5 text-[11px] font-semibold leading-5 text-text-3 sm:w-[74px] sm:text-xs sm:leading-[22px]">{kindOf(o)}</span>
-                  <button type="button" onClick={() => toggle(o.op_id)} aria-expanded={isOpen} className="min-w-0 flex-1 text-right">
-                    <span className="flex items-start gap-1 text-[13.5px] font-semibold leading-[22px] text-text sm:text-[14.5px]">
-                      <span className={cx("min-w-0", !isOpen && "line-clamp-1")}>{summaryOf({ ...o, args: merged }) || OP_TITLE[o.tool]}</span>
-                      <ChevronDown aria-hidden size={14} strokeWidth={2} className={cx("mt-1 shrink-0 text-text-4 transition-transform", isOpen && "rotate-180")} />
+              <li key={o.op_id} className={cx("not-first:border-t not-first:border-[var(--hairline-v2)]", o.status === "rejected" && "opacity-55", limit && i >= MOBILE_ROWS && "lg:block hidden")}>
+                {/* kind · value (+ fact quote) · source · check — the mockup's hairline row */}
+                <div className="flex items-start gap-3.5 px-4 py-[13px] sm:px-[22px]">
+                  <span className="w-[58px] shrink-0 pt-0.5 text-[11.5px] leading-5 text-text-4 sm:w-[72px]">{kindOf(o)}</span>
+                  <button type="button" onClick={() => toggle(o.op_id)} aria-expanded={isOpen} className="min-w-0 flex-1 text-start">
+                    <span className="flex items-start gap-1.5 text-[13.5px] font-semibold leading-[1.5] text-text sm:text-[14.5px]">
+                      <span className={cx("min-w-0", !isOpen && "line-clamp-2")}>{summaryOf({ ...o, args: merged }) || OP_TITLE[o.tool]}</span>
+                      <ChevronDown aria-hidden size={14} strokeWidth={2} className={cx("mt-[5px] shrink-0 text-text-4 transition-transform", isOpen && "rotate-180")} />
                     </span>
-                    {factQuote && !isOpen ? <span className="text-doc block truncate text-[12.5px] leading-5 text-text-3 sm:text-[13px]">«{factQuote}»</span> : null}
-                    <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                      <span className="text-[11px] leading-[18px] text-text-4 sm:hidden">{o.source.kind === "document" ? `من ${sourceShort(o)}` : sourceShort(o)}</span>
+                    {factQuote && !isOpen ? <span className="text-doc mt-[3px] line-clamp-2 text-[13px] leading-[1.8]! text-text-3">«{factQuote}»</span> : null}
+                    <span className="mt-[3px] flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                      <span className="text-[11px] leading-[18px] text-text-4">{sourceShort(o)}</span>
                       {tags}
                     </span>
                   </button>
-                  <span className="hidden max-w-[9.5rem] shrink-0 truncate text-[11.5px] leading-[22px] text-text-4 sm:block">{sourceShort(o)}</span>
                   {live ? (
                     <button type="button" role="checkbox" aria-checked={sel} aria-label={sel ? `شيل ${kindOf(o)} من الحفظ` : `ضيف ${kindOf(o)} للحفظ`}
                       onClick={() => toggleSelect(o)} disabled={pending || (!sel && !!lone && lone.includes("مرفوض"))}
-                      className={cx("relative mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full transition before:absolute before:-inset-3 before:content-[''] disabled:opacity-40 sm:mt-0 sm:size-[22px]", sel ? "mark" : "border border-border bg-card-2 text-transparent hover:text-text-4")}>
-                      <Check aria-hidden size={12} strokeWidth={3.2} />
+                      className={cx("relative mt-0.5 inline-flex size-[22px] shrink-0 items-center justify-center rounded-full border transition before:absolute before:-inset-3 before:content-[''] disabled:opacity-40",
+                        sel ? "border-[var(--accent-edge)] text-gold" : "border-border text-transparent hover:text-text-4")}>
+                      <Check aria-hidden size={12} strokeWidth={2.6} />
                     </button>
                   ) : (
                     <span aria-label={o.status === "rejected" ? "مرفوض" : o.status === "suggested" ? "اتحفظ كمقترح" : "اتحفظ"}
-                      className={cx("mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full sm:mt-0 sm:size-[22px]",
+                      className={cx("mt-0.5 inline-flex size-[22px] shrink-0 items-center justify-center rounded-full",
                         o.status === "rejected" ? "bg-card-2 text-text-4" : o.status === "suggested" ? "bg-warn-bg text-warn" : "bg-good-bg text-good")}>
-                      {o.status === "rejected" ? <X aria-hidden size={12} strokeWidth={3} /> : <Check aria-hidden size={12} strokeWidth={3.2} />}
+                      {o.status === "rejected" ? <X aria-hidden size={12} strokeWidth={2.6} /> : <Check aria-hidden size={12} strokeWidth={2.6} />}
                     </span>
                   )}
                 </div>
 
                 {isOpen ? (
-                  <div className="space-y-3 px-3.5 pb-3.5 sm:ps-[106px] sm:pe-[18px]">
+                  <div className="space-y-3 px-4 pb-4 sm:pe-[22px] sm:ps-[108px]">
                     {isEditing ? (
                       <EditFields op={o} values={merged} onChange={(k, v) => setEdits((e) => ({ ...e, [o.op_id]: { ...(e[o.op_id] ?? {}), [k]: v } }))} display={display} />
                     ) : (
@@ -317,26 +323,26 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
                       </dl>
                     )}
 
-                    <div className="rounded-xl bg-card-2 px-3.5 py-2.5">
-                      <p className="text-xs text-text-3">{sourceLong(o)}</p>
+                    <div className="rounded-[14px] border border-border-2 bg-card-2 px-3.5 py-2.5">
+                      <p className="text-[11.5px] text-text-3">{sourceLong(o)}</p>
                       {o.source.quote ? <p className="text-doc mt-1 text-[15px] text-text">«{o.source.quote}»</p> : <p className="mt-1 text-xs text-text-4">بدون اقتباس</p>}
-                      {!o.quote_verified ? <p className="mt-1.5 text-xs font-medium text-warn">ما لقيتش النص ده في المصدر، راجعه</p> : null}
+                      {!o.quote_verified ? <p className="mt-1.5 text-xs font-medium text-gold">ما لقيتش النص ده في المصدر، راجعه</p> : null}
                     </div>
 
                     {o.status === "failed" && o.error ? <p className="rounded-xl bg-bad-bg px-3 py-2 text-[13px] text-bad">{o.error}</p> : null}
-                    {o.result_id && o.tool === "create_case" ? <Link href={`/cases/${o.result_id}`} className="inline-flex min-h-11 items-center text-[13.5px] font-semibold text-gold-text hover:underline">فتح ملف القضية ←</Link> : null}
+                    {o.result_id && o.tool === "create_case" ? <Link href={`/cases/${o.result_id}`} className="inline-flex min-h-11 items-center text-[13.5px] font-semibold text-text hover:underline">فتح ملف القضية ←</Link> : null}
 
                     {live ? (
                       <div className="flex flex-wrap items-center gap-2">
                         <button type="button" disabled={pending || !!lone} title={lone ?? undefined} onClick={() => decide("confirm", [o.op_id])}
-                          className="bg-primary-fill inline-flex h-9 items-center gap-1.5 rounded-xl px-3.5 text-[13px] font-bold transition disabled:opacity-50">
+                          className="bg-primary-fill inline-flex h-11 items-center gap-1.5 rounded-full px-[18px] text-[13.5px] font-bold transition disabled:opacity-50">
                           <Check aria-hidden size={15} strokeWidth={2.6} />احفظ ده
                         </button>
-                        <button type="button" disabled={pending} onClick={() => setEditing(isEditing ? null : o.op_id)} className={cx(btn2, "h-9 flex-none sm:h-9")}>
+                        <button type="button" disabled={pending} onClick={() => setEditing(isEditing ? null : o.op_id)} className={btn2}>
                           {isEditing ? "خلّصت التعديل" : "تعديل"}
                         </button>
                         <button type="button" disabled={pending} onClick={() => decide("reject", [o.op_id])}
-                          className="inline-flex h-9 items-center gap-1 rounded-xl px-3 text-[13px] text-text-3 transition hover:text-bad disabled:opacity-50">
+                          className={cx(quiet, "gap-1 text-[13px] hover:text-bad")}>
                           <X aria-hidden size={15} strokeWidth={2.4} />ارفض
                         </button>
                         {lone ? <p className="basis-full text-xs text-text-4">{lone}</p> : null}
@@ -349,60 +355,65 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
             );
           })}
           {limit ? (
-            <li className="border-b border-border-2 lg:hidden">
+            <li className="border-t border-[var(--hairline-v2)] lg:hidden">
               <button type="button" onClick={() => setSheet(true)} aria-haspopup="dialog"
-                className="flex w-full items-center justify-center gap-1 px-3.5 py-3 text-[13px] font-semibold text-gold-text">
-                كل العناصر · {itemsLabel(p.ops.length)}
+                className="flex min-h-11 w-full items-center justify-center gap-1 px-4 py-3 text-[13px] font-semibold text-text-2 hover:text-text">
+                كل العناصر · <span className="font-num">{itemsLabel(p.ops.length)}</span>
               </button>
             </li>
           ) : null}
         </ul>
 
-        {error ? <p className="mx-3.5 mt-3 shrink-0 rounded-xl bg-bad-bg px-3 py-2 text-[13.5px] text-bad sm:mx-[18px]">{error}</p> : null}
+        {error ? <p className="mx-4 mt-3 shrink-0 rounded-xl bg-bad-bg px-3 py-2 text-[13.5px] text-bad sm:mx-[22px]">{error}</p> : null}
 
-        <div className={cx("flex shrink-0 flex-col gap-2 px-3.5 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2.5 sm:px-[18px] sm:py-3.5", inSheet && "border-t border-border-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))]")}>
+        <div className={cx("shrink-0 border-t border-[var(--hairline-v2)] px-4 pt-3.5 sm:px-[22px]", openOps.length ? "pb-2" : "pb-3.5", inSheet && "pb-[calc(0.5rem+env(safe-area-inset-bottom))]")}>
           {openOps.length ? (
             <>
-              <button type="button" disabled={pending || !chosen.length} onClick={() => decide("confirm", chosen.map((o) => o.op_id))}
-                className="bg-primary-fill h-[46px] rounded-[14px] px-[22px] text-[15px] font-extrabold transition disabled:opacity-50 sm:h-11 sm:rounded-[13px]">
-                {pending ? "بحفظ…" : `${newCase ? "احفظ الملف" : "احفظ"} · ${itemsLabel(chosen.length)}`}
-              </button>
-              <div className="flex gap-2 sm:contents">
-                <button type="button" disabled={pending || !chosen.length} onClick={() => decide("suggest", chosen.map((o) => o.op_id))} className={btn2}>احفظ كمقترحات</button>
+              <div className="flex gap-2">
+                <button type="button" disabled={pending || !chosen.length} onClick={() => decide("confirm", chosen.map((o) => o.op_id))}
+                  className="bg-primary-fill h-11 min-w-0 flex-1 truncate rounded-full px-5 text-[14.5px] font-bold transition disabled:opacity-50">
+                  {pending ? "بحفظ…" : <>{newCase ? "احفظ الملف" : "احفظ"} · <span className="font-num">{itemsLabel(chosen.length)}</span></>}
+                </button>
                 {/* mobile: opens the sheet with every open row expanded; desktop (and inside the sheet): expands / collapses the rows */}
                 <button type="button" disabled={pending}
                   onClick={() => editSomething(!inSheet && !window.matchMedia("(min-width: 1024px)").matches)} className={btn2}>
-                  {inSheet ? (allOpenExpanded ? "اقفل التفاصيل" : "عدّل حاجة") : (
-                    <><span className="lg:hidden">عدّل حاجة</span><span className="hidden lg:inline">{allOpenExpanded ? "اقفل التفاصيل" : "عدّل حاجة"}</span></>
+                  {inSheet ? (allOpenExpanded ? "اقفل" : "عدّل") : (
+                    <><span className="lg:hidden">عدّل</span><span className="hidden lg:inline">{allOpenExpanded ? "اقفل" : "عدّل"}</span></>
                   )}
                 </button>
               </div>
-              <button type="button" disabled={pending} onClick={() => decide("reject", openOps.map((o) => o.op_id))}
-                className="h-9 self-center rounded-xl px-3 text-[13px] text-text-3 transition hover:text-bad disabled:opacity-50 sm:ms-auto">
-                ارفض الكل
-              </button>
+              {/* the other decisions stay one tap away, quietly, under the main pair */}
+              <div className="mt-1 flex flex-wrap items-center justify-center gap-x-1">
+                <button type="button" disabled={pending || !chosen.length} onClick={() => decide("suggest", chosen.map((o) => o.op_id))} className={quiet}>احفظ كمقترحات</button>
+                <span aria-hidden className="text-text-4">·</span>
+                <button type="button" disabled={pending} onClick={() => decide("reject", openOps.map((o) => o.op_id))} className={cx(quiet, "hover:text-bad")}>ارفض الكل</button>
+                {caseLink ? <><span aria-hidden className="text-text-4">·</span><Link href={`/cases/${caseLink}`} className={cx(quiet, "font-semibold text-text-2")}>فتح ملف القضية ←</Link></> : null}
+              </div>
             </>
           ) : (
-            <p className="text-[13.5px] text-text-2">{decisionSummary(p)}</p>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-[13.5px] text-text-2">{decisionSummary(p)}</p>
+              {caseLink ? <Link href={`/cases/${caseLink}`} className="inline-flex min-h-11 items-center text-[13.5px] font-semibold text-text hover:underline">فتح ملف القضية ←</Link> : null}
+            </div>
           )}
-          {caseLink ? <Link href={`/cases/${caseLink}`} className={cx("inline-flex min-h-11 items-center text-[13.5px] font-semibold text-gold-text hover:underline", openOps.length ? "self-center" : "sm:ms-auto")}>فتح ملف القضية ←</Link> : null}
         </div>
       </div>
     );
   };
 
-  // a decided card collapses to one line: «اتحفظ N عنصر · افتح الملف» (tap to expand it again)
+  // a decided card collapses to one line: «اتحفظ N عنصر · افتح الملف» (tap the words to expand it again)
   if (!openOps.length && !showDecided) {
     const saved = p.ops.filter((o) => o.status === "confirmed" || o.status === "suggested").length;
     return (
-      <div className="flex min-h-12 items-center gap-2.5 rounded-2xl border border-border-2 bg-card px-3.5 py-2 text-[13.5px] shadow-soft">
-        <span aria-hidden className="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-good-bg text-good"><Check size={14} strokeWidth={2.6} /></span>
-        <button type="button" onClick={() => setShowDecided(true)} aria-expanded={false}
-          className="min-h-11 min-w-0 flex-1 truncate text-start font-semibold text-text-2 hover:text-text">
-          {saved ? `اتحفظ ${saved} ${saved === 1 ? "عنصر" : saved === 2 ? "عنصرين" : saved <= 10 ? "عناصر" : "عنصر"}` : decisionSummary(p)}
-          <span className="font-normal text-text-4"> · اعرض التفاصيل</span>
+      <div className="flex min-h-[52px] items-center gap-2.5 rounded-[18px] border border-border-2 bg-card py-1 pe-2 ps-4 text-[13.5px] shadow-soft">
+        <span aria-hidden className="inline-flex size-[22px] shrink-0 items-center justify-center rounded-full bg-good-bg text-good"><Check size={12} strokeWidth={2.6} /></span>
+        <button type="button" onClick={() => setShowDecided(true)} aria-expanded={false} title="اعرض التفاصيل"
+          className="inline-flex min-h-11 min-w-0 flex-1 items-center gap-1.5 text-start font-semibold text-text hover:text-title">
+          <span className="truncate">{saved ? <>اتحفظ <span className="font-num">{saved}</span> {saved === 1 ? "عنصر" : saved === 2 ? "عنصرين" : saved <= 10 ? "عناصر" : "عنصر"}</> : decisionSummary(p)}</span>
+          <ChevronDown aria-hidden size={14} strokeWidth={2} className="shrink-0 text-text-4" />
+          <span className="sr-only">اعرض التفاصيل</span>
         </button>
-        {caseLink ? <Link href={`/cases/${caseLink}`} className="inline-flex min-h-11 shrink-0 items-center font-semibold text-gold-text hover:underline">افتح الملف ←</Link> : null}
+        {caseLink ? <Link href={`/cases/${caseLink}`} className="inline-flex min-h-11 shrink-0 items-center rounded-full px-3 font-semibold text-text-2 hover:text-text">افتح الملف ←</Link> : null}
       </div>
     );
   }
@@ -410,7 +421,9 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
   return (
     <>
       {!openOps.length ? (
-        <button type="button" onClick={() => setShowDecided(false)} className="mb-1.5 inline-flex min-h-11 items-center text-[13px] font-semibold text-text-3 hover:text-text">اطوِ البطاقة</button>
+        <button type="button" onClick={() => setShowDecided(false)} className="mb-1.5 inline-flex min-h-11 items-center gap-1 text-[13px] font-semibold text-text-3 hover:text-text">
+          <ChevronDown aria-hidden size={14} strokeWidth={2} className="rotate-180" />اطوِ البطاقة
+        </button>
       ) : null}
       {card(false)}
       {showSheet ? (
@@ -424,8 +437,9 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
 }
 
 function Tag({ tone, children }: { tone: "neutral" | "warn" | "bad"; children: React.ReactNode }) {
-  const cls = { neutral: "bg-card-2 text-text-3", warn: "bg-warn-bg text-warn", bad: "bg-bad-bg text-bad" }[tone];
-  return <span className={cx("inline-flex h-[18px] items-center rounded-full px-2 text-[10.5px] font-bold", cls)}>{children}</span>;
+  // v2 status: a small dot + a word (gold = needs the lawyer, red = failed, muted = info)
+  const [dot, txt] = { neutral: ["bg-text-4", "text-text-3"], warn: ["bg-gold", "text-gold"], bad: ["bg-bad", "text-bad"] }[tone];
+  return <span className={cx("inline-flex items-center gap-1 text-[11px] font-semibold leading-[18px]", txt)}><span aria-hidden className={cx("size-1.5 rounded-full", dot)} />{children}</span>;
 }
 
 function decisionSummary(p: Proposal) {
@@ -437,7 +451,7 @@ function decisionSummary(p: Proposal) {
 function EditFields({ op, values, onChange, display }: {
   op: ProposalOp; values: Record<string, unknown>; onChange: (k: string, v: unknown) => void; display: (f: FieldSpec, v: unknown) => string | null;
 }) {
-  const input = "min-h-11 w-full rounded-xl border border-border bg-field px-3 py-2 text-[15px] text-text focus:border-gold focus:outline-none";
+  const input = "min-h-11 w-full rounded-[14px] border border-border bg-field px-3 py-2 text-[15px] text-text focus:border-text-4 focus:outline-none";
   return (
     <div className="space-y-2.5">
       {OP_FIELDS[op.tool].map((f) => {

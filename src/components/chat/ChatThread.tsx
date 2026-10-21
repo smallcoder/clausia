@@ -1,11 +1,11 @@
 "use client";
 /**
- * Thread UI (docs/design/*Chat*.dc.html): lawyer bubbles on the left, Clausia lines with the «C» avatar on the
- * right, paper chips, confirmation cards, and the composer docked at the bottom of the 820px column.
+ * Thread UI (docs/design/*Chat*.dc.html, v2): solid lawyer bubbles on the left, Clausia lines with the «C» mark on
+ * the right, paper chips, confirmation cards, glass quick answers, and the glass composer in the 780px FixedDock.
  * Sending is optimistic (the lawyer's message shows at once); no streaming.
  */
 import { FixedDock } from "@/components/shell/Composer";
-import { ArrowUp, Mic, Paperclip } from "lucide-react";
+import { ArrowUp, Mic, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useOptimistic, useRef, useState, useTransition, type KeyboardEvent, type ReactNode } from "react";
 import { cx } from "@/components/ui";
@@ -59,9 +59,14 @@ export function ChatThread({ threadId, caseId, items, lookup, docs = {} }: {
   const boxRef = useRef<HTMLTextAreaElement>(null);
 
   // keep the latest message in view above the docked composer (the composer is the last thing in the page)
+  // (again after the dock has measured its spacer, which lands a frame or two later)
   useEffect(() => {
     if (!endRef.current) return;
-    window.scrollTo({ top: document.documentElement.scrollHeight });
+    const go = () => window.scrollTo({ top: document.documentElement.scrollHeight });
+    go();
+    const raf = requestAnimationFrame(() => requestAnimationFrame(go));
+    const late = setTimeout(go, 250);
+    return () => { cancelAnimationFrame(raf); clearTimeout(late); };
   }, [shown.length, sending]);
 
   // grow the composer with its text where `field-sizing: content` is unsupported (iOS Safari); max-h-40 caps it
@@ -125,46 +130,41 @@ export function ChatThread({ threadId, caseId, items, lookup, docs = {} }: {
       {shown.length === 0 ? (
         <ClausiaLine>
           <p>{caseId ? "اكتب لي اللي استجد في القضية دي، أو ارفع ورقة." : "احكي لي عن الموكل أو القضية، أو ارفع الصحيفة."} هجهّز لك اللي هيتحفظ في بطاقة، ومش هيتحفظ حاجة قبل ما تأكد.</p>
-          <div className="mt-2.5 flex flex-wrap gap-2">
+          <div className="mt-3 flex flex-wrap gap-2">
             {(caseId ? EXAMPLES_CASE : EXAMPLES_GENERAL).map((x) => (
-              <button key={x} type="button" onClick={() => { setText(x); boxRef.current?.focus(); }}
-                className="h-9 rounded-full border border-border bg-chip px-4 text-[13px] text-text-2 shadow-soft transition hover:text-text sm:text-[13.5px]">{x}</button>
+              <button key={x} type="button" onClick={() => { setText(x); boxRef.current?.focus(); }} className={CHIP}>{x}</button>
             ))}
           </div>
         </ClausiaLine>
       ) : null}
 
-      <ol className="flex flex-col gap-3.5 sm:gap-[18px]">
+      <ol className="flex flex-col gap-[18px] sm:gap-[22px]">
         {shown.map((m) => (
-          <li key={m.id} className="flex flex-col gap-2">
+          <li key={m.id} className="flex flex-col gap-[18px] sm:gap-[22px]">
             {m.role === "user" ? (
               <>
                 {m.attachments.length && AUTO_ATTACH.test(m.content) ? null : (
-                  <div className="border border-transparent bg-ink-solid text-bg shadow-[var(--tile-hi-shadow)] dark:border-border dark:bg-card-3 dark:text-text dark:shadow-soft max-w-[84%] self-end whitespace-pre-wrap break-words rounded-[20px] rounded-bl-[6px] px-3.5 py-[11px] text-[15px] leading-[1.7] sm:max-w-[72%] sm:rounded-[22px] sm:rounded-bl-[6px] sm:px-[18px] sm:py-[13px] sm:text-base sm:leading-[1.75]">
+                  <div className="max-w-[88%] self-end whitespace-pre-wrap break-words rounded-[22px] rounded-bl-[6px] border border-border-2 bg-card px-[17px] py-[13px] text-[15px] leading-[1.75] text-text dark:bg-card-2 sm:max-w-[72%] sm:text-base">
                     {m.content}
                   </div>
                 )}
-                {m.attachments.map((a) => <AttachmentChip key={a.documentId || a.fileName} name={a.fileName} doc={docs[a.documentId]} />)}
+                {m.attachments.map((a, i) => <AttachmentChip key={a.documentId || a.fileName} name={a.fileName} doc={docs[a.documentId]} tuck={i === 0 && !AUTO_ATTACH.test(m.content)} />)}
               </>
             ) : (
               <ClausiaLine>
                 {m.content.trim() ? <p className="whitespace-pre-wrap break-words"><Prose text={m.content} /></p> : null}
                 {m === lastSpoken && answers.length ? (
-                  <div className="mt-2.5 flex flex-wrap gap-2">
+                  <div className="mt-3 flex flex-wrap gap-2">
                     {answers.map((a, i) => (
-                      <button key={a.label} type="button" onClick={() => send(a.text)}
-                        className={cx("h-[34px] rounded-full border px-3.5 text-[13px] transition sm:h-9 sm:px-4 sm:text-[13.5px]", i === 0
-                          ? "bg-accent-grad border-[var(--accent-edge)] font-bold text-ink-solid shadow-[var(--shadow-soft)] dark:bg-none dark:bg-warn-bg dark:font-semibold dark:text-gold-text"
-                          : "border-border bg-chip text-text-2 hover:text-text")}>
+                      <button key={a.label} type="button" onClick={() => send(a.text)} className={cx(CHIP, i === 0 && "font-semibold text-text")}>
                         {a.label}
                       </button>
                     ))}
-                    <button type="button" onClick={() => boxRef.current?.focus()}
-                      className="h-[34px] rounded-full border border-border bg-chip px-3.5 text-[13px] text-text-2 transition hover:text-text sm:h-9 sm:px-4 sm:text-[13.5px]">هكتب الرد</button>
+                    <button type="button" onClick={() => boxRef.current?.focus()} className={CHIP}>هكتب الرد</button>
                   </div>
                 ) : null}
-                {m.proposals.map((p) => (
-                  <div key={p.id} className={cx(m.content.trim() && "mt-2.5 sm:mt-3")}><ProposalCard proposal={p} lookup={lookup} /></div>
+                {m.proposals.map((p, i) => (
+                  <div key={p.id} className={cx((m.content.trim() || i > 0) && "mt-3.5")}><ProposalCard proposal={p} lookup={lookup} /></div>
                 ))}
               </ClausiaLine>
             )}
@@ -180,31 +180,40 @@ export function ChatThread({ threadId, caseId, items, lookup, docs = {} }: {
 
       <div className="min-h-[30px] flex-1" />
 
-      <FixedDock width={960}>
+      {/* the thread's own composer (optimistic send + upload): the v2 two-row glass box of the Chat mockups */}
+      <FixedDock>
         {error ? (
-          <p role="alert" className="mb-2 flex items-start justify-between gap-2 rounded-2xl bg-bad-bg px-3.5 py-2 text-[13.5px] text-bad">
+          <p role="alert" className="mb-2 flex items-start justify-between gap-2 rounded-2xl border border-border-2 bg-card px-3.5 py-2 text-[13.5px] text-bad shadow-soft">
             <span>{error}</span>
             <button type="button" onClick={() => setError(null)} className="shrink-0 text-xs underline">إخفاء</button>
           </p>
         ) : null}
-        <div className="shadow-pop dark:shadow-card flex flex-wrap items-center gap-2 rounded-[26px] border border-border bg-field p-2 sm:px-4 sm:pb-2.5 sm:pt-3.5">
-          <input ref={fileRef} type="file" accept="application/pdf,image/*" className="sr-only" id={`file-${threadId}`} onChange={(e) => onFile(e.target.files?.[0])} />
-          <label htmlFor={`file-${threadId}`} aria-label="إرفاق ورقة (PDF أو صورة)" title="إرفاق ورقة (PDF أو صورة)"
-            className={cx(ROUND, "cursor-pointer", busy && "pointer-events-none opacity-50")}>
-            <Paperclip aria-hidden size={18} strokeWidth={1.9} />
-          </label>
-          <textarea ref={boxRef} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={onKey} rows={1}
-            placeholder={shown.length ? "ردّ على Clausia…" : "اكتب لـ Clausia…"} aria-label="رسالة لـ Clausia"
-            className="max-h-40 min-h-10 min-w-0 flex-1 resize-none bg-transparent py-2 text-[15px] leading-6 text-text placeholder:text-text-4 focus:outline-none [field-sizing:content] sm:order-first sm:min-h-11 sm:basis-full sm:py-0 sm:text-base sm:leading-[1.6]" />
-          <button type="button" disabled aria-label="رسالة صوتية (قريبًا)" title="رسالة صوتية (قريبًا)" className={cx(ROUND, "disabled:opacity-60")}>
-            <Mic aria-hidden size={18} strokeWidth={1.9} />
-          </button>
-          <div className="hidden min-w-0 flex-1 truncate text-xs text-text-4 sm:block" aria-live="polite">{status ?? "لن يُحفظ شيء قبل تأكيدك"}</div>
-          <button type="button" onClick={() => send()} disabled={!text.trim() || sending} aria-label="إرسال"
-            className="bg-primary-fill inline-flex size-[42px] shrink-0 items-center justify-center rounded-full transition disabled:opacity-50 sm:size-11">
-            <ArrowUp aria-hidden size={20} strokeWidth={2.6} />
-          </button>
+        <div className="glass rounded-[24px] px-3 pb-2.5 pt-3.5 sm:rounded-[26px] sm:px-3.5 sm:pb-3 sm:pt-4">
+          <div className="flex items-start gap-2.5 px-1 sm:gap-3 sm:px-1.5 sm:pt-0.5">
+            <span aria-hidden className="mark font-num mt-0.5 inline-flex size-[22px] shrink-0 items-center justify-center rounded-[7px] text-[11px] font-extrabold sm:size-[26px] sm:rounded-[9px] sm:text-[13px]">C</span>
+            <textarea ref={boxRef} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={onKey} rows={1}
+              placeholder={shown.length ? "ردّ على Clausia…" : "اكتب لـ Clausia…"} aria-label="رسالة لـ Clausia"
+              className="block max-h-40 min-h-[46px] min-w-0 flex-1 resize-none bg-transparent p-0 text-base leading-[1.6] text-text placeholder:text-text-4 focus:outline-none [field-sizing:content] sm:min-h-14 sm:text-[17px] sm:leading-[1.65]" />
+          </div>
+          <div className="mt-1.5 flex items-center gap-2 sm:mt-2">
+            <input ref={fileRef} type="file" accept="application/pdf,image/*" className="sr-only" id={`file-${threadId}`} onChange={(e) => onFile(e.target.files?.[0])} />
+            <label htmlFor={`file-${threadId}`} aria-label="إرفاق ورقة (PDF أو صورة)" title="إرفاق ورقة (PDF أو صورة)"
+              className={cx(ROUND, "cursor-pointer", busy && "pointer-events-none opacity-50")}>
+              <Plus aria-hidden size={18} strokeWidth={1.8} />
+            </label>
+            <button type="button" disabled aria-label="رسالة صوتية (قريبًا)" title="رسالة صوتية (قريبًا)" className={cx(ROUND, "disabled:opacity-60")}>
+              <Mic aria-hidden size={18} strokeWidth={1.8} />
+            </button>
+            <div className="min-w-0 flex-1 truncate text-center text-[10.5px] text-text-4 sm:text-start sm:text-xs" aria-live="polite">
+              {status ?? <span className="sm:hidden">مفيش حاجة بتتحفظ من غير موافقتك</span>}
+            </div>
+            <button type="button" onClick={() => send()} disabled={!text.trim() || sending} aria-label="إرسال"
+              className="bg-primary-fill inline-flex size-11 shrink-0 items-center justify-center rounded-full transition disabled:opacity-50">
+              <ArrowUp aria-hidden size={19} strokeWidth={2.4} />
+            </button>
+          </div>
         </div>
+        <p className="mt-2.5 hidden text-center text-[11.5px] text-text-4 sm:block">Clausia بتجهّز، وإنت اللي بتأكد. مفيش حاجة بتتحفظ من غير موافقتك.</p>
       </FixedDock>
     </div>
   );
@@ -226,14 +235,23 @@ function quickAnswers(text: string): { label: string; text: string }[] {
   return opts.map((o) => ({ label: o, text: client ? `موكلي ${o}` : o }));
 }
 
-const ROUND = "inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-border bg-card-2 text-text-2 transition hover:text-text";
+/** round composer control (Chat mockup: hairline ring, no fill); 44px touch target */
+const ROUND = "inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-border-2 glass-icon transition hover:text-text sm:size-10";
+/** quick answers and starters: glass chips (floating controls) */
+const CHIP = "glass inline-flex min-h-11 shrink-0 items-center rounded-full px-[15px] py-1 text-[13px] sm:min-h-9 font-medium text-text-3 transition hover:text-text";
 
-/** Clausia's turn: the «C» avatar and its text (cards go under the text). */
+/**
+ * Clausia's turn: the «C» mark and its text (cards go under the text). Desktop: the mark beside the text.
+ * Mobile: a «C · Clausia» label row, the text full width under it.
+ */
 function ClausiaLine({ children }: { children: ReactNode }) {
   return (
-    <div className="flex gap-2.5 sm:gap-3.5">
-      <span aria-hidden className="mark font-num mt-0.5 inline-flex size-[26px] shrink-0 items-center justify-center rounded-full text-xs font-black shadow-[var(--shadow-soft)] sm:mt-0 sm:size-8 sm:text-sm">C</span>
-      <div className="min-w-0 flex-1 text-[15px] leading-[1.75] text-text-2 sm:pt-1 sm:text-base sm:leading-[1.8]">{children}</div>
+    <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
+      <div className="flex items-center gap-2 self-start">
+        <span aria-hidden className="mark font-num inline-flex size-6 shrink-0 items-center justify-center rounded-[8px] text-[11px] font-extrabold sm:size-7 sm:rounded-[9px] sm:text-[13px]">C</span>
+        <span className="text-[13px] font-bold text-title sm:hidden">Clausia</span>
+      </div>
+      <div className="min-w-0 flex-1 text-[15px] leading-[1.8] text-text sm:pt-[3px] sm:text-base">{children}</div>
     </div>
   );
 }
@@ -241,16 +259,17 @@ function ClausiaLine({ children }: { children: ReactNode }) {
 const pagesLabel = (n: number) => (n === 1 ? "صفحة واحدة" : n === 2 ? "صفحتين" : n <= 10 ? `${n} صفحات` : `${n} صفحة`);
 const READ: Record<ThreadDoc["status"], string> = { done: "اتقرت", reading: "بتتقري…", pending: "لسه ما اتقرتش", failed: "ما اتقرتش" };
 
-function AttachmentChip({ name, doc }: { name: string; doc?: ThreadDoc }) {
+/** A paper the lawyer sent: a solid chip (thumb · name · pages · read state), tucked under the bubble it came with. */
+function AttachmentChip({ name, doc, tuck }: { name: string; doc?: ThreadDoc; tuck?: boolean }) {
   const meta = doc ? [doc.pages ? pagesLabel(doc.pages) : null, READ[doc.status]].filter(Boolean).join(" · ") : null;
   return (
-    <div className="flex max-w-[84%] items-center gap-2.5 self-end rounded-[14px] border border-border bg-card py-2 pe-4 ps-3 shadow-soft">
-      <span aria-hidden className="flex h-9 w-[30px] shrink-0 items-end justify-center rounded-md border border-border bg-card pb-1 text-[8px] font-extrabold text-bad">
+    <div className={cx("flex max-w-[88%] items-center gap-2.5 self-end rounded-[16px] border border-border-2 bg-card py-2 pe-2.5 ps-3.5 dark:bg-card-2 sm:max-w-[72%]", tuck && "-mt-1.5")}>
+      <span aria-hidden className="flex h-9 w-[30px] shrink-0 items-center justify-center rounded-md bg-paper-thumb text-[8px] font-extrabold text-ink-solid">
         {doc?.image ? "IMG" : "PDF"}
       </span>
       <span className="min-w-0">
-        <span className="block truncate text-[13px] font-semibold text-text sm:text-[13.5px]" dir="auto">{name}</span>
-        {meta ? <span className={cx("block text-[11px] sm:text-[11.5px]", doc?.status === "failed" ? "text-bad" : "text-text-3")}>{meta}</span> : null}
+        <span className="block truncate text-[13px] font-semibold text-text" dir="auto">{name}</span>
+        {meta ? <span className={cx("block text-[11px]", doc?.status === "failed" ? "text-bad" : "text-text-3")}>{meta}</span> : null}
       </span>
     </div>
   );
@@ -259,5 +278,5 @@ function AttachmentChip({ name, doc }: { name: string; doc?: ThreadDoc }) {
 /** Minimal formatting for the model's replies: **bold** only; everything else stays plain text. */
 function Prose({ text }: { text: string }) {
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  return <>{parts.map((p, i) => (p.startsWith("**") && p.endsWith("**") ? <strong key={i} className="font-semibold text-text">{p.slice(2, -2)}</strong> : <span key={i}>{p}</span>))}</>;
+  return <>{parts.map((p, i) => (p.startsWith("**") && p.endsWith("**") ? <strong key={i} className="font-semibold text-title">{p.slice(2, -2)}</strong> : <span key={i}>{p}</span>))}</>;
 }

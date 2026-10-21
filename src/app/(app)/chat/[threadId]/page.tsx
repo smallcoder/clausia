@@ -31,21 +31,21 @@ export default async function ThreadPage({ params }: { params: Promise<{ threadI
   const title = clientName ?? proposedClient ?? (c ? caseLabel(c) : t.title || "محادثة جديدة");
 
   return (
-    <div className="mx-auto flex w-full max-w-[1024px] flex-1 flex-col gap-4 px-2.5 pt-2.5 sm:gap-[18px] sm:px-8 sm:pt-5">
+    <div className="mx-auto flex w-full max-w-[1024px] flex-1 flex-col gap-7 px-3.5 pt-2.5 sm:gap-9 sm:px-8 sm:pt-5">
       <PageHero
-        action={<Link href="/chat" aria-label="محادثة جديدة" title="محادثة جديدة" className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-card-2 text-text"><Plus size={19} strokeWidth={2} aria-hidden /></Link>}
+        action={<Link href="/chat" aria-label="محادثة جديدة" title="محادثة جديدة" className="glass glass-icon hidden size-11 sm:inline-flex shrink-0 items-center justify-center rounded-full transition hover:text-text"><Plus size={19} strokeWidth={1.9} aria-hidden /></Link>}
         back="/chat"
         icon={<span className="font-num text-[25px] font-black sm:text-[30px]">C</span>}
         eyebrow={eyebrow}
         title={title}
-        subtitle={c ? <Link href={`/cases/${c.id}`} className="inline-flex min-h-11 items-center font-semibold text-gold-text hover:underline"><span className="hidden sm:inline">{c.court ? `${c.court} · ` : ""}</span><span className="whitespace-nowrap">فتح ملف القضية ←</span></Link> : undefined}
+        subtitle={c ? <Link href={`/cases/${c.id}`} className="inline-flex min-h-11 items-center gap-1.5 font-semibold text-text-2 hover:text-text hover:underline">{c.court ? <span className="hidden sm:inline">{c.court} ·</span> : null}<span className="whitespace-nowrap">فتح ملف القضية ←</span></Link> : undefined}
         stats={[
           { value: data.stats.docsRead, label: "ورقة اتقرت" },
           { value: data.stats.readyOps, label: "عناصر جاهزة" },
           { value: data.stats.openQuestion, label: "سؤال مستنيك", highlight: true },
         ]}
       />
-      <div className="flex flex-1 flex-col px-1 sm:px-0">
+      <div className="flex flex-1 flex-col">
         <ChatThread threadId={t.id} caseId={t.case_id} items={data.items} lookup={data.lookup} docs={data.docs} />
       </div>
     </div>
