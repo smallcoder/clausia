@@ -33,6 +33,8 @@ type Sel = { date: string; view: View };
 const BUFFER_WEEKS = 3;
 /** at most this many weeks per read (the action refuses more than 70 days) */
 const CHUNK_WEEKS = 8;
+/** how far one read reaches once the buffer has a gap */
+const READ_AHEAD_WEEKS = 8;
 const FADE_MS = 200;
 
 const href = (s: Sel) => `/hearings?view=${s.view}&date=${formatDmy(s.date)}`;
@@ -90,11 +92,17 @@ export function RollDay({ today, from, to, rows, pill, side }: Props) {
   // ---- loading -----------------------------------------------------------------------------------------------------
   const ensure = useCallback((first: string, last: string) => {
     const { first: lo, last: hi } = stripRange(center);
-    const want: string[] = [];
-    for (let w = addDaysIso(weekStart(first), -7 * BUFFER_WEEKS); w <= addDaysIso(weekStart(last), 7 * BUFFER_WEEKS); w = addDaysIso(w, 7)) {
-      if (w < weekStart(lo) || w > hi) continue;
-      if (cache.weeks.get(w) !== "fresh" && !cache.busy.has(w)) want.push(w);
-    }
+    const missing = (reach: number) => {
+      const out: string[] = [];
+      for (let w = addDaysIso(weekStart(first), -7 * reach); w <= addDaysIso(weekStart(last), 7 * reach); w = addDaysIso(w, 7)) {
+        if (w < weekStart(lo) || w > hi) continue;
+        if (cache.weeks.get(w) !== "fresh" && !cache.busy.has(w)) out.push(w);
+      }
+      return out;
+    };
+    // a gap inside the buffer → read ahead in one go (up to a chunk past it), so a fast scroll stays covered
+    if (!missing(BUFFER_WEEKS).length) return;
+    const want = missing(READ_AHEAD_WEEKS);
     // nearest weeks first: contiguous runs of at most CHUNK_WEEKS
     const mid = weekStart(first);
     want.sort((a, b) => Math.abs(Date.parse(a) - Date.parse(mid)) - Math.abs(Date.parse(b) - Date.parse(mid)));
