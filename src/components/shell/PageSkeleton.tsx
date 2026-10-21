@@ -116,7 +116,13 @@ export function PageSkeleton({ kind }: { kind: Kind }) {
       {kind === "roll" ? (
         <>
           <Header stats={1} />
-          <div className="mt-6 grid grid-cols-6 gap-2 sm:gap-3">{Array.from({ length: 6 }, (_, i) => <div key={i} className="flex flex-col items-center gap-2 rounded-2xl py-3"><Bar w="32px" h={10} /><Bar w="36px" h={26} className="rounded-lg" /><Bar w="18px" h={5} /></div>)}</div>
+          {/* the month label line, then the day strip: 7 tiles a week (a full-width row on mobile; the card with its two round buttons on desktop) */}
+          <div className="mt-[18px] flex h-7 items-center px-1 sm:mt-[26px] sm:px-2"><Bar w="74px" h={11} /></div>
+          <div className="relative mt-2 grid grid-cols-7 sm:gap-1.5 sm:rounded-[30px] sm:border sm:border-border-2 sm:bg-card sm:px-12 sm:py-1.5 sm:shadow-card">
+            <span aria-hidden className="absolute start-1.5 top-1/2 hidden size-9 -translate-y-1/2 rounded-full border border-border sm:block" />
+            {Array.from({ length: 7 }, (_, i) => <div key={i} className="flex flex-col items-center gap-2 py-3"><Bar w="32px" h={10} /><Bar w="30px" h={24} className="rounded-lg" /><Bar w="14px" h={5} /></div>)}
+            <span aria-hidden className="absolute end-1.5 top-1/2 hidden size-9 -translate-y-1/2 rounded-full border border-border sm:block" />
+          </div>
           <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_455px]">
             <div className="space-y-6 border-s border-[var(--hairline-v2)] ps-6">{[0, 1, 2].map((i) => <div key={i} className="space-y-3"><Bar w="200px" h={14} /><Card className={i ? "" : "pb-8"}><Rows n={1} line={false} />{i ? null : <Bar w="100%" h={48} className="mt-3 rounded-full" />}</Card></div>)}</div>
             <div className="hidden lg:block"><Card><Bar w="140px" h={14} /><Rows n={3} /></Card></div>
