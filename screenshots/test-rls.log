@@ -12,8 +12,8 @@ PASS  OTHER reads 0 rows of office A: documents  (A has 2; B got 0)
 PASS  OTHER reads 0 rows of office A: document_pages  (A has 4; B got 0)
 PASS  OTHER reads 0 rows of office A: proposals  (A has 13; B got 0)
 PASS  OTHER reads 0 rows of office A: chat_threads  (A has 19; B got 0)
-PASS  OTHER reads 0 rows of office A: chat_messages  (A has 67; B got 0)
-PASS  OTHER reads 0 rows of office A: llm_calls  (A has 165; B got 0)
+PASS  OTHER reads 0 rows of office A: chat_messages  (A has 65; B got 0)
+PASS  OTHER reads 0 rows of office A: llm_calls  (A has 216; B got 0)
 PASS  OTHER cannot read an office-A case by id
 PASS  OTHER cannot read office A row
 PASS  OTHER update of office-A case affects 0 rows  (0 rows)

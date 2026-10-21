@@ -5,6 +5,7 @@ PASS  next_date equal to the hearing date is refused
 PASS  unclear next_date is refused
 PASS  refusals left one undecided hearing
 PASS  a new hearing exists on 15/11/2026
+PASS  decision on a future hearing is refused
 PASS  new.previous_hearing_id = old
 PASS  old.next_hearing_id = new
 PASS  rpc returns next_hearing_id
