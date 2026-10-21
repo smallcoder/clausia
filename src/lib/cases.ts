@@ -47,11 +47,17 @@ export async function nextHearings(db: Db, caseIds: string[]): Promise<Map<strin
   return out;
 }
 
-export async function listCases(db: Db, opts: { q?: string; stage?: string; status?: string; review?: boolean } = {}): Promise<CaseRow[]> {
+export async function listCases(db: Db, opts: { q?: string; stage?: string; status?: string; review?: boolean; decision?: boolean } = {}): Promise<CaseRow[]> {
   let query = db.from("cases").select(CASE_COLS).neq("review_status", "rejected").order("updated_at", { ascending: false }).limit(200);
   // ?review=1: only the cases that need the lawyer's review (the same set as the «محتاجة مراجعة» tile)
   if (opts.review) {
     const ids = [...(await casesNeedingReview(db))];
+    if (!ids.length) return [];
+    query = query.in("id", ids);
+  }
+  // ?decision=1: only the cases with a past hearing and no decision (the same set as the «محتاجة قرار» stat)
+  if (opts.decision) {
+    const ids = [...(await casesNeedingDecision(db))];
     if (!ids.length) return [];
     query = query.in("id", ids);
   }
@@ -152,8 +158,12 @@ export async function casesNeedingReview(db: Db): Promise<Set<string>> {
   ]);
   const ids = new Set<string>((own.data ?? []).map((c) => c.id));
   for (const r of [undecided, ...items]) for (const row of (r.data ?? []) as { case_id: string | null }[]) if (row.case_id) ids.add(row.case_id);
+  return listedOnly(db, ids);
+}
+
+/** Of `ids`, the cases the list shows (not rejected), so a tile's count equals its filter's row count. */
+async function listedOnly(db: Db, ids: Set<string>): Promise<Set<string>> {
   if (!ids.size) return ids;
-  // keep only cases the list shows (not rejected)
   const { data } = await db.from("cases").select("id").in("id", [...ids]).neq("review_status", "rejected");
   return new Set((data ?? []).map((c) => c.id));
 }
@@ -177,12 +187,12 @@ export async function weekHearingsCount(db: Db): Promise<number> {
 }
 
 /**
- * Cases with a past hearing and no decision recorded (the «محتاجة قرار» marker in the cases list).
- * Same rule as `undecidedPastHearings`; a subset of `casesNeedingReview`.
+ * Cases with a hearing before today (Cairo) and no decision recorded: the cases-list «محتاجة قرار» stat,
+ * its `?decision=1` filter and the row marker. Same rule as `undecidedPastHearings`; a subset of `casesNeedingReview`.
  */
 export async function casesNeedingDecision(db: Db): Promise<Set<string>> {
   const { data } = await db.from("hearings").select("case_id").lt("hearing_date", todayIso()).is("decision_type", null).neq("review_status", "rejected");
-  return new Set((data ?? []).map((h) => h.case_id));
+  return listedOnly(db, new Set((data ?? []).map((h) => h.case_id)));
 }
 
 /** Of `caseIds`, the cases whose latest judgment (not rejected) has outcome `against_us`. */
