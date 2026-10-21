@@ -4,6 +4,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { SheetEditText, SheetReview, TapItem } from "@/components/cases/ItemSheet";
+import { DocThumb } from "@/components/documents/DocThumb";
 import { ClausiaSays, Panel, StatusChip } from "@/components/shell/PageHero";
 import type { CaseFile } from "@/lib/case-file";
 import { formatDayLabel, formatDmy } from "@/lib/dates";
@@ -51,7 +52,7 @@ function Summary({ cf, hs, today, chatHref, className }: { cf: CaseFile; hs: Hea
   return (
     <div className={`relative lg:rounded-[20px] lg:border lg:border-[var(--hero-border)] lg:bg-card lg:px-[18px] lg:py-4 lg:shadow-pop ${className}`}>
       <ClausiaSays label="ملخص Clausia">{summarySentences(cf, hs, today).join(" ")}</ClausiaSays>
-      <Link href={chatHref} className="absolute end-0 top-0 inline-flex min-h-8 items-center text-xs font-semibold text-gold-text hover:underline lg:end-[18px] lg:top-3.5">المحادثة ←</Link>
+      <Link href={chatHref} className="absolute -top-1.5 end-0 inline-flex min-h-11 items-center px-1 text-xs font-semibold text-gold-text hover:underline lg:end-[14px] lg:top-2">المحادثة ←</Link>
     </div>
   );
 }
@@ -207,7 +208,7 @@ function JudgmentReview({ id, caseId }: { id: string; caseId: string }) {
 // ---------- Side column ----------
 
 function NextHearing({ cf, hs, today, caseId, className }: { cf: CaseFile; hs: HearingState; today: string; caseId: string; className: string }) {
-  const all = <Link href={`/cases/${caseId}?tab=hearings`} className="shrink-0 text-xs font-semibold hover:underline">كل الجلسات ←</Link>;
+  const all = <Link href={`/cases/${caseId}?tab=hearings`} className="-my-3.5 inline-flex min-h-11 shrink-0 items-center text-xs font-semibold hover:underline">كل الجلسات ←</Link>;
   const h = hs.next;
   if (h) {
     const [y, m, d] = h.date.split("-").map(Number);
@@ -254,8 +255,8 @@ function NextHearing({ cf, hs, today, caseId, className }: { cf: CaseFile; hs: H
               {formatDayLabel(u.date).split(" ")[0]} <span className="num">{formatDmy(u.date)}</span>
             </div>
             <div className="mt-1.5 flex flex-wrap items-center gap-2">
-              <StatusChip tone="warn">لسه من غير قرار</StatusChip>
-              <Link href={`/cases/${caseId}?tab=hearings#h-${u.id}`} className="text-[12.5px] font-semibold text-gold-text hover:underline">سجّل القرار</Link>
+              <StatusChip tone="warn">محتاجة قرار</StatusChip>
+              <Link href={`/cases/${caseId}?tab=hearings#h-${u.id}`} className="-my-3 inline-flex min-h-11 items-center text-[12.5px] font-semibold text-gold-text hover:underline">سجّل القرار</Link>
             </div>
           </div>
         </div>
@@ -324,19 +325,13 @@ function Docs({ cf, caseId, className }: { cf: CaseFile; caseId: string; classNa
     <section className={`lg:rounded-[20px] lg:border lg:border-border-2 lg:bg-card lg:px-4 lg:pb-4 lg:pt-3.5 lg:shadow-soft ${className}`}>
       <div className="flex items-baseline justify-between gap-2 px-1 lg:px-0">
         <h2 className="text-[14px] font-bold text-text">المستندات {docs.length ? <span className="font-num text-[12px] font-normal text-text-3">{docs.length}</span> : null}</h2>
-        <Link href={`/cases/${caseId}?tab=documents`} className="text-xs font-semibold text-gold-text hover:underline">{docs.length ? "الكل ←" : "أضف مستند ←"}</Link>
+        <Link href={`/cases/${caseId}?tab=documents`} className="-my-3.5 inline-flex min-h-11 items-center text-xs font-semibold text-gold-text hover:underline">{docs.length ? "الكل ←" : "أضف مستند ←"}</Link>
       </div>
       {shown.length ? (
         <div className="mt-2.5 grid grid-cols-3 gap-2 lg:mt-3">
           {shown.map((d) => (
             <a key={d.id} href={`/api/documents/${d.id}`} target="_blank" rel="noopener" className="group block min-w-0" title={d.file_name}>
-              <span className="flex aspect-[3/4] flex-col gap-1 rounded-[10px] border border-border bg-field px-[7px] py-[9px] shadow-soft transition group-hover:-translate-y-0.5 lg:rounded-[9px] dark:border-transparent dark:bg-text">
-                <span className="h-[3px] w-[55%] rounded-sm bg-gold" />
-                <span className="mt-[3px] h-0.5 w-full rounded-sm bg-card-3 dark:bg-text-3/50" />
-                <span className="h-0.5 w-[88%] rounded-sm bg-card-3 dark:bg-text-3/50" />
-                <span className="h-0.5 w-[94%] rounded-sm bg-card-3 dark:bg-text-3/50" />
-                {d.read_status !== "done" ? <span className="mt-auto text-center text-[9.5px] text-text-4">{READ_STATUS[d.read_status as keyof typeof READ_STATUS]}</span> : null}
-              </span>
+              <DocThumb note={d.read_status !== "done" ? READ_STATUS[d.read_status as keyof typeof READ_STATUS] : null} />
               <span className="mt-[5px] line-clamp-2 block text-center text-[11px] font-semibold text-text lg:text-[11.5px]">{docName(d)}</span>
             </a>
           ))}
@@ -361,9 +356,9 @@ export function CaseOverview({ cf, hs, today, caseId, chatHref }: { cf: CaseFile
         <Sides cf={cf} caseId={caseId} className="order-5 lg:order-none" />
         <Judgments cf={cf} caseId={caseId} className="order-6 lg:order-none" />
         <p className="order-8 px-1 text-xs text-text-4 lg:order-none">
-          <Link href={`/cases/${caseId}?tab=details`} className="hover:text-text-2 hover:underline">بيانات الدعوى</Link>
+          <Link href={`/cases/${caseId}?tab=details`} className="-my-3.5 inline-flex min-h-11 items-center hover:text-text-2 hover:underline">بيانات الدعوى</Link>
           {" · "}
-          <a href={`/api/cases/${caseId}/case-file?download`} className="hover:text-text-2 hover:underline">تنزيل ملف القضية (JSON)</a>
+          <a href={`/api/cases/${caseId}/case-file?download`} className="-my-3.5 inline-flex min-h-11 items-center hover:text-text-2 hover:underline">تنزيل ملف القضية (JSON)</a>
         </p>
       </div>
       <div className="contents lg:flex lg:min-w-0 lg:flex-[1_1_280px] lg:flex-col lg:gap-4">

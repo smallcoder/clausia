@@ -1,13 +1,16 @@
 "use client";
 // A value with a small «تعديل» link that turns into one input + save / cancel. No big forms.
-import { useActionState, useEffect, useState, type ReactNode } from "react";
+// `startOpen`: the field is shown at once (a row that already expanded to edit); cancel / save then close
+// the surrounding <details>.
+import { useActionState, useEffect, useRef, useState, type ReactNode } from "react";
 import type { EditState } from "@/app/(app)/cases/actions";
-import { Button } from "@/components/ui";
 
 type Action = (prev: EditState, form: FormData) => Promise<EditState>;
 
+const field = "w-full rounded-2xl border border-border bg-field px-3.5 text-[15px] text-text placeholder:text-text-4 focus:border-gold focus:outline-none";
+
 export function InlineEdit({
-  action, hidden, initial, display, placeholder, options, multiline, hint, label = "تعديل",
+  action, hidden, initial, display, placeholder, options, multiline, hint, label = "تعديل", startOpen = false,
 }: {
   action: Action;
   hidden: Record<string, string>;
@@ -18,37 +21,48 @@ export function InlineEdit({
   multiline?: boolean;
   hint?: string;
   label?: string;
+  startOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(startOpen);
   const [state, formAction, pending] = useActionState(action, null);
-  useEffect(() => { if (state?.ok) setOpen(false); }, [state]);
+  const form = useRef<HTMLFormElement>(null);
+  const close = () => {
+    const d = form.current?.closest("details");
+    if (startOpen && d) d.open = false;
+    else setOpen(false);
+  };
+  useEffect(() => {
+    if (!state?.ok) return;
+    const d = form.current?.closest("details");
+    if (startOpen && d) d.open = false;
+    else setOpen(false);
+  }, [state, startOpen]);
 
   if (!open) {
     return (
       <span className="inline-flex flex-wrap items-baseline gap-x-2">
         <span>{display}</span>
-        <button type="button" onClick={() => setOpen(true)} className="-my-2 inline-flex min-h-11 items-center px-2 text-caption text-accent hover:underline">{label}</button>
+        <button type="button" onClick={() => setOpen(true)} className="-my-2 inline-flex min-h-11 items-center px-2 text-[13px] font-semibold text-gold-text hover:underline">{label}</button>
       </span>
     );
   }
-  const field = "w-full rounded-[var(--radius-sm)] border border-line bg-surface-2 px-3 py-2 text-[15px] text-ink";
   return (
-    <form action={formAction} className="mt-1 flex w-full flex-col gap-2">
+    <form ref={form} action={formAction} className="flex w-full flex-col gap-2.5">
       {Object.entries(hidden).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
       {options ? (
-        <select name="value" defaultValue={initial} className={field} autoFocus>
+        <select name="value" defaultValue={initial} className={`${field} h-11`} autoFocus={!startOpen}>
           {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
       ) : multiline ? (
-        <textarea name="value" defaultValue={initial} rows={3} className={field} placeholder={placeholder} autoFocus />
+        <textarea name="value" defaultValue={initial} rows={3} className={`${field} py-2.5`} placeholder={placeholder} autoFocus={!startOpen} />
       ) : (
-        <input name="value" defaultValue={initial} className={field} placeholder={placeholder} autoFocus />
+        <input name="value" defaultValue={initial} className={`${field} h-11`} placeholder={placeholder} autoFocus={!startOpen} autoComplete="off" />
       )}
-      {hint ? <p className="text-caption text-ink-3">{hint}</p> : null}
-      {state?.error ? <p className="text-callout text-danger">{state.error}</p> : null}
+      {hint ? <p className="text-[12.5px] leading-5 text-text-3">{hint}</p> : null}
+      {state?.error ? <p className="rounded-xl bg-bad-bg px-3 py-2 text-[14px] text-bad" role="alert">{state.error}</p> : null}
       <div className="flex gap-2">
-        <Button size="sm" disabled={pending}>{pending ? "جارٍ الحفظ…" : "حفظ"}</Button>
-        <Button size="sm" type="button" variant="ghost" onClick={() => setOpen(false)}>إلغاء</Button>
+        <button disabled={pending} className="bg-primary-fill inline-flex h-11 items-center justify-center rounded-full px-6 text-[15px] font-bold transition disabled:opacity-60">{pending ? "بيتحفظ…" : "حفظ"}</button>
+        <button type="button" onClick={close} className="inline-flex h-11 items-center rounded-full border border-border bg-chip px-5 text-[15px] text-text-2">إلغاء</button>
       </div>
     </form>
   );
