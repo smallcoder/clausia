@@ -18,7 +18,7 @@ export function DecisionBadge({ h, today }: { h: { decision_type: HearingWithCas
   return (
     <StatusChip tone="neutral">
       {DECISION[h.decision_type]}
-      {h.next_date ? <>&nbsp;← <span className="num font-num">{formatDmy(h.next_date)}</span></> : null}
+      {h.next_date ? <>&nbsp;←&nbsp;<span className="num font-num">{formatDmy(h.next_date)}</span></> : null}
     </StatusChip>
   );
 }
@@ -37,7 +37,7 @@ export function HearingItem({ h, today, showCourt = false, showCircuit = true, s
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           {c.status === "reserved_for_judgment" && !h.decision_type ? <StatusChip tone="neutral">{CASE_STATUS[c.status]}</StatusChip> : null}
-          {h.review_status === "suggested" ? <StatusChip tone="warn">مقترحة</StatusChip> : null}
+          {h.review_status === "suggested" ? <StatusChip tone="accent">مقترحة</StatusChip> : null}
           <DecisionBadge h={h} today={today} />
         </div>
       </div>
