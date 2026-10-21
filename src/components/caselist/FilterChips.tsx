@@ -3,7 +3,7 @@
  * - FilterChips: status with office-wide counts, plus «محتاجة مراجعة», as one single-select row (the mockup's chips).
  * - StageMenu: the stage (?stage=) as a compact menu at the end of the search field, so the chip row stays one line.
  */
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ListFilter } from "lucide-react";
 import Link from "next/link";
 import { CASE_STATUS, STAGE } from "@/lib/labels";
 
@@ -58,8 +58,8 @@ export function StageMenu({ sp, counts }: { sp: ListParams; counts: Counts }) {
     <details className="group relative shrink-0">
       <summary aria-label="تصفية حسب الدرجة"
         className={`flex h-8 cursor-pointer list-none items-center gap-1 rounded-full border px-3 text-[12.5px] font-semibold [&::-webkit-details-marker]:hidden ${current ? "bg-primary-fill border-transparent" : "border-border bg-card-2 text-text-2"}`}>
-        {current ?? "كل الدرجات"}
-        <ChevronDown size={14} strokeWidth={2.2} aria-hidden className="transition group-open:rotate-180" />
+        {current ? current : <><ListFilter size={15} strokeWidth={2.1} aria-hidden className="sm:hidden" /><span className="hidden sm:inline">كل الدرجات</span></>}
+        <ChevronDown size={14} strokeWidth={2.2} aria-hidden className={`transition group-open:rotate-180 ${current ? "" : "hidden sm:block"}`} />
       </summary>
       <div className="absolute end-0 top-10 z-30 w-48 rounded-2xl border border-border bg-card p-1.5 shadow-pop">
         <Link href={casesHref(sp, { stage: undefined })} className={item(!sp.stage)}>كل الدرجات <span className="font-num text-xs text-text-4">{counts.total}</span></Link>
