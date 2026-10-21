@@ -1,5 +1,5 @@
 /**
- * «جلسات النهارده» (v2 Home mockups): a solid card, one row per hearing — the circuit number in large light digits,
+ * «جلسات النهارده» (docs/design/*Home.dc.html): a solid card, one row per hearing — the circuit number in large light digits,
  * «client — subject», where it is (court · circuit), and what's needed on the side. Falls back to tomorrow's roll
  * (labelled), then to a calm empty state.
  */
@@ -15,16 +15,16 @@ function Row({ h }: { h: HearingWithCase }) {
   return (
     <Link href={`/cases/${h.case_id}`} className="group flex items-center gap-3.5 border-t border-[var(--hairline-v2)] py-3 md:gap-[18px] md:py-4">
       <span title={h.case.circuit ?? undefined}
-        className="font-num w-[22px] shrink-0 text-center text-[22px] font-light leading-none text-gold md:w-[30px] md:text-[26px]">
+        className="font-num w-[22px] shrink-0 text-center text-[22px] font-light text-gold md:w-[30px] md:text-[26px]">
         {circuitNo(h.case.circuit)}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[14px] font-semibold leading-normal text-text group-hover:underline md:text-[15.5px]">{rowTitle(h)}</span>
+        <span className="block truncate text-[14px] font-semibold leading-[18px] text-text group-hover:underline md:text-[15.5px] md:leading-[21px]">{rowTitle(h)}</span>
         {/* desktop: where it is; mobile: what's needed (or where, when nothing is noted) */}
-        <span className="mt-[3px] hidden truncate text-[12.5px] leading-normal text-text-3 md:block">{place}</span>
-        <span className="mt-0.5 block truncate text-[11.5px] leading-normal text-text-3 md:hidden">{need ?? place}</span>
+        <span className="mt-[3px] hidden truncate text-[12.5px] leading-[17px] text-text-3 md:block">{place}</span>
+        <span className="mt-0.5 block truncate text-[11.5px] leading-4 text-text-3 md:hidden">{need ?? place}</span>
       </span>
-      {need ? <span className="hidden max-w-[34%] shrink-0 truncate text-[12.5px] text-text-3 md:block">{need}</span> : null}
+      {need ? <span className="hidden max-w-[34%] shrink-0 truncate text-[12.5px] leading-[17px] text-text-3 md:block">{need}</span> : null}
     </Link>
   );
 }
@@ -43,7 +43,7 @@ export function TodayCard({ todays, tomorrows, tomorrow, nextDate, className = "
   return (
     <section aria-label={showTomorrow ? "جلسات بكره" : "جلسات النهارده"}
       className={`min-w-0 rounded-[24px] border border-border-2 bg-card px-[18px] py-1 shadow-card md:rounded-[28px] md:px-[26px] md:py-2 ${className}`}>
-      <h2 className="pb-1 pt-3 text-[11.5px] font-medium text-text-4 md:pb-1.5 md:pt-4 md:text-[12px]">{title}</h2>
+      <h2 className="pb-1 pt-3 text-[11.5px] font-normal leading-4 text-text-4 md:pb-1.5 md:font-medium md:pt-4 md:text-[12px]">{title}</h2>
       {list.length ? (
         <div>
           {list.slice(0, MAX_ROWS).map((h) => <Row key={h.id} h={h} />)}
