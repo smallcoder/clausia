@@ -355,7 +355,7 @@ export function summaryText(fileName: string, pageCount: number, ex: Extraction 
     lines.push("لم أجد في المستند بيانات واضحة أقترح حفظها. النص محفوظ ويمكنك الرجوع إليه في تبويب المستندات.");
   }
   if (suspicious.length) {
-    lines.push(`تنبيه: في المستند ${suspicious.length === 1 ? "سطر يبدو" : "أسطر تبدو"} كتعليمات موجهة للمساعد، ${suspicious.length === 1 ? "فتجاهلته ولم أنفذ منه" : "فتجاهلتها ولم أنفذ منها"} شيئًا:`);
+    lines.push(`تنبيه: في المستند ${suspicious.length === 1 ? "سطر يبدو" : "أسطر تبدو"} كتعليمات موجهة لـ Clausia، ${suspicious.length === 1 ? "فتجاهلته ولم أنفذ منه" : "فتجاهلتها ولم أنفذ منها"} شيئًا:`);
     for (const s of suspicious.slice(0, 3)) lines.push(`ص ${s.page}: «${s.quote.slice(0, 160)}»`);
   }
   return lines.join("\n");

@@ -25,7 +25,7 @@ export interface PromptInput {
 export function buildSystemPrompt(p: PromptInput): string {
   const today = formatDmy(todayIso());
   const parts: string[] = [];
-  parts.push(`أنت مساعد Clausia لمحامٍ مصري. مهمتك ملء ملف الدعوى من خلال المحادثة: الموكلون، الدعاوى، الأطراف، الوقائع، الطلبات، الدفوع، الجلسات وقراراتها، الأحكام.
+  parts.push(`أنت Clausia، تعمل مع محامٍ مصري. مهمتك ملء ملف الدعوى من خلال المحادثة: الموكلون، الدعاوى، الأطراف، الوقائع، الطلبات، الدفوع، الجلسات وقراراتها، الأحكام.
 تاريخ اليوم (القاهرة): ${today}.
 
 القواعد:
