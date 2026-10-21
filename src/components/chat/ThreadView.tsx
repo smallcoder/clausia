@@ -1,14 +1,36 @@
 import "server-only";
-/** Server part of a thread: loads the visible messages, their cards and the names the cards need. */
+/** Server part of a thread: loads the visible messages, their cards, the thread's papers and the names the cards need. */
 import { buildProposalLookup } from "@/lib/assistant/lookup";
+import { DOC_TYPE } from "@/lib/labels";
 import type { Proposal } from "@/lib/proposals";
 import type { Db } from "@/lib/supabase/server";
-import { ChatThread, type ChatItem } from "./ChatThread";
+import { ChatThread, type ChatItem, type ThreadDoc } from "./ChatThread";
 
-export async function ThreadView({ db, threadId, caseId }: { db: Db; threadId: string; caseId?: string | null }) {
-  const [{ data: rows }, { data: props }] = await Promise.all([
+export interface ThreadData {
+  items: ChatItem[];
+  proposals: Proposal[];
+  lookup: Record<string, string>;
+  docs: Record<string, ThreadDoc>;
+  stats: {
+    /** papers uploaded in this thread whose pages were read (documents.read_status = 'done') */
+    docsRead: number;
+    /** ops still waiting for a decision (pending or failed) across every card in the thread */
+    readyOps: number;
+    /**
+     * 1 when Clausia's last visible message is a question (ends with «؟» or «?») and the lawyer has not replied
+     * after it; otherwise 0. A thread has at most one open question this way.
+     */
+    openQuestion: number;
+  };
+}
+
+const isOpen = (s: string) => s === "pending" || s === "failed";
+
+export async function loadThread(db: Db, threadId: string): Promise<ThreadData> {
+  const [{ data: rows }, { data: props }, { data: docRows }] = await Promise.all([
     db.from("chat_messages").select("id, role, content, attachments, created_at").eq("thread_id", threadId).neq("role", "tool").order("created_at").limit(400),
     db.from("proposals").select("*").eq("thread_id", threadId).order("created_at"),
+    db.from("documents").select("id, file_name, title, doc_type, page_count, read_status, mime_type").eq("thread_id", threadId),
   ]);
   const proposals = (props ?? []) as unknown as Proposal[];
   const byMessage = new Map<string, Proposal[]>();
@@ -18,6 +40,13 @@ export async function ThreadView({ db, threadId, caseId }: { db: Db; threadId: s
     else orphans.push(p);
   }
   const lookup = await buildProposalLookup(db, proposals);
+
+  const docs: Record<string, ThreadDoc> = {};
+  for (const d of docRows ?? []) {
+    docs[d.id] = { name: d.file_name, pages: d.page_count, status: d.read_status, image: d.mime_type.startsWith("image/") };
+    // the card's source column reads «صحيفة دعوى ص 2» rather than the file name when the paper's type is known
+    if (d.doc_type && d.doc_type !== "other") lookup[d.id] = DOC_TYPE[d.doc_type];
+  }
 
   const items: ChatItem[] = [];
   for (const r of rows ?? []) {
@@ -44,5 +73,24 @@ export async function ThreadView({ db, threadId, caseId }: { db: Db; threadId: s
   }
   const visible = items.filter((x) => x.role === "user" || x.content.trim() || x.proposals.length);
 
-  return <ChatThread threadId={threadId} caseId={caseId ?? null} items={visible} lookup={lookup} />;
+  const lastSpoken = [...visible].reverse().find((x) => x.role === "user" || x.content.trim());
+  const openQuestion = lastSpoken?.role === "assistant" && /[؟?]$/.test(lastSpoken.content.replace(/[\s*»")]+$/u, "")) ? 1 : 0;
+
+  return {
+    items: visible,
+    proposals,
+    lookup,
+    docs,
+    stats: {
+      docsRead: (docRows ?? []).filter((d) => d.read_status === "done").length,
+      readyOps: proposals.reduce((n, p) => n + p.ops.filter((o) => isOpen(o.status)).length, 0),
+      openQuestion,
+    },
+  };
+}
+
+/** The whole thread UI for a case's «المحادثة» tab (the /chat/[threadId] page uses loadThread + ChatThread with its hero). */
+export async function ThreadView({ db, threadId, caseId }: { db: Db; threadId: string; caseId?: string | null }) {
+  const t = await loadThread(db, threadId);
+  return <ChatThread threadId={threadId} caseId={caseId ?? null} items={t.items} lookup={t.lookup} docs={t.docs} />;
 }

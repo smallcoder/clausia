@@ -1,12 +1,18 @@
 "use client";
-/** Thread UI: messages, cards, composer (fixed above the mobile tab bar), upload. No streaming. */
+/**
+ * Thread UI (docs/design/*Chat*.dc.html): lawyer bubbles on the left, Clausia lines with the «C» avatar on the
+ * right, paper chips, confirmation cards, and the composer docked at the bottom of the 820px column.
+ * Sending is optimistic (the lawyer's message shows at once); no streaming.
+ */
+import { ArrowUp, Mic, Paperclip } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useOptimistic, useRef, useState, useTransition, type KeyboardEvent } from "react";
+import { useEffect, useOptimistic, useRef, useState, useTransition, type KeyboardEvent, type ReactNode } from "react";
 import { cx } from "@/components/ui";
 import { ProposalCard } from "@/components/proposal/ProposalCard";
 import { sendMessageAction } from "@/lib/assistant/actions";
 import { uploadDocumentAction } from "@/lib/documents/actions";
 import type { Proposal } from "@/lib/proposals";
+import "./chat.css";
 
 export interface ChatItem {
   id: string;
@@ -15,6 +21,14 @@ export interface ChatItem {
   createdAt: string;
   attachments: { documentId: string; fileName: string }[];
   proposals: Proposal[];
+}
+
+/** A paper uploaded in this thread (for the attachment chip). */
+export interface ThreadDoc {
+  name: string;
+  pages: number | null;
+  status: "pending" | "reading" | "done" | "failed";
+  image: boolean;
 }
 
 const EXAMPLES_GENERAL = [
@@ -28,7 +42,12 @@ const EXAMPLES_CASE = [
   "طلباتنا: إلزام المدعى عليه بأداء …",
 ];
 
-export function ChatThread({ threadId, caseId, items, lookup }: { threadId: string; caseId: string | null; items: ChatItem[]; lookup: Record<string, string> }) {
+/** The upload posts «أرفقتُ مستندًا: X» for the lawyer; the chip says it already, so no bubble for it. */
+const AUTO_ATTACH = /^أرفقتُ مستندًا: /;
+
+export function ChatThread({ threadId, caseId, items, lookup, docs = {} }: {
+  threadId: string; caseId: string | null; items: ChatItem[]; lookup: Record<string, string>; docs?: Record<string, ThreadDoc>;
+}) {
   const router = useRouter();
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -95,73 +114,110 @@ export function ChatThread({ threadId, caseId, items, lookup }: { threadId: stri
   }
 
   const busy = sending || uploading;
+  const status = sending ? "Clausia بيكتب…" : uploading ? "بقرا الورقة صفحة صفحة…" : null;
 
   return (
-    <div className="pb-44 lg:pb-36">
+    <div className="flex flex-1 flex-col">
       {shown.length === 0 ? (
-        <div className="mx-auto max-w-xl py-8 text-center">
-          <p className="text-headline font-semibold text-ink">{caseId ? "اكتب ما استجد في هذه الدعوى" : "اكتب ما تعرفه عن الموكل أو الدعوى"}</p>
-          <p className="mt-2 text-callout leading-relaxed text-ink-3">أقترح عليك ما يُحفظ في بطاقة تأكيد، ولا يُحفظ شيء إلا بعد موافقتك. يمكنك أيضًا إرفاق صحيفة دعوى أو حكم أو صورة مستند.</p>
-          <div className="mt-5 flex flex-col items-center gap-2">
+        <ClausiaLine>
+          <p>{caseId ? "اكتب لي اللي استجد في القضية دي، أو ارفع ورقة." : "احكي لي عن الموكل أو القضية، أو ارفع الصحيفة."} هجهّز لك اللي هيتحفظ في بطاقة، ومش هيتحفظ حاجة قبل ما تأكد.</p>
+          <div className="mt-2.5 flex flex-wrap gap-2">
             {(caseId ? EXAMPLES_CASE : EXAMPLES_GENERAL).map((x) => (
               <button key={x} type="button" onClick={() => { setText(x); boxRef.current?.focus(); }}
-                className="min-h-11 rounded-full bg-surface px-4 py-2 text-callout text-ink-2 shadow-1 transition-colors hover:text-ink">{x}</button>
+                className="h-9 rounded-full border border-border bg-chip px-4 text-[13px] text-text-2 shadow-soft transition hover:text-text sm:text-[13.5px]">{x}</button>
             ))}
           </div>
-        </div>
+        </ClausiaLine>
       ) : null}
 
-      <ol className="mx-auto flex max-w-3xl flex-col gap-5">
+      <ol className="flex flex-col gap-3.5 sm:gap-[18px]">
         {shown.map((m) => (
-          <li key={m.id} className={cx("flex flex-col gap-2", m.role === "user" ? "items-start" : "items-stretch")}>
+          <li key={m.id} className="flex flex-col gap-2">
             {m.role === "user" ? (
-              <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-[18px] rounded-tr-[6px] bg-accent px-4 py-2.5 text-body leading-relaxed text-accent-ink">
-                {m.content}
-                {m.attachments.length ? <span className="mt-1 block text-caption opacity-75">مرفق: {m.attachments.map((a) => a.fileName).join("، ")}</span> : null}
-              </div>
-            ) : (
               <>
-                {m.content.trim() ? (
-                  <div className="max-w-[92%] whitespace-pre-wrap break-words text-body leading-relaxed text-ink">
-                    <Prose text={m.content} />
+                {m.attachments.length && AUTO_ATTACH.test(m.content) ? null : (
+                  <div className="chat-bubble max-w-[84%] self-end whitespace-pre-wrap break-words rounded-[20px] rounded-bl-[6px] px-3.5 py-[11px] text-[15px] leading-[1.7] sm:max-w-[72%] sm:rounded-[22px] sm:rounded-bl-[6px] sm:px-[18px] sm:py-[13px] sm:text-base sm:leading-[1.75]">
+                    {m.content}
                   </div>
-                ) : null}
-                {m.proposals.map((p) => <ProposalCard key={p.id} proposal={p} lookup={lookup} />)}
+                )}
+                {m.attachments.map((a) => <AttachmentChip key={a.documentId || a.fileName} name={a.fileName} doc={docs[a.documentId]} />)}
               </>
+            ) : (
+              <ClausiaLine>
+                {m.content.trim() ? <p className="whitespace-pre-wrap break-words"><Prose text={m.content} /></p> : null}
+                {m.proposals.map((p) => (
+                  <div key={p.id} className={cx(m.content.trim() && "mt-2.5 sm:mt-3")}><ProposalCard proposal={p} lookup={lookup} /></div>
+                ))}
+              </ClausiaLine>
             )}
           </li>
         ))}
-        {sending ? <li className="text-callout text-ink-3" aria-live="polite"><span className="inline-block animate-pulse">Clausia بيكتب…</span></li> : null}
-        {uploading ? <li className="text-callout text-ink-3" aria-live="polite"><span className="inline-block animate-pulse">جارٍ رفع المستند وقراءته…</span></li> : null}
+        {status ? (
+          <li aria-live="polite">
+            <ClausiaLine><p className="animate-pulse text-text-3">{status}</p></ClausiaLine>
+          </li>
+        ) : null}
       </ol>
       <div ref={endRef} />
 
-      <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] chrome z-20 border-t border-hairline lg:bottom-0 lg:right-64">
-        <div className="mx-auto max-w-3xl px-4 py-3 lg:px-8">
-          {error ? (
-            <p role="alert" className="mb-2 flex items-start justify-between gap-2 rounded-[var(--radius-sm)] bg-danger-soft px-3 py-2 text-callout text-danger">
-              <span>{error}</span>
-              <button type="button" onClick={() => setError(null)} className="shrink-0 text-xs underline">إخفاء</button>
-            </p>
-          ) : null}
-          <div className="flex items-end gap-2">
-            <input ref={fileRef} type="file" accept="application/pdf,image/*" className="sr-only" id={`file-${threadId}`} onChange={(e) => onFile(e.target.files?.[0])} />
-            <label htmlFor={`file-${threadId}`} aria-label="إرفاق مستند (PDF أو صورة)" title="إرفاق مستند (PDF أو صورة)"
-              className={cx("flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full bg-surface text-ink-2 shadow-1 transition-colors hover:text-accent", busy && "pointer-events-none opacity-50")}>
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M21 11.5 12.6 19.9a5 5 0 0 1-7.1-7.1l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7l-8.5 8.5a1.7 1.7 0 0 1-2.4-2.4l7.8-7.8" />
-              </svg>
-            </label>
-            <textarea ref={boxRef} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={onKey} rows={1} placeholder="اكتب لـ Clausia…" aria-label="رسالة لـ Clausia"
-              className="max-h-40 min-h-11 flex-1 resize-none rounded-[22px] border border-hairline bg-surface px-4 py-2.5 text-body leading-6 text-ink shadow-1 placeholder:text-ink-3 focus:border-accent focus:outline-none [field-sizing:content]" />
-            <button type="button" onClick={send} disabled={!text.trim() || sending}
-              className="h-11 shrink-0 rounded-[var(--radius-sm)] bg-accent px-5 text-body font-semibold text-accent-ink transition hover:opacity-90 disabled:opacity-40">
-              إرسال
-            </button>
-          </div>
-          <p className="mt-1.5 hidden text-caption text-ink-3 lg:block">Enter للإرسال · Shift+Enter لسطر جديد</p>
+      <div className="min-h-[30px] flex-1" />
+
+      <div className="sticky bottom-0 z-20 bg-linear-to-t from-bg from-55% to-transparent pb-[calc(16px+env(safe-area-inset-bottom))] pt-4 sm:pb-7 sm:pt-3">
+        {error ? (
+          <p role="alert" className="mb-2 flex items-start justify-between gap-2 rounded-2xl bg-bad-bg px-3.5 py-2 text-[13.5px] text-bad">
+            <span>{error}</span>
+            <button type="button" onClick={() => setError(null)} className="shrink-0 text-xs underline">إخفاء</button>
+          </p>
+        ) : null}
+        <div className="chat-pop flex flex-wrap items-center gap-2 rounded-[26px] border border-border bg-field p-2 sm:px-4 sm:pb-2.5 sm:pt-3.5">
+          <input ref={fileRef} type="file" accept="application/pdf,image/*" className="sr-only" id={`file-${threadId}`} onChange={(e) => onFile(e.target.files?.[0])} />
+          <label htmlFor={`file-${threadId}`} aria-label="إرفاق ورقة (PDF أو صورة)" title="إرفاق ورقة (PDF أو صورة)"
+            className={cx(ROUND, "cursor-pointer", busy && "pointer-events-none opacity-50")}>
+            <Paperclip aria-hidden size={18} strokeWidth={1.9} />
+          </label>
+          <textarea ref={boxRef} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={onKey} rows={1}
+            placeholder={shown.length ? "ردّ على Clausia…" : "اكتب لـ Clausia…"} aria-label="رسالة لـ Clausia"
+            className="max-h-40 min-h-10 min-w-0 flex-1 resize-none bg-transparent py-2 text-[15px] leading-6 text-text placeholder:text-text-4 focus:outline-none [field-sizing:content] sm:order-first sm:min-h-11 sm:basis-full sm:py-0 sm:text-base sm:leading-[1.6]" />
+          <button type="button" disabled aria-label="رسالة صوتية (قريبًا)" title="رسالة صوتية (قريبًا)" className={cx(ROUND, "disabled:opacity-60")}>
+            <Mic aria-hidden size={18} strokeWidth={1.9} />
+          </button>
+          <div className="hidden min-w-0 flex-1 truncate text-xs text-text-4 sm:block" aria-live="polite">{status ?? "لن يُحفظ شيء قبل تأكيدك"}</div>
+          <button type="button" onClick={send} disabled={!text.trim() || sending} aria-label="إرسال"
+            className="bg-primary-fill inline-flex size-[42px] shrink-0 items-center justify-center rounded-full transition disabled:opacity-50 sm:size-11">
+            <ArrowUp aria-hidden size={20} strokeWidth={2.6} />
+          </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+const ROUND = "inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-border bg-card-2 text-text-2 transition hover:text-text";
+
+/** Clausia's turn: the «C» avatar and its text (cards go under the text). */
+function ClausiaLine({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex gap-2.5 sm:gap-3.5">
+      <span aria-hidden className="mark font-num mt-0.5 inline-flex size-[26px] shrink-0 items-center justify-center rounded-full text-xs font-black shadow-[var(--shadow-soft)] sm:mt-0 sm:size-8 sm:text-sm">C</span>
+      <div className="min-w-0 flex-1 text-[15px] leading-[1.75] text-text-2 sm:pt-1 sm:text-base sm:leading-[1.8]">{children}</div>
+    </div>
+  );
+}
+
+const pagesLabel = (n: number) => (n === 1 ? "صفحة واحدة" : n === 2 ? "صفحتين" : n <= 10 ? `${n} صفحات` : `${n} صفحة`);
+const READ: Record<ThreadDoc["status"], string> = { done: "اتقرت", reading: "بتتقري…", pending: "لسه ما اتقرتش", failed: "ما اتقرتش" };
+
+function AttachmentChip({ name, doc }: { name: string; doc?: ThreadDoc }) {
+  const meta = doc ? [doc.pages ? pagesLabel(doc.pages) : null, READ[doc.status]].filter(Boolean).join(" · ") : null;
+  return (
+    <div className="flex max-w-[84%] items-center gap-2.5 self-end rounded-[14px] border border-border bg-card py-2 pe-4 ps-3 shadow-soft">
+      <span aria-hidden className="flex h-9 w-[30px] shrink-0 items-end justify-center rounded-md border border-border bg-card pb-1 text-[8px] font-extrabold text-bad">
+        {doc?.image ? "IMG" : "PDF"}
+      </span>
+      <span className="min-w-0">
+        <span className="block truncate text-[13px] font-semibold text-text sm:text-[13.5px]" dir="auto">{name}</span>
+        {meta ? <span className={cx("block text-[11px] sm:text-[11.5px]", doc?.status === "failed" ? "text-bad" : "text-text-3")}>{meta}</span> : null}
+      </span>
     </div>
   );
 }
@@ -169,5 +225,5 @@ export function ChatThread({ threadId, caseId, items, lookup }: { threadId: stri
 /** Minimal formatting for the model's replies: **bold** only; everything else stays plain text. */
 function Prose({ text }: { text: string }) {
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  return <>{parts.map((p, i) => (p.startsWith("**") && p.endsWith("**") ? <strong key={i} className="font-semibold">{p.slice(2, -2)}</strong> : <span key={i}>{p}</span>))}</>;
+  return <>{parts.map((p, i) => (p.startsWith("**") && p.endsWith("**") ? <strong key={i} className="font-semibold text-text">{p.slice(2, -2)}</strong> : <span key={i}>{p}</span>))}</>;
 }
