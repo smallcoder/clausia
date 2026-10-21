@@ -356,7 +356,7 @@ export function RollStrip({ center, selected, focusDay, today, counts, pinned, o
                 <a key={d} href={dayHref(d)} data-day={d} draggable={false} tabIndex={d === tabStop ? 0 : -1}
                   aria-current={on ? "date" : undefined}
                   onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return; e.preventDefault(); pick(d, "tap"); }}
-                  className={cx("relative w-[calc(100cqi/7)] shrink-0 snap-start rounded-lg pb-1.75 pt-2 text-center transition-[color] focus-visible:outline-offset-[-2px] sm:w-[calc((100cqi-132px)/7)] sm:pb-2.75 sm:pt-3",
+                  className={cx("relative w-[calc(100cqi/7)] shrink-0 snap-start rounded-lg pb-1.75 pt-2 text-center transition-[color] focus-visible:outline-offset-[-2px] sm:w-[calc((100cqi-132px)/7)] sm:pb-2.75 sm:pt-3", /* ds-allow: 7 day tiles fill the strip: container-width units (cqi) need calc() */
                     on ? "text-on-selected duration-200 delay-100" : "text-text duration-0 hover:bg-card-2",
                     solid && "bg-selected shadow-[0_4px_10px_-4px_var(--backdrop)]",
                     !on && d === today && "ring-1 ring-inset ring-gold-edge")}>

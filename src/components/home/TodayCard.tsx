@@ -24,7 +24,7 @@ function Row({ h }: { h: HearingWithCase }) {
         <span className="mt-0.75 hidden truncate text-sm leading-[17px] text-text-3 md:block">{place}</span>
         <span className="mt-0.5 block truncate text-xs leading-4 text-text-3 md:hidden">{need ?? place}</span>
       </span>
-      {need ? <span className="hidden max-w-[34%] shrink-0 truncate text-sm leading-[17px] text-text-3 md:block">{need}</span> : null}
+      {need ? <span className="hidden max-w-[34%] shrink-0 truncate text-sm leading-[17px] text-text-3 md:block" /* ds-allow: a share of the row (34%), not a length */>{need}</span> : null}
     </Link>
   );
 }

@@ -85,7 +85,7 @@ export function PageSkeleton({ kind }: { kind: Kind }) {
       {kind === "chat" ? (
         <div className="space-y-6 pt-4 sm:pt-6">
           <div className="flex justify-center"><Bar w="220px" h={30} className="rounded-full" /></div>
-          <div className="ms-auto w-[70%] rounded-lg border border-border-2 bg-card p-4"><Bar w="90%" h={12} /><Bar w="60%" h={12} className="mt-2" /></div>
+          <div className="ms-auto w-[70%] rounded-lg border border-border-2 bg-card p-4" /* ds-allow: skeleton: a bubble at 70% of the column */><Bar w="90%" h={12} /><Bar w="60%" h={12} className="mt-2" /></div>
           <div className="flex gap-3"><Bar w="28px" h={28} className="rounded-sm" /><div className="flex-1 space-y-2"><Bar w="75%" h={13} /><Bar w="40%" h={13} /></div></div>
           <Card><Bar w="140px" h={14} /><Rows n={4} /><Bar w="100%" h={44} className="mt-3 rounded-full" /></Card>
         </div>

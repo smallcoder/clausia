@@ -249,7 +249,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
     const limit = !inSheet && p.ops.length > MOBILE_ROWS + 1 && openOps.length > 0;
     return (
       <div className={cx("bg-card", inSheet
-        ? "flex max-h-[88dvh] flex-col rounded-t-xl border-t border-border-2 shadow-pop"
+        ? "flex max-h-[88dvh] flex-col rounded-t-xl border-t border-border-2 shadow-pop" // ds-allow: dvh: the sheet is at most 88% of the visible screen
         : "overflow-hidden rounded-xl border border-border-2 shadow-card")}>
         {inSheet ? <div aria-hidden className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-card-3" /> : null}
         <div className="flex shrink-0 items-center gap-3 border-b border-border-2 px-4 py-4 sm:px-5.5">
