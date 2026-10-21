@@ -131,13 +131,6 @@ export function circuitNumber(h: HearingWithCase): string | null {
   return n ? n[0] : null;
 }
 
-/** Hearings per day (ISO date → count), for the roll's day strip. */
-export function countByDay(rows: HearingWithCase[]): Map<string, number> {
-  const m = new Map<string, number>();
-  for (const h of rows) m.set(h.hearing_date, (m.get(h.hearing_date) ?? 0) + 1);
-  return m;
-}
-
 /** Saturday-start week (Egyptian courts work Sat–Thu) containing iso. */
 export function weekStart(iso: string): string {
   const [y, m, d] = iso.split("-").map(Number);

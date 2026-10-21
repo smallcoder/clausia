@@ -1,10 +1,31 @@
 "use server";
-/** Lawyer's own inline edits on hearings. Always through applyOp with MANUAL provenance (RLS-bound client). */
+/**
+ * Lawyer's own inline edits on hearings. Always through applyOp with MANUAL provenance (RLS-bound client).
+ * Plus one read: hearingsRangeAction, the roll day strip's loader.
+ */
 import { revalidatePath } from "next/cache";
 import { DECISIONS } from "@/lib/tools/registry";
 import { applyOp, MANUAL } from "@/lib/tools/apply";
 import { parseDmy } from "@/lib/dates";
+import { hearingsInRange, type HearingWithCase } from "@/lib/hearings";
 import { createClient } from "@/lib/supabase/server";
+
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+/** The day strip asks for a few weeks at a time; anything wider is refused. */
+const MAX_RANGE_DAYS = 70;
+
+/**
+ * Hearings with from ≤ date ≤ to (ISO), the same rows as the roll's first render, for the day strip's client cache.
+ * Read-only and RLS-bound (a lawyer only gets their own office's hearings). A bad or too-wide range is refused.
+ */
+export async function hearingsRangeAction(from: string, to: string): Promise<HearingWithCase[]> {
+  const a = typeof from === "string" && ISO_DAY.test(from) ? parseDmy(from) : null;
+  const b = typeof to === "string" && ISO_DAY.test(to) ? parseDmy(to) : null;
+  if (!a || !b || a.iso > b.iso) throw new Error("bad range");
+  if ((Date.parse(b.iso) - Date.parse(a.iso)) / 86_400_000 > MAX_RANGE_DAYS) throw new Error("range too wide");
+  const db = await createClient();
+  return hearingsInRange(db, a.iso, b.iso);
+}
 
 export type HearingFormState =
   | null
