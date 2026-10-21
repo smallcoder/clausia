@@ -11,10 +11,10 @@ import { TodayCard } from "./TodayCard";
 import { UndecidedCard } from "./UndecidedCard";
 
 const CHIPS: ComposerChip[] = [
-  { label: "موكل وقضية جديدة", text: "موكل جديد: " },
-  { label: "سجّل قرار جلسة", text: "قرار جلسة النهارده في قضية " },
-  { label: "المطلوب مني الأسبوع ده", text: "إيه المطلوب مني الأسبوع ده؟" },
-  { label: "ارفع ورقة", attach: true },
+  { label: "موكل وقضية جديدة", text: "موكل جديد: ", icon: "user" },
+  { label: "سجّل قرار جلسة", text: "قرار جلسة النهارده في قضية ", icon: "gavel" },
+  { label: "المطلوب مني الأسبوع ده", text: "إيه المطلوب مني الأسبوع ده؟", icon: "list" },
+  { label: "ارفع ورقة", attach: true, icon: "file" },
 ];
 
 const PLACEHOLDER = "اكتب لـ Clausia… حصل إيه في الجلسة، موكل جديد، أو أي سؤال عن قضاياك";

@@ -94,13 +94,13 @@ export function StatusChip({ tone, children }: { tone: "good" | "warn" | "neutra
 }
 
 /** The Clausia speaker line: «C» mark + text (a templated sentence from real data, not an LLM call). */
-export function ClausiaSays({ children, label }: { children: ReactNode; label?: string }) {
+export function ClausiaSays({ children, label, size = "lg" }: { children: ReactNode; label?: string; size?: "lg" | "md" }) {
   return (
     <div className="flex items-start gap-3">
-      <span className="mark font-num inline-flex size-8 shrink-0 items-center justify-center rounded-[10px] text-[14px] font-black shadow-mark">C</span>
+      <span className={`mark font-num inline-flex shrink-0 items-center justify-center font-black shadow-mark ${size === "lg" ? "size-[30px] rounded-[9px] text-[14px]" : "size-[26px] rounded-[8px] text-[12px]"}`}>C</span>
       <div className="min-w-0 flex-1 pt-0.5">
         {label ? <div className="text-[12px] font-bold text-gold">{label}</div> : null}
-        <div className="text-[16px] leading-[1.85] text-text-2 sm:text-[18px]">{children}</div>
+        <div className={`leading-[1.85] text-text-3 ${size === "lg" ? "text-[15.5px] sm:text-[18px]" : "text-[15px]"}`}>{children}</div>
       </div>
     </div>
   );
