@@ -79,6 +79,16 @@ function summaryOf(o: ProposalOp): string {
   }
 }
 
+/**
+ * «بكرة = الخميس 22/10/2026» for each date the code worked out from the lawyer's words (op.resolved_from), so the
+ * lawyer confirms the day here. A field the lawyer has changed in the card loses its note at once.
+ */
+function relativeNotes(o: ProposalOp, values: Record<string, unknown>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [k, r] of Object.entries(o.resolved_from ?? {})) if (values[k] === o.args[k]) out[k] = `${r.word} = ${r.label}`;
+  return out;
+}
+
 function titleOf(p: Proposal): string {
   const has = (t: ProposalOp["tool"]) => p.ops.some((o) => o.tool === t);
   if (has("create_case")) return "ملف قضية جديد";
@@ -263,6 +273,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
             const isOpen = expanded.has(o.op_id);
             const isEditing = editing === o.op_id;
             const merged = { ...o.args, ...(edits[o.op_id] ?? {}) };
+            const notes = relativeNotes(o, merged);
             const live = open(o.status);
             const lone = live ? blockedBy(o) : null;
             const hard = live ? blockedBy(o, true) : null;
@@ -286,6 +297,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
                       {summaryOf({ ...o, args: merged }) || OP_TITLE[o.tool]}
                     </span>
                     {factQuote && !isOpen ? <span className="text-doc mt-0.75 line-clamp-2 text-sm leading-[1.8]! text-text-3">«{factQuote}»</span> : null}
+                    {!isOpen ? Object.values(notes).map((n) => <span key={n} className="mt-0.75 block text-sm font-semibold leading-[normal] text-text-2">{n}</span>) : null}
                     <span className="mt-0.75 flex flex-wrap items-center gap-x-2.5 gap-y-1">
                       <span className="text-xs leading-[normal] text-text-4">{sourceShort(o)}</span>
                       {tags}
@@ -310,7 +322,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
                 {isOpen ? (
                   <div className="space-y-3 px-4 pb-4 sm:pe-5.5 sm:ps-27">
                     {isEditing ? (
-                      <EditFields op={o} values={merged} onChange={(k, v) => setEdits((e) => ({ ...e, [o.op_id]: { ...(e[o.op_id] ?? {}), [k]: v } }))} display={display} />
+                      <EditFields op={o} values={merged} notes={notes} onChange={(k, v) => setEdits((e) => ({ ...e, [o.op_id]: { ...(e[o.op_id] ?? {}), [k]: v } }))} display={display} />
                     ) : (
                       <dl className="grid grid-cols-[minmax(4.5rem,7.5rem)_1fr] gap-x-4 gap-y-1.5 text-base">
                         {OP_FIELDS[o.tool].map((f) => {
@@ -318,7 +330,10 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
                           return v === null ? null : (
                             <div key={f.key} className="contents">
                               <dt className="text-text-3">{f.label}</dt>
-                              <dd className="min-w-0 break-words text-text">{f.type === "date" || f.type === "number" ? <span className="num">{v}</span> : v}</dd>
+                              <dd className="min-w-0 break-words text-text">
+                                {f.type === "date" || f.type === "number" ? <span className="num">{v}</span> : v}
+                                {notes[f.key] ? <span className="ms-2 text-sm font-semibold text-text-2">({notes[f.key]})</span> : null}
+                              </dd>
                             </div>
                           );
                         })}
@@ -452,8 +467,8 @@ function decisionSummary(p: Proposal) {
   return parts.join(" · ") || "—";
 }
 
-function EditFields({ op, values, onChange, display }: {
-  op: ProposalOp; values: Record<string, unknown>; onChange: (k: string, v: unknown) => void; display: (f: FieldSpec, v: unknown) => string | null;
+function EditFields({ op, values, notes, onChange, display }: {
+  op: ProposalOp; values: Record<string, unknown>; notes: Record<string, string>; onChange: (k: string, v: unknown) => void; display: (f: FieldSpec, v: unknown) => string | null;
 }) {
   const input = "min-h-11 w-full rounded-md border border-border bg-field px-3 py-2 text-md text-text focus:border-text-4 focus:outline-none";
   return (
@@ -484,6 +499,7 @@ function EditFields({ op, values, onChange, display }: {
           <div key={f.key} className={cx(f.type === "bool" && "flex items-center gap-2")}>
             <label htmlFor={id} className={cx("text-sm leading-4 text-text-3", f.type !== "bool" && "mb-1 block")}>{f.label}</label>
             {control}
+            {notes[f.key] ? <p className="mt-1 text-sm leading-4 text-text-3">{notes[f.key]}</p> : null}
           </div>
         );
       })}
