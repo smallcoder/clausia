@@ -55,3 +55,29 @@ export function hearingStatus(h: HearingWithCase, today: string): { tone: RollTo
   if (h.hearing_date < today) return { tone: "warn", label: "محتاجة قرار" };
   return { tone: "good", label: "قادمة" };
 }
+
+const utc = (iso: string) => { const [y, m, d] = iso.slice(0, 10).split("-").map(Number); return new Date(Date.UTC(y, m - 1, d)); };
+const longFmt = new Intl.DateTimeFormat("ar-EG-u-nu-latn", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+const shortFmt = new Intl.DateTimeFormat("ar-EG-u-nu-latn", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
+const dayMonthFmt = new Intl.DateTimeFormat("ar-EG-u-nu-latn", { day: "numeric", month: "long", timeZone: "UTC" });
+
+/** «الثلاثاء 20 أكتوبر 2026» (with the year) / «الثلاثاء 20 أكتوبر» — the roll's eyebrow. Latin digits. */
+export function arDate(iso: string, withYear = true): string {
+  return (withYear ? longFmt : shortFmt).format(utc(iso)).replace("،", "");
+}
+
+/** «20 أكتوبر» */
+export function arDayMonth(iso: string): string {
+  return dayMonthFmt.format(utc(iso));
+}
+
+/** Day-strip weekday names (Sun … Sat): full on desktop, the spoken short form on mobile. */
+export const WEEKDAY_LONG = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+export const WEEKDAY_SHORT = ["حد", "اتنين", "تلات", "أربع", "خميس", "جمعة", "سبت"];
+export const weekdayOf = (iso: string) => utc(iso).getUTCDay();
+
+/** «d/m» (the side card's short date) */
+export function shortDm(iso: string): string {
+  const [, m, d] = iso.slice(0, 10).split("-").map(Number);
+  return `${d}/${m}`;
+}
