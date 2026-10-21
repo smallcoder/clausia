@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/* dark: follows the theme toggle (html[data-theme]) and otherwise the system */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) { @slot; }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) { @slot; }
+  }
+}
+
 /*
  * Clausia design tokens — source of truth: docs/design/DESIGN.md and the *.dc.html mockups.
  * Theme: follows the system; html[data-theme="light"|"dark"] (ThemeToggle) overrides it.

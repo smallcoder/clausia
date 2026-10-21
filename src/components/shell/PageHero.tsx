@@ -82,10 +82,10 @@ export function StatusChip({ tone, children }: { tone: "good" | "warn" | "neutra
 export function ClausiaSays({ children, label }: { children: ReactNode; label?: string }) {
   return (
     <div className="flex items-start gap-3">
-      <span className="mark font-num inline-flex size-[30px] shrink-0 items-center justify-center rounded-full text-[13px] font-black shadow-[0_4px_10px_rgba(18,26,43,0.3)]">C</span>
+      <span className="mark font-num inline-flex size-[34px] shrink-0 items-center justify-center rounded-full text-[14px] font-black shadow-[0_4px_10px_rgba(18,26,43,0.3)]">C</span>
       <div className="min-w-0 flex-1 pt-0.5">
         {label ? <div className="text-xs font-bold text-gold-text">{label}</div> : null}
-        <div className="text-[15.5px] leading-[1.8] text-text-2">{children}</div>
+        <div className="text-[16px] leading-[1.8] text-text-2">{children}</div>
       </div>
     </div>
   );

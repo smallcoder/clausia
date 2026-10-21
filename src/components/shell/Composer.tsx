@@ -11,7 +11,7 @@ import { composerSendAction, composerUploadAction, type ComposerTarget } from "@
 export function Composer({ target, placeholder = "اكتب لـ Clausia… ما حدث في الجلسة، موكل جديد، أو أي سؤال عن قضاياك", chips = [], size = "dock", sticky = true }: {
   target: ComposerTarget;
   placeholder?: string;
-  chips?: { label: string; text: string; ghost?: boolean }[];
+  chips?: { label: string; short?: string; text: string; ghost?: boolean }[];
   size?: "hero" | "dock";
   sticky?: boolean;
 }) {
@@ -60,14 +60,14 @@ export function Composer({ target, placeholder = "اكتب لـ Clausia… ما 
 
   const hero = size === "hero";
   return (
-    <div className={sticky && !hero ? "sticky bottom-0 z-20 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3" : ""}>
+    <div className={sticky ? "sticky bottom-0 z-20 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3" : ""}>
       {chips.length ? (
         <div className="no-scrollbar -mx-1 mb-3 flex gap-2 overflow-x-auto px-1 sm:flex-wrap">
           {chips.map((c) => (
             <button key={c.label} type="button" disabled={pending}
               onClick={() => { setText(c.text); area.current?.focus(); }}
               className={`h-9 shrink-0 rounded-full px-3.5 text-[13px] transition ${c.ghost ? "border border-dashed border-gold/60 text-gold-text" : "border border-border bg-chip text-text-2 shadow-soft hover:text-text"}`}>
-              {c.label}
+              {c.short ? <><span className="sm:hidden">{c.short}</span><span className="hidden sm:inline">{c.label}</span></> : c.label}
             </button>
           ))}
         </div>
