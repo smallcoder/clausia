@@ -1,15 +1,15 @@
 "use client";
 /**
  * Thread UI (docs/design/*Chat*.dc.html, v2): solid lawyer bubbles on the left, Clausia lines with the «C» mark on
- * the right, paper chips, confirmation cards, glass quick answers, and the glass composer in the 780px FixedDock.
+ * the right, paper chips, confirmation cards, glass quick answers, and the glass composer in the 780px ChatDock.
  * Sending is optimistic (the lawyer's message shows at once); no streaming.
  */
-import { FixedDock } from "@/components/shell/Composer";
 import { ArrowUp, Mic, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useOptimistic, useRef, useState, useTransition, type KeyboardEvent, type ReactNode } from "react";
 import { cx } from "@/components/ui";
 import { ProposalCard } from "@/components/proposal/ProposalCard";
+import { ChatDock } from "./ChatDock";
 import { sendMessageAction } from "@/lib/assistant/actions";
 import { uploadDocumentAction } from "@/lib/documents/actions";
 import type { Proposal } from "@/lib/proposals";
@@ -156,7 +156,7 @@ export function ChatThread({ threadId, caseId, items, lookup, docs = {} }: {
                 {m === lastSpoken && answers.length ? (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {answers.map((a, i) => (
-                      <button key={a.label} type="button" onClick={() => send(a.text)} className={cx(CHIP, i === 0 && "font-semibold text-text")}>
+                      <button key={a.label} type="button" onClick={() => send(a.text)} className={CHIP}>
                         {a.label}
                       </button>
                     ))}
@@ -181,7 +181,7 @@ export function ChatThread({ threadId, caseId, items, lookup, docs = {} }: {
       <div className="min-h-[30px] flex-1" />
 
       {/* the thread's own composer (optimistic send + upload): the v2 two-row glass box of the Chat mockups */}
-      <FixedDock>
+      <ChatDock>
         {error ? (
           <p role="alert" className="mb-2 flex items-start justify-between gap-2 rounded-2xl border border-border-2 bg-card px-3.5 py-2 text-[13.5px] text-bad shadow-soft">
             <span>{error}</span>
@@ -208,13 +208,13 @@ export function ChatThread({ threadId, caseId, items, lookup, docs = {} }: {
               {status ?? <span className="sm:hidden">مفيش حاجة بتتحفظ من غير موافقتك</span>}
             </div>
             <button type="button" onClick={() => send()} disabled={!text.trim() || sending} aria-label="إرسال"
-              className="bg-primary-fill inline-flex size-11 shrink-0 items-center justify-center rounded-full transition disabled:opacity-50">
+              className={cx(HIT, "bg-primary-fill inline-flex size-[38px] shrink-0 items-center justify-center rounded-full transition disabled:cursor-not-allowed sm:size-10")}>
               <ArrowUp aria-hidden size={19} strokeWidth={2.4} />
             </button>
           </div>
         </div>
-        <p className="mt-2.5 hidden text-center text-[11.5px] text-text-4 sm:block">Clausia بتجهّز، وإنت اللي بتأكد. مفيش حاجة بتتحفظ من غير موافقتك.</p>
-      </FixedDock>
+        <p className="mt-2.5 hidden text-center text-[11.5px] leading-[normal] text-text-4 sm:block">Clausia بتجهّز، وإنت اللي بتأكد. مفيش حاجة بتتحفظ من غير موافقتك.</p>
+      </ChatDock>
     </div>
   );
 }
@@ -235,10 +235,12 @@ function quickAnswers(text: string): { label: string; text: string }[] {
   return opts.map((o) => ({ label: o, text: client ? `موكلي ${o}` : o }));
 }
 
-/** round composer control (Chat mockup: hairline ring, no fill); 44px touch target */
-const ROUND = "inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-border-2 glass-icon transition hover:text-text sm:size-10";
-/** quick answers and starters: glass chips (floating controls) */
-const CHIP = "glass inline-flex min-h-11 shrink-0 items-center rounded-full px-[15px] py-1 text-[13px] sm:min-h-9 font-medium text-text-3 transition hover:text-text";
+/** drawn at the mockup's size, tapped at 44px: an invisible ring around the control widens the hit area */
+const HIT = "relative before:absolute before:-inset-[3px] before:rounded-full before:content-[''] sm:before:-inset-0.5";
+/** round composer control (Chat mockup: hairline ring, no fill): 38px mobile, 40px desktop */
+const ROUND = cx(HIT, "inline-flex size-[38px] shrink-0 items-center justify-center rounded-full border border-border-2 glass-icon transition hover:text-text sm:size-10");
+/** quick answers and starters: glass chips (floating controls), 36px tall (44px hit area) */
+const CHIP = "glass relative inline-flex min-h-9 shrink-0 items-center rounded-full px-[15px] py-1 text-[13px] font-medium glass-icon transition hover:text-text before:absolute before:inset-x-0 before:-inset-y-1 before:content-['']";
 
 /**
  * Clausia's turn: the «C» mark and its text (cards go under the text). Desktop: the mark beside the text.
@@ -249,7 +251,7 @@ function ClausiaLine({ children }: { children: ReactNode }) {
     <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
       <div className="flex items-center gap-2 self-start">
         <span aria-hidden className="mark font-num inline-flex size-6 shrink-0 items-center justify-center rounded-[8px] text-[11px] font-extrabold sm:size-7 sm:rounded-[9px] sm:text-[13px]">C</span>
-        <span className="text-[13px] font-bold text-title sm:hidden">Clausia</span>
+        <span className="text-[13px] font-bold leading-[normal] text-title sm:hidden">Clausia</span>
       </div>
       <div className="min-w-0 flex-1 text-[15px] leading-[1.8] text-text sm:pt-[3px] sm:text-base">{children}</div>
     </div>
@@ -268,8 +270,8 @@ function AttachmentChip({ name, doc, tuck }: { name: string; doc?: ThreadDoc; tu
         {doc?.image ? "IMG" : "PDF"}
       </span>
       <span className="min-w-0">
-        <span className="block truncate text-[13px] font-semibold text-text" dir="auto">{name}</span>
-        {meta ? <span className={cx("block text-[11px]", doc?.status === "failed" ? "text-bad" : "text-text-3")}>{meta}</span> : null}
+        <span className="block truncate text-[13px] font-semibold leading-[normal] text-text" dir="auto">{name}</span>
+        {meta ? <span className={cx("block text-[11px] leading-[normal]", doc?.status === "failed" ? "text-bad" : "text-text-3")}>{meta}</span> : null}
       </span>
     </div>
   );
