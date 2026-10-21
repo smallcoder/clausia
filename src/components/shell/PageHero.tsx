@@ -27,7 +27,9 @@ function BackBtn({ href }: { href: string }) {
   );
 }
 
-export function StatTile({ s }: { s: HeroStat }) {
+export function StatTile({ s: raw }: { s: HeroStat }) {
+  // an action tile with nothing to act on is a normal tile
+  const s = raw.highlight && (raw.value === 0 || raw.value === "0" || raw.value === "00") ? { ...raw, highlight: false } : raw;
   const body = (
     <>
       <div className="font-num text-[28px] font-extrabold leading-none">{typeof s.value === "number" ? two(s.value) : s.value}</div>

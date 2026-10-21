@@ -35,7 +35,7 @@ async function session(browser: Browser) {
   return state;
 }
 
-async function shootApp(browser: Browser, path: string, mobile: boolean, dark: boolean, out: string) {
+async function shootApp(browser: Browser, path: string, mobile: boolean, dark: boolean, out: string, width = 1440) {
   const ctx = await browser.newContext({ storageState: await session(browser), viewport: { width: mobile ? 390 : 1440, height: mobile ? 844 : 960 }, deviceScaleFactor: mobile ? 2 : 1, locale: "ar-EG", timezoneId: "Africa/Cairo", colorScheme: dark ? "dark" : "light" });
   const page = await ctx.newPage();
   console.log(new Date().toISOString().slice(11, 19), "goto", path, mobile ? "mobile" : "desktop", dark ? "dark" : "light");
@@ -52,23 +52,30 @@ async function main() {
   const { caseId, threadId } = await ids();
   const routes: Record<string, string> = { Home: "/", Chat: `/chat/${threadId}`, Case: `/cases/${caseId}`, Roll: "/hearings", Cases: "/cases" };
   const browser = await chromium.launch();
-  for (const [screen, path] of Object.entries(routes)) for (const dark of [false, true]) for (const mobile of [false, true]) {
-    const name = `${dark ? "Dark" : "Light"}${mobile ? "Mobile" : ""}${screen}`;
-    const app = resolve(`screenshots/app/${name}.png`);
-    await shootApp(browser, path, mobile, dark, app);
-    const mock = resolve(`screenshots/mockups/${name}.png`);
-    const w = mobile ? 390 : 1440;
-    const html = `<html><body style="margin:0;background:${dark ? "#05070c" : "#dfe2e8"};font:600 14px -apple-system,sans-serif;color:${dark ? "#ccc" : "#333"}">
-      <div style="display:flex;gap:24px;padding:16px;align-items:flex-start">
-        <div><div style="padding:0 0 8px">Mockup · ${name}</div><img src="data:image/png;base64,${readFileSync(mock).toString("base64")}" style="width:${w}px;display:block;border-radius:12px"></div>
-        <div><div style="padding:0 0 8px">App · ${path}</div><img src="data:image/png;base64,${readFileSync(app).toString("base64")}" style="width:${w}px;display:block;border-radius:12px"></div>
-      </div></body></html>`;
-    const ctx = await browser.newContext({ viewport: { width: w * 2 + 56, height: 800 } });
-    const page = await ctx.newPage();
-    await page.setContent(html, { waitUntil: "load" });
-    await page.screenshot({ path: `screenshots/compare/${name}.png`, fullPage: true });
-    await ctx.close();
-    console.log(name, path);
+  // desktop at 1440 and 1920 (mockups are 1440 wide), mobile at 390; ONLY=Roll,Case limits the screens
+  const only = process.env.ONLY?.split(",");
+  const shots: { mobile: boolean; width: number }[] = [{ mobile: false, width: 1440 }, { mobile: false, width: 1920 }, { mobile: true, width: 390 }];
+  for (const [screen, path] of Object.entries(routes)) {
+    if (only && !only.includes(screen)) continue;
+    for (const dark of [false, true]) for (const { mobile, width } of shots) {
+      const base = `${dark ? "Dark" : "Light"}${mobile ? "Mobile" : ""}${screen}`;
+      const name = mobile || width === 1440 ? base : `${base}-${width}`;
+      const app = resolve(`screenshots/app/${name}.png`);
+      await shootApp(browser, path, mobile, dark, app, width);
+      const mock = resolve(`screenshots/mockups/${base}.png`);
+      const mw = mobile ? 390 : 1440;
+      const html = `<html><body style="margin:0;background:${dark ? "#05070c" : "#dfe2e8"};font:600 14px -apple-system,sans-serif;color:${dark ? "#ccc" : "#333"}">
+        <div style="display:flex;gap:24px;padding:16px;align-items:flex-start">
+          <div><div style="padding:0 0 8px">Mockup · ${base} (${mw}px)</div><img src="data:image/png;base64,${readFileSync(mock).toString("base64")}" style="width:${mw}px;display:block;border-radius:12px"></div>
+          <div><div style="padding:0 0 8px">App · ${path} (${width}px)</div><img src="data:image/png;base64,${readFileSync(app).toString("base64")}" style="width:${width}px;display:block;border-radius:12px"></div>
+        </div></body></html>`;
+      const ctx = await browser.newContext({ viewport: { width: mw + width + 56, height: 800 } });
+      const page = await ctx.newPage();
+      await page.setContent(html, { waitUntil: "load" });
+      await page.screenshot({ path: `screenshots/compare/${name}.png`, fullPage: true });
+      await ctx.close();
+      console.log(name, path);
+    }
   }
   await browser.close();
 }

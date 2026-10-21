@@ -1,7 +1,7 @@
 /** Roll skeleton: hero, day strip, court cards — the same footprint as the page, so nothing jumps. */
 export default function Loading() {
   return (
-    <div className="mx-auto w-full max-w-[1040px] px-2.5 pt-2.5 sm:px-10 sm:pt-4" aria-busy="true" aria-label="جارٍ التحميل">
+    <div className="mx-auto w-full max-w-[1424px] px-2.5 pt-2.5 sm:px-8 sm:pt-4" aria-busy="true" aria-label="جارٍ التحميل">
       <div className="skeleton h-[208px] rounded-[24px] sm:h-[120px] sm:rounded-[28px]" />
       <div className="px-1.5 sm:px-0">
         <div className="mt-[64px] grid grid-cols-6 gap-1.5 sm:gap-2.5">

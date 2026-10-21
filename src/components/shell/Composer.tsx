@@ -77,7 +77,7 @@ export function Composer({ target, placeholder = "اكتب لـ Clausia… ما 
     return () => m.removeEventListener("change", on);
   }, []);
   return (
-    <div className={sticky ? "sticky bottom-0 z-20 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3" : ""}>
+    <MaybeDock on={sticky}>
       {chips.length ? (
         <div className="no-scrollbar -mx-1 mb-3 flex gap-2 overflow-x-auto px-1 sm:flex-wrap">
           {chips.map((c) => {
@@ -141,7 +141,34 @@ export function Composer({ target, placeholder = "اكتب لـ Clausia… ما 
           </div>
         </>
       )}
-    </div>
+    </MaybeDock>
+  );
+}
+
+function MaybeDock({ on, children }: { on: boolean; children: React.ReactNode }) {
+  return on ? <FixedDock>{children}</FixedDock> : <div>{children}</div>;
+}
+
+/**
+ * Bottom dock: fixed to the viewport bottom (960px column, faded background), plus a spacer of the same
+ * measured height in the page flow, so the last row of a page never sits under the composer.
+ */
+export function FixedDock({ children, width = 960 }: { children: React.ReactNode; width?: number }) {
+  const box = useRef<HTMLDivElement>(null);
+  const [h, setH] = useState(0);
+  useEffect(() => {
+    if (!box.current) return;
+    const ro = new ResizeObserver(([e]) => setH(Math.ceil(e.borderBoxSize?.[0]?.blockSize ?? e.target.getBoundingClientRect().height)));
+    ro.observe(box.current);
+    return () => ro.disconnect();
+  }, []);
+  return (
+    <>
+      <div aria-hidden style={{ height: h }} className="shrink-0" />
+      <div ref={box} className="fixed inset-x-0 bottom-0 z-30 bg-linear-to-t from-bg from-65% to-transparent px-3 pb-[calc(12px+env(safe-area-inset-bottom))] pt-6 sm:px-8 sm:pb-6">
+        <div className="mx-auto w-full" style={{ maxWidth: width }}>{children}</div>
+      </div>
+    </>
   );
 }
 

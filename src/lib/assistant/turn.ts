@@ -86,7 +86,7 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promis
       res = await getLlm().chat({ system, messages, tools, meta });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      const friendly = msg.includes("spend cap") ? "تعذّر الرد: تم بلوغ حد الإنفاق التجريبي." : "تعذّر الرد الآن. حاول مرة أخرى بعد قليل.";
+      const friendly = msg.includes("spend cap") ? "مش هقدر أرد دلوقتي: وصلنا لحد الصرف التجريبي." : "مش قادر أرد دلوقتي. جرّب تاني بعد شوية.";
       const { data: m } = await db.from("chat_messages").insert({ thread_id: thread.id, role: "assistant", content: friendly }).select("id").single();
       if (m) out.assistantMessageIds.push(m.id);
       out.text = friendly;
@@ -173,7 +173,7 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promis
       reply = "جهّزت لك بطاقة تأكيد. راجعها، ولما توافق أحفظها. مفيش حاجة اتحفظت لسه.";
     } else {
       try {
-        const r = await getLlm().chat({ system: `${system}\n\nاكتب الآن ردًا قصيرًا للمحامي بما وجدته وما تحتاجه منه، دون استدعاء أدوات.`, messages: [...messages, { role: "user", text: "لخّص لي اللي وصلتله وقولّي محتاج مني إيه." }], meta });
+        const r = await getLlm().chat({ system: `${system}\n\nاكتب دلوقتي رد قصير للمحامي بالعامية المصرية: لقيت إيه ومحتاج منه إيه، من غير ما تستدعي أدوات.`, messages: [...messages, { role: "user", text: "لخّص لي اللي وصلتله وقولّي محتاج مني إيه." }], meta });
         reply = r.text?.trim() ?? "";
       } catch { /* fall through */ }
       if (!reply) reply = "راجعت اللي عندي ولسه محتاج خطوة كمان. اكتب «كمّل» وأنا أجهّز البطاقة.";

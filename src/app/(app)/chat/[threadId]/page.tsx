@@ -31,7 +31,7 @@ export default async function ThreadPage({ params }: { params: Promise<{ threadI
   const title = clientName ?? proposedClient ?? (c ? caseLabel(c) : t.title || "محادثة جديدة");
 
   return (
-    <div className="mx-auto flex w-full max-w-[820px] flex-1 flex-col gap-4 px-2.5 pt-2.5 sm:gap-[18px] sm:px-6 sm:pt-5">
+    <div className="mx-auto flex w-full max-w-[1024px] flex-1 flex-col gap-4 px-2.5 pt-2.5 sm:gap-[18px] sm:px-8 sm:pt-5">
       <PageHero
         action={<Link href="/chat" aria-label="محادثة جديدة" title="محادثة جديدة" className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-card-2 text-text"><Plus size={19} strokeWidth={2} aria-hidden /></Link>}
         back="/chat"

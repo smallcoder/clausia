@@ -42,6 +42,10 @@ export default async function CasePage({ params, searchParams }: { params: Promi
   const subject = heroSubject(cf, title);
   const c = cf.case;
   const pending = cf.pending_suggestions.length;
+  // same rule as the Cases list: suggested items + past hearings with no recorded decision
+  const undecidedPast = cf.hearings.filter((h) => h.date < today && !h.decision_type).length;
+  const review = pending + undecidedPast;
+  const reviewHref = pending ? `/cases/${id}${pendingHref(cf)}` : undecidedPast ? `/cases/${id}?tab=hearings` : undefined;
 
   const { data: thread } = await db.from("chat_threads").select("id").eq("case_id", id).order("created_at").limit(1).maybeSingle();
   const chatHref = thread ? `/chat/${thread.id}` : `/cases/${id}?tab=chat`;
@@ -55,7 +59,7 @@ export default async function CasePage({ params, searchParams }: { params: Promi
   ];
 
   return (
-    <div className="mx-auto flex w-full max-w-[1120px] flex-1 flex-col px-2.5 pt-2.5 sm:px-10 sm:pt-4">
+    <div className="mx-auto flex w-full max-w-[1424px] flex-1 flex-col px-2.5 pt-2.5 sm:px-8 sm:pt-4">
       <PageHero
         action={<Link href={`/cases/${id}?tab=details`} aria-label="بيانات الدعوى" title="بيانات الدعوى" className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-card-2 text-text"><Ellipsis size={19} strokeWidth={2} aria-hidden /></Link>}
         back="/cases"
@@ -71,7 +75,7 @@ export default async function CasePage({ params, searchParams }: { params: Promi
         stats={[
           { value: cf.facts.length, label: "وقائع", href: `/cases/${id}#facts` },
           { value: cf.documents.length, label: "مستندات", href: `/cases/${id}?tab=documents` },
-          { value: pending, label: "محتاجة مراجعة", highlight: true, href: pending ? `/cases/${id}${pendingHref(cf)}` : undefined },
+          { value: review, label: "محتاجة مراجعة", highlight: true, href: reviewHref },
         ]}
       />
 
@@ -93,7 +97,7 @@ export default async function CasePage({ params, searchParams }: { params: Promi
       </div>
 
       <div className="min-h-6 flex-1" />
-      <div className="mx-auto w-full max-w-[820px] px-0.5 sm:px-0 sm:pb-2">
+      <div>
         <Composer target={{ kind: "case", caseId: id }} chips={chips}
           placeholder="اكتب لـ Clausia عن القضية دي…" />
       </div>

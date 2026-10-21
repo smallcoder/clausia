@@ -8,7 +8,7 @@ import { addDaysIso, formatDmy } from "@/lib/dates";
 import { CASE_STATUS } from "@/lib/labels";
 
 /** md+ column template, shared by the header and every row so they line up. */
-export const COLS = "md:grid md:grid-cols-[minmax(0,2.4fr)_minmax(0,1.4fr)_minmax(0,0.9fr)_minmax(0,0.9fr)] md:gap-4";
+export const COLS = "md:grid md:grid-cols-[minmax(0,2.2fr)_minmax(0,1.9fr)_minmax(0,0.8fr)_minmax(0,0.9fr)] md:gap-4";
 
 type Tone = "good" | "gold" | "warn" | "neutral" | "bad";
 const TONE: Record<Tone, string> = {
@@ -76,7 +76,7 @@ export function CaseListRow({ r, today, needsReview }: { r: CaseRow; today: stri
         </span>
 
         {/* desktop columns */}
-        <span className="hidden truncate text-[13px] text-text-2 md:block" title={where || undefined}>{where || "—"}</span>
+        <span className="hidden text-[13px] leading-5 text-text-2 md:block" title={where || undefined}>{where || "—"}</span>
         <span className={`hidden text-[13px] font-bold md:block ${next ? (next.soon ? "text-gold-text" : "text-text-2") : "font-normal text-text-4"}`}>
           {next ? <span className={next.soon ? "" : "num font-num"}>{next.text}</span> : "لا جلسة"}
         </span>

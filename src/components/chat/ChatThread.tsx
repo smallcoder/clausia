@@ -4,6 +4,7 @@
  * right, paper chips, confirmation cards, and the composer docked at the bottom of the 820px column.
  * Sending is optimistic (the lawyer's message shows at once); no streaming.
  */
+import { FixedDock } from "@/components/shell/Composer";
 import { ArrowUp, Mic, Paperclip } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useOptimistic, useRef, useState, useTransition, type KeyboardEvent, type ReactNode } from "react";
@@ -179,7 +180,7 @@ export function ChatThread({ threadId, caseId, items, lookup, docs = {} }: {
 
       <div className="min-h-[30px] flex-1" />
 
-      <div className="sticky bottom-0 z-20 bg-linear-to-t from-bg from-55% to-transparent pb-[calc(16px+env(safe-area-inset-bottom))] pt-4 sm:pb-7 sm:pt-3">
+      <FixedDock width={960}>
         {error ? (
           <p role="alert" className="mb-2 flex items-start justify-between gap-2 rounded-2xl bg-bad-bg px-3.5 py-2 text-[13.5px] text-bad">
             <span>{error}</span>
@@ -204,7 +205,7 @@ export function ChatThread({ threadId, caseId, items, lookup, docs = {} }: {
             <ArrowUp aria-hidden size={20} strokeWidth={2.6} />
           </button>
         </div>
-      </div>
+      </FixedDock>
     </div>
   );
 }
