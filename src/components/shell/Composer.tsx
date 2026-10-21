@@ -117,7 +117,7 @@ export function Composer({ target, placeholder = "اكتب لـ Clausia… ما 
             placeholder={short && placeholderShort ? placeholderShort : placeholder}
             aria-label="رسالة إلى Clausia"
             onKeyDown={onKey}
-            className="block min-h-[64px] w-full resize-none bg-transparent px-2 py-1 text-md leading-7 text-text placeholder:text-text-4 focus:outline-none sm:text-lg"
+            className="block min-h-16 w-full resize-none bg-transparent px-2 py-1 text-md leading-7 text-text placeholder:text-text-4 focus:outline-none sm:text-lg"
           />
           </div>
           <div className="mt-2 flex items-center gap-2">

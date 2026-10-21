@@ -29,7 +29,7 @@ function Label({ on }: { on: boolean }) {
 function Pill() {
   return (
     <span className="bg-primary-fill inline-flex h-9 shrink-0 items-center gap-1 rounded-full px-3.5 text-sm font-semibold md:h-control md:gap-1.5 md:px-4 md:text-base">
-      سجّلها <ChevronLeft strokeWidth={2.2} aria-hidden className="size-[13px] md:size-3.5" />
+      سجّلها <ChevronLeft strokeWidth={2.2} aria-hidden className="size-3.25 md:size-3.5" />
     </span>
   );
 }

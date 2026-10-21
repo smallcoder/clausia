@@ -49,7 +49,7 @@ function ComposerShell({ tall = false }: { tall?: boolean }) {
       <>
         <div aria-hidden className="h-44 shrink-0" />
         <div className="bg-fade pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(18px+env(safe-area-inset-bottom))] pt-10 sm:px-6 sm:pb-6 sm:pt-15" /* ds-allow: safe-area inset needs calc() */>
-          <div className="glass mx-auto flex max-w-composer h-[116px] flex-col justify-between rounded-xl p-3.5 sm:h-[136px] sm:p-4">
+          <div className="glass mx-auto flex max-w-composer h-29 flex-col justify-between rounded-xl p-3.5 sm:h-34 sm:p-4">
             <Bar w="55%" h={12} />
             <div className="flex items-center justify-between"><span className="size-control rounded-full border border-border sm:size-10" /><span className="size-control rounded-full bg-primary-fill opacity-30 sm:size-10" /></div>
           </div>
@@ -60,7 +60,7 @@ function ComposerShell({ tall = false }: { tall?: boolean }) {
     <>
       <div aria-hidden className="h-28 shrink-0" />
       <div className="bg-fade pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3.5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-10 sm:px-10 sm:pb-7.5 sm:pt-15" /* ds-allow: safe-area inset needs calc() */>
-        <div className="glass mx-auto flex max-w-composer h-[52px] items-center gap-2 rounded-xl p-1.5 sm:h-[56px] sm:p-1.75">
+        <div className="glass mx-auto flex max-w-composer h-13 items-center gap-2 rounded-xl p-1.5 sm:h-14 sm:p-1.75">
           <span className="size-control rounded-full border border-border sm:size-10" />
           <Bar w="45%" h={12} />
           <span className="ms-auto size-control rounded-full bg-primary-fill opacity-30 sm:size-10" />

@@ -114,13 +114,13 @@ export function HomeComposer() {
           />
         </div>
         <div className="mt-1.5 flex items-center gap-2 sm:mt-2">
-          <Round label="إضافة ورقة" onClick={() => fileRef.current?.click()} disabled={pending}><Plus strokeWidth={1.8} className="size-[17px] sm:size-glyph" /></Round>
+          <Round label="إضافة ورقة" onClick={() => fileRef.current?.click()} disabled={pending}><Plus strokeWidth={1.8} className="size-4.25 sm:size-glyph" /></Round>
           <div className="min-w-0 flex-1 truncate text-center text-xs leading-[15px] text-text-4 sm:text-start sm:text-sm" aria-live="polite">
             {note ?? <span className="sm:hidden">مفيش حاجة بتتحفظ من غير موافقتك</span>}
           </div>
           <button type="button" onClick={send} disabled={pending || !text.trim()} aria-label="إرسال"
             className="tap bg-primary-fill inline-flex size-control shrink-0 items-center justify-center rounded-full transition disabled:cursor-not-allowed sm:size-10">
-            <ArrowUp strokeWidth={2.4} className="size-glyph sm:size-[19px]" />
+            <ArrowUp strokeWidth={2.4} className="size-glyph sm:size-4.75" />
           </button>
         </div>
       </div>

@@ -104,10 +104,10 @@ function FactRow({ f, last, cf }: { f: Fact; last: boolean; cf: CaseFile }) {
   const dated = f.date && f.date_precision !== "unknown";
   return (
     <span className="flex gap-3.5">
-      <span className={`font-num w-16 shrink-0 pt-1 text-sm font-semibold lg:w-[78px] ${dated ? "text-text" : "text-text-4"}`}>
+      <span className={`font-num w-16 shrink-0 pt-1 text-sm font-semibold lg:w-19.5 ${dated ? "text-text" : "text-text-4"}`}>
         <span className={f.date_precision === "day" ? "num" : ""}>{factDate(f.date, f.date_precision)}</span>
       </span>
-      <span className="flex w-[9px] shrink-0 flex-col items-center" aria-hidden>
+      <span className="flex w-2.25 shrink-0 flex-col items-center" aria-hidden>
         <span className={`mt-2.25 size-dot-lg shrink-0 rounded-full ${suggested ? "bg-gold" : "bg-text-3"}`} />
         {!last ? <span className="mt-1 w-px flex-1 bg-border-2" /> : null}
       </span>

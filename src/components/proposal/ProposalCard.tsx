@@ -292,7 +292,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
               <li key={o.op_id} className={cx("not-first:border-t not-first:border-border-2", o.status === "rejected" && "opacity-55", limit && i >= MOBILE_ROWS && "lg:block hidden")}>
                 {/* kind · value (+ fact quote) · source · check — the mockup's hairline row */}
                 <div className="flex items-start gap-3.5 px-4 py-3.25 sm:px-5.5">
-                  <span className="w-[58px] shrink-0 pt-0.5 text-xs leading-[normal] text-text-4 sm:w-[72px]">{kindOf(o)}</span>
+                  <span className="w-14.5 shrink-0 pt-0.5 text-xs leading-[normal] text-text-4 sm:w-18">{kindOf(o)}</span>
                   <button type="button" onClick={() => toggle(o.op_id)} aria-expanded={isOpen} title={isOpen ? "اقفل التفاصيل" : "اعرض التفاصيل"} className="min-w-0 flex-1 text-start">
                     <span className={cx("block text-base font-semibold leading-[1.5] text-text", !isOpen && "line-clamp-2")}>
                       {summaryOf({ ...o, args: merged }) || OP_TITLE[o.tool]}
@@ -425,7 +425,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
   if (!openOps.length && !showDecided) {
     const saved = p.ops.filter((o) => o.status === "confirmed" || o.status === "suggested").length;
     return (
-      <div className="flex min-h-[52px] items-center gap-2.5 rounded-lg border border-border-2 bg-card py-1 pe-2 ps-4 text-base shadow-soft">
+      <div className="flex min-h-13 items-center gap-2.5 rounded-lg border border-border-2 bg-card py-1 pe-2 ps-4 text-base shadow-soft">
         <span aria-hidden className="inline-flex size-tick shrink-0 items-center justify-center rounded-full bg-good-bg text-good"><Check size={12} strokeWidth={2.6} /></span>
         <button type="button" onClick={() => setShowDecided(true)} aria-expanded={false} title="اعرض التفاصيل"
           className="inline-flex min-h-11 min-w-0 flex-1 items-center gap-1.5 text-start font-semibold text-text hover:text-title">

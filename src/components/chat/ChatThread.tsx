@@ -167,7 +167,7 @@ export function ChatThread({ threadId, caseId, items, lookup, docs = {} }: {
       </ol>
       <div ref={endRef} />
 
-      <div className="min-h-[30px] flex-1" />
+      <div className="min-h-7.5 flex-1" />
 
       {/* the thread's own composer (optimistic send + upload): the v2 two-row glass box of the Chat mockups */}
       <ChatComposer id={threadId} value={text} onChange={setText} onSend={() => send()} onFile={onFile}
@@ -229,7 +229,7 @@ function AttachmentChip({ name, doc, tuck }: { name: string; doc?: ThreadDoc; tu
   const meta = doc ? [doc.pages ? pagesLabel(doc.pages) : null, READ[doc.status]].filter(Boolean).join(" · ") : null;
   return (
     <div className={cx("flex max-w-bubble items-center gap-2.5 self-end rounded-md border border-border-2 bg-card py-2 pe-2.5 ps-3.5 dark:bg-card-2 sm:max-w-bubble-sm", tuck && "-mt-1.5")}>
-      <span aria-hidden className="flex h-9 w-[30px] shrink-0 items-center justify-center rounded-sm bg-paper-thumb text-xs font-extrabold text-paper-thumb-ink">
+      <span aria-hidden className="flex h-9 w-7.5 shrink-0 items-center justify-center rounded-sm bg-paper-thumb text-xs font-extrabold text-paper-thumb-ink">
         {doc?.image ? "IMG" : "PDF"}
       </span>
       <span className="min-w-0">

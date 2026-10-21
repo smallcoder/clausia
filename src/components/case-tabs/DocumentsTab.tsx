@@ -49,7 +49,7 @@ export async function DocumentsTab({ caseId }: { caseId: string }) {
           </h2>
           <UploadDocument caseId={caseId} />
         </div>
-        <p className="max-w-[640px] px-5 pt-3.5 text-sm leading-6 text-text-3">
+        <p className="max-w-160 px-5 pt-3.5 text-sm leading-6 text-text-3">
           صحيفة، مذكرة، محضر جلسة أو صورة بالموبايل (PDF أو صورة لحد 25 م.ب). Clausia بيقرا كل صفحة ويقترح اللي لقاه في محادثة القضية، ومش بيتحفظ حاجة قبل ما تأكد.
         </p>
         {docs?.length ? (

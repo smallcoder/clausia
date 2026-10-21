@@ -32,7 +32,7 @@ function HearingRow({ h, today, nextUp, last, caseId }: { h: Row; today: string;
     : "border border-text-4 bg-card";
   return (
     <li id={`h-${h.id}`} className="flex scroll-mt-24 gap-2.5 sm:gap-3.5">
-      <span className="w-[68px] shrink-0 pt-px sm:w-[84px]">
+      <span className="w-17 shrink-0 pt-px sm:w-21">
         <span className="num font-num block text-sm font-semibold leading-[22px] text-title">{formatDmy(h.hearing_date)}</span>
         <span className="block text-xs text-text-4">{formatDayLabel(h.hearing_date).split(" ")[0]}</span>
       </span>
@@ -41,12 +41,12 @@ function HearingRow({ h, today, nextUp, last, caseId }: { h: Row; today: string;
         {!last ? <span className="mt-1 w-px flex-1 bg-border-2" /> : null}
       </span>
       <div className="min-w-0 flex-1 pb-5 sm:pb-6">
-        <div className="flex min-h-[23px] flex-wrap items-center gap-1.5">
+        <div className="flex min-h-5.75 flex-wrap items-center gap-1.5">
           <DecisionBadge h={h} today={today} />
           {h.review_status === "suggested" ? <StatusChip tone="warn">مقترحة · راجعها</StatusChip> : null}
           {nextUp && !h.decision_type && h.hearing_date > today ?<span className="text-sm font-semibold text-text-3">الجلسة الجاية</span> : null}
         </div>
-        <div className="mt-1.5 max-w-[680px] space-y-1 text-md leading-[1.75]">
+        <div className="mt-1.5 max-w-170 space-y-1 text-md leading-[1.75]">
           {h.purpose ? <p className="text-text"><span className="text-text-3">المطلوب: </span>{h.purpose}</p> : null}
           {h.decision_text ? <p className="text-text"><span className="text-text-3">القرار: </span>{h.decision_text}</p> : null}
           {h.next_requirements ? <p className="text-text"><span className="text-text-3">المطلوب للجلسة الجاية: </span>{h.next_requirements}</p> : null}

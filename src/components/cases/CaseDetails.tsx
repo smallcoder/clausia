@@ -20,7 +20,7 @@ function Row({ label, value, children }: { label: string; value: React.ReactNode
             <ChevronDown aria-hidden size={16} strokeWidth={2} className="shrink-0 text-text-4 transition-transform group-open:rotate-180" />
           </span>
         </summary>
-        <div className="border-t border-border-2 bg-card-2 px-5 py-4 text-md text-text"><div className="max-w-[560px]">{children}</div></div>
+        <div className="border-t border-border-2 bg-card-2 px-5 py-4 text-md text-text"><div className="max-w-140">{children}</div></div>
       </details>
     </li>
   );

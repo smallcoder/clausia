@@ -36,7 +36,7 @@ export function UploadDocument({ caseId, threadId, compact = false }: { caseId?:
   }
 
   return (
-    <div className="flex max-w-[22rem] flex-col gap-2">
+    <div className="flex max-w-88 flex-col gap-2">
       <input ref={input} type="file" accept={ACCEPT} className="sr-only" aria-label="اختر مستندًا" onChange={(e) => onFile(e.target.files?.[0])} disabled={pending} />
       <button type="button" onClick={() => input.current?.click()} disabled={pending}
         className={cx("inline-flex h-11 items-center justify-center gap-1.5 self-start rounded-full px-5 text-base font-bold transition disabled:opacity-60",

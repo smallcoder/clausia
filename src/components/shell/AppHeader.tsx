@@ -42,7 +42,7 @@ export function AppHeader({ initials, officeName, email, alerts }: { initials: s
     return () => document.removeEventListener("mousedown", close);
   }, [open]);
   return (
-    <header className={`sticky top-0 z-40 mx-auto ${path.startsWith("/chat/") || /^\/cases\/[^/]+/.test(path) ? "hidden sm:grid" : "grid"} h-[72px] w-full max-w-[1440px] grid-cols-[1fr_auto_1fr] items-center gap-2 px-3.5 sm:h-[88px] sm:px-10`}>
+    <header className={`sticky top-0 z-40 mx-auto ${path.startsWith("/chat/") || /^\/cases\/[^/]+/.test(path) ? "hidden sm:grid" : "grid"} h-18 w-full max-w-360 grid-cols-[1fr_auto_1fr] items-center gap-2 px-3.5 sm:h-22 sm:px-10`}>
       <Link href="/" className="flex items-center gap-2.5 justify-self-start" aria-label="Clausia — الرئيسية">
         <span className="sm:hidden"><ClausiaMark size={40} /></span>
         <span className="hidden sm:inline-flex"><ClausiaMark size={36} /></span>

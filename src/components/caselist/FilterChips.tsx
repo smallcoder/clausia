@@ -67,7 +67,7 @@ export function FilterChips({ sp, counts }: { sp: ListParams; counts: Counts }) 
 function ClearPill({ label, to }: { label: string; to: string }) {
   return (
     <Link href={to} aria-label={`شيل التصفية ${label}`} className="tap group inline-flex shrink-0 items-center pe-1">
-      <span className="inline-flex h-8 max-w-[220px] items-center gap-1.5 rounded-full border border-border px-3 text-sm font-semibold text-text sm:h-chip">
+      <span className="inline-flex h-8 max-w-55 items-center gap-1.5 rounded-full border border-border px-3 text-sm font-semibold text-text sm:h-chip">
         <span className="truncate">{label}</span>
         <X size={14} strokeWidth={2.2} aria-hidden className="shrink-0 text-text-4 group-hover:text-text" />
       </span>
