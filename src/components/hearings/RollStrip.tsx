@@ -340,7 +340,7 @@ export function RollStrip({ center, selected, focusDay, today, counts, pinned, o
       <nav aria-label="أيام الرول" className="relative mt-2 sm:overflow-hidden sm:rounded-xl sm:border sm:border-border-2 sm:bg-card sm:shadow-card">
         <button type="button" onClick={() => step(-1)} aria-label="الأسبوع اللي فات" aria-disabled={!vis.canPrev || undefined} className={cx(arrow, "start-1.5")}><ChevronRight size={16} strokeWidth={1.9} aria-hidden /></button>
         <div ref={scroller} data-roll-scroller
-          className="no-scrollbar @container snap-x snap-mandatory overflow-x-auto overscroll-x-contain sm:scroll-px-12 sm:data-[dragging]:cursor-grabbing"
+          className="no-scrollbar edge-fade @container snap-x snap-mandatory overflow-x-auto overscroll-x-contain sm:scroll-px-12 sm:data-[dragging]:cursor-grabbing"
           onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={endDrag} onPointerCancel={endDrag}
           onWheel={stop} onTouchStart={stop}
           onClickCapture={(e) => { if (suppressClick.current) { e.preventDefault(); e.stopPropagation(); suppressClick.current = false; } }}>

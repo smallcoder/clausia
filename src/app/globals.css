@@ -328,4 +328,14 @@ body {
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
+/* Roll day strip, desktop (owner decision 2026-10-21): the edge days fade softly under the prev/next arrows, so the
+   arrows read clearly and the strip still shows it goes on. The arrows cover the first and last 48px (scroll-padding); the fade runs to 96px, so a day half under an arrow is clearly faded, while a resting week (its days centred in their tiles) is not.
+   Mobile has no arrows and keeps the plain peek. (The mask's black only means "opaque".) */
+@media (min-width: 40rem) {
+  .edge-fade {
+    -webkit-mask-image: linear-gradient(to right, transparent 14px, #000 96px, #000 calc(100% - 96px), transparent calc(100% - 14px));
+    mask-image: linear-gradient(to right, transparent 14px, #000 96px, #000 calc(100% - 96px), transparent calc(100% - 14px));
+  }
+}
+
 :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: var(--radius-sm); }
