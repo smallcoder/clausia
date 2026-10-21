@@ -1,19 +1,23 @@
 // Design v2 (redesign v3) Chat screenshots: the /chat list, a thread with a pending card + a paper, and a thread with
-// a saved (collapsed) card, at 1440×960 and 390×844, light and dark → screenshots/v3/chat-<view>-<scheme>-<desktop|mobile>.png
+// a saved (collapsed) card, and (optional) a thread whose last line is Clausia's question with options (quick-answer
+// chips), at 1440×960 and 390×844, light and dark → screenshots/v3/chat-<view>-<scheme>-<desktop|mobile>.png
 // Logs in ONCE and reuses the storage state (Supabase rate-limits repeated logins).
-// Needs the app running. Run: npx tsx --env-file=.env.local scripts/v3-chat-shots.ts <pendingThreadId> <savedThreadId> [baseUrl]
-// Threads also get a -top shot (the page header). SHOT_ONLY=list,pending limits the views; SHOT_REUSE=1 skips the login.
+// Needs the app running (SHOT_BASE, default http://localhost:3302).
+// Run: npx tsx --env-file=.env.local scripts/v3-chat-shots.ts <pendingThreadId> <savedThreadId> [questionThreadId]
+// Threads also get a -top shot (the top of the page). SHOT_ONLY=list,pending limits the views; SHOT_REUSE=1 skips the login.
 import { chromium } from "@playwright/test";
 import { mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const [pendingId, savedId, BASE = "http://localhost:3302"] = process.argv.slice(2);
+const [pendingId, savedId, questionId] = process.argv.slice(2);
+const BASE = process.env.SHOT_BASE ?? "http://localhost:3302";
 const only = process.env.SHOT_ONLY?.split(",");
 const views: [string, string][] = ([
   ["list", "/chat"],
   ["pending", `/chat/${pendingId}`],
   ["saved", `/chat/${savedId}`],
+  ...(questionId ? [["question", `/chat/${questionId}`]] : []),
 ] as [string, string][]).filter(([v]) => !only || only.includes(v));
 
 mkdirSync("screenshots/v3", { recursive: true });

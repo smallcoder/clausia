@@ -264,7 +264,7 @@ function AttachmentChip({ name, doc, tuck }: { name: string; doc?: ThreadDoc; tu
   const meta = doc ? [doc.pages ? pagesLabel(doc.pages) : null, READ[doc.status]].filter(Boolean).join(" · ") : null;
   return (
     <div className={cx("flex max-w-[88%] items-center gap-2.5 self-end rounded-[16px] border border-border-2 bg-card py-2 pe-2.5 ps-3.5 dark:bg-card-2 sm:max-w-[72%]", tuck && "-mt-1.5")}>
-      <span aria-hidden className="flex h-9 w-[30px] shrink-0 items-center justify-center rounded-md bg-paper-thumb text-[8px] font-extrabold text-ink-solid">
+      <span aria-hidden className="flex h-9 w-[30px] shrink-0 items-center justify-center rounded-md bg-paper-thumb text-[8px] font-extrabold text-[var(--paper-thumb-ink)]">
         {doc?.image ? "IMG" : "PDF"}
       </span>
       <span className="min-w-0">
