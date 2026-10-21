@@ -66,6 +66,13 @@ export function arDate(iso: string, withYear = true): string {
   return (withYear ? longFmt : shortFmt).format(utc(iso)).replace("،", "");
 }
 
+const monthYearFmt = new Intl.DateTimeFormat("ar-EG-u-nu-latn", { month: "long", year: "numeric", timeZone: "UTC" });
+
+/** «أكتوبر 2026» — the label above the roll's day strip. */
+export function arMonthYear(iso: string): string {
+  return monthYearFmt.format(utc(iso));
+}
+
 /** «20 أكتوبر» */
 export function arDayMonth(iso: string): string {
   return dayMonthFmt.format(utc(iso));
