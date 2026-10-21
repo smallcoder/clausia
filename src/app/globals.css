@@ -323,12 +323,14 @@ body {
 /* the soft fade behind the floating composer */
 .bg-fade { background: var(--fade); }
 /* big light stat numbers */
+@layer components {
 .stat-num { font-family: -apple-system, "SF Pro Display", system-ui, var(--font-inter), sans-serif; font-weight: 300; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
 .bg-primary-fill { background: var(--primary-bg); color: var(--on-primary); box-shadow: var(--primary-shadow); }
 .bg-tile-hi { background: var(--tile-hi); color: var(--tile-hi-text); }
 
 /* Document text and quotes read better in Naskh */
-.text-doc { font-family: var(--font-naskh), serif; line-height: 1.95; }
+.text-doc { font-family: var(--font-naskh), serif; line-height: 1.9; }
+}
 
 /* Numbers (dates, case numbers) stay left-to-right inside RTL text */
 .num { direction: ltr; unicode-bidi: isolate; font-variant-numeric: tabular-nums; }
