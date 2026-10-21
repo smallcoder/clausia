@@ -38,7 +38,7 @@ export async function DocumentsTab({ caseId }: { caseId: string }) {
   const name = (d: { title: string | null; doc_type: string; file_name: string }) => d.title || DOC_TYPE[d.doc_type as keyof typeof DOC_TYPE] || d.file_name;
 
   return (
-    <div className="max-w-[760px] space-y-4 pb-4">
+    <div className="space-y-4 pb-4">
       <section className="rounded-[22px] border border-border-2 bg-card shadow-card">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-2 px-5 py-4">
           <h2 className="text-[17px] font-bold text-text">
@@ -46,18 +46,18 @@ export async function DocumentsTab({ caseId }: { caseId: string }) {
           </h2>
           <UploadDocument caseId={caseId} />
         </div>
-        <p className="px-5 pt-3.5 text-[13px] leading-6 text-text-3">
+        <p className="max-w-[640px] px-5 pt-3.5 text-[13px] leading-6 text-text-3">
           صحيفة، مذكرة، محضر جلسة أو صورة بالموبايل (PDF أو صورة لحد 25 م.ب). Clausia بيقرا كل صفحة ويقترح اللي لقاه في محادثة القضية، ومش بيتحفظ حاجة قبل ما تأكد.
         </p>
         {docs?.length ? (
-          <ul className="grid grid-cols-3 gap-3 px-5 pb-5 pt-4 sm:grid-cols-[repeat(3,minmax(0,168px))] sm:gap-5">
+          <ul className="grid grid-cols-3 gap-3 px-5 pb-5 pt-4 sm:grid-cols-[repeat(3,minmax(0,132px))] sm:gap-5">
             {docs.map((d) => (
               <li key={d.id} className="min-w-0">
                 <a href={`/api/documents/${d.id}`} target="_blank" rel="noopener" className="group block" title={d.file_name}>
                   <DocThumb note={d.read_status !== "done" ? READ_STATUS[d.read_status] : null} />
                   <span className="mt-2 line-clamp-2 block text-center text-[12.5px] font-semibold leading-5 text-text sm:text-[13px]">{name(d)}</span>
                 </a>
-                <span className="mt-0.5 block text-center text-[11.5px] text-text-3 sm:text-[12px]">
+                <span className="mt-0.5 block truncate text-center text-[11.5px] text-text-3 sm:text-[12px]">
                   {[d.title ? DOC_TYPE[d.doc_type as keyof typeof DOC_TYPE] : null, pagesLabel(d.page_count)].filter(Boolean).join(" · ") || " "}
                 </span>
               </li>
@@ -121,7 +121,7 @@ export async function DocumentsTab({ caseId }: { caseId: string }) {
                             <span className="text-doc min-w-0 flex-1 truncate text-[13px] text-text-3">{firstWords(p.text)}…</span>
                             <ChevronDown aria-hidden size={15} strokeWidth={2} className="shrink-0 text-text-4 transition-transform group-open/page:rotate-180" />
                           </summary>
-                          <div className="text-doc max-h-[60vh] overflow-y-auto whitespace-pre-wrap break-words border-t border-border-2 bg-field px-4 py-3 text-[15px] text-text">
+                          <div className="text-doc max-h-[60vh] overflow-y-auto whitespace-pre-wrap break-words border-t border-border-2 bg-field px-4 py-3 text-[15px] text-text sm:px-6">
                             {p.text || "—"}
                           </div>
                         </details>

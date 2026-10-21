@@ -273,7 +273,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
                   <span className="w-[60px] shrink-0 pt-0.5 text-[11px] font-semibold leading-5 text-text-3 sm:w-[74px] sm:text-xs sm:leading-[22px]">{kindOf(o)}</span>
                   <button type="button" onClick={() => toggle(o.op_id)} aria-expanded={isOpen} className="min-w-0 flex-1 text-right">
                     <span className="flex items-start gap-1 text-[13.5px] font-semibold leading-[22px] text-text sm:text-[14.5px]">
-                      <span className={cx("min-w-0", !isOpen && "line-clamp-2 sm:line-clamp-1")}>{summaryOf({ ...o, args: merged }) || OP_TITLE[o.tool]}</span>
+                      <span className={cx("min-w-0", !isOpen && "line-clamp-1")}>{summaryOf({ ...o, args: merged }) || OP_TITLE[o.tool]}</span>
                       <ChevronDown aria-hidden size={14} strokeWidth={2} className={cx("mt-1 shrink-0 text-text-4 transition-transform", isOpen && "rotate-180")} />
                     </span>
                     {factQuote && !isOpen ? <span className="text-doc block truncate text-[12.5px] leading-5 text-text-3 sm:text-[13px]">«{factQuote}»</span> : null}

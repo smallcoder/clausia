@@ -20,7 +20,7 @@ function Row({ label, value, children }: { label: string; value: React.ReactNode
             <ChevronDown aria-hidden size={16} strokeWidth={2} className="shrink-0 text-text-4 transition-transform group-open:rotate-180" />
           </span>
         </summary>
-        <div className="border-t border-border-2 bg-card-2 px-5 py-4 text-[15px] text-text">{children}</div>
+        <div className="border-t border-border-2 bg-card-2 px-5 py-4 text-[15px] text-text"><div className="max-w-[560px]">{children}</div></div>
       </details>
     </li>
   );
@@ -32,7 +32,7 @@ export function CaseDetails({ cf }: { cf: CaseFile }) {
   const fd = c.facts_date && c.facts_date_precision !== "unknown" ? formatDmy(c.facts_date, c.facts_date_precision) : "";
   const status = CASE_STATUS[c.status as keyof typeof CASE_STATUS] ?? c.status;
   return (
-    <div className="max-w-[760px] pb-4">
+    <div className="pb-4">
     <Panel title="بيانات الدعوى" meta="اضغط على أي سطر لتعديله" className="overflow-hidden">
       <ul className="divide-y divide-border-2">
         <Row label="تاريخ الوقائع" value={fd ? <span className="num font-num">{fd}</span> : "غير محدد"}>

@@ -26,7 +26,7 @@ function HearingRow({ h, today, nextUp, last, caseId }: { h: Row; today: string;
   const needsDecision = !h.decision_type && h.hearing_date < today;
   const isToday = !h.decision_type && h.hearing_date === today;
   const dot = needsDecision ? "bg-amber ring-4 ring-[var(--amber-bg)]"
-    : nextUp || isToday ? "bg-gold ring-4 ring-[var(--accent-wash)]"
+    : (nextUp && !h.decision_type) || isToday ?"bg-gold ring-4 ring-[var(--accent-wash)]"
     : h.decision_type ? "bg-primary"
     : "border-2 border-primary bg-card";
   return (
@@ -43,9 +43,9 @@ function HearingRow({ h, today, nextUp, last, caseId }: { h: Row; today: string;
         <div className="flex min-h-[23px] flex-wrap items-center gap-1.5">
           <DecisionBadge h={h} today={today} />
           {h.review_status === "suggested" ? <StatusChip tone="accent">مقترحة · راجعها</StatusChip> : null}
-          {nextUp && h.hearing_date > today ? <span className="text-[12px] font-semibold text-gold-text">الجلسة الجاية</span> : null}
+          {nextUp && !h.decision_type && h.hearing_date > today ?<span className="text-[12px] font-semibold text-gold-text">الجلسة الجاية</span> : null}
         </div>
-        <div className="mt-1.5 space-y-1 text-[15px] leading-[1.75]">
+        <div className="mt-1.5 max-w-[680px] space-y-1 text-[15px] leading-[1.75]">
           {h.purpose ? <p className="text-text"><span className="text-text-3">المطلوب: </span>{h.purpose}</p> : null}
           {h.decision_text ? <p className="text-text"><span className="text-text-3">القرار: </span>{h.decision_text}</p> : null}
           {h.next_requirements ? <p className="text-text"><span className="text-text-3">المطلوب للجلسة الجاية: </span>{h.next_requirements}</p> : null}
@@ -74,7 +74,7 @@ export async function HearingsTab({ caseId }: { caseId: string }) {
   const waiting = rows.filter((h) => !h.decision_type && h.hearing_date < today).length;
 
   return (
-    <div className="max-w-[760px] pb-4">
+    <div className="pb-4">
       <DecisionNotices>
         <Panel title="الجلسات"
           meta={rows.length ? <>{countLabel(rows.length)}{waiting ? <> · <span className="font-semibold text-[var(--amber-text)]">{waiting === 1 ? "واحدة محتاجة قرار" : `${waiting} محتاجة قرار`}</span></> : null}</> : null}>
