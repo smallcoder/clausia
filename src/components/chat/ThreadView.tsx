@@ -62,15 +62,22 @@ export async function loadThread(db: Db, threadId: string): Promise<ThreadData> 
   for (const p of orphans) items.push({ id: `p-${p.id}`, role: "assistant", content: "", createdAt: p.created_at, attachments: [], proposals: [p] });
   items.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
-  // The card is made in a tool round with no text; the model's explanation comes in the next round.
-  // Show the explanation first, then the card under it.
-  for (let i = 0; i < items.length - 1; i++) {
-    const a = items[i], b = items[i + 1];
-    if (a.role === "assistant" && !a.content.trim() && a.proposals.length && b.role === "assistant" && b.content.trim()) {
-      b.proposals = [...a.proposals, ...b.proposals];
-      a.proposals = [];
+  // Cards are made in tool rounds with no text; the model's explanation comes in a later round of the same turn.
+  // Show the explanation first, then every card of that turn under it, in order.
+  let carry: { from: ChatItem; cards: Proposal[] }[] = [];
+  for (const it of items) {
+    if (it.role === "assistant" && !it.content.trim() && it.proposals.length) {
+      carry.push({ from: it, cards: it.proposals });
+      it.proposals = [];
+    } else if (it.role === "assistant" && it.content.trim()) {
+      it.proposals = [...carry.flatMap((c) => c.cards), ...it.proposals];
+      carry = [];
+    } else if (it.role === "user") {
+      for (const c of carry) c.from.proposals = c.cards; // no text in that turn: the cards stay where they were
+      carry = [];
     }
   }
+  for (const c of carry) c.from.proposals = c.cards;
   const visible = items.filter((x) => x.role === "user" || x.content.trim() || x.proposals.length);
 
   const lastSpoken = [...visible].reverse().find((x) => x.role === "user" || x.content.trim());
