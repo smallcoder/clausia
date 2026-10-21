@@ -4,7 +4,7 @@
  * the right, paper chips, confirmation cards, glass quick answers, and the glass composer in the 780px ChatDock.
  * Sending is optimistic (the lawyer's message shows at once); no streaming.
  */
-import { ArrowUp, Mic, Plus } from "lucide-react";
+import { ArrowUp, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useOptimistic, useRef, useState, useTransition, type KeyboardEvent, type ReactNode } from "react";
 import { cx } from "@/components/ui";
@@ -201,9 +201,6 @@ export function ChatThread({ threadId, caseId, items, lookup, docs = {} }: {
               className={cx(ROUND, "cursor-pointer", busy && "pointer-events-none opacity-50")}>
               <Plus aria-hidden size={18} strokeWidth={1.8} />
             </label>
-            <button type="button" disabled aria-label="رسالة صوتية (قريبًا)" title="رسالة صوتية (قريبًا)" className={cx(ROUND, "disabled:opacity-60")}>
-              <Mic aria-hidden size={18} strokeWidth={1.8} />
-            </button>
             <div className="min-w-0 flex-1 truncate text-center text-[10.5px] text-text-4 sm:text-start sm:text-xs" aria-live="polite">
               {status ?? <span className="sm:hidden">مفيش حاجة بتتحفظ من غير موافقتك</span>}
             </div>

@@ -47,7 +47,7 @@ export function StatRow({ stats, className = "" }: { stats: HeroStat[]; classNam
 
 export function BackBtn({ href }: { href: string }) {
   return (
-    <Link href={href} aria-label="رجوع" className="glass glass-icon inline-flex size-[42px] shrink-0 items-center justify-center rounded-full sm:size-11">
+    <Link href={href} aria-label="رجوع" className="tap glass glass-icon inline-flex size-[42px] shrink-0 items-center justify-center rounded-full sm:size-11">
       <ChevronRight size={20} strokeWidth={2} aria-hidden />
     </Link>
   );

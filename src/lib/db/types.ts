@@ -865,6 +865,7 @@ export type Database = {
           decision_type: Database["public"]["Enums"]["hearing_decision"] | null
           hearing_date: string
           id: string
+          location: string | null
           next_hearing_id: string | null
           next_requirements: string | null
           office_id: string
@@ -897,6 +898,7 @@ export type Database = {
           decision_type?: Database["public"]["Enums"]["hearing_decision"] | null
           hearing_date: string
           id?: string
+          location?: string | null
           next_hearing_id?: string | null
           next_requirements?: string | null
           office_id?: string
@@ -929,6 +931,7 @@ export type Database = {
           decision_type?: Database["public"]["Enums"]["hearing_decision"] | null
           hearing_date?: string
           id?: string
+          location?: string | null
           next_hearing_id?: string | null
           next_requirements?: string | null
           office_id?: string

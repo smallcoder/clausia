@@ -6,7 +6,7 @@ The 20 `*.dc.html` files here are the approved screens: Home, Chat, Case, Roll a
 - Chat-first. Clausia (never "مساعد") does everything. There is one input per screen, the composer; it searches, asks and adds. There is no separate search bar.
 - Calm luxury: lots of space, few boxes, large light numbers, and gold only for things that need the lawyer's action.
 - Glass only on floating controls: the top bar, tab capsule, composer, round buttons and suggestion chips. Content (cards, tables, lists) is solid. Content scrolls under the floating composer, which has a soft fade behind it.
-- RTL Arabic. Desktop pages are at most 1360px wide (Home and Chat 960px; the composer 780px), centered. Below 1280px, full width with 32px side padding.
+- RTL Arabic. Desktop pages are at most 1360px wide (Home 960px; Chat 820px; the composer 780px), centered. Below 1280px, full width with 32px side padding.
 
 ## Type
 - UI: `-apple-system, BlinkMacSystemFont, 'SF Arabic', 'SF Pro Text', system-ui, 'Vazirmatn', sans-serif`
@@ -37,3 +37,18 @@ The 20 `*.dc.html` files here are the approved screens: Home, Chat, Case, Roll a
 - Top bar: the brand plus office name, a centered glass tab capsule (Home, Hearings, Cases), and glass circles for alerts and account. On mobile it shows the logo, the capsule (active tab labeled, the others icon-only) and the account.
 - Case: who first (client big, «ضد» opponent below), then a spec sheet (number, court, circuit, type), then the next hearing, the Clausia summary, the needs-review banner, and tabs (Facts, Docs, Parties) on mobile.
 - Roll: a day strip with dots per hearing, then a timeline by court; the next hearing is expanded with a "سجّل قرار الجلسة دي" button. On desktop, a side card lists past hearings that need a decision, each with a record button.
+
+## Owner decisions (2026-10-21)
+- Font: the system Arabic font (SF Arabic on Apple devices); no bundled Arabic web font.
+- Tap targets: controls are drawn at the mockup sizes (36–42px) and get an invisible 44px tap area (`.tap`).
+- No mic button until voice notes are built.
+- Hearing location («الدور 4 · قاعة 12», «العباسية») is a stored field. Clausia proposes it from a paper or the chat through a confirmation card and never guesses it; when it is empty the circuit is shown.
+- Dates stay d/m/yyyy.
+- States the mockups don't draw (empty, a past hearing with no decision, tomorrow's hearings) stay as built.
+- Every screen has the same soft fade behind the floating composer and chips (Home too).
+- Home mobile chips scroll sideways.
+- Case: judgments live in the hearings view; the links (case details, hearings, case chat, JSON) live in the «…» menu; long court / case-type names are one line with «…» on mobile.
+- Cases: the third stat is «محتاجة قرار» with its own filter; each row keeps its review marker; extra status filters scroll on mobile.
+- Roll: on mobile, swipe the day strip to change the week; on desktop, two small quiet prev/next week buttons at the two ends of the strip (no separate row).
+- Chat: the card footer's second line (save as suggestions · reject all · open case) shows only after «عدّل»; the /chat list uses the thread's style.
+- Loading: one shared skeleton in each page's real layout (title, stats, card or table shapes), card + hairline tokens, one calm shimmer, no spinners; the top bar and composer stay visible.

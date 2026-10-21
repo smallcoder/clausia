@@ -28,6 +28,7 @@ export interface HearingRow {
   case_id: string;
   hearing_date: string;
   purpose: string | null;
+  location: string | null;
   decision_type: E["hearing_decision"] | null;
   decision_text: string | null;
   next_requirements: string | null;
@@ -46,7 +47,7 @@ export interface HearingWithCase extends HearingRow {
 }
 
 const HEARING_COLS =
-  "id, case_id, hearing_date, purpose, decision_type, decision_text, next_requirements, previous_hearing_id, next_hearing_id, review_status, created_by_kind, source_kind, source_page";
+  "id, case_id, hearing_date, purpose, location, decision_type, decision_text, next_requirements, previous_hearing_id, next_hearing_id, review_status, created_by_kind, source_kind, source_page";
 const WITH_CASE = `${HEARING_COLS}, cases!inner(id, case_number, case_year, title, court, circuit, client_role, status, case_type, clients(name))`;
 
 type RawCase = Omit<HearingCase, "client_name"> & { clients: { name: string } | null };

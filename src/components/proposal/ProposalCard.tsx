@@ -54,6 +54,7 @@ function kindOf(o: ProposalOp): string {
     case "add_request": return "طلب";
     case "add_argument": return "دفع";
     case "add_hearing": return "جلسة";
+    case "set_hearing_location": return "المكان";
     case "record_decision": return "قرار";
     case "add_judgment": return "حكم";
     case "attach_document": return "ورقة";
@@ -69,7 +70,8 @@ function summaryOf(o: ProposalOp): string {
     case "add_party": return [a.name, a.role && PARTY_ROLE[a.role as keyof typeof PARTY_ROLE]].filter(Boolean).join(" · ");
     case "add_fact": return [a.date_text ?? a.date ?? "بدون تاريخ", cut(a.text)].join(" · ");
     case "add_request": case "add_argument": return cut(a.text, 90);
-    case "add_hearing": return [a.date, a.purpose].filter(Boolean).join(" · ");
+    case "add_hearing": return [a.date, a.purpose, a.location].filter(Boolean).join(" · ");
+    case "set_hearing_location": return String(a.location ?? "");
     case "record_decision": return [a.decision && DECISION[a.decision as keyof typeof DECISION], a.next_date && `الجلسة القادمة ${a.next_date}`].filter(Boolean).join(" · ");
     case "add_judgment": return [a.date, cut(a.operative_text)].filter(Boolean).join(" · ");
     case "attach_document": return a.doc_type ? DOC_TYPE[a.doc_type as keyof typeof DOC_TYPE] : "";

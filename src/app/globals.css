@@ -84,6 +84,8 @@
   --glass-shadow: 0 0 0 0.5px rgba(18,26,43,0.10), inset 0 1.5px 0 #FFFFFF, inset 0 -10px 18px -12px rgba(18,26,43,0.12), inset 1px 0 0 rgba(255,255,255,0.7), 0 2px 4px rgba(18,26,43,0.05), 0 22px 44px -20px rgba(18,26,43,0.32);
   --glass-icon: #5F636A;
   --fade: linear-gradient(to top, #ECEEF2 55%, rgba(236,238,242,0));
+  --skel: rgba(18,26,43,0.06);
+  --skel-hi: rgba(255,255,255,0.7);
   /* ---- legacy names mapped onto v2 ---- */
   --paper: var(--bg); --surface: var(--card); --surface-2: var(--card-2); --chrome: rgba(236,238,242,0.82);
   --ink: var(--text); --ink-2: var(--text-3); --ink-3: var(--text-4);
@@ -153,6 +155,8 @@
   --glass-shadow: inset 1.5px 1.5px 0 rgba(255,255,255,0.28), inset -1px -1px 0 rgba(255,255,255,0.06), 0 24px 50px -22px rgba(0,0,0,0.85);
   --glass-icon: #9A9AA0;
   --fade: linear-gradient(to top, #14161C 55%, rgba(20,22,28,0));
+  --skel: rgba(255,255,255,0.06);
+  --skel-hi: rgba(255,255,255,0.06);
   --chrome: rgba(20,22,28,0.8); --line-strong: rgba(255,255,255,0.16); --backdrop: rgba(0,0,0,0.6);
 }
 @media (prefers-color-scheme: dark) {
@@ -212,6 +216,8 @@
   --glass-shadow: inset 1.5px 1.5px 0 rgba(255,255,255,0.28), inset -1px -1px 0 rgba(255,255,255,0.06), 0 24px 50px -22px rgba(0,0,0,0.85);
   --glass-icon: #9A9AA0;
   --fade: linear-gradient(to top, #14161C 55%, rgba(20,22,28,0));
+  --skel: rgba(255,255,255,0.06);
+  --skel-hi: rgba(255,255,255,0.06);
   --chrome: rgba(20,22,28,0.8); --line-strong: rgba(255,255,255,0.16); --backdrop: rgba(0,0,0,0.6);
   }
 }
@@ -271,7 +277,8 @@
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-backdrop: var(--backdrop);
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Arabic", "SF Pro Text", system-ui, var(--font-vazir), sans-serif;
+  /* system Arabic font (SF Arabic on Apple), as in the mockups; no bundled Arabic web font */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Arabic", "SF Pro Text", system-ui, sans-serif;
   --font-num: -apple-system, "SF Pro Display", system-ui, var(--font-inter), sans-serif;
   --font-naskh: var(--font-naskh), serif;
   --radius-card: var(--radius);
@@ -323,6 +330,9 @@ body {
 /* Glass: floating controls only (top bar, tab capsule, composer, round buttons, chips) */
 .glass { background: var(--glass-bg); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); border: var(--glass-border); box-shadow: var(--glass-shadow); }
 .glass-icon { color: var(--glass-icon); }
+/* invisible 44px tap area around a control drawn smaller (owner decision: draw as the mockup, tap at 44px) */
+.tap { position: relative; }
+.tap::after { content: ""; position: absolute; inset-block: min(0px, calc((100% - 44px) / 2)); inset-inline: min(0px, calc((100% - 44px) / 2)); }
 /* the soft fade behind the floating composer */
 .bg-fade { background: var(--fade); }
 /* big light stat numbers */
@@ -354,6 +364,13 @@ body {
 /* Skeleton, quiet pulse */
 @keyframes skeleton-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 .skeleton { background: var(--line); border-radius: 8px; animation: skeleton-pulse 1.4s ease-in-out infinite; }
+/* v2 loading: solid shapes in the page's real layout, one calm shimmer sweeping the whole page (no spinners) */
+@keyframes skel-sweep { from { background-position: 150% 0; } to { background-position: -50% 0; } }
+.skel { background-color: var(--skel); border-radius: 8px; }
+.skel-shimmer .skel {
+  background-image: linear-gradient(100deg, transparent 30%, var(--skel-hi) 50%, transparent 70%);
+  background-size: 200% 100%; background-attachment: fixed; animation: skel-sweep 1.8s ease-in-out infinite;
+}
 
 /* Bottom sheet */
 @keyframes sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }

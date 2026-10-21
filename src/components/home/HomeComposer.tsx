@@ -5,7 +5,7 @@
  * Desktop: the «Clausia بتجهّز…» line under the box, no fade. Mobile: the short reminder sits inside the
  * button row, the dock fades the page under it. Same send / upload actions as the shared composer.
  */
-import { ArrowUp, File, Gavel, List, Mic, Plus, User } from "lucide-react";
+import { ArrowUp, File, Gavel, List, Plus, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { composerSendAction, composerUploadAction } from "@/lib/assistant/composer-actions";
@@ -88,7 +88,7 @@ export function HomeComposer() {
         {CHIPS.map((c) => (
           <button key={c.label} type="button" disabled={pending}
             onClick={() => ("attach" in c ? fileRef.current?.click() : fill(c.text))}
-            className="glass glass-icon inline-flex h-9 shrink-0 items-center gap-[7px] rounded-full px-3.5 text-[12.5px] font-medium transition hover:text-text sm:h-[38px] sm:gap-2 sm:px-4 sm:text-[13px]">
+            className="tap glass glass-icon inline-flex h-9 shrink-0 items-center gap-[7px] rounded-full px-3.5 text-[12.5px] font-medium transition hover:text-text sm:h-[38px] sm:gap-2 sm:px-4 sm:text-[13px]">
             <c.Icon strokeWidth={1.8} aria-hidden className="size-3.5 sm:size-[15px]" />
             {"short" in c ? <><span className="sm:hidden">{c.short}</span><span className="hidden sm:inline">{c.label}</span></> : c.label}
           </button>
@@ -112,12 +112,11 @@ export function HomeComposer() {
         </div>
         <div className="mt-1.5 flex items-center gap-2 sm:mt-2">
           <Round label="إضافة ورقة" onClick={() => fileRef.current?.click()} disabled={pending}><Plus strokeWidth={1.8} className="size-[17px] sm:size-[18px]" /></Round>
-          <Round label="رسالة صوتية (قريبًا)" disabled><Mic strokeWidth={1.8} className="size-[17px] sm:size-[18px]" /></Round>
           <div className="min-w-0 flex-1 truncate text-center text-[10.5px] leading-[15px] text-text-4 sm:text-start sm:text-xs" aria-live="polite">
             {note ?? <span className="sm:hidden">مفيش حاجة بتتحفظ من غير موافقتك</span>}
           </div>
           <button type="button" onClick={send} disabled={pending || !text.trim()} aria-label="إرسال"
-            className="bg-primary-fill inline-flex size-[38px] shrink-0 items-center justify-center rounded-full transition disabled:opacity-50 sm:size-10">
+            className="tap bg-primary-fill inline-flex size-[38px] shrink-0 items-center justify-center rounded-full transition disabled:cursor-not-allowed sm:size-10">
             <ArrowUp strokeWidth={2.4} className="size-[18px] sm:size-[19px]" />
           </button>
         </div>
@@ -130,7 +129,7 @@ export function HomeComposer() {
 function Round({ label, onClick, disabled, children }: { label: string; onClick?: () => void; disabled?: boolean; children: React.ReactNode }) {
   return (
     <button type="button" aria-label={label} title={label} onClick={onClick} disabled={disabled}
-      className="glass-icon inline-flex size-[38px] shrink-0 items-center justify-center rounded-full border border-border-2 bg-transparent transition hover:text-text disabled:opacity-40 sm:size-10">
+      className="tap glass-icon inline-flex size-[38px] shrink-0 items-center justify-center rounded-full border border-border-2 bg-transparent transition hover:text-text disabled:opacity-40 sm:size-10">
       {children}
     </button>
   );
@@ -152,7 +151,7 @@ function Dock({ children }: { children: React.ReactNode }) {
   return (
     <>
       <div aria-hidden style={{ height: h }} className="shrink-0" />
-      <div ref={box} className="fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(18px+env(safe-area-inset-bottom))] pt-10 [background:var(--fade)] sm:px-6 sm:pb-6 sm:pt-0 sm:[background:none]">
+      <div ref={box} className="fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(18px+env(safe-area-inset-bottom))] pt-10 [background:var(--fade)] sm:px-6 sm:pb-6 sm:pt-[60px]">
         <div className="mx-auto w-full max-w-[780px]">{children}</div>
       </div>
     </>

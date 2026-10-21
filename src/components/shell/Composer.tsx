@@ -1,9 +1,9 @@
 "use client";
 /**
  * The Clausia composer (on every screen). `size="hero"` is the big Home composer; `size="dock"` sits at the
- * bottom of inner pages. Chips fill the box with a starter sentence. Mic is shown disabled (voice notes = future).
+ * bottom of inner pages. Chips fill the box with a starter sentence. No mic until voice notes ship (owner decision).
  */
-import { ArrowUp, CalendarDays, Camera, Check, Clock, File, Gavel, List, Mic, Plus, Search, User } from "lucide-react";
+import { ArrowUp, CalendarDays, Camera, Check, Clock, File, Gavel, List, Plus, Search, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { composerSendAction, composerUploadAction, type ComposerTarget } from "@/lib/assistant/composer-actions";
@@ -84,7 +84,7 @@ export function Composer({ target, placeholder = "اكتب لـ Clausia… ما 
       {chips.length ? (
         <div className="no-scrollbar -mx-1 mb-3 flex gap-2 overflow-x-auto px-1 sm:flex-wrap sm:justify-center">
           {chips.map((c) => {
-            const cls = `glass inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-medium transition disabled:cursor-not-allowed ${c.accent ? "font-bold text-gold" : c.ghost ? "text-text-3" : "text-text-2 hover:text-text"} ${c.disabled ? "opacity-60" : ""}`;
+            const cls = `tap glass inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-medium transition disabled:cursor-not-allowed ${c.accent ? "font-bold text-gold" : c.ghost ? "text-text-3" : "text-text-2 hover:text-text"} ${c.disabled ? "opacity-60" : ""}`;
             const Icon = c.icon ? CHIP_ICONS[c.icon] : null;
             const text = c.short ? <><span className="sm:hidden">{c.short}</span><span className="hidden sm:inline">{c.label}</span></> : c.label;
             const label = <>{c.dot ? <span aria-hidden className="size-1.5 rounded-full bg-gold" /> : Icon ? <Icon size={15} strokeWidth={1.9} aria-hidden /> : null}{text}</>;
@@ -120,7 +120,6 @@ export function Composer({ target, placeholder = "اكتب لـ Clausia… ما 
           <div className="mt-2 flex items-center gap-2">
             <RoundBtn label="إرفاق ورقة" onClick={() => fileRef.current?.click()} disabled={pending}><Plus size={19} strokeWidth={1.9} /></RoundBtn>
             <RoundBtn label="تصوير ورقة" onClick={() => camRef.current?.click()} disabled={pending} className="sm:hidden"><Camera size={19} strokeWidth={1.9} /></RoundBtn>
-            <RoundBtn label="ملاحظة صوتية (قريبًا)" disabled><Mic size={19} strokeWidth={1.9} /></RoundBtn>
             <div className="min-w-0 flex-1 truncate text-xs text-text-4" aria-live="polite">
               {error ? <span className="text-bad">{error}</span> : status ?? ""}
             </div>
@@ -135,7 +134,7 @@ export function Composer({ target, placeholder = "اكتب لـ Clausia… ما 
           {/* one-row pill (Roll / Case / Cases mockups): [+] [input] [send], sizes as drawn */}
           <div className="glass flex items-center gap-1.5 rounded-[24px] p-1.5 sm:gap-2 sm:rounded-[26px] sm:p-[7px]">
             <button type="button" aria-label="إرفاق ورقة" title="إرفاق ورقة" onClick={() => fileRef.current?.click()} disabled={pending}
-              className="glass-icon inline-flex size-[38px] shrink-0 items-center justify-center rounded-full border border-border transition hover:text-text disabled:opacity-40 sm:size-10"><Plus size={18} strokeWidth={1.9} /></button>
+              className="tap glass-icon inline-flex size-[38px] shrink-0 items-center justify-center rounded-full border border-border transition hover:text-text disabled:opacity-40 sm:size-10"><Plus size={18} strokeWidth={1.9} /></button>
             <textarea
               ref={area}
               value={text}
@@ -185,7 +184,7 @@ export function FixedDock({ children, width = 780 }: { children: React.ReactNode
 function SendBtn({ onClick, disabled }: { onClick: () => void; disabled: boolean }) {
   return (
     <button type="button" onClick={onClick} disabled={disabled} aria-label="إرسال"
-      className="bg-primary-fill inline-flex size-[38px] shrink-0 items-center justify-center rounded-full transition disabled:cursor-not-allowed sm:size-10">
+      className="tap bg-primary-fill inline-flex size-[38px] shrink-0 items-center justify-center rounded-full transition disabled:cursor-not-allowed sm:size-10">
       <ArrowUp size={20} strokeWidth={2.6} />
     </button>
   );

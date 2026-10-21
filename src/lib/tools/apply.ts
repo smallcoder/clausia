@@ -139,8 +139,14 @@ export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Prov
     case "add_hearing": {
       const x = a as WriteArgs<"add_hearing">;
       const d = date(x.date)!;
-      const row = must(await db.from("hearings").insert({ case_id: resolveRef(x.case, refs)!, hearing_date: d.iso, purpose: x.purpose ?? null, ...prov(p) }).select("id").single());
+      const row = must(await db.from("hearings").insert({ case_id: resolveRef(x.case, refs)!, hearing_date: d.iso, purpose: x.purpose ?? null, location: x.location ?? null, ...prov(p) }).select("id").single());
       return { id: row.id };
+    }
+    case "set_hearing_location": {
+      const x = a as WriteArgs<"set_hearing_location">;
+      const id = resolveRef(x.hearing, refs)!;
+      must(await db.from("hearings").update({ location: x.location }).eq("id", id).select("id").single());
+      return { id };
     }
     case "record_decision": {
       const x = a as WriteArgs<"record_decision">;

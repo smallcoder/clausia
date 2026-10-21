@@ -1,5 +1,5 @@
-import { PageSkeleton } from "@/components/ui";
+import { PageSkeleton } from "@/components/shell/PageSkeleton";
 
 export default function Loading() {
-  return <PageSkeleton rows={3} cards={3} />;
+  return <PageSkeleton kind="home" />;
 }
