@@ -94,7 +94,11 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promis
       if (round > 0) await db.from("chat_messages").delete().eq("thread_id", thread.id).in("role", ["assistant", "tool"]).gt("created_at", userMsg.created_at);
       out.proposalIds = [];
       out.assistantMessageIds = [];
-      const friendly = e instanceof SpendCapError ? "مش هقدر أرد دلوقتي: وصلنا لحد الصرف التجريبي." : UNAVAILABLE_TEXT;
+      // only "not available now" (402 / 429 / 5xx / timeout / network) gets the notice; any other error (a bad request,
+      // a blocked reply) is a fault to fix, so it keeps a plain message and its reason in llm_calls
+      const friendly = e instanceof SpendCapError ? "مش هقدر أرد دلوقتي: وصلنا لحد الصرف التجريبي."
+        : e instanceof LlmUnavailableError ? UNAVAILABLE_TEXT
+        : "حصلت مشكلة وأنا بجهّز الرد. جرّب تكتبها تاني بشكل مختلف.";
       const { data: m } = await db.from("chat_messages").insert({ thread_id: thread.id, role: "assistant", content: friendly }).select("id").single();
       if (m) out.assistantMessageIds.push(m.id);
       out.text = friendly;

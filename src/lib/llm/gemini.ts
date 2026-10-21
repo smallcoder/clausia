@@ -76,7 +76,15 @@ async function post(model: string, body: unknown, timeoutMs = 120_000): Promise<
     } catch (e) {
       throw new LlmUnavailableError(ctrl.signal.aborted ? `Gemini timeout after ${timeoutMs}ms` : `Gemini network error: ${e instanceof Error ? e.message : String(e)}`);
     }
-    const json = (await r.json().catch(() => ({}))) as GeminiResponse;
+    let json: GeminiResponse;
+    try {
+      json = (await r.json()) as GeminiResponse;
+    } catch (e) {
+      // the time limit can hit while the body is read; a body that is not JSON is a provider fault, never an empty reply
+      if (ctrl.signal.aborted) throw new LlmUnavailableError(`Gemini timeout after ${timeoutMs}ms`);
+      if (isUnavailableStatus(r.status)) throw new LlmUnavailableError(`Gemini ${r.status}: no JSON body`, r.status);
+      throw new GeminiError(`Gemini ${r.status}: response is not JSON (${e instanceof Error ? e.message : String(e)})`, r.status);
+    }
     if (!r.ok || json.error) {
       const message = `Gemini ${r.status}: ${json.error?.message ?? "unknown error"}`;
       if (isUnavailableStatus(r.status)) throw new LlmUnavailableError(message, r.status);
