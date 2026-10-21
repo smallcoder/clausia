@@ -56,11 +56,10 @@ export default async function CasePage({ params, searchParams }: { params: Promi
       text: "راجع معايا الحاجات المقترحة في القضية دي", accent: true, dot: true,
     }] : []),
     { label: "أضف مستند", attach: true, icon: "file" },
-    { label: "اكتب رأي قانوني · قريبًا", short: "رأي قانوني · قريبًا", ghost: true, disabled: true },
   ];
 
   return (
-    <div className="mx-auto flex w-full max-w-[1424px] flex-1 flex-col px-4 sm:px-8">
+    <div className="mx-auto flex w-full max-w-[1360px] flex-1 flex-col px-4 sm:px-10">
       {view ? (
         <>
           <CaseSubHeader cf={cf} caseId={id} title={VIEWS[view]} />
