@@ -33,12 +33,12 @@ export function Timeline({ rows, today, next, label, showToday = false }: { rows
         const places = [...new Set(g.items.map((h) => h.location?.trim()).filter(Boolean))];
         const circuits = places.length ? places.join(" · ") : [...new Set(g.items.map((h) => h.case.circuit?.trim()).filter(Boolean))].join(" · ");
         return (
-          <li key={g.key} className="flex gap-3.5 sm:gap-[18px]">
+          <li key={g.key} className="flex gap-3.5 sm:gap-4.5">
             <div aria-hidden className="flex w-3 shrink-0 flex-col items-center sm:w-3.5">
-              <span className={cx("mt-[5px] size-[11px] shrink-0 rounded-full sm:size-3", gold ? "bg-gold shadow-[0_0_0_4px_var(--accent-ring)] sm:shadow-[0_0_0_5px_var(--accent-ring)]" : "border-2 border-text-4")} />
+              <span className={cx("mt-1.25 size-[11px] shrink-0 rounded-full sm:size-3", gold ? "bg-gold shadow-[0_0_0_4px_var(--accent-ring)] sm:shadow-[0_0_0_5px_var(--accent-ring)]" : "border-2 border-text-4")} />
               {last ? null : <span className="mt-1.5 w-px flex-1 bg-[var(--hairline-v2)]" />}
             </div>
-            <div className={cx("min-w-0 flex-1", last ? "pb-0" : "pb-[22px] sm:pb-[26px]")}>
+            <div className={cx("min-w-0 flex-1", last ? "pb-0" : "pb-5.5 sm:pb-6.5")}>
               {hasNext && label ? <div className={cx("mb-1 text-xs font-semibold sm:text-sm", label.gold ? "text-gold" : "text-text-3")}>{label.text}</div> : null}
               <div className="flex items-baseline justify-between gap-3">
                 <h3 className="min-w-0 truncate text-base font-bold text-text sm:text-md">{g.key}</h3>

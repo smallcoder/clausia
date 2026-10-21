@@ -9,7 +9,7 @@ import { BackBtn } from "@/components/shell/PageHero";
 
 export function RollHeader({ back, eyebrow, title, action }: { back?: string; eyebrow: ReactNode; title: ReactNode; action?: ReactNode }) {
   return (
-    <header className="flex items-end justify-between gap-6 px-1 pt-3 leading-[normal] sm:px-2 sm:pt-[36px]">
+    <header className="flex items-end justify-between gap-6 px-1 pt-3 leading-[normal] sm:px-2 sm:pt-9">
       <div className="flex min-w-0 items-start gap-3 sm:gap-4">
         {back ? <BackBtn href={back} /> : null}
         <div className="min-w-0">

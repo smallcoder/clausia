@@ -30,7 +30,7 @@ const CARD = "rounded-xl border border-border-2 bg-card shadow-card";
 
 /** «مقترحة · راجعها»: a 5px gold dot + 11px gold word (needs the lawyer's action). */
 export const Suggested = ({ label = "مقترحة · راجعها" }: { label?: string }) => (
-  <span className="inline-flex items-center gap-[5px] text-xs font-semibold text-gold"><span aria-hidden className="size-[5px] rounded-full bg-gold" />{label}</span>
+  <span className="inline-flex items-center gap-1.25 text-xs font-semibold text-gold"><span aria-hidden className="size-[5px] rounded-full bg-gold" />{label}</span>
 );
 
 /** The Clausia «C» mark (mockup: 32px / 11px radius / 15px on desktop, 26px / 9px / 12px on mobile; a hairline + inner light in dark). */
@@ -108,10 +108,10 @@ function FactRow({ f, last, cf }: { f: Fact; last: boolean; cf: CaseFile }) {
         <span className={f.date_precision === "day" ? "num" : ""}>{factDate(f.date, f.date_precision)}</span>
       </span>
       <span className="flex w-[9px] shrink-0 flex-col items-center" aria-hidden>
-        <span className={`mt-[9px] size-[7px] shrink-0 rounded-full ${suggested ? "bg-gold" : "bg-text-3"}`} />
+        <span className={`mt-2.25 size-[7px] shrink-0 rounded-full ${suggested ? "bg-gold" : "bg-text-3"}`} />
         {!last ? <span className="mt-1 w-px flex-1 bg-[var(--hairline-v2)]" /> : null}
       </span>
-      <span className="min-w-0 flex-1 pb-[18px]">
+      <span className="min-w-0 flex-1 pb-4.5">
         <span className="text-doc block text-md text-text" style={{ lineHeight: 1.9 }}>{f.text}</span>
         <span className="mt-0.5 flex flex-wrap items-center gap-2">
           <span className="text-xs text-text-4">{sourceText(f.source, cf.documents)}{suggested ? "" : " · مؤكدة"}</span>
@@ -135,7 +135,7 @@ function Facts({ cf, caseId }: { cf: CaseFile; caseId: string }) {
   const fd = c.facts_date && c.facts_date_precision !== "unknown" ? formatDmy(c.facts_date, c.facts_date_precision) : null;
   return (
     <section id="facts" className={`scroll-mt-24 ${CARD} rounded-xl`} aria-label="الوقائع">
-      <div className="flex items-baseline justify-between gap-3 px-[18px] pt-4 lg:px-6 lg:pb-1.5 lg:pt-[18px]">
+      <div className="flex items-baseline justify-between gap-3 px-4.5 pt-4 lg:px-6 lg:pb-1.5 lg:pt-4.5">
         <h2 className="hidden text-lg font-bold text-title lg:block">الوقائع</h2>
         <span className="text-xs text-text-4">تاريخ الوقائع {fd ? <span className="num font-num">{fd}</span> : "مش محدد"} · بيحدد نسخة القانون</span>
       </div>
@@ -152,7 +152,7 @@ function Facts({ cf, caseId }: { cf: CaseFile; caseId: string }) {
           ))}
         </div>
       ) : (
-        <p className="px-[18px] pb-5 pt-3 text-base leading-7 text-text-3 lg:px-6">لسه مفيش وقائع. احكي لـ Clausia اللي حصل وتواريخه، أو ارفع صحيفة الدعوى.</p>
+        <p className="px-4.5 pb-5 pt-3 text-base leading-7 text-text-3 lg:px-6">لسه مفيش وقائع. احكي لـ Clausia اللي حصل وتواريخه، أو ارفع صحيفة الدعوى.</p>
       )}
     </section>
   );
@@ -189,10 +189,10 @@ function Sides({ cf, caseId, className }: { cf: CaseFile; caseId: string; classN
   const ours = args.filter((a) => a.side === "ours");
   const theirs = args.filter((a) => a.side === "opponent");
   // mobile: one card (4px 18px) with the two halves split by a hairline; desktop: two equal-height cards 14px apart
-  const card = "lg:flex-1 lg:rounded-xl lg:border lg:border-border-2 lg:bg-card lg:px-[22px] lg:py-[18px] lg:shadow-card";
+  const card = "lg:flex-1 lg:rounded-xl lg:border lg:border-border-2 lg:bg-card lg:px-5.5 lg:py-4.5 lg:shadow-card";
   const empty = (t: string) => <p className="mt-1.5 text-base leading-[1.7] text-text-4 lg:mt-2">{t}</p>;
   return (
-    <div className={`${CARD} px-[18px] py-1 lg:flex lg:gap-3.5 lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none ${className}`}>
+    <div className={`${CARD} px-4.5 py-1 lg:flex lg:gap-3.5 lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none ${className}`}>
       <section className={`border-b border-[var(--hairline-v2)] pb-3 pt-3.5 lg:border-b-0 ${card}`}>
         <SideLabel tone="good">لنا · طلباتنا</SideLabel>
         <div>
@@ -231,7 +231,7 @@ function HearingCard({ cf, hs, today, caseId, className }: { cf: CaseFile; hs: H
   const h = hs.next ?? hs.undecided;
   if (!h) {
     return (
-      <div className={`${CARD} flex items-center justify-between gap-3 px-[18px] py-4 lg:p-[22px] ${className}`}>
+      <div className={`${CARD} flex items-center justify-between gap-3 px-4.5 py-4 lg:p-5.5 ${className}`}>
         <div>
           <p className="text-md font-bold text-text">مفيش جلسة جاية متسجلة</p>
           <p className="mt-0.5 text-sm text-text-3">لما يتحدد ميعاد، قوله لـ Clausia.</p>
@@ -255,13 +255,13 @@ function HearingCard({ cf, hs, today, caseId, className }: { cf: CaseFile; hs: H
   // the mockup draws no «الجلسات ←» link: the whole card opens the hearings view (an overlay link, so the
   // «سجّله» link inside stays a separate, non-nested target)
   return (
-    <div className={`${CARD} relative px-[18px] py-4 transition-colors hover:bg-card-2/40 lg:p-[22px] ${className}`}>
+    <div className={`${CARD} relative px-4.5 py-4 transition-colors hover:bg-card-2/40 lg:p-5.5 ${className}`}>
       <Link href={`/cases/${caseId}?tab=hearings`} aria-label="الجلسات" className="absolute inset-0 rounded-[inherit]" /* ds-allow: the link overlay takes its card's radius */ />
-      <div className="flex items-center gap-4 lg:gap-[18px]">
+      <div className="flex items-center gap-4 lg:gap-4.5">
         <DayBlock iso={h.date} />
-        <div className="min-w-0 flex-1 border-s border-[var(--hairline-v2)] ps-4 lg:ps-[18px]">
+        <div className="min-w-0 flex-1 border-s border-[var(--hairline-v2)] ps-4 lg:ps-4.5">
           <div className="text-xs text-text-3 lg:text-sm">{when}</div>
-          <div className="mt-[3px] text-md font-bold text-text lg:mt-1">
+          <div className="mt-0.75 text-md font-bold text-text lg:mt-1">
             {weekday} <span className="num font-num lg:hidden">{d}/{m}</span><span className="num font-num hidden lg:inline">{d}/{m}/{y}</span>
             {where ? <span className="lg:hidden"> · {where}</span> : null}
           </div>
@@ -276,7 +276,7 @@ function HearingCard({ cf, hs, today, caseId, className }: { cf: CaseFile; hs: H
         </div>
       </div>
       {needed || decide ? (
-        <div className="mt-[18px] hidden space-y-2 border-t border-[var(--hairline-v2)] pt-3.5 lg:block">
+        <div className="mt-4.5 hidden space-y-2 border-t border-[var(--hairline-v2)] pt-3.5 lg:block">
           {needed ? (
             <div className="flex items-center gap-2 text-base">
               <span aria-hidden className={`size-1.5 shrink-0 rounded-full ${upcoming ? "bg-gold" : "bg-text-4"}`} />
@@ -293,7 +293,7 @@ function HearingCard({ cf, hs, today, caseId, className }: { cf: CaseFile; hs: H
 
 function ListCard({ title, end, children, className = "" }: { title?: string; end?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section className={`${CARD} px-[18px] py-1.5 lg:px-[22px] ${className}`} aria-label={title}>
+    <section className={`${CARD} px-4.5 py-1.5 lg:px-5.5 ${className}`} aria-label={title}>
       {title ? (
         <div className="hidden items-center justify-between pb-1.5 pt-3.5 lg:flex">
           <h2 className="text-base font-bold text-text">{title}</h2>
@@ -372,8 +372,8 @@ export function CaseOverview({ cf, hs, today, caseId }: { cf: CaseFile; hs: Hear
   const facts = cf.facts.length + pendingOf<Fact>(cf, "case_facts").length;
   return (
     <TabScope>
-      <div className="mt-3 flex flex-col gap-3 leading-[1.35] lg:mt-[34px] lg:grid lg:grid-cols-[minmax(0,1.85fr)_minmax(0,1fr)] lg:items-start lg:gap-[18px]">
-        <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-[18px]">
+      <div className="mt-3 flex flex-col gap-3 leading-[1.35] lg:mt-8.5 lg:grid lg:grid-cols-[minmax(0,1.85fr)_minmax(0,1fr)] lg:items-start lg:gap-4.5">
+        <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-4.5">
           <Summary cf={cf} hs={hs} today={today} className="order-2 mt-1.5 lg:order-none lg:mt-0" />
           <ReviewBanner cf={cf} hs={hs} caseId={caseId} className="order-3" />
           <SegBar className="order-4 mt-2.5 lg:hidden" items={[
@@ -384,7 +384,7 @@ export function CaseOverview({ cf, hs, today, caseId }: { cf: CaseFile; hs: Hear
           <Seg k="facts" className="order-5 lg:order-none"><Facts cf={cf} caseId={caseId} /></Seg>
           <Sides cf={cf} caseId={caseId} className="order-6 lg:order-none" />
         </div>
-        <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-[18px]">
+        <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-4.5">
           <HearingCard cf={cf} hs={hs} today={today} caseId={caseId} className="order-1 lg:order-none" />
           <Seg k="parties" className="order-5 lg:order-none"><Parties cf={cf} caseId={caseId} /></Seg>
           <Seg k="docs" className="order-5 lg:order-none"><Docs cf={cf} caseId={caseId} /></Seg>

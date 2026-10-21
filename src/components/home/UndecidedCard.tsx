@@ -41,16 +41,16 @@ export function UndecidedCard({ count, className = "" }: { count: number; classN
   return (
     <Link href={HREF} aria-label={label} className={`${CARD} ${className}`}>
       {/* mobile: number · label + line · pill */}
-      <span className="flex items-center gap-3.5 px-[18px] py-4 md:hidden">
+      <span className="flex items-center gap-3.5 px-4.5 py-4 md:hidden">
         <span className={`${NUM} text-display ${on ? "text-gold" : "text-title"}`}>{two(count)}</span>
         <span className="min-w-0 flex-1">
           <Label on={on} />
-          <span className="mt-[3px] block text-sm leading-4 text-text-3">{line}</span>
+          <span className="mt-0.75 block text-sm leading-4 text-text-3">{line}</span>
         </span>
         {on ? <Pill /> : null}
       </span>
       {/* desktop: label · huge number · line + pill */}
-      <span className="hidden h-full flex-col p-[26px] md:flex">
+      <span className="hidden h-full flex-col p-6.5 md:flex">
         <Label on={on} />
         <span className={`${NUM} flex flex-1 items-center text-display-xl ${on ? "text-gold" : "text-title"}`}>{two(count)}</span>
         <span className="flex min-h-[38px] items-center justify-between gap-3">

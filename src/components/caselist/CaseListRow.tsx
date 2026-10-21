@@ -40,7 +40,7 @@ export interface RowFlags { decision: boolean; review: boolean; againstUs: boole
 function Tag({ tone, children }: { tone: "warn" | "neutral" | "bad"; children: React.ReactNode }) {
   const [dot, text] = { warn: ["bg-gold", "text-gold"], neutral: ["bg-text-3", "text-text-3"], bad: ["bg-bad", "text-bad"] }[tone];
   return (
-    <span className={`inline-flex items-center gap-1 text-xs font-semibold leading-[15px] md:gap-[7px] md:text-sm md:leading-[17px] ${text}`}>
+    <span className={`inline-flex items-center gap-1 text-xs font-semibold leading-[15px] md:gap-1.75 md:text-sm md:leading-[17px] ${text}`}>
       <span aria-hidden className={`size-[5px] shrink-0 rounded-full md:size-1.5 ${dot}`} />{children}
     </span>
   );
@@ -67,13 +67,13 @@ export function CaseListRow({ r, today, flags }: { r: CaseRow; today: string; fl
   return (
     <li className="border-t border-border-2 first:border-t-0 md:first:border-t">
       <Link href={`/cases/${r.id}`}
-        className={`flex min-h-11 items-center gap-3 py-[13px] transition-colors md:px-[30px] md:py-[15px] md:hover:bg-card-2 ${COLS}`}>
+        className={`flex min-h-11 items-center gap-3 py-3.25 transition-colors md:px-7.5 md:py-3.75 md:hover:bg-card-2 ${COLS}`}>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-base font-semibold leading-[19px] text-text md:text-md md:leading-[21px]" title={r.title ?? undefined}>{title}</span>
           {/* desktop: the number only */}
-          <span className="font-num mt-[3px] hidden truncate text-sm leading-4 text-text-4 md:block">{caseNumber(r)}</span>
+          <span className="font-num mt-0.75 hidden truncate text-sm leading-4 text-text-4 md:block">{caseNumber(r)}</span>
           {/* mobile: «number · court · circuit» */}
-          <span className="mt-[3px] block truncate text-xs leading-4 text-text-4 md:hidden">
+          <span className="mt-0.75 block truncate text-xs leading-4 text-text-4 md:hidden">
             <span className="font-num">{caseNumber(r)}</span>{where ? ` · ${where}` : ""}
           </span>
         </span>
@@ -86,7 +86,7 @@ export function CaseListRow({ r, today, flags }: { r: CaseRow; today: string; fl
         {/* mobile: date, marker under it */}
         <span className="flex shrink-0 flex-col items-end text-left md:hidden">
           <span className={`font-num text-sm leading-4 ${nextCls}`}>{nextText}</span>
-          {marker ? <span className="mt-[3px] flex">{marker}</span> : null}
+          {marker ? <span className="mt-0.75 flex">{marker}</span> : null}
         </span>
       </Link>
     </li>
@@ -95,7 +95,7 @@ export function CaseListRow({ r, today, flags }: { r: CaseRow; today: string; fl
 
 export function CaseListHeader() {
   return (
-    <div className={`hidden px-[30px] pb-3 pt-4 text-sm leading-4 font-medium text-text-4 ${COLS}`}>
+    <div className={`hidden px-7.5 pb-3 pt-4 text-sm leading-4 font-medium text-text-4 ${COLS}`}>
       <span>القضية</span><span>المحكمة</span><span>الجلسة الجاية</span><span className="sr-only">الحالة</span>
     </div>
   );

@@ -206,13 +206,13 @@ export function RollDay({ today, from, to, rows, pill, side }: Props) {
   const weekLink = (
     <a href={href({ date, view: view === "week" ? "day" : "week" })} onClick={select({ date, view: view === "week" ? "day" : "week" })}
       aria-current={view === "week" ? "page" : undefined} title={view === "week" ? "رجوع ليوم واحد" : "الأسبوع كله"}
-      className={cx("hidden h-11 items-center rounded-full text-sm transition sm:inline-flex", view === "week" ? "bg-selected px-4 text-on-selected" : "-mb-[8px] text-text-3 hover:text-text")}>
+      className={cx("hidden h-11 items-center rounded-full text-sm transition sm:inline-flex", view === "week" ? "bg-selected px-4 text-on-selected" : "-mb-2 text-text-3 hover:text-text")}>
       <span className={cx("font-num me-1 font-semibold", view === "week" ? "text-on-selected" : "text-title")}>{weekLoaded ? two(weekRows.length) : "–"}</span> جلسات الأسبوع
     </a>
   );
   const todayLink = isCurrent ? null : (
     <a href={href({ date: today, view: "day" })} onClick={select({ date: today, view: "day" })}
-      className="-mb-[8px] hidden h-11 items-center text-sm font-semibold text-text hover:underline sm:inline-flex">النهارده</a>
+      className="-mb-2 hidden h-11 items-center text-sm font-semibold text-text hover:underline sm:inline-flex">النهارده</a>
   );
   const eyebrow = view === "week"
     ? <>أسبوع {arDayMonth(wk)} – {arDayMonth(addDaysIso(wk, 6))}</>
@@ -228,7 +228,7 @@ export function RollDay({ today, from, to, rows, pill, side }: Props) {
       <RollStrip key={center} center={center} selected={view === "day" ? date : null} focusDay={view === "day" ? date : wk}
         today={today} counts={counts} pinned={pinned} onSelect={onSelect} onWeekStep={view === "week" ? onWeekStep : undefined} onVisible={onVisible} />
 
-      <div className="mt-6 grid grid-cols-[minmax(0,1fr)] items-start gap-7 leading-[normal] sm:mt-[30px] lg:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)]">
+      <div className="mt-6 grid grid-cols-[minmax(0,1fr)] items-start gap-7 leading-[normal] sm:mt-7.5 lg:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)]">
         {/* both layers sit in one grid cell while the old one fades out */}
         <div className="grid min-w-0 grid-cols-[minmax(0,1fr)]" data-roll-content>
           {leaving ? (

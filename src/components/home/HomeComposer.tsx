@@ -91,7 +91,7 @@ export function HomeComposer() {
         {CHIPS.map((c) => (
           <button key={c.label} type="button" disabled={pending}
             onClick={() => ("attach" in c ? fileRef.current?.click() : fill(c.text))}
-            className="tap glass glass-icon inline-flex h-9 shrink-0 items-center gap-[7px] rounded-full px-3.5 text-sm font-medium transition hover:text-text sm:h-[38px] sm:gap-2 sm:px-4">
+            className="tap glass glass-icon inline-flex h-9 shrink-0 items-center gap-1.75 rounded-full px-3.5 text-sm font-medium transition hover:text-text sm:h-[38px] sm:gap-2 sm:px-4">
             <c.Icon strokeWidth={1.8} aria-hidden className="size-3.5 sm:size-[15px]" />
             {"short" in c ? <><span className="sm:hidden">{c.short}</span><span className="hidden sm:inline">{c.label}</span></> : c.label}
           </button>
@@ -154,7 +154,7 @@ function Dock({ children }: { children: React.ReactNode }) {
   return (
     <>
       <div aria-hidden style={{ height: h }} className="shrink-0" />
-      <div ref={box} className="fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(18px+env(safe-area-inset-bottom))] pt-10 [background:var(--fade)] sm:px-6 sm:pb-6 sm:pt-[60px]">
+      <div ref={box} className="fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(18px+env(safe-area-inset-bottom))] pt-10 [background:var(--fade)] sm:px-6 sm:pb-6 sm:pt-15" /* ds-allow: safe-area inset needs calc() */>
         <div className="mx-auto w-full max-w-[780px]">{children}</div>
       </div>
     </>

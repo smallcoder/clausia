@@ -22,7 +22,7 @@ export async function FactsTab({ caseId }: { caseId: string }) {
         const dated = f.fact_date && f.date_precision !== "unknown";
         return (
           <li key={f.id} className="relative">
-            <span className={cx("absolute -start-[1.6rem] top-1.5 size-2.5 rounded-full border-2 border-paper", suggested ? "bg-suggest" : "bg-accent")} />
+            <span className={cx("absolute -start-[1.6rem] top-1.5 size-2.5 rounded-full border-2 border-paper", suggested ? "bg-suggest" : "bg-accent")} /* ds-allow: the dot sits on the rail 1.6rem out (25.6px, no 0.25 step) */ />
             <div className="flex flex-wrap items-baseline gap-x-2">
               <span className={cx("font-semibold", dated ? "num text-ink" : "text-ink-3")}>{dated ? formatDmy(f.fact_date, f.date_precision) : "تاريخ غير محدد"}</span>
               {f.date_text && f.date_text !== formatDmy(f.fact_date, f.date_precision) ? <span className="text-base leading-[1.55] text-ink-3">«{f.date_text}»</span> : null}

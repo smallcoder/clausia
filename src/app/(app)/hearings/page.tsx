@@ -27,7 +27,7 @@ function SideCard({ count, rows }: { count: number; rows: HearingWithCase[] }) {
         <span className="font-num text-2xl font-extralight leading-none text-gold">{two(count)}</span>
         <span>
           <span className="flex items-center gap-1.5 text-base font-bold text-gold"><span aria-hidden className="size-1.5 rounded-full bg-gold" />محتاجة قرار</span>
-          <span className="mt-[3px] block text-sm text-text-3">جلسات فاتت ولسه قرارها متسجّلش</span>
+          <span className="mt-0.75 block text-sm text-text-3">جلسات فاتت ولسه قرارها متسجّلش</span>
         </span>
       </Link>
       <ul>
@@ -35,7 +35,7 @@ function SideCard({ count, rows }: { count: number; rows: HearingWithCase[] }) {
           <li key={h.id} className="flex items-center gap-3 border-t border-[var(--hairline-v2)] py-3.5">
             <div className="min-w-0 flex-1">
               <div className="truncate text-base font-semibold text-text">{hearingTitle(h)}</div>
-              <div className="mt-[3px] truncate text-sm text-text-3">{courtOf(h)} · <span className="num font-num">{shortDm(h.hearing_date)}</span></div>
+              <div className="mt-0.75 truncate text-sm text-text-3">{courtOf(h)} · <span className="num font-num">{shortDm(h.hearing_date)}</span></div>
             </div>
             <OpenHearing h={h} label={`سجّل قرار جلسة ${hearingTitle(h)} يوم ${formatDmy(h.hearing_date)}`}
               className="bg-primary-fill tap inline-flex h-8 shrink-0 items-center rounded-full px-3.5 text-sm font-semibold transition hover:opacity-90">

@@ -26,7 +26,7 @@ export function casesHref(sp: ListParams, patch: Partial<ListParams>) {
 function Capsule({ on, to, children }: { on: boolean; to: string; children: React.ReactNode }) {
   return (
     <Link href={to} aria-current={on ? "true" : undefined} className="tap group inline-flex shrink-0 items-center">
-      <span className={`inline-flex h-8 items-center whitespace-nowrap rounded-full px-[13px] text-sm transition sm:h-[34px] sm:px-[15px] ${on ? "bg-selected font-semibold text-on-selected shadow-[var(--tab-shadow)]" : "font-medium text-[var(--glass-icon)] group-hover:text-text"}`}>
+      <span className={`inline-flex h-8 items-center whitespace-nowrap rounded-full px-3.25 text-sm transition sm:h-[34px] sm:px-3.75 ${on ? "bg-selected font-semibold text-on-selected shadow-[var(--tab-shadow)]" : "font-medium text-[var(--glass-icon)] group-hover:text-text"}`}>
         {/* one inline run, so the spaces around «·» survive (bare flex items trim them) */}
         <span>{children}</span>
       </span>
@@ -46,7 +46,7 @@ export function FilterChips({ sp, counts }: { sp: ListParams; counts: Counts }) 
   return (
     // py-1.5 keeps the capsules' 44px tap areas inside the scroll box (it would clip them). Phones: 16px + 6px puts
     // the visible capsule where it was drawn; desktop: 28px + 6px = the mockup's 34px, and -mb gives the 6px back.
-    <nav aria-label="تصفية القضايا" className="no-scrollbar mt-4 flex items-center gap-0.5 overflow-x-auto py-1.5 sm:-mb-1.5 sm:mt-[28px] sm:gap-1 sm:px-1">
+    <nav aria-label="تصفية القضايا" className="no-scrollbar mt-4 flex items-center gap-0.5 overflow-x-auto py-1.5 sm:-mb-1.5 sm:mt-7 sm:gap-1 sm:px-1">
       {/* owner decision: the active filter's clear pill comes first (at the right), so it is never scrolled out of view */}
       {sp.decision ? <ClearPill label="محتاجة قرار" to={casesHref(sp, { decision: undefined })} /> : null}
       {sp.review ? <ClearPill label="محتاجة مراجعة" to={casesHref(sp, { review: undefined })} /> : null}

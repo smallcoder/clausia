@@ -13,7 +13,7 @@ function Row({ h }: { h: HearingWithCase }) {
   const place = placeLine(h);
   const need = h.purpose?.trim() || null;
   return (
-    <Link href={`/cases/${h.case_id}`} className="group flex items-center gap-3.5 border-t border-[var(--hairline-v2)] py-3 md:gap-[18px] md:py-4">
+    <Link href={`/cases/${h.case_id}`} className="group flex items-center gap-3.5 border-t border-[var(--hairline-v2)] py-3 md:gap-4.5 md:py-4">
       <span title={h.case.circuit ?? undefined}
         className="font-num w-[22px] shrink-0 text-center text-lg font-light text-gold md:w-[30px] md:text-xl">
         {circuitNo(h.case.circuit)}
@@ -21,7 +21,7 @@ function Row({ h }: { h: HearingWithCase }) {
       <span className="min-w-0 flex-1">
         <span className="block truncate text-base font-semibold leading-[18px] text-text group-hover:underline md:text-md md:leading-[21px]">{rowTitle(h)}</span>
         {/* desktop: where it is; mobile: what's needed (or where, when nothing is noted) */}
-        <span className="mt-[3px] hidden truncate text-sm leading-[17px] text-text-3 md:block">{place}</span>
+        <span className="mt-0.75 hidden truncate text-sm leading-[17px] text-text-3 md:block">{place}</span>
         <span className="mt-0.5 block truncate text-xs leading-4 text-text-3 md:hidden">{need ?? place}</span>
       </span>
       {need ? <span className="hidden max-w-[34%] shrink-0 truncate text-sm leading-[17px] text-text-3 md:block">{need}</span> : null}
@@ -42,7 +42,7 @@ export function TodayCard({ todays, tomorrows, tomorrow, nextDate, className = "
   const title = showTomorrow ? `جلسات بكره · ${formatLongDay(tomorrow)}` : "جلسات النهارده";
   return (
     <section aria-label={showTomorrow ? "جلسات بكره" : "جلسات النهارده"}
-      className={`min-w-0 rounded-xl border border-border-2 bg-card px-[18px] py-1 shadow-card md:px-[26px] md:py-2 ${className}`}>
+      className={`min-w-0 rounded-xl border border-border-2 bg-card px-4.5 py-1 shadow-card md:px-6.5 md:py-2 ${className}`}>
       <h2 className="pb-1 pt-3 text-xs font-normal leading-4 text-text-4 md:pb-1.5 md:font-medium md:pt-4 md:text-sm">{title}</h2>
       {list.length ? (
         <div>

@@ -28,7 +28,7 @@ export function CaseMenu({ caseId, chatHref, align, className }: { caseId: strin
         <Ellipsis size={20} strokeWidth={2} aria-hidden />
       </button>
       {open ? (
-        <div role="menu" aria-label="القضية" className={`glass absolute top-[calc(100%+8px)] z-50 w-56 rounded-lg p-1.5 ${align === "end" ? "end-0" : "start-0"}`}>
+        <div role="menu" aria-label="القضية" className={`glass absolute top-[calc(100%+8px)] z-50 w-56 rounded-lg p-1.5 ${align === "end" ? "end-0" : "start-0"}`} /* ds-allow: 8px under the button needs calc() */>
           <Link role="menuitem" href={`/cases/${caseId}?tab=details`} onClick={close} className={item}>بيانات الدعوى</Link>
           <Link role="menuitem" href={`/cases/${caseId}?tab=hearings`} onClick={close} className={item}>الجلسات</Link>
           <Link role="menuitem" href={chatHref} onClick={close} className={item}>محادثة القضية</Link>

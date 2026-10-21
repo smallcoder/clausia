@@ -230,7 +230,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
   }
 
   /** quiet outline pill (the mockup's «عدّل»); per-row secondary actions use it too */
-  const btn2 = "inline-flex h-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-border-2 px-[18px] text-base font-medium glass-icon transition hover:text-text disabled:opacity-50";
+  const btn2 = "inline-flex h-11 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-border-2 px-4.5 text-base font-medium glass-icon transition hover:text-text disabled:opacity-50";
   /** text-only actions on the card's second footer line (save as suggestions, reject all) */
   const quiet = "inline-flex min-h-11 items-center rounded-full px-3 text-sm text-text-3 transition hover:text-text disabled:opacity-50";
 
@@ -241,7 +241,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
         ? "flex max-h-[88dvh] flex-col rounded-t-xl border-t border-border-2 shadow-pop"
         : "overflow-hidden rounded-xl border border-border-2 shadow-card")}>
         {inSheet ? <div aria-hidden className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-card-3" /> : null}
-        <div className="flex shrink-0 items-center gap-3 border-b border-[var(--hairline-v2)] px-4 py-4 sm:px-[22px]">
+        <div className="flex shrink-0 items-center gap-3 border-b border-[var(--hairline-v2)] px-4 py-4 sm:px-5.5">
           <span className="mark inline-flex size-9 shrink-0 items-center justify-center rounded-md">
             <FolderClosed aria-hidden size={18} strokeWidth={2} />
           </span>
@@ -279,14 +279,14 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
             return (
               <li key={o.op_id} className={cx("not-first:border-t not-first:border-[var(--hairline-v2)]", o.status === "rejected" && "opacity-55", limit && i >= MOBILE_ROWS && "lg:block hidden")}>
                 {/* kind · value (+ fact quote) · source · check — the mockup's hairline row */}
-                <div className="flex items-start gap-3.5 px-4 py-[13px] sm:px-[22px]">
+                <div className="flex items-start gap-3.5 px-4 py-3.25 sm:px-5.5">
                   <span className="w-[58px] shrink-0 pt-0.5 text-xs leading-[normal] text-text-4 sm:w-[72px]">{kindOf(o)}</span>
                   <button type="button" onClick={() => toggle(o.op_id)} aria-expanded={isOpen} title={isOpen ? "اقفل التفاصيل" : "اعرض التفاصيل"} className="min-w-0 flex-1 text-start">
                     <span className={cx("block text-base font-semibold leading-[1.5] text-text", !isOpen && "line-clamp-2")}>
                       {summaryOf({ ...o, args: merged }) || OP_TITLE[o.tool]}
                     </span>
-                    {factQuote && !isOpen ? <span className="text-doc mt-[3px] line-clamp-2 text-sm leading-[1.8]! text-text-3">«{factQuote}»</span> : null}
-                    <span className="mt-[3px] flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                    {factQuote && !isOpen ? <span className="text-doc mt-0.75 line-clamp-2 text-sm leading-[1.8]! text-text-3">«{factQuote}»</span> : null}
+                    <span className="mt-0.75 flex flex-wrap items-center gap-x-2.5 gap-y-1">
                       <span className="text-xs leading-[normal] text-text-4">{sourceShort(o)}</span>
                       {tags}
                     </span>
@@ -308,7 +308,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
                 </div>
 
                 {isOpen ? (
-                  <div className="space-y-3 px-4 pb-4 sm:pe-[22px] sm:ps-[108px]">
+                  <div className="space-y-3 px-4 pb-4 sm:pe-5.5 sm:ps-27">
                     {isEditing ? (
                       <EditFields op={o} values={merged} onChange={(k, v) => setEdits((e) => ({ ...e, [o.op_id]: { ...(e[o.op_id] ?? {}), [k]: v } }))} display={display} />
                     ) : (
@@ -337,7 +337,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
                     {live ? (
                       <div className="flex flex-wrap items-center gap-2">
                         <button type="button" disabled={pending || !!lone} title={lone ?? undefined} onClick={() => decide("confirm", [o.op_id])}
-                          className="bg-primary-fill inline-flex h-11 items-center gap-1.5 rounded-full px-[18px] text-base font-bold transition disabled:opacity-50">
+                          className="bg-primary-fill inline-flex h-11 items-center gap-1.5 rounded-full px-4.5 text-base font-bold transition disabled:opacity-50">
                           <Check aria-hidden size={15} strokeWidth={2.6} />احفظ ده
                         </button>
                         <button type="button" disabled={pending} onClick={() => setEditing(isEditing ? null : o.op_id)} className={btn2}>
@@ -366,10 +366,10 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
           ) : null}
         </ul>
 
-        {error ? <p className="mx-4 mt-3 shrink-0 rounded-md bg-bad-bg px-3 py-2 text-base text-bad sm:mx-[22px]">{error}</p> : null}
+        {error ? <p className="mx-4 mt-3 shrink-0 rounded-md bg-bad-bg px-3 py-2 text-base text-bad sm:mx-5.5">{error}</p> : null}
 
-        <div className={cx("shrink-0 border-t border-[var(--hairline-v2)] px-4 pt-3.5 sm:px-[22px]", openOps.length && more ? "pb-2" : "pb-4",
-          inSheet && (openOps.length && more ? "pb-[calc(0.5rem+env(safe-area-inset-bottom))]" : "pb-[calc(1rem+env(safe-area-inset-bottom))]"))}>
+        <div className={cx("shrink-0 border-t border-[var(--hairline-v2)] px-4 pt-3.5 sm:px-5.5", openOps.length && more ? "pb-2" : "pb-4",
+          inSheet && (openOps.length && more ? "pb-[calc(0.5rem+env(safe-area-inset-bottom))]" : "pb-[calc(1rem+env(safe-area-inset-bottom))]")) /* ds-allow: safe-area inset needs calc() */}>
           {openOps.length ? (
             <>
               <div className="flex gap-2">

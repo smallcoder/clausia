@@ -20,7 +20,7 @@ export function ChatDock({ children }: { children: ReactNode }) {
     <>
       <div aria-hidden style={{ height: h }} className="shrink-0" />
       <div ref={box}
-        className="fixed inset-x-0 bottom-0 z-30 flex justify-center bg-[linear-gradient(to_top,color-mix(in_srgb,var(--bg)_92%,transparent)_45%,transparent)] px-3 pb-[calc(18px+env(safe-area-inset-bottom))] pt-10 sm:px-10 sm:pb-6">
+        className="fixed inset-x-0 bottom-0 z-30 flex justify-center bg-[linear-gradient(to_top,color-mix(in_srgb,var(--bg)_92%,transparent)_45%,transparent)] px-3 pb-[calc(18px+env(safe-area-inset-bottom))] pt-10 sm:px-10 sm:pb-6" /* ds-allow: safe-area inset needs calc() */>
         <div className="w-full max-w-[380px] sm:max-w-[780px]">{children}</div>
       </div>
     </>

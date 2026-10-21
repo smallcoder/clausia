@@ -69,7 +69,7 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
       ) : null}
 
       {sorted.length ? (
-        <section aria-label="القضايا" className="mt-1 overflow-hidden rounded-xl border border-border-2 bg-card px-[18px] shadow-card sm:mt-3.5 md:px-0">
+        <section aria-label="القضايا" className="mt-1 overflow-hidden rounded-xl border border-border-2 bg-card px-4.5 shadow-card sm:mt-3.5 md:px-0">
           <CaseListHeader />
           <ul>
             {sorted.map((r) => (

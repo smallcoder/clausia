@@ -125,13 +125,13 @@ export function ChatThread({ threadId, caseId, items, lookup, docs = {} }: {
         </ClausiaLine>
       ) : null}
 
-      <ol className="flex flex-col gap-[18px] sm:gap-[22px]">
+      <ol className="flex flex-col gap-4.5 sm:gap-5.5">
         {shown.map((m) => (
-          <li key={m.id} className="flex flex-col gap-[18px] sm:gap-[22px]">
+          <li key={m.id} className="flex flex-col gap-4.5 sm:gap-5.5">
             {m.role === "user" ? (
               <>
                 {m.attachments.length && AUTO_ATTACH.test(m.content) ? null : (
-                  <div className="max-w-[88%] self-end whitespace-pre-wrap break-words rounded-lg rounded-bl-sm border border-border-2 bg-card px-[17px] py-[13px] text-md leading-[1.75] text-text dark:bg-card-2 sm:max-w-[72%]">
+                  <div className="max-w-[88%] self-end whitespace-pre-wrap break-words rounded-lg rounded-bl-sm border border-border-2 bg-card px-4.25 py-3.25 text-md leading-[1.75] text-text dark:bg-card-2 sm:max-w-[72%]">
                     {m.content}
                   </div>
                 )}
@@ -194,7 +194,7 @@ function quickAnswers(text: string): { label: string; text: string }[] {
 }
 
 /** quick answers and starters: glass chips (floating controls), 36px tall (44px hit area) */
-const CHIP = "tap glass inline-flex min-h-9 shrink-0 items-center rounded-full px-[15px] py-1 text-sm font-medium glass-icon transition hover:text-text";
+const CHIP = "tap glass inline-flex min-h-9 shrink-0 items-center rounded-full px-3.75 py-1 text-sm font-medium glass-icon transition hover:text-text";
 
 /**
  * Clausia's turn: the «C» mark and its text (cards go under the text). Desktop: the mark beside the text.
@@ -216,7 +216,7 @@ function ClausiaLine({ children }: { children: ReactNode }) {
         <span aria-hidden className="mark font-num inline-flex size-6 shrink-0 items-center justify-center rounded-sm text-xs font-extrabold sm:size-7 sm:text-sm">C</span>
         <span className="text-sm font-bold leading-[normal] text-title sm:hidden">Clausia</span>
       </div>
-      <div className="min-w-0 flex-1 text-md leading-[1.8] text-text sm:pt-[3px]">{children}</div>
+      <div className="min-w-0 flex-1 text-md leading-[1.8] text-text sm:pt-0.75">{children}</div>
     </div>
   );
 }

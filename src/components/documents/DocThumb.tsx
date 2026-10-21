@@ -6,9 +6,9 @@ import { cx } from "@/components/ui";
 
 export function DocThumb({ note, className }: { note?: string | null; className?: string }) {
   return (
-    <span className={cx("flex aspect-[3/4] flex-col gap-1 rounded-md border border-border bg-paper-thumb px-[7px] py-[9px] shadow-soft transition group-hover:-translate-y-0.5 dark:border-transparent", className)}>
+    <span className={cx("flex aspect-[3/4] flex-col gap-1 rounded-md border border-border bg-paper-thumb px-1.75 py-2.25 shadow-soft transition group-hover:-translate-y-0.5 dark:border-transparent", className)}>
       <span className="h-[3px] w-[55%] rounded-full bg-ink-solid/25" />
-      <span className="mt-[3px] h-0.5 w-full rounded-full bg-ink-solid/10" />
+      <span className="mt-0.75 h-0.5 w-full rounded-full bg-ink-solid/10" />
       <span className="h-0.5 w-[88%] rounded-full bg-ink-solid/10" />
       <span className="h-0.5 w-[94%] rounded-full bg-ink-solid/10" />
       {note ? <span className="mt-auto text-center text-xs font-semibold text-ink-solid/55">{note}</span> : null}

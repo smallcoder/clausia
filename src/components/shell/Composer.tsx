@@ -135,7 +135,7 @@ export function Composer({ target, placeholder = "اكتب لـ Clausia… ما 
         <>
           {error || status || reading ? <div className="mb-2 px-3 text-sm leading-4 text-text-4" aria-live="polite">{error ? <span className="text-bad">{error}</span> : reading ? progress : status}</div> : null}
           {/* one-row pill (Roll / Case / Cases mockups): [+] [input] [send], sizes as drawn */}
-          <div className="glass flex items-center gap-1.5 rounded-xl p-1.5 sm:gap-2 sm:p-[7px]">
+          <div className="glass flex items-center gap-1.5 rounded-xl p-1.5 sm:gap-2 sm:p-1.75">
             <button type="button" aria-label="إرفاق ورقة" title="إرفاق ورقة" onClick={() => fileRef.current?.click()} disabled={pending}
               className="tap glass-icon inline-flex size-[38px] shrink-0 items-center justify-center rounded-full border border-border transition hover:text-text disabled:opacity-40 sm:size-10"><Plus size={18} strokeWidth={1.9} /></button>
             <textarea
@@ -147,7 +147,7 @@ export function Composer({ target, placeholder = "اكتب لـ Clausia… ما 
               placeholder={short && placeholderShort ? placeholderShort : placeholder}
               aria-label="رسالة إلى Clausia"
               onKeyDown={onKey}
-              className="block h-[38px] min-w-0 flex-1 resize-none bg-transparent px-1 py-[8px] [&:placeholder-shown]:overflow-hidden [&:placeholder-shown]:text-ellipsis [&:placeholder-shown]:whitespace-nowrap text-base leading-[22px] sm:h-10 sm:py-[9px] sm:text-md text-text placeholder:text-text-4 focus:outline-none"
+              className="block h-[38px] min-w-0 flex-1 resize-none bg-transparent px-1 py-2 [&:placeholder-shown]:overflow-hidden [&:placeholder-shown]:text-ellipsis [&:placeholder-shown]:whitespace-nowrap text-base leading-[22px] sm:h-10 sm:py-2.25 sm:text-md text-text placeholder:text-text-4 focus:outline-none"
             />
             <SendBtn onClick={send} disabled={pending || !text.trim()} />
           </div>
@@ -177,7 +177,7 @@ export function FixedDock({ children, width = 780 }: { children: React.ReactNode
   return (
     <>
       <div aria-hidden style={{ height: h }} className="shrink-0" />
-      <div ref={box} className="bg-fade fixed inset-x-0 bottom-0 z-30 px-3.5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-10 sm:px-10 sm:pb-[30px] sm:pt-[60px]">
+      <div ref={box} className="bg-fade fixed inset-x-0 bottom-0 z-30 px-3.5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-10 sm:px-10 sm:pb-7.5 sm:pt-15" /* ds-allow: safe-area inset needs calc() */>
         <div className="mx-auto w-full" style={{ maxWidth: width }}>{children}</div>
       </div>
     </>

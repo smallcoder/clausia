@@ -48,7 +48,7 @@ function ComposerShell({ width, tall = false }: { width: number; tall?: boolean 
     return (
       <>
         <div aria-hidden className="h-44 shrink-0" />
-        <div className="bg-fade pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(18px+env(safe-area-inset-bottom))] pt-10 sm:px-6 sm:pb-6 sm:pt-[60px]">
+        <div className="bg-fade pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(18px+env(safe-area-inset-bottom))] pt-10 sm:px-6 sm:pb-6 sm:pt-15" /* ds-allow: safe-area inset needs calc() */>
           <div className="glass mx-auto flex h-[116px] flex-col justify-between rounded-xl p-3.5 sm:h-[136px] sm:p-4" style={{ maxWidth: width }}>
             <Bar w="55%" h={12} />
             <div className="flex items-center justify-between"><span className="size-[38px] rounded-full border border-border sm:size-10" /><span className="size-[38px] rounded-full bg-primary-fill opacity-30 sm:size-10" /></div>
@@ -59,8 +59,8 @@ function ComposerShell({ width, tall = false }: { width: number; tall?: boolean 
   return (
     <>
       <div aria-hidden className="h-28 shrink-0" />
-      <div className="bg-fade pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3.5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-10 sm:px-10 sm:pb-[30px] sm:pt-[60px]">
-        <div className="glass mx-auto flex h-[52px] items-center gap-2 rounded-xl p-1.5 sm:h-[56px] sm:p-[7px]" style={{ maxWidth: width }}>
+      <div className="bg-fade pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3.5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-10 sm:px-10 sm:pb-7.5 sm:pt-15" /* ds-allow: safe-area inset needs calc() */>
+        <div className="glass mx-auto flex h-[52px] items-center gap-2 rounded-xl p-1.5 sm:h-[56px] sm:p-1.75" style={{ maxWidth: width }}>
           <span className="size-[38px] rounded-full border border-border sm:size-10" />
           <Bar w="45%" h={12} />
           <span className="ms-auto size-[38px] rounded-full bg-primary-fill opacity-30 sm:size-10" />
@@ -77,7 +77,7 @@ export function PageSkeleton({ kind }: { kind: Kind }) {
       className={`skel-shimmer mx-auto flex w-full flex-1 flex-col px-4 sm:px-10 ${kind === "chat" ? "sm:max-w-[820px] sm:px-6" : narrow ? "max-w-[960px] sm:px-6" : "max-w-[1360px]"}`}>
       {kind === "home" ? (
         <>
-          <div className="space-y-3 pt-4 sm:pt-[52px]"><Bar w="110px" h={11} /><Bar w="min(380px, 80vw)" h={40} className="rounded-md" /></div>
+          <div className="space-y-3 pt-4 sm:pt-13"><Bar w="110px" h={11} /><Bar w="min(380px, 80vw)" h={40} className="rounded-md" /></div>
           <div className="mt-6 flex gap-3"><Bar w="30px" h={30} className="rounded-sm" /><div className="flex-1 space-y-2"><Bar w="80%" h={14} /><Bar w="55%" h={14} /></div></div>
           <div className="mt-8 grid gap-4 sm:grid-cols-[1fr_minmax(0,0.55fr)]"><Card className="order-2 sm:order-none"><Rows n={3} /></Card><Card className="order-1 sm:order-none"><Bar w="90px" h={11} /><Bar w="110px" h={72} className="mt-6 rounded-md" /><Bar w="60%" h={10} className="mt-6" /></Card></div>
         </>
@@ -117,7 +117,7 @@ export function PageSkeleton({ kind }: { kind: Kind }) {
         <>
           <Header stats={1} />
           {/* the month label line, then the day strip: 7 tiles a week (a full-width row on mobile; the card with its two round buttons on desktop) */}
-          <div className="mt-[18px] flex h-7 items-center px-1 sm:mt-[26px] sm:px-2"><Bar w="74px" h={11} /></div>
+          <div className="mt-4.5 flex h-7 items-center px-1 sm:mt-6.5 sm:px-2"><Bar w="74px" h={11} /></div>
           <div className="relative mt-2 grid grid-cols-7 sm:gap-1.5 sm:rounded-xl sm:border sm:border-border-2 sm:bg-card sm:px-12 sm:py-1.5 sm:shadow-card">
             <span aria-hidden className="absolute start-1.5 top-1/2 hidden size-9 -translate-y-1/2 rounded-full border border-border sm:block" />
             {Array.from({ length: 7 }, (_, i) => <div key={i} className="flex flex-col items-center gap-2 py-3"><Bar w="32px" h={10} /><Bar w="30px" h={24} className="rounded-xl" /><Bar w="14px" h={5} /></div>)}
