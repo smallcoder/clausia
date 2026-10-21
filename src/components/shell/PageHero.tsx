@@ -1,8 +1,7 @@
 /**
- * Inner-page hero header (Roll, Case, Chat, Cases) — docs/design/DESIGN.md:
- * back button, icon tile, eyebrow, big title, subtitle line, 3 stat tiles (the action tile highlighted).
- * Dark: solid ink section with an accent edge. Light: white card, gray tiles, highlighted tile in ink with accent text.
- * Stat values must come from real queries.
+ * v2 page header (docs/design/DESIGN.md): no hero card. Eyebrow, a large title on the page, and large light
+ * stat numbers. A stat that needs action is gold only when its count is above 0. Values come from real queries.
+ * (Kept the v1 name `PageHero` so call sites stay stable; `icon` is accepted and ignored in v2.)
  */
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
@@ -11,7 +10,7 @@ import type { ReactNode } from "react";
 export interface HeroStat {
   value: number | string;
   label: string;
-  /** the item that needs action (one per hero) */
+  /** the item that needs action: gold when its count > 0 */
   highlight?: boolean;
   href?: string;
 }
@@ -19,38 +18,43 @@ export interface HeroStat {
 /** 3 → «03», like the mockups */
 export const two = (n: number) => (n >= 0 && n < 10 ? `0${n}` : String(n));
 
-function BackBtn({ href }: { href: string }) {
+const isZero = (v: number | string) => v === 0 || v === "0" || v === "00";
+
+export function StatTile({ s }: { s: HeroStat }) {
+  const gold = s.highlight && !isZero(s.value);
+  const body = (
+    <>
+      <div className={`stat-num text-[40px] sm:text-[44px] ${gold ? "text-gold" : "text-title"}`}>{typeof s.value === "number" ? two(s.value) : s.value}</div>
+      <div className={`mt-2 flex items-center gap-1.5 text-[12px] ${gold ? "font-semibold text-gold" : "text-text-3"}`}>
+        {gold ? <span aria-hidden className="size-1.5 rounded-full bg-gold" /> : null}{s.label}
+      </div>
+    </>
+  );
+  const cls = "block min-w-[88px] px-5 first:ps-0 sm:px-7";
+  return s.href ? <Link href={s.href} className={`${cls} transition hover:opacity-80`}>{body}</Link> : <div className={cls}>{body}</div>;
+}
+
+export function StatRow({ stats, className = "" }: { stats: HeroStat[]; className?: string }) {
   return (
-    <Link href={href} aria-label="رجوع" className="inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-card-2 text-text">
-      <ChevronRight size={20} strokeWidth={2.2} aria-hidden />
+    <div className={`flex items-end divide-x divide-x-reverse divide-[var(--hairline-v2)] ${className}`}>
+      {stats.map((s) => <StatTile key={s.label} s={s} />)}
+    </div>
+  );
+}
+
+export function BackBtn({ href }: { href: string }) {
+  return (
+    <Link href={href} aria-label="رجوع" className="glass glass-icon inline-flex size-11 shrink-0 items-center justify-center rounded-full">
+      <ChevronRight size={20} strokeWidth={2} aria-hidden />
     </Link>
   );
 }
 
-export function StatTile({ s: raw }: { s: HeroStat }) {
-  // an action tile with nothing to act on is a normal tile
-  const s = raw.highlight && (raw.value === 0 || raw.value === "0" || raw.value === "00") ? { ...raw, highlight: false } : raw;
-  const body = (
-    <>
-      <div className="font-num text-[28px] font-extrabold leading-none">{typeof s.value === "number" ? two(s.value) : s.value}</div>
-      <div className={`mt-1 text-[11px] ${s.highlight ? "font-semibold" : "text-text-3"}`}>{s.label}</div>
-    </>
-  );
-  const cls = s.highlight
-    ? "bg-tile-hi shadow-[var(--tile-hi-shadow)]"
-    : "border border-[var(--tile-border)] bg-[var(--tile)] text-text";
-  return s.href ? (
-    <Link href={s.href} className={`block rounded-2xl px-3.5 py-3 transition hover:brightness-105 ${cls}`}>{body}</Link>
-  ) : (
-    <div className={`rounded-2xl px-3.5 py-3 ${cls}`}>{body}</div>
-  );
-}
-
-export function PageHero({ back, action, icon, eyebrow, title, subtitle, stats, className = "" }: {
+export function PageHero({ back, action, eyebrow, title, subtitle, stats, className = "" }: {
   back?: string;
-  /** small button at the far end (e.g. the mobile «…» or filter); on mobile it shares the top row with back */
+  /** small round control next to the title (e.g. a filter); v2 shows it on all widths */
   action?: ReactNode;
-  icon: ReactNode;
+  icon?: ReactNode;
   eyebrow?: ReactNode;
   title: ReactNode;
   subtitle?: ReactNode;
@@ -58,59 +62,57 @@ export function PageHero({ back, action, icon, eyebrow, title, subtitle, stats, 
   className?: string;
 }) {
   return (
-    <section className={`flex flex-wrap items-center gap-4 rounded-[24px] border border-[var(--hero-border)] bg-hero px-4 py-4 shadow-[var(--hero-shadow)] sm:gap-6 sm:rounded-[28px] sm:px-6 sm:py-[22px] ${className}`}>
-      {back || action ? (
-        <div className="flex w-full items-center justify-between sm:hidden">
-          {back ? <BackBtn href={back} /> : <span />}
+    <header className={`flex flex-wrap items-end justify-between gap-x-10 gap-y-6 pt-4 sm:pt-8 ${className}`}>
+      <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+        {back ? <BackBtn href={back} /> : null}
+        <div className="min-w-0">
+          {eyebrow ? <div className="text-[12px] font-semibold text-text-3 sm:text-[13px]">{eyebrow}</div> : null}
+          <h1 className="mt-1 text-[32px] font-bold leading-[1.15] text-title sm:text-[46px]">{title}</h1>
+          {subtitle ? <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-text-3 sm:text-[15px]">{subtitle}</div> : null}
+        </div>
+      </div>
+      {action || stats?.length ? (
+        <div className="flex items-end gap-5">
+          {stats?.length ? <StatRow stats={stats} /> : null}
           {action}
         </div>
       ) : null}
-      <div className="flex min-w-0 flex-[1_1_380px] items-center gap-3 sm:gap-4">
-        {back ? (<span className="hidden sm:contents"><BackBtn href={back} /></span>) : null}
-        <div className="mark inline-flex size-12 shrink-0 items-center justify-center rounded-[16px] shadow-tile sm:size-[60px] sm:rounded-[19px]">
-          {icon}
-        </div>
-        <div className="min-w-0">
-          {eyebrow ? <div className="truncate text-xs font-bold text-gold-text">{eyebrow}</div> : null}
-          <h1 className="mt-0.5 text-[22px] font-extrabold leading-tight text-text sm:text-[26px]">{title}</h1>
-          {subtitle ? <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[13px] text-text-3">{subtitle}</div> : null}
-        </div>
-      </div>
-      {stats?.length ? (
-        <div className="grid w-full flex-[0_1_470px] grid-cols-3 gap-2.5">
-          {stats.map((s) => <StatTile key={s.label} s={s} />)}
-        </div>
-      ) : null}
-    </section>
+    </header>
   );
 }
 
-/** Status chip used in heroes and rows: good (active / upcoming), warn (needs a decision), neutral (done). */
+/** v2 status: a small dot + a word. needs decision = gold · today = gold outline · active = green · reserved/done = muted · against us = red */
 export function StatusChip({ tone, children }: { tone: "good" | "warn" | "neutral" | "bad" | "accent"; children: ReactNode }) {
-  const cls = { good: "bg-good-bg text-good", warn: "bg-[var(--amber-bg)] text-[var(--amber-text)]", neutral: "bg-card-2 text-text-3", bad: "bg-bad-bg text-bad", accent: "bg-[var(--accent-wash)] text-gold-text" }[tone];
-  return <span className={`inline-flex h-[22px] items-center rounded-full px-2.5 text-[11px] font-bold ${cls}`}>{children}</span>;
+  if (tone === "accent")
+    return <span className="inline-flex h-[22px] items-center rounded-full border border-[var(--accent-edge)] px-2.5 text-[11.5px] font-bold text-gold">{children}</span>;
+  const c = { good: ["bg-good", "text-good"], warn: ["bg-gold", "text-gold"], neutral: ["bg-text-4", "text-text-3"], bad: ["bg-bad", "text-bad"] }[tone];
+  return (
+    <span className={`inline-flex items-center gap-1.5 text-[12px] font-semibold ${c[1]}`}>
+      <span aria-hidden className={`size-1.5 rounded-full ${c[0]}`} />{children}
+    </span>
+  );
 }
 
-/** The Clausia speaker line: «C» avatar + text (a templated sentence from real data, not an LLM call). */
+/** The Clausia speaker line: «C» mark + text (a templated sentence from real data, not an LLM call). */
 export function ClausiaSays({ children, label }: { children: ReactNode; label?: string }) {
   return (
     <div className="flex items-start gap-3">
-      <span className="mark font-num inline-flex size-[34px] shrink-0 items-center justify-center rounded-full text-[14px] font-black shadow-mark">C</span>
+      <span className="mark font-num inline-flex size-8 shrink-0 items-center justify-center rounded-[10px] text-[14px] font-black shadow-mark">C</span>
       <div className="min-w-0 flex-1 pt-0.5">
-        {label ? <div className="text-xs font-bold text-gold-text">{label}</div> : null}
-        <div className="text-[16px] leading-[1.8] text-text-2">{children}</div>
+        {label ? <div className="text-[12px] font-bold text-gold">{label}</div> : null}
+        <div className="text-[16px] leading-[1.85] text-text-2 sm:text-[18px]">{children}</div>
       </div>
     </div>
   );
 }
 
-/** Card surface used for sections (22px radius, 1px border, soft deep shadow). */
+/** Solid content card (28px radius, hairline, deep soft shadow). */
 export function Panel({ title, meta, children, className = "" }: { title?: ReactNode; meta?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section className={`rounded-[22px] border border-border-2 bg-card shadow-card ${className}`}>
+    <section className={`rounded-[28px] border border-border-2 bg-card shadow-card ${className}`}>
       {title ? (
-        <div className="flex items-center justify-between gap-3 border-b border-border-2 px-5 py-4">
-          <h2 className="text-[17px] font-bold text-text">{title}</h2>
+        <div className="flex items-center justify-between gap-3 border-b border-[var(--hairline-v2)] px-6 py-4">
+          <h2 className="text-[17px] font-bold text-title">{title}</h2>
           {meta ? <div className="text-xs text-text-4">{meta}</div> : null}
         </div>
       ) : null}
