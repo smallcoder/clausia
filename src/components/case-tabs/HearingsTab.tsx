@@ -25,25 +25,26 @@ function HearingRow({ h, today, nextUp, last, caseId }: { h: Row; today: string;
   const held = h.hearing_date <= today;
   const needsDecision = !h.decision_type && h.hearing_date < today;
   const isToday = !h.decision_type && h.hearing_date === today;
-  const dot = needsDecision ? "bg-amber ring-4 ring-[var(--amber-bg)]"
-    : (nextUp && !h.decision_type) || isToday ?"bg-gold ring-4 ring-[var(--accent-wash)]"
-    : h.decision_type ? "bg-primary"
-    : "border-2 border-primary bg-card";
+  // v2: gold only where a decision is due; decided = muted dot; upcoming = muted ring (the next one darker)
+  const dot = needsDecision || isToday ? "bg-gold"
+    : h.decision_type ? "bg-text-3"
+    : nextUp ? "border-[1.5px] border-text-2 bg-card"
+    : "border border-text-4 bg-card";
   return (
     <li id={`h-${h.id}`} className="flex scroll-mt-24 gap-2.5 sm:gap-3.5">
       <span className="w-[68px] shrink-0 pt-px sm:w-[84px]">
-        <span className="num font-num block text-[12.5px] font-bold leading-[22px] text-primary sm:text-[13px]">{formatDmy(h.hearing_date)}</span>
+        <span className="num font-num block text-[12.5px] font-semibold leading-[22px] text-title sm:text-[13px]">{formatDmy(h.hearing_date)}</span>
         <span className="block text-[11px] text-text-4 sm:text-[11.5px]">{formatDayLabel(h.hearing_date).split(" ")[0]}</span>
       </span>
       <span className="flex w-2.5 shrink-0 flex-col items-center sm:w-3" aria-hidden>
-        <span className={cx("mt-2 size-2 shrink-0 rounded-full sm:size-[9px]", dot)} />
-        {!last ? <span className="mt-[5px] w-px flex-1 bg-border" /> : null}
+        <span className={cx("mt-2 size-[7px] shrink-0 rounded-full", dot)} />
+        {!last ? <span className="mt-1 w-px flex-1 bg-[var(--hairline-v2)]" /> : null}
       </span>
       <div className="min-w-0 flex-1 pb-5 sm:pb-6">
         <div className="flex min-h-[23px] flex-wrap items-center gap-1.5">
           <DecisionBadge h={h} today={today} />
-          {h.review_status === "suggested" ? <StatusChip tone="accent">مقترحة · راجعها</StatusChip> : null}
-          {nextUp && !h.decision_type && h.hearing_date > today ?<span className="text-[12px] font-semibold text-gold-text">الجلسة الجاية</span> : null}
+          {h.review_status === "suggested" ? <StatusChip tone="warn">مقترحة · راجعها</StatusChip> : null}
+          {nextUp && !h.decision_type && h.hearing_date > today ?<span className="text-[12px] font-semibold text-text-3">الجلسة الجاية</span> : null}
         </div>
         <div className="mt-1.5 max-w-[680px] space-y-1 text-[15px] leading-[1.75]">
           {h.purpose ? <p className="text-text"><span className="text-text-3">المطلوب: </span>{h.purpose}</p> : null}
@@ -54,7 +55,7 @@ function HearingRow({ h, today, nextUp, last, caseId }: { h: Row; today: string;
         <div className="mt-1 flex flex-wrap items-center gap-x-3">
           <span className="text-[12px] text-text-4">{sourceLine(h)}</span>
           {h.next_hearing_id ? (
-            <a href={`#h-${h.next_hearing_id}`} className="inline-flex min-h-11 items-center text-[13px] font-semibold text-gold-text hover:underline sm:min-h-8">
+            <a href={`#h-${h.next_hearing_id}`} className="inline-flex min-h-11 items-center text-[13px] font-semibold text-text-2 hover:text-text hover:underline sm:min-h-8">
               الجلسة التالية&nbsp;<span className="num font-num">{formatDmy(h.next_date)}</span>&nbsp;←
             </a>
           ) : null}
@@ -69,15 +70,15 @@ export async function HearingsTab({ caseId }: { caseId: string }) {
   const db = await createClient();
   const today = todayIso();
   const rows = await caseHearings(db, caseId);
-  // the nearest hearing today or later gets the accent dot
+  // the nearest hearing today or later gets the darker ring
   const nextUp = rows.find((h) => h.hearing_date >= today)?.id;
   const waiting = rows.filter((h) => !h.decision_type && h.hearing_date < today).length;
 
   return (
     <div className="pb-4">
       <DecisionNotices>
-        <Panel title="الجلسات"
-          meta={rows.length ? <>{countLabel(rows.length)}{waiting ? <> · <span className="font-semibold text-[var(--amber-text)]">{waiting === 1 ? "واحدة محتاجة قرار" : `${waiting} محتاجة قرار`}</span></> : null}</> : null}>
+        <Panel title={rows.length ? countLabel(rows.length) : "لسه مفيش جلسات"}
+          meta={waiting ? <span className="font-semibold text-gold">{waiting === 1 ? "واحدة محتاجة قرار" : `${waiting} محتاجة قرار`}</span> : null}>
           {rows.length ? (
             <ol className="px-4 pt-5 sm:px-5">
               {rows.map((h, i) => <HearingRow key={h.id} h={h} today={today} nextUp={h.id === nextUp} last={i === rows.length - 1} caseId={caseId} />)}

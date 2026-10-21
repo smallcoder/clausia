@@ -91,7 +91,7 @@ export function SheetEditText({ table, id, caseId, initial }: { table: string; i
     <form action={action} className="space-y-2">
       <Hidden v={{ table, id, case_id: caseId }} />
       <textarea name="value" defaultValue={initial} rows={4} autoFocus aria-label="نص البند"
-        className="text-doc block w-full resize-y rounded-2xl border border-border bg-field px-3.5 py-2.5 text-[15px] text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-ring)]" />
+        className="text-doc block w-full resize-y rounded-2xl border border-border bg-field px-3.5 py-2.5 text-[15px] text-text focus:outline-none focus:border-gold" />
       {state?.error ? <p className="text-[13px] text-bad">{state.error}</p> : null}
       <div className="flex gap-2">
         <button disabled={pending} className="bg-primary-fill h-11 flex-1 rounded-full text-[15px] font-bold disabled:opacity-50">{pending ? "بيتحفظ…" : "حفظ"}</button>

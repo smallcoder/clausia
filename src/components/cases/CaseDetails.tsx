@@ -33,7 +33,8 @@ export function CaseDetails({ cf }: { cf: CaseFile }) {
   const status = CASE_STATUS[c.status as keyof typeof CASE_STATUS] ?? c.status;
   return (
     <div className="pb-4">
-    <Panel title="بيانات الدعوى" meta="اضغط على أي سطر لتعديله" className="overflow-hidden">
+    <p className="mb-3 px-2 text-[13px] text-text-3">اضغط على أي سطر لتعديله.</p>
+    <Panel className="overflow-hidden">
       <ul className="divide-y divide-border-2">
         <Row label="تاريخ الوقائع" value={fd ? <span className="num font-num">{fd}</span> : "غير محدد"}>
           <InlineEdit action={editCaseField} hidden={{ ...hidden, field: "facts_date" }} initial={fd} label="تغيير" startOpen
@@ -59,12 +60,12 @@ export function CaseDetails({ cf }: { cf: CaseFile }) {
         {c.previous_stage_case ? (
           <li><Link href={`/cases/${c.previous_stage_case.id}`} className="flex min-h-12 items-center justify-between gap-3 px-5 py-3 hover:bg-card-2/60">
             <span className="text-[15px] text-text">الدرجة السابقة · {STAGE[c.previous_stage_case.stage as keyof typeof STAGE]}</span>
-            <span className="flex min-w-0 items-center gap-1 text-[14px] text-gold-text"><span className="truncate">{c.previous_stage_case.label}</span><ChevronLeft aria-hidden size={16} strokeWidth={2} className="shrink-0" /></span></Link></li>
+            <span className="flex min-w-0 items-center gap-1 text-[14px] text-text-2"><span className="truncate">{c.previous_stage_case.label}</span><ChevronLeft aria-hidden size={16} strokeWidth={2} className="shrink-0" /></span></Link></li>
         ) : null}
         {c.later_stage_cases.map((l) => (
           <li key={l.id}><Link href={`/cases/${l.id}`} className="flex min-h-12 items-center justify-between gap-3 px-5 py-3 hover:bg-card-2/60">
             <span className="text-[15px] text-text">الدرجة التالية · {STAGE[l.stage as keyof typeof STAGE]}</span>
-            <span className="flex min-w-0 items-center gap-1 text-[14px] text-gold-text"><span className="truncate">{l.label}</span><ChevronLeft aria-hidden size={16} strokeWidth={2} className="shrink-0" /></span></Link></li>
+            <span className="flex min-w-0 items-center gap-1 text-[14px] text-text-2"><span className="truncate">{l.label}</span><ChevronLeft aria-hidden size={16} strokeWidth={2} className="shrink-0" /></span></Link></li>
         ))}
       </ul>
     </Panel>
