@@ -7,8 +7,8 @@ import "server-only";
 import { normalizeDigits } from "@/lib/dates";
 import type { Db } from "@/lib/supabase/server";
 import type { Json } from "@/lib/db/types";
-import { applyOp, type Provenance, type RefMap } from "@/lib/tools/apply";
-import { WRITE_TOOL_ARGS, isWriteTool, type WriteTool } from "@/lib/tools/registry";
+import { applyOp, type Provenance, type RefMap, type Undo } from "@/lib/tools/apply";
+import { OP_TITLE, WRITE_TOOL_ARGS, isWriteTool, type WriteTool } from "@/lib/tools/registry";
 
 export interface OpSource {
   kind: "chat" | "document";
@@ -122,7 +122,14 @@ export async function decideProposal(
     if (r && o.result_id && (o.status === "confirmed" || o.status === "suggested")) refs[r] = o.result_id;
   }
 
+  // all or nothing (owner decision 2026-10-21): if one chosen op fails, the ops already applied in this tap are
+  // undone and the card stays as it was, so a failure never leaves a half-saved card
+  const before = p.ops.map((o) => ({ status: o.status, result_id: o.result_id, error: o.error, args: o.args, edited: o.edited }));
+  const undos: Undo[] = [];
+  let failure: { index: number; title: string; error: string } | null = null;
+
   for (const o of p.ops) {
+    if (failure) break;
     if (!chosen.has(o.op_id) || o.status !== "pending" && o.status !== "failed") continue;
     if (decision.mode === "reject") { o.status = "rejected"; continue; }
     const edit = decision.edits?.[o.op_id];
@@ -138,6 +145,7 @@ export async function decideProposal(
     };
     try {
       const res = await applyOp(db, o.tool, args, provenance, refs);
+      undos.push(res.undo);
       o.status = decision.mode === "suggest" ? "suggested" : "confirmed";
       o.result_id = res.id;
       o.error = null;
@@ -145,9 +153,23 @@ export async function decideProposal(
       const r = args.ref as string | undefined;
       if (r) refs[r] = res.id;
     } catch (e) {
-      o.status = "failed";
-      o.error = e instanceof Error ? e.message : String(e);
+      failure = { index: p.ops.indexOf(o), title: OP_TITLE[o.tool] ?? o.tool, error: e instanceof Error ? e.message : String(e) };
     }
+  }
+
+  if (failure) {
+    const undoErrors: string[] = [];
+    for (const u of undos.reverse()) {
+      try { await u(); } catch (e) { undoErrors.push(e instanceof Error ? e.message : String(e)); }
+    }
+    if (undoErrors.length) console.error(`[proposals] undo after a failed save of ${p.id} incomplete: ${undoErrors.join("; ")}`);
+    p.ops.forEach((o, i) => Object.assign(o, before[i]));
+    Object.assign(p.ops[failure.index], { status: "failed", error: failure.error });
+    const { error } = await db.from("proposals").update({ ops: p.ops as unknown as Json }).eq("id", p.id);
+    if (error) console.error(`[proposals] could not mark the failed op on ${p.id}: ${error.message}`);
+    console.error(`[proposals] save of ${p.id} undone: ${failure.title}: ${failure.error}`);
+    // the raw reason stays on the op (shown under it); the lawyer gets one plain sentence
+    throw new Error(`ماتحفظش حاجة من البطاقة: «${failure.title}» ما اتحفظش. البطاقة زي ما هي، جرّب تاني.`);
   }
 
   const all = p.ops.map((o) => o.status);

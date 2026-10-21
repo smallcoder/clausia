@@ -17,3 +17,12 @@ export async function createGeneralThread(db: Db, title?: string | null): Promis
   if (error) throw new Error(error.message);
   return data.id;
 }
+
+/** A new conversation whose first message never got in (a failure) is removed, so no empty thread is left behind.
+ *  Returns true when it was removed. Only general threads: a case's own thread stays. */
+export async function dropIfEmpty(db: Db, threadId: string): Promise<boolean> {
+  const { count } = await db.from("chat_messages").select("id", { count: "exact", head: true }).eq("thread_id", threadId);
+  if (count) return false;
+  const { data } = await db.from("chat_threads").delete().eq("id", threadId).is("case_id", null).select("id");
+  return !!data?.length;
+}

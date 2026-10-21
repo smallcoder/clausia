@@ -68,8 +68,14 @@ function must<R extends { data: unknown; error: { message: string } | null }>(r:
   return r.data as NonNullable<R["data"]>;
 }
 
-/** Validate + execute. Returns the id of the created/updated row (for @ref resolution). */
-export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Provenance, refs: RefMap = {}): Promise<{ id: string; extra?: Record<string, unknown> }> {
+/** Puts the database back as it was before one applied op (a card is saved all or nothing). */
+export type Undo = () => Promise<void>;
+
+type Table = "clients" | "cases" | "case_parties" | "case_facts" | "case_requests" | "case_arguments" | "hearings" | "judgments";
+const del = (db: Db, table: Table, id: string): Undo => async () => { must(await db.from(table).delete().eq("id", id).select("id")); };
+
+/** Validate + execute. Returns the id of the created/updated row (for @ref resolution) and how to undo it. */
+export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Provenance, refs: RefMap = {}): Promise<{ id: string; extra?: Record<string, unknown>; undo: Undo }> {
   const parsed = WRITE_TOOL_ARGS[tool].safeParse(rawArgs);
   if (!parsed.success) throw new Error(parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; "));
   const a = parsed.data as WriteArgs<WriteTool>;
@@ -78,7 +84,7 @@ export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Prov
     case "create_client": {
       const x = a as WriteArgs<"create_client">;
       const row = must(await db.from("clients").insert({ name: x.name, kind: x.kind, phone: x.phone ?? null, address: x.address ?? null, notes: x.notes ?? null, ...prov(p) }).select("id").single());
-      return { id: row.id };
+      return { id: row.id, undo: del(db, "clients", row.id) };
     }
     case "create_case": {
       const x = a as WriteArgs<"create_case">;
@@ -94,7 +100,7 @@ export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Prov
       }).select("id").single());
       // every case gets its own chat thread
       await db.from("chat_threads").insert({ case_id: row.id, title: x.title ?? x.case_number ?? null });
-      return { id: row.id };
+      return { id: row.id, undo: async () => { await db.from("chat_threads").delete().eq("case_id", row.id); await del(db, "cases", row.id)(); } };
     }
     case "update_case": {
       const x = a as WriteArgs<"update_case">;
@@ -106,8 +112,9 @@ export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Prov
       }
       if (fd) { patch.facts_date = fd.iso; patch.facts_date_precision = fd.precision; }
       if (x.circuit !== undefined) patch.circuit = circuitText(x.circuit);
+      const before = must(await db.from("cases").select(Object.keys(patch).join(",")).eq("id", id).single()) as unknown as typeof patch;
       must(await db.from("cases").update(patch).eq("id", id).select("id").single());
-      return { id };
+      return { id, undo: async () => { must(await db.from("cases").update(before).eq("id", id).select("id").single()); } };
     }
     case "add_party": {
       const x = a as WriteArgs<"add_party">;
@@ -115,7 +122,7 @@ export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Prov
         case_id: resolveRef(x.case, refs)!, name: x.name, role: x.role, is_our_client: x.is_our_client,
         client_id: resolveRef(x.client, refs) ?? null, representative: x.representative ?? null, notes: x.notes ?? null, ...prov(p),
       }).select("id").single());
-      return { id: row.id };
+      return { id: row.id, undo: del(db, "case_parties", row.id) };
     }
     case "add_fact": {
       const x = a as WriteArgs<"add_fact">;
@@ -124,29 +131,30 @@ export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Prov
         case_id: resolveRef(x.case, refs)!, fact_date: d?.iso ?? null, date_precision: d?.precision ?? "unknown",
         date_text: x.date_text ?? x.date ?? null, text: x.text, ...prov(p),
       }).select("id").single());
-      return { id: row.id };
+      return { id: row.id, undo: del(db, "case_facts", row.id) };
     }
     case "add_request": {
       const x = a as WriteArgs<"add_request">;
       const row = must(await db.from("case_requests").insert({ case_id: resolveRef(x.case, refs)!, text: x.text, kind: x.kind ?? null, ...prov(p) }).select("id").single());
-      return { id: row.id };
+      return { id: row.id, undo: del(db, "case_requests", row.id) };
     }
     case "add_argument": {
       const x = a as WriteArgs<"add_argument">;
       const row = must(await db.from("case_arguments").insert({ case_id: resolveRef(x.case, refs)!, side: x.side, kind: x.kind ?? null, text: x.text, ...prov(p) }).select("id").single());
-      return { id: row.id };
+      return { id: row.id, undo: del(db, "case_arguments", row.id) };
     }
     case "add_hearing": {
       const x = a as WriteArgs<"add_hearing">;
       const d = date(x.date)!;
       const row = must(await db.from("hearings").insert({ case_id: resolveRef(x.case, refs)!, hearing_date: d.iso, purpose: x.purpose ?? null, location: x.location ?? null, ...prov(p) }).select("id").single());
-      return { id: row.id };
+      return { id: row.id, undo: del(db, "hearings", row.id) };
     }
     case "set_hearing_location": {
       const x = a as WriteArgs<"set_hearing_location">;
       const id = resolveRef(x.hearing, refs)!;
+      const before = must(await db.from("hearings").select("location").eq("id", id).single());
       must(await db.from("hearings").update({ location: x.location }).eq("id", id).select("id").single());
-      return { id };
+      return { id, undo: async () => { must(await db.from("hearings").update({ location: before.location }).eq("id", id).select("id").single()); } };
     }
     case "record_decision": {
       const x = a as WriteArgs<"record_decision">;
@@ -155,6 +163,10 @@ export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Prov
       const { data: hh } = await db.from("hearings").select("hearing_date").eq("id", id).maybeSingle();
       if (hh && hh.hearing_date > todayIso()) throw new Error(`لا يمكن تسجيل قرار لجلسة لم تُعقد بعد (${formatDmy(hh.hearing_date)})`);
       const nd = date(x.next_date);
+      // what the decision changes: this hearing's decision fields, the next hearing (created or moved), the case status
+      const h0 = must(await db.from("hearings").select("*").eq("id", id).single());
+      const next0 = h0.next_hearing_id ? must(await db.from("hearings").select("hearing_date, purpose").eq("id", h0.next_hearing_id).single()) : null;
+      const case0 = must(await db.from("cases").select("status, updated_at").eq("id", h0.case_id).single());
       const { data, error } = await db.rpc("record_hearing_decision", {
         p_hearing_id: id, p_decision: x.decision, p_decision_text: x.decision_text ?? undefined,
         p_next_date: nd?.iso ?? undefined, p_next_requirements: x.next_requirements ?? undefined,
@@ -163,7 +175,17 @@ export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Prov
         p_source_page: p.source_page ?? undefined, p_source_quote: p.source_quote ?? undefined,
       });
       if (error) throw new Error(error.message);
-      return { id, extra: data as Record<string, unknown> };
+      const created = !h0.next_hearing_id ? ((data as { next_hearing_id?: string | null } | null)?.next_hearing_id ?? null) : null;
+      return {
+        id, extra: data as Record<string, unknown>,
+        undo: async () => {
+          const { id: _id, office_id: _o, created_at: _c, ...back } = h0;
+          must(await db.from("hearings").update(back).eq("id", id).select("id").single());
+          if (created) await del(db, "hearings", created)();
+          if (h0.next_hearing_id && next0) must(await db.from("hearings").update(next0).eq("id", h0.next_hearing_id).select("id").single());
+          must(await db.from("cases").update(case0).eq("id", h0.case_id).select("id").single());
+        },
+      };
     }
     case "add_judgment": {
       const x = a as WriteArgs<"add_judgment">;
@@ -174,13 +196,14 @@ export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Prov
         kind: x.kind, operative_text: x.operative_text, outcome: x.outcome ?? null,
         appeal_deadline: dl?.iso ?? null, appeal_deadline_note: x.appeal_deadline_note ?? null, ...prov(p),
       }).select("id").single());
-      return { id: row.id };
+      return { id: row.id, undo: del(db, "judgments", row.id) };
     }
     case "attach_document": {
       const x = a as WriteArgs<"attach_document">;
       const id = resolveRef(x.document, refs)!;
+      const before = must(await db.from("documents").select("case_id, doc_type, title").eq("id", id).single());
       must(await db.from("documents").update({ case_id: resolveRef(x.case, refs)!, doc_type: x.doc_type, ...(x.title ? { title: x.title } : {}) }).eq("id", id).select("id").single());
-      return { id };
+      return { id, undo: async () => { must(await db.from("documents").update(before).eq("id", id).select("id").single()); } };
     }
   }
 }

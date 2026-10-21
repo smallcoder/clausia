@@ -61,7 +61,7 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promis
   const { data: thread, error: te } = await db.from("chat_threads").select("id, case_id, title").eq("id", input.threadId).single();
   if (te || !thread) throw new Error("المحادثة غير موجودة");
 
-  const { data: userMsg, error: ue } = await db.from("chat_messages").insert({ thread_id: thread.id, role: "user", content: text }).select("id").single();
+  const { data: userMsg, error: ue } = await db.from("chat_messages").insert({ thread_id: thread.id, role: "user", content: text }).select("id, created_at").single();
   if (ue || !userMsg) throw new Error(ue?.message ?? "تعذّر حفظ الرسالة");
   state.saved = true;
   await db.from("chat_threads").update({ updated_at: new Date().toISOString() }).eq("id", thread.id);
@@ -88,6 +88,12 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promis
     } catch (e) {
       // already logged once in llm_calls (getLlm); one notice in the chat, no retry
       const msg = e instanceof Error ? e.message : String(e);
+      // a turn cut short leaves nothing half-done: drop this turn's cards (nothing in them is saved — they wait for
+      // the tap) and its partial replies, so the thread shows the lawyer's message and the notice only
+      if (out.proposalIds.length) await db.from("proposals").delete().in("id", out.proposalIds).eq("status", "pending");
+      if (round > 0) await db.from("chat_messages").delete().eq("thread_id", thread.id).in("role", ["assistant", "tool"]).gt("created_at", userMsg.created_at);
+      out.proposalIds = [];
+      out.assistantMessageIds = [];
       const friendly = e instanceof SpendCapError ? "مش هقدر أرد دلوقتي: وصلنا لحد الصرف التجريبي." : UNAVAILABLE_TEXT;
       const { data: m } = await db.from("chat_messages").insert({ thread_id: thread.id, role: "assistant", content: friendly }).select("id").single();
       if (m) out.assistantMessageIds.push(m.id);

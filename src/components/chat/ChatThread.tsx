@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useOptimistic, useRef, useState, useTransition, type ReactNode } from "react";
 import { cx } from "@/components/ui";
 import { ProposalCard } from "@/components/proposal/ProposalCard";
+import { useReadProgress } from "@/components/documents/useReadProgress";
 import { ChatComposer } from "./ChatComposer";
 import { sendMessageAction } from "@/lib/assistant/actions";
 import { uploadDocumentAction } from "@/lib/documents/actions";
@@ -108,7 +109,8 @@ export function ChatThread({ threadId, caseId, items, lookup, docs = {} }: {
   const busy = sending || uploading;
   const lastSpoken = [...shown].reverse().find((x) => x.role === "user" || x.content.trim());
   const answers = lastSpoken?.role === "assistant" && !busy ? quickAnswers(lastSpoken.content) : [];
-  const status = sending ? "Clausia بيكتب…" : uploading ? "بقرا الورقة صفحة صفحة…" : null;
+  const reading = useReadProgress(uploading);
+  const status = sending ? "Clausia بيكتب…" : uploading ? reading : null;
 
   return (
     <div className="flex flex-1 flex-col">
