@@ -2,10 +2,10 @@
  * One case in the cases list (docs/design/*Cases.dc.html). Desktop (md+): a 4-column grid row under
  * CaseListHeader — case («client — subject» + number), court · circuit, next hearing, marker.
  * Mobile: title + «number · court · circuit», then the date with the marker under it. No avatars.
- * The marker column is empty for a plain active case; otherwise one dot + word (StatusChip).
+ * The marker column is empty for a plain active case; otherwise one dot + word (Tag, sized as the mockup draws it).
+ * Line heights are the px the mockup's `line-height: normal` renders (body is 1.6): rows are 71px desktop, 65px mobile.
  */
 import Link from "next/link";
-import { StatusChip } from "@/components/shell/PageHero";
 import type { CaseRow } from "@/lib/cases";
 import { addDaysIso } from "@/lib/dates";
 import { CASE_STATUS } from "@/lib/labels";
@@ -36,14 +36,24 @@ function dateLabel(iso: string, today: string): { text: string; today: boolean; 
 
 export interface RowFlags { decision: boolean; review: boolean; againstUs: boolean }
 
+/** dot + word: desktop 12.5px, 7px gap, 6px dot; mobile 10.5px, 4px gap, 5px dot (docs/design/*Cases.dc.html) */
+function Tag({ tone, children }: { tone: "warn" | "neutral" | "bad"; children: React.ReactNode }) {
+  const [dot, text] = { warn: ["bg-gold", "text-gold"], neutral: ["bg-text-3", "text-text-3"], bad: ["bg-bad", "text-bad"] }[tone];
+  return (
+    <span className={`inline-flex items-center gap-1 text-[10.5px] font-semibold leading-[15px] md:gap-[7px] md:text-[12.5px] md:leading-[17px] ${text}`}>
+      <span aria-hidden className={`size-[5px] shrink-0 rounded-full md:size-1.5 ${dot}`} />{children}
+    </span>
+  );
+}
+
 /** One marker at most: needs decision → a non-active status → needs review → nothing. */
 function Marker({ r, f }: { r: CaseRow; f: RowFlags }) {
-  if (f.decision) return <StatusChip tone="warn">محتاجة قرار</StatusChip>;
+  if (f.decision) return <Tag tone="warn">محتاجة قرار</Tag>;
   if (r.status !== "active") {
-    if (f.againstUs && (r.status === "judged" || r.status === "closed")) return <StatusChip tone="bad">حكم ضدنا</StatusChip>;
-    return <StatusChip tone="neutral">{CASE_STATUS[r.status]}</StatusChip>;
+    if (f.againstUs && (r.status === "judged" || r.status === "closed")) return <Tag tone="bad">حكم ضدنا</Tag>;
+    return <Tag tone="neutral">{CASE_STATUS[r.status]}</Tag>;
   }
-  if (f.review) return <StatusChip tone="warn">محتاجة مراجعة</StatusChip>;
+  if (f.review) return <Tag tone="warn">محتاجة مراجعة</Tag>;
   return null;
 }
 
@@ -59,24 +69,24 @@ export function CaseListRow({ r, today, flags }: { r: CaseRow; today: string; fl
       <Link href={`/cases/${r.id}`}
         className={`flex min-h-11 items-center gap-3 py-[13px] transition-colors md:px-[30px] md:py-[15px] md:hover:bg-card-2 ${COLS}`}>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[14.5px] font-semibold text-text md:text-[15.5px]" title={r.title ?? undefined}>{title}</span>
+          <span className="block truncate text-[14.5px] font-semibold leading-[19px] text-text md:text-[15.5px] md:leading-[21px]" title={r.title ?? undefined}>{title}</span>
           {/* desktop: the number only */}
           <span className="font-num mt-[3px] hidden truncate text-xs text-text-4 md:block">{caseNumber(r)}</span>
           {/* mobile: «number · court · circuit» */}
-          <span className="mt-[3px] block truncate text-[11.5px] text-text-4 md:hidden">
+          <span className="mt-[3px] block truncate text-[11.5px] leading-4 text-text-4 md:hidden">
             <span className="font-num">{caseNumber(r)}</span>{where ? ` · ${where}` : ""}
           </span>
         </span>
 
         {/* desktop columns */}
-        <span className="hidden truncate text-[13.5px] text-text-3 md:block" title={where || undefined}>{where || "المحكمة غير محددة"}</span>
-        <span className={`font-num hidden text-[14px] md:block ${nextCls}`}>{nextText}</span>
+        <span className="hidden truncate text-[13.5px] leading-[18px] text-text-3 md:block" title={where || undefined}>{where || "المحكمة غير محددة"}</span>
+        <span className={`font-num hidden text-[14px] leading-[18px] md:block ${nextCls}`}>{nextText}</span>
         <span className="hidden justify-self-start md:block">{marker}</span>
 
         {/* mobile: date, marker under it */}
         <span className="flex shrink-0 flex-col items-end text-left md:hidden">
-          <span className={`font-num text-[13px] ${nextCls}`}>{nextText}</span>
-          {marker ? <span className="mt-[3px] [&>span]:text-[10.5px]">{marker}</span> : null}
+          <span className={`font-num text-[13px] leading-4 ${nextCls}`}>{nextText}</span>
+          {marker ? <span className="mt-[3px] flex">{marker}</span> : null}
         </span>
       </Link>
     </li>
