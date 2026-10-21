@@ -8,9 +8,11 @@ import { useRouter } from "next/navigation";
 import { useEffect, useOptimistic, useRef, useState, useTransition, type ReactNode } from "react";
 import { cx } from "@/components/ui";
 import { ProposalCard } from "@/components/proposal/ProposalCard";
+import { useReadProgress } from "@/components/documents/useReadProgress";
 import { ChatComposer } from "./ChatComposer";
 import { sendMessageAction } from "@/lib/assistant/actions";
 import { uploadDocumentAction } from "@/lib/documents/actions";
+import { UNAVAILABLE_TEXT } from "@/lib/llm/unavailable";
 import type { Proposal } from "@/lib/proposals";
 
 export interface ChatItem {
@@ -107,7 +109,8 @@ export function ChatThread({ threadId, caseId, items, lookup, docs = {} }: {
   const busy = sending || uploading;
   const lastSpoken = [...shown].reverse().find((x) => x.role === "user" || x.content.trim());
   const answers = lastSpoken?.role === "assistant" && !busy ? quickAnswers(lastSpoken.content) : [];
-  const status = sending ? "Clausia بيكتب…" : uploading ? "بقرا الورقة صفحة صفحة…" : null;
+  const reading = useReadProgress(uploading);
+  const status = sending ? "Clausia بيكتب…" : uploading ? reading : null;
 
   return (
     <div className="flex flex-1 flex-col">
@@ -134,6 +137,8 @@ export function ChatThread({ threadId, caseId, items, lookup, docs = {} }: {
                 )}
                 {m.attachments.map((a, i) => <AttachmentChip key={a.documentId || a.fileName} name={a.fileName} doc={docs[a.documentId]} tuck={i === 0 && !AUTO_ATTACH.test(m.content)} />)}
               </>
+            ) : m.content === UNAVAILABLE_TEXT && !m.proposals.length ? (
+              <ClausiaLine><UnavailableNotice /></ClausiaLine>
             ) : (
               <ClausiaLine>
                 {m.content.trim() ? <p className="whitespace-pre-wrap break-words"><Prose text={m.content} /></p> : null}
@@ -195,6 +200,15 @@ const CHIP = "tap glass inline-flex min-h-9 shrink-0 items-center rounded-full p
  * Clausia's turn: the «C» mark and its text (cards go under the text). Desktop: the mark beside the text.
  * Mobile: a «C · Clausia» label row, the text full width under it.
  */
+/** The model could not answer (402 / 429 / 5xx / timeout): one calm notice, not a Clausia sentence. */
+function UnavailableNotice() {
+  return (
+    <p role="status" className="inline-flex items-center gap-2 rounded-full border border-border-2 bg-card-2 px-4 py-2 text-[14px] leading-6 text-text-2">
+      <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-text-4" />{UNAVAILABLE_TEXT}
+    </p>
+  );
+}
+
 function ClausiaLine({ children }: { children: ReactNode }) {
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">

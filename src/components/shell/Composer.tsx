@@ -6,6 +6,7 @@
 import { ArrowUp, CalendarDays, Camera, Check, Clock, File, Gavel, List, Plus, Search, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
+import { useReadProgress } from "@/components/documents/useReadProgress";
 import { composerSendAction, composerUploadAction, type ComposerTarget } from "@/lib/assistant/composer-actions";
 
 /** A starter chip: fills the box (text), opens the file picker (attach), or is a link (href). `disabled` = shown, not usable. */
@@ -25,6 +26,8 @@ export function Composer({ target, placeholder = "اكتب لـ Clausia… ما 
 }) {
   const [text, setText] = useState("");
   const [status, setStatus] = useState<string | null>(null);
+  const [reading, setReading] = useState(false);
+  const progress = useReadProgress(reading);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -59,12 +62,12 @@ export function Composer({ target, placeholder = "اكتب لـ Clausia… ما 
   function upload(f?: File) {
     if (!f || pending) return;
     setError(null);
-    setStatus("بقرا الورقة صفحة صفحة…");
+    setReading(true);
     const fd = new FormData();
     fd.set("file", f);
     start(async () => {
       const r = await composerUploadAction(target, fd);
-      setStatus(null);
+      setReading(false);
       if (r.error) setError(r.error);
       go(r.threadId);
     });
@@ -121,7 +124,7 @@ export function Composer({ target, placeholder = "اكتب لـ Clausia… ما 
             <RoundBtn label="إرفاق ورقة" onClick={() => fileRef.current?.click()} disabled={pending}><Plus size={19} strokeWidth={1.9} /></RoundBtn>
             <RoundBtn label="تصوير ورقة" onClick={() => camRef.current?.click()} disabled={pending} className="sm:hidden"><Camera size={19} strokeWidth={1.9} /></RoundBtn>
             <div className="min-w-0 flex-1 truncate text-xs text-text-4" aria-live="polite">
-              {error ? <span className="text-bad">{error}</span> : status ?? ""}
+              {error ? <span className="text-bad">{error}</span> : (reading ? progress : status) ?? ""}
             </div>
             <SendBtn onClick={send} disabled={pending || !text.trim()} />
           </div>
@@ -130,7 +133,7 @@ export function Composer({ target, placeholder = "اكتب لـ Clausia… ما 
       {hero ? <p className="mt-2.5 text-center text-[11.5px] text-text-4">Clausia بتجهّز، وإنت اللي بتأكد. مفيش حاجة بتتحفظ من غير موافقتك.</p> : null}
       {hero ? null : (
         <>
-          {error || status ? <div className="mb-2 px-3 text-xs text-text-4" aria-live="polite">{error ? <span className="text-bad">{error}</span> : status}</div> : null}
+          {error || status || reading ? <div className="mb-2 px-3 text-xs text-text-4" aria-live="polite">{error ? <span className="text-bad">{error}</span> : reading ? progress : status}</div> : null}
           {/* one-row pill (Roll / Case / Cases mockups): [+] [input] [send], sizes as drawn */}
           <div className="glass flex items-center gap-1.5 rounded-[24px] p-1.5 sm:gap-2 sm:rounded-[26px] sm:p-[7px]">
             <button type="button" aria-label="إرفاق ورقة" title="إرفاق ورقة" onClick={() => fileRef.current?.click()} disabled={pending}

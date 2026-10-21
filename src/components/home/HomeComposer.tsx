@@ -8,6 +8,7 @@
 import { ArrowUp, File, Gavel, List, Plus, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
+import { useReadProgress } from "@/components/documents/useReadProgress";
 import { composerSendAction, composerUploadAction } from "@/lib/assistant/composer-actions";
 
 const CHIPS = [
@@ -24,6 +25,8 @@ const MAX_H = 160;
 export function HomeComposer() {
   const [text, setText] = useState("");
   const [status, setStatus] = useState<string | null>(null);
+  const [reading, setReading] = useState(false);
+  const progress = useReadProgress(reading);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const [short, setShort] = useState(false);
@@ -70,18 +73,18 @@ export function HomeComposer() {
   function upload(f?: File) {
     if (!f || pending) return;
     setError(null);
-    setStatus("بقرا الورقة صفحة صفحة…");
+    setReading(true);
     const fd = new FormData();
     fd.set("file", f);
     start(async () => {
       const r = await composerUploadAction({ kind: "new" }, fd);
-      setStatus(null);
+      setReading(false);
       if (r.error) setError(r.error);
       if (r.threadId) router.push(`/chat/${r.threadId}`);
     });
   }
 
-  const note = error ? <span className="text-bad">{error}</span> : status;
+  const note = error ? <span className="text-bad">{error}</span> : reading ? progress : status;
   return (
     <Dock>
       <div className="no-scrollbar flex gap-2 overflow-x-auto px-1 pb-3 sm:justify-center sm:overflow-visible sm:px-0 sm:pb-3.5">

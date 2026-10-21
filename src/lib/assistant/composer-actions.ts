@@ -9,7 +9,7 @@
 import { revalidatePath } from "next/cache";
 import { uploadDocumentAction } from "@/lib/documents/actions";
 import { createClient, getSession } from "@/lib/supabase/server";
-import { createGeneralThread, getOrCreateCaseThread } from "@/lib/threads";
+import { createGeneralThread, dropIfEmpty, getOrCreateCaseThread } from "@/lib/threads";
 import { runAssistantTurn } from "./turn";
 
 export type ComposerTarget = { kind: "new" } | { kind: "case"; caseId: string } | { kind: "thread"; threadId: string };
@@ -30,8 +30,10 @@ export async function composerSendAction(target: ComposerTarget, text: string): 
   const threadId = await resolve(db, target, msg);
   try {
     await runAssistantTurn(db, { threadId, userText: msg, userId: s.user.id, officeId: s.officeId });
-  } catch {
-    // the lawyer's message is saved; the thread shows it and lets them retry
+  } catch (e) {
+    // the message never got in: no empty new thread; the composer keeps the text
+    if (target.kind === "new" && (await dropIfEmpty(db, threadId))) return { error: e instanceof Error ? e.message : "تعذّر الإرسال" };
+    // otherwise the lawyer's message is saved; the thread shows it and lets them retry
   }
   revalidatePath(`/chat/${threadId}`);
   return { threadId };
@@ -48,11 +50,7 @@ export async function composerUploadAction(target: ComposerTarget, form: FormDat
   const r = await uploadDocumentAction(form);
   if (!r.ok && !r.warning) {
     // a failed upload into a brand-new conversation must not leave an empty thread behind
-    if (target.kind === "new") {
-      const { count } = await db.from("chat_messages").select("id", { count: "exact", head: true }).eq("thread_id", threadId);
-      if (!count) await db.from("chat_threads").delete().eq("id", threadId);
-      return { error: r.error ?? "تعذّر رفع الملف" };
-    }
+    if (target.kind === "new" && (await dropIfEmpty(db, threadId))) return { error: r.error ?? "تعذّر رفع الملف" };
     return { threadId, error: r.error };
   }
   revalidatePath(`/chat/${threadId}`);

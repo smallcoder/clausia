@@ -5,6 +5,7 @@
  */
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition } from "react";
+import { useReadProgress } from "@/components/documents/useReadProgress";
 import { composerSendAction, composerUploadAction } from "@/lib/assistant/composer-actions";
 import { ChatComposer } from "./ChatComposer";
 
@@ -13,6 +14,8 @@ export function NewChatComposer({ placeholder }: { placeholder: string }) {
   const [text, setText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+  const [reading, setReading] = useState(false);
+  const progress = useReadProgress(reading);
   const [pending, start] = useTransition();
   const boxRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -34,12 +37,12 @@ export function NewChatComposer({ placeholder }: { placeholder: string }) {
   function onFile(f: File | undefined) {
     if (!f || pending) return;
     setError(null);
-    setStatus("بقرا الورقة صفحة صفحة…");
+    setReading(true);
     const fd = new FormData();
     fd.set("file", f);
     start(async () => {
       const r = await composerUploadAction({ kind: "new" }, fd);
-      setStatus(null);
+      setReading(false);
       if (fileRef.current) fileRef.current.value = "";
       if (r.error) setError(r.error);
       if (r.threadId) router.push(`/chat/${r.threadId}`);
@@ -48,7 +51,7 @@ export function NewChatComposer({ placeholder }: { placeholder: string }) {
 
   return (
     <ChatComposer id="new" value={text} onChange={setText} onSend={send} onFile={onFile}
-      sending={pending} busy={pending} status={status} error={error} onDismissError={() => setError(null)}
+      sending={pending} busy={pending} status={reading ? progress : status} error={error} onDismissError={() => setError(null)}
       placeholder={placeholder} boxRef={boxRef} fileRef={fileRef} />
   );
 }
