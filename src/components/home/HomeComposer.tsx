@@ -155,7 +155,7 @@ function Dock({ children }: { children: React.ReactNode }) {
     <>
       <div aria-hidden style={{ height: h }} className="shrink-0" />
       <div ref={box} className="fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(18px+env(safe-area-inset-bottom))] pt-10 bg-fade sm:px-6 sm:pb-6 sm:pt-15" /* ds-allow: safe-area inset needs calc() */>
-        <div className="mx-auto w-full max-w-[780px]">{children}</div>
+        <div className="mx-auto w-full max-w-composer">{children}</div>
       </div>
     </>
   );

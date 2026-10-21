@@ -43,13 +43,13 @@ function Header({ stats = 3, eyebrow = true }: { stats?: number; eyebrow?: boole
   );
 }
 
-function ComposerShell({ width, tall = false }: { width: number; tall?: boolean }) {
+function ComposerShell({ tall = false }: { tall?: boolean }) {
   if (tall)
     return (
       <>
         <div aria-hidden className="h-44 shrink-0" />
         <div className="bg-fade pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(18px+env(safe-area-inset-bottom))] pt-10 sm:px-6 sm:pb-6 sm:pt-15" /* ds-allow: safe-area inset needs calc() */>
-          <div className="glass mx-auto flex h-[116px] flex-col justify-between rounded-xl p-3.5 sm:h-[136px] sm:p-4" style={{ maxWidth: width }}>
+          <div className="glass mx-auto flex max-w-composer h-[116px] flex-col justify-between rounded-xl p-3.5 sm:h-[136px] sm:p-4">
             <Bar w="55%" h={12} />
             <div className="flex items-center justify-between"><span className="size-[38px] rounded-full border border-border sm:size-10" /><span className="size-[38px] rounded-full bg-primary-fill opacity-30 sm:size-10" /></div>
           </div>
@@ -60,7 +60,7 @@ function ComposerShell({ width, tall = false }: { width: number; tall?: boolean 
     <>
       <div aria-hidden className="h-28 shrink-0" />
       <div className="bg-fade pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3.5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-10 sm:px-10 sm:pb-7.5 sm:pt-15" /* ds-allow: safe-area inset needs calc() */>
-        <div className="glass mx-auto flex h-[52px] items-center gap-2 rounded-xl p-1.5 sm:h-[56px] sm:p-1.75" style={{ maxWidth: width }}>
+        <div className="glass mx-auto flex max-w-composer h-[52px] items-center gap-2 rounded-xl p-1.5 sm:h-[56px] sm:p-1.75">
           <span className="size-[38px] rounded-full border border-border sm:size-10" />
           <Bar w="45%" h={12} />
           <span className="ms-auto size-[38px] rounded-full bg-primary-fill opacity-30 sm:size-10" />
@@ -74,7 +74,7 @@ export function PageSkeleton({ kind }: { kind: Kind }) {
   const narrow = kind === "home" || kind === "chat";
   return (
     <div role="status" aria-busy="true" aria-label="جارٍ التحميل"
-      className={`skel-shimmer mx-auto flex w-full flex-1 flex-col px-4 sm:px-10 ${kind === "chat" ? "sm:max-w-[820px] sm:px-6" : narrow ? "max-w-[960px] sm:px-6" : "max-w-[1360px]"}`}>
+      className={`skel-shimmer mx-auto flex w-full flex-1 flex-col px-4 sm:px-10 ${kind === "chat" ? "sm:max-w-chat sm:px-6" : narrow ? "max-w-home sm:px-6" : "max-w-page"}`}>
       {kind === "home" ? (
         <>
           <div className="space-y-3 pt-4 sm:pt-13"><Bar w="110px" h={11} /><Bar w="min(380px, 80vw)" h={40} className="rounded-md" /></div>
@@ -136,7 +136,7 @@ export function PageSkeleton({ kind }: { kind: Kind }) {
           <Card className="mt-4 !p-0"><div className="border-b border-border-2 px-6 py-3"><Bar w="40%" h={10} /></div><div className="px-6"><Rows n={7} /></div></Card>
         </>
       ) : null}
-      <ComposerShell width={780} tall={kind === "home" || kind === "chat"} />
+      <ComposerShell tall={kind === "home" || kind === "chat"} />
     </div>
   );
 }

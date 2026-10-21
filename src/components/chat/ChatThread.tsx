@@ -131,7 +131,7 @@ export function ChatThread({ threadId, caseId, items, lookup, docs = {} }: {
             {m.role === "user" ? (
               <>
                 {m.attachments.length && AUTO_ATTACH.test(m.content) ? null : (
-                  <div className="max-w-[88%] self-end whitespace-pre-wrap break-words rounded-lg rounded-bl-sm border border-border-2 bg-card px-4.25 py-3.25 text-md leading-[1.75] text-text dark:bg-card-2 sm:max-w-[72%]">
+                  <div className="max-w-bubble self-end whitespace-pre-wrap break-words rounded-lg rounded-bl-sm border border-border-2 bg-card px-4.25 py-3.25 text-md leading-[1.75] text-text dark:bg-card-2 sm:max-w-bubble-sm">
                     {m.content}
                   </div>
                 )}
@@ -228,7 +228,7 @@ const READ: Record<ThreadDoc["status"], string> = { done: "اتقرت", reading:
 function AttachmentChip({ name, doc, tuck }: { name: string; doc?: ThreadDoc; tuck?: boolean }) {
   const meta = doc ? [doc.pages ? pagesLabel(doc.pages) : null, READ[doc.status]].filter(Boolean).join(" · ") : null;
   return (
-    <div className={cx("flex max-w-[88%] items-center gap-2.5 self-end rounded-md border border-border-2 bg-card py-2 pe-2.5 ps-3.5 dark:bg-card-2 sm:max-w-[72%]", tuck && "-mt-1.5")}>
+    <div className={cx("flex max-w-bubble items-center gap-2.5 self-end rounded-md border border-border-2 bg-card py-2 pe-2.5 ps-3.5 dark:bg-card-2 sm:max-w-bubble-sm", tuck && "-mt-1.5")}>
       <span aria-hidden className="flex h-9 w-[30px] shrink-0 items-center justify-center rounded-sm bg-paper-thumb text-xs font-extrabold text-paper-thumb-ink">
         {doc?.image ? "IMG" : "PDF"}
       </span>

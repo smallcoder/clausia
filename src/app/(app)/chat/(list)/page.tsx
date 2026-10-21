@@ -50,7 +50,7 @@ export default async function ChatHome() {
   const waitingCount = rows.filter((r) => waiting.has(r.t.id)).length;
 
   return (
-    <div className="mx-auto flex w-full flex-1 flex-col gap-4.5 px-3.5 pt-2.5 sm:max-w-[820px] sm:gap-5.5 sm:px-6 sm:pt-5">
+    <div className="mx-auto flex w-full flex-1 flex-col gap-4.5 px-3.5 pt-2.5 sm:max-w-chat sm:gap-5.5 sm:px-6 sm:pt-5">
       {/* the thread's header language: one small centered glass pill (what this is · how many), nothing else */}
       <div className="glass inline-flex h-8 max-w-full items-center gap-2 self-center rounded-md px-3.5 text-sm">
         <h1 className="shrink-0 font-semibold text-text">المحادثات</h1>
