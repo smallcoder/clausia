@@ -17,7 +17,7 @@ type Row = {
 function Item({ r, table, caseId, kindLabel }: { r: Row; table: "case_requests" | "case_arguments"; caseId: string; kindLabel?: string }) {
   const suggested = r.review_status === "suggested";
   return (
-    <li className={cx("rounded-[var(--radius)] border p-4", suggested ? "border-suggest/30 bg-suggest-soft/40" : "border-line bg-surface")}>
+    <li className={cx("rounded-lg border p-4", suggested ? "border-suggest/30 bg-suggest-soft/40" : "border-line bg-surface")}>
       {kindLabel ? <Badge className="mb-2">{kindLabel}</Badge> : null}
       <div className="text-md leading-relaxed text-ink">
         <InlineEdit action={editItemText} hidden={{ table, id: r.id, case_id: caseId }} initial={r.text} multiline display={r.text} />

@@ -52,7 +52,7 @@ export default async function ChatHome() {
   return (
     <div className="mx-auto flex w-full flex-1 flex-col gap-[18px] px-3.5 pt-2.5 sm:max-w-[820px] sm:gap-[22px] sm:px-6 sm:pt-5">
       {/* the thread's header language: one small centered glass pill (what this is · how many), nothing else */}
-      <div className="glass inline-flex h-8 max-w-full items-center gap-2 self-center rounded-2xl px-3.5 text-sm">
+      <div className="glass inline-flex h-8 max-w-full items-center gap-2 self-center rounded-md px-3.5 text-sm">
         <h1 className="shrink-0 font-semibold text-text">المحادثات</h1>
         <span aria-hidden className="text-text-4">·</span>
         <span className="truncate text-text-3"><span className="font-num">{chatsLabel(rows.length)}</span></span>
@@ -68,11 +68,11 @@ export default async function ChatHome() {
       </div>
 
       {rows.length === 0 ? (
-        <div className="rounded-[24px] border border-border-2 bg-card px-5 py-6 shadow-card">
+        <div className="rounded-xl border border-border-2 bg-card px-5 py-6 shadow-card">
           <ClausiaSays size="md">لسه مافيش محادثات. احكي لـ Clausia عن موكل أو قضية من تحت، أو ارفع ورقة.</ClausiaSays>
         </div>
       ) : (
-        <ul className="overflow-hidden rounded-[24px] border border-border-2 bg-card shadow-card">
+        <ul className="overflow-hidden rounded-xl border border-border-2 bg-card shadow-card">
           {rows.map(({ t, m, at }) => {
             const c = t.case_id ? caseById.get(t.case_id) : null;
             const preview = m ? `${m.role === "user" ? "أنت: " : ""}${m.content.replace(/\*\*/g, "").replace(/\s+/g, " ").slice(0, 140)}` : "لا رسائل بعد";
@@ -80,9 +80,9 @@ export default async function ChatHome() {
               <li key={t.id} className="not-first:border-t not-first:border-[var(--hairline-v2)]">
                 <Link href={`/chat/${t.id}`} className="flex min-h-[68px] items-center gap-3.5 px-4 py-3.5 transition hover:bg-card-2 sm:px-[22px]">
                   {c ? (
-                    <span aria-hidden className="inline-flex size-9 shrink-0 items-center justify-center rounded-[12px] border border-border-2 bg-card-2 text-text-3"><FolderClosed size={17} strokeWidth={1.9} /></span>
+                    <span aria-hidden className="inline-flex size-9 shrink-0 items-center justify-center rounded-md border border-border-2 bg-card-2 text-text-3"><FolderClosed size={17} strokeWidth={1.9} /></span>
                   ) : (
-                    <span aria-hidden className="mark font-num inline-flex size-9 shrink-0 items-center justify-center rounded-[12px] text-md font-extrabold">C</span>
+                    <span aria-hidden className="mark font-num inline-flex size-9 shrink-0 items-center justify-center rounded-md text-md font-extrabold">C</span>
                   )}
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-md font-semibold text-title">{c ? caseLabel(c) : t.title || "محادثة عامة"}</span>

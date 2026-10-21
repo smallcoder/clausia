@@ -105,9 +105,9 @@ export function Composer({ target, placeholder = "اكتب لـ Clausia… ما 
       <input ref={fileRef} type="file" accept="application/pdf,image/*" className="sr-only" onChange={(e) => upload(e.target.files?.[0] ?? undefined)} />
       <input ref={camRef} type="file" accept="image/*" capture="environment" className="sr-only" onChange={(e) => upload(e.target.files?.[0] ?? undefined)} />
       {hero ? (
-        <div className="glass rounded-[30px] p-4">
+        <div className="glass rounded-xl p-4">
           <div className="flex items-start gap-3">
-          <span aria-hidden className="mark font-num mt-1 inline-flex size-7 shrink-0 items-center justify-center rounded-[9px] text-sm font-black">C</span>
+          <span aria-hidden className="mark font-num mt-1 inline-flex size-7 shrink-0 items-center justify-center rounded-sm text-sm font-black">C</span>
           <textarea
             ref={area}
             value={text}
@@ -135,7 +135,7 @@ export function Composer({ target, placeholder = "اكتب لـ Clausia… ما 
         <>
           {error || status || reading ? <div className="mb-2 px-3 text-sm leading-4 text-text-4" aria-live="polite">{error ? <span className="text-bad">{error}</span> : reading ? progress : status}</div> : null}
           {/* one-row pill (Roll / Case / Cases mockups): [+] [input] [send], sizes as drawn */}
-          <div className="glass flex items-center gap-1.5 rounded-[24px] p-1.5 sm:gap-2 sm:rounded-[26px] sm:p-[7px]">
+          <div className="glass flex items-center gap-1.5 rounded-xl p-1.5 sm:gap-2 sm:p-[7px]">
             <button type="button" aria-label="إرفاق ورقة" title="إرفاق ورقة" onClick={() => fileRef.current?.click()} disabled={pending}
               className="tap glass-icon inline-flex size-[38px] shrink-0 items-center justify-center rounded-full border border-border transition hover:text-text disabled:opacity-40 sm:size-10"><Plus size={18} strokeWidth={1.9} /></button>
             <textarea

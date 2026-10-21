@@ -52,12 +52,12 @@ export function AppHeader({ initials, officeName, email, alerts }: { initials: s
         </span>
       </Link>
 
-      <nav aria-label="الأقسام" className="glass flex items-center gap-0.5 rounded-[22px] p-1 sm:rounded-[24px]">
+      <nav aria-label="الأقسام" className="glass flex items-center gap-0.5 rounded-lg p-1 sm:rounded-xl">
         {TABS.map(({ href, label, Icon }) => {
           const active = on === href;
           return (
             <Link key={href} href={href} aria-label={label} aria-current={active ? "page" : undefined}
-              className={`tap inline-flex h-9 items-center gap-2 rounded-[18px] text-sm transition sm:h-10 sm:rounded-[20px] sm:px-[18px] sm:text-base ${active ? "bg-selected px-3 font-semibold text-on-selected shadow-[var(--tab-shadow)]" : "glass-icon px-2.5 font-medium hover:text-text"}`}>
+              className={`tap inline-flex h-9 items-center gap-2 rounded-lg text-sm transition sm:h-10 sm:px-[18px] sm:text-base ${active ? "bg-selected px-3 font-semibold text-on-selected shadow-[var(--tab-shadow)]" : "glass-icon px-2.5 font-medium hover:text-text"}`}>
               <Icon size={16} strokeWidth={1.9} aria-hidden className="size-[15px] sm:size-4" />
               <span className={active ? "" : "hidden sm:inline"}>{label}</span>
             </Link>
@@ -77,14 +77,14 @@ export function AppHeader({ initials, officeName, email, alerts }: { initials: s
             {initials}
           </button>
           {open ? (
-            <div className="absolute end-0 top-14 z-50 w-64 rounded-[20px] border border-border-2 bg-card p-2 shadow-pop">
+            <div className="absolute end-0 top-14 z-50 w-64 rounded-lg border border-border-2 bg-card p-2 shadow-pop">
               <div className="px-3 py-2">
                 <div className="truncate text-base leading-5 font-bold text-title">{officeName}</div>
                 <div className="truncate text-sm leading-4 text-text-4" dir="ltr">{email}</div>
               </div>
               <div className="flex items-center justify-between px-3 py-1.5 text-base leading-5 text-text-2">المظهر <ThemeToggle /></div>
               <form action="/auth/signout" method="post">
-                <button className="flex min-h-11 w-full items-center gap-2 rounded-xl px-3 text-base leading-5 text-text-2 hover:bg-card-2">
+                <button className="flex min-h-11 w-full items-center gap-2 rounded-md px-3 text-base leading-5 text-text-2 hover:bg-card-2">
                   <LogOut size={16} strokeWidth={1.9} aria-hidden /> تسجيل الخروج
                 </button>
               </form>

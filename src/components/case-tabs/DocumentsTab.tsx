@@ -42,7 +42,7 @@ export async function DocumentsTab({ caseId }: { caseId: string }) {
 
   return (
     <div className="space-y-4 pb-4">
-      <section className="rounded-[28px] border border-border-2 bg-card shadow-card">
+      <section className="rounded-xl border border-border-2 bg-card shadow-card">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--hairline-v2)] px-6 py-4">
           <h2 className="text-lg font-bold text-title">
             {docs?.length ? pagesWord(docs.length) : "ارفع أول ورقة"}
@@ -118,7 +118,7 @@ export async function DocumentsTab({ caseId }: { caseId: string }) {
                     </summary>
                     <div className="space-y-2.5 px-4 pb-4 sm:px-5">
                       {ps.map((p) => (
-                        <details key={p.page_no} open={p.page_no === ps[0].page_no} className="group/page overflow-hidden rounded-2xl border border-border-2 bg-card-2">
+                        <details key={p.page_no} open={p.page_no === ps[0].page_no} className="group/page overflow-hidden rounded-md border border-border-2 bg-card-2">
                           <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 py-2 [&::-webkit-details-marker]:hidden">
                             <span className="shrink-0 text-sm font-bold text-text">صفحة <span className="font-num">{p.page_no}</span></span>
                             <span className="text-doc min-w-0 flex-1 truncate text-sm text-text-3">{firstWords(p.text)}…</span>

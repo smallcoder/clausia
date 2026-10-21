@@ -12,7 +12,7 @@ import { DECISION } from "@/lib/labels";
 import { recordDecisionAction, type HearingFormState } from "./actions";
 import { useDecisionNotice } from "./DecisionNotices";
 
-const sheetInput = "h-11 w-full rounded-2xl border border-border bg-field px-3 text-md text-text placeholder:text-text-4 focus:border-gold focus:outline-none";
+const sheetInput = "h-11 w-full rounded-md border border-border bg-field px-3 text-md text-text placeholder:text-text-4 focus:border-gold focus:outline-none";
 
 export function RecordDecision({ hearingId, caseId, hearingDate, label, compact = false, layout = "inline", onSaved, onCancel }: {
   hearingId: string;
@@ -46,7 +46,7 @@ export function RecordDecision({ hearingId, caseId, hearingDate, label, compact 
   if (state?.ok) {
     if (notify || onSaved) return null;
     return (
-      <p className="mt-2 rounded-2xl bg-good-bg px-4 py-2.5 text-base text-good" role="status">
+      <p className="mt-2 rounded-md bg-good-bg px-4 py-2.5 text-base text-good" role="status">
         تم حفظ القرار.
         {state.nextDate ? <> الجلسة القادمة: <span className="num font-num font-bold">{formatDmy(state.nextDate)}</span></> : null}
       </p>
@@ -107,7 +107,7 @@ export function RecordDecision({ hearingId, caseId, hearingDate, label, compact 
           <span className="mb-1.5 block text-sm font-semibold text-text-3">المطلوب للجلسة القادمة</span>
           <input name="next_requirements" value={needed} onChange={(e) => setNeeded(e.target.value)} className={sheetInput} placeholder="مثلاً: إعلان الخصم، تقديم أصل العقد" autoComplete="off" />
         </label>
-        {err ? <p className="rounded-[12px] bg-bad-bg px-3 py-2 text-base text-bad" role="alert">{err.error}</p> : null}
+        {err ? <p className="rounded-md bg-bad-bg px-3 py-2 text-base text-bad" role="alert">{err.error}</p> : null}
         <div className="flex items-center gap-2 pt-1">
           <button type="submit" disabled={pending} className="bg-primary-fill inline-flex h-11 flex-1 items-center justify-center rounded-full px-5 text-md font-bold transition disabled:opacity-60">
             {pending ? "جارٍ الحفظ…" : "حفظ القرار"}
@@ -122,5 +122,5 @@ export function RecordDecision({ hearingId, caseId, hearingDate, label, compact 
   );
 
   if (sheet) return form(onCancel);
-  return <div className="mt-3 rounded-[18px] border border-border-2 bg-card-2 p-4">{form(() => setOpen(false))}</div>;
+  return <div className="mt-3 rounded-lg border border-border-2 bg-card-2 p-4">{form(() => setOpen(false))}</div>;
 }

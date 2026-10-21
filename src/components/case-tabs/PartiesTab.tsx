@@ -27,7 +27,7 @@ export async function PartiesTab({ caseId }: { caseId: string }) {
             {g.items.map((p) => {
               const suggested = p.review_status === "suggested";
               return (
-                <li key={p.id} className={cx("rounded-[var(--radius)] border p-4",
+                <li key={p.id} className={cx("rounded-lg border p-4",
                   suggested ? "border-suggest/30 bg-suggest-soft/40" : p.is_our_client ? "border-accent/30 bg-accent-soft" : "border-line bg-surface")}>
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-semibold text-ink">{p.name}</p>

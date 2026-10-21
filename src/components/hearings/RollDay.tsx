@@ -258,7 +258,7 @@ function Content({ s, today, cache, select }: { s: Sel; today: string; cache: Ca
     return (
       <div aria-busy="true" className="skel-shimmer space-y-3 px-1">
         <span aria-hidden className="skel block h-[19px] w-40" />
-        <div className="rounded-[24px] border border-border-2 bg-card p-6 shadow-card"><span aria-hidden className="skel block h-3 w-3/5" /><span aria-hidden className="skel mt-3 block h-2.5 w-2/5" /></div>
+        <div className="rounded-xl border border-border-2 bg-card p-6 shadow-card"><span aria-hidden className="skel block h-3 w-3/5" /><span aria-hidden className="skel mt-3 block h-2.5 w-2/5" /></div>
       </div>
     );
   }

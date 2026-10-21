@@ -42,7 +42,7 @@ export function TodayCard({ todays, tomorrows, tomorrow, nextDate, className = "
   const title = showTomorrow ? `جلسات بكره · ${formatLongDay(tomorrow)}` : "جلسات النهارده";
   return (
     <section aria-label={showTomorrow ? "جلسات بكره" : "جلسات النهارده"}
-      className={`min-w-0 rounded-[24px] border border-border-2 bg-card px-[18px] py-1 shadow-card md:rounded-[28px] md:px-[26px] md:py-2 ${className}`}>
+      className={`min-w-0 rounded-xl border border-border-2 bg-card px-[18px] py-1 shadow-card md:px-[26px] md:py-2 ${className}`}>
       <h2 className="pb-1 pt-3 text-xs font-normal leading-4 text-text-4 md:pb-1.5 md:font-medium md:pt-4 md:text-sm">{title}</h2>
       {list.length ? (
         <div>

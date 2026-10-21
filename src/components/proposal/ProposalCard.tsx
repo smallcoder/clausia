@@ -238,11 +238,11 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
     const limit = !inSheet && p.ops.length > MOBILE_ROWS + 1 && openOps.length > 0;
     return (
       <div className={cx("bg-card", inSheet
-        ? "flex max-h-[88dvh] flex-col rounded-t-[24px] border-t border-border-2 shadow-pop"
-        : "overflow-hidden rounded-[24px] border border-border-2 shadow-card")}>
+        ? "flex max-h-[88dvh] flex-col rounded-t-xl border-t border-border-2 shadow-pop"
+        : "overflow-hidden rounded-xl border border-border-2 shadow-card")}>
         {inSheet ? <div aria-hidden className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-card-3" /> : null}
         <div className="flex shrink-0 items-center gap-3 border-b border-[var(--hairline-v2)] px-4 py-4 sm:px-[22px]">
-          <span className="mark inline-flex size-9 shrink-0 items-center justify-center rounded-[12px]">
+          <span className="mark inline-flex size-9 shrink-0 items-center justify-center rounded-md">
             <FolderClosed aria-hidden size={18} strokeWidth={2} />
           </span>
           <div className="min-w-0 flex-1">
@@ -325,13 +325,13 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
                       </dl>
                     )}
 
-                    <div className="rounded-[14px] border border-border-2 bg-card-2 px-3.5 py-2.5">
+                    <div className="rounded-md border border-border-2 bg-card-2 px-3.5 py-2.5">
                       <p className="text-xs text-text-3">{sourceLong(o)}</p>
                       {o.source.quote ? <p className="text-doc mt-1 text-md text-text">«{o.source.quote}»</p> : <p className="mt-1 text-sm leading-4 text-text-4">بدون اقتباس</p>}
                       {!o.quote_verified ? <p className="mt-1.5 text-sm leading-4 font-medium text-gold">ما لقيتش النص ده في المصدر، راجعه</p> : null}
                     </div>
 
-                    {o.status === "failed" && o.error ? <p className="rounded-xl bg-bad-bg px-3 py-2 text-sm text-bad">{o.error}</p> : null}
+                    {o.status === "failed" && o.error ? <p className="rounded-md bg-bad-bg px-3 py-2 text-sm text-bad">{o.error}</p> : null}
                     {o.result_id && o.tool === "create_case" ? <Link href={`/cases/${o.result_id}`} className="inline-flex min-h-11 items-center text-base font-semibold text-text hover:underline">فتح ملف القضية ←</Link> : null}
 
                     {live ? (
@@ -366,7 +366,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
           ) : null}
         </ul>
 
-        {error ? <p className="mx-4 mt-3 shrink-0 rounded-xl bg-bad-bg px-3 py-2 text-base text-bad sm:mx-[22px]">{error}</p> : null}
+        {error ? <p className="mx-4 mt-3 shrink-0 rounded-md bg-bad-bg px-3 py-2 text-base text-bad sm:mx-[22px]">{error}</p> : null}
 
         <div className={cx("shrink-0 border-t border-[var(--hairline-v2)] px-4 pt-3.5 sm:px-[22px]", openOps.length && more ? "pb-2" : "pb-4",
           inSheet && (openOps.length && more ? "pb-[calc(0.5rem+env(safe-area-inset-bottom))]" : "pb-[calc(1rem+env(safe-area-inset-bottom))]"))}>
@@ -409,7 +409,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
   if (!openOps.length && !showDecided) {
     const saved = p.ops.filter((o) => o.status === "confirmed" || o.status === "suggested").length;
     return (
-      <div className="flex min-h-[52px] items-center gap-2.5 rounded-[18px] border border-border-2 bg-card py-1 pe-2 ps-4 text-base shadow-soft">
+      <div className="flex min-h-[52px] items-center gap-2.5 rounded-lg border border-border-2 bg-card py-1 pe-2 ps-4 text-base shadow-soft">
         <span aria-hidden className="inline-flex size-[22px] shrink-0 items-center justify-center rounded-full bg-good-bg text-good"><Check size={12} strokeWidth={2.6} /></span>
         <button type="button" onClick={() => setShowDecided(true)} aria-expanded={false} title="اعرض التفاصيل"
           className="inline-flex min-h-11 min-w-0 flex-1 items-center gap-1.5 text-start font-semibold text-text hover:text-title">
@@ -455,7 +455,7 @@ function decisionSummary(p: Proposal) {
 function EditFields({ op, values, onChange, display }: {
   op: ProposalOp; values: Record<string, unknown>; onChange: (k: string, v: unknown) => void; display: (f: FieldSpec, v: unknown) => string | null;
 }) {
-  const input = "min-h-11 w-full rounded-[14px] border border-border bg-field px-3 py-2 text-md text-text focus:border-text-4 focus:outline-none";
+  const input = "min-h-11 w-full rounded-md border border-border bg-field px-3 py-2 text-md text-text focus:border-text-4 focus:outline-none";
   return (
     <div className="space-y-2.5">
       {OP_FIELDS[op.tool].map((f) => {

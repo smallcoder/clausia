@@ -47,7 +47,7 @@ export default async function ThreadPage({ params }: { params: Promise<{ threadI
           <ChevronRight aria-hidden size={20} strokeWidth={2.2} />
         </Link>
         <MaybeLink href={caseHref} className="glass flex h-[42px] min-w-0 flex-1 items-center gap-2.5 rounded-full pe-3.5 ps-1.5">
-          <span aria-hidden className="mark font-num inline-flex size-7 shrink-0 items-center justify-center rounded-[9px] text-sm font-extrabold">C</span>
+          <span aria-hidden className="mark font-num inline-flex size-7 shrink-0 items-center justify-center rounded-sm text-sm font-extrabold">C</span>
           <span className="min-w-0 leading-[1.2]">
             <span className="font-num block text-base font-bold text-title">Clausia</span>
             <span className="block truncate text-xs text-text-3">{label}</span>
@@ -59,7 +59,7 @@ export default async function ThreadPage({ params }: { params: Promise<{ threadI
       </div>
 
       {/* desktop: the small centered glass pill, nothing else above the first message */}
-      <MaybeLink href={caseHref} className="glass hidden h-8 max-w-full items-center gap-2 self-center rounded-2xl px-3.5 text-sm sm:inline-flex">
+      <MaybeLink href={caseHref} className="glass hidden h-8 max-w-full items-center gap-2 self-center rounded-md px-3.5 text-sm sm:inline-flex">
         <span className="shrink-0 text-text-3">{kind}</span>
         <span aria-hidden className="text-text-4">·</span>
         <span className="truncate font-semibold text-text">{label}</span>

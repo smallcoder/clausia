@@ -76,7 +76,7 @@ export function RollRow({ h, today, showDate = false, showCourt = false, showTod
   const status = <RowStatus h={h} today={today} showToday={showToday} />;
   return (
     <button type="button" onClick={() => open?.(h)} aria-haspopup="dialog"
-      className="flex w-full items-center gap-3.5 rounded-[20px] border border-border-2 bg-card px-4 py-[13px] text-start shadow-card transition hover:border-border sm:gap-[22px] sm:rounded-[24px] sm:px-6 sm:py-[18px]">
+      className="flex w-full items-center gap-3.5 rounded-lg border border-border-2 bg-card px-4 py-[13px] text-start shadow-card transition hover:border-border sm:gap-[22px] sm:rounded-xl sm:px-6 sm:py-[18px]">
       <CircuitNum h={h} />
       <span className="min-w-0 flex-1 border-s border-[var(--hairline-v2)] ps-3.5 sm:ps-[22px]">
         <span className="flex items-center justify-between gap-2">
@@ -118,7 +118,7 @@ export function RollNext({ h, today }: { h: HearingWithCase; today: string }) {
     </span>
   ) : null;
   return (
-    <div className="rounded-[24px] border border-border-2 bg-card p-[18px] shadow-card sm:flex sm:items-center sm:gap-[26px] sm:rounded-[28px] sm:px-[26px] sm:py-6">
+    <div className="rounded-xl border border-border-2 bg-card p-[18px] shadow-card sm:flex sm:items-center sm:gap-[26px] sm:px-[26px] sm:py-6">
       <button type="button" onClick={() => open?.(h)} aria-haspopup="dialog" className="flex w-full min-w-0 items-center gap-4 text-start sm:flex-1 sm:gap-[26px]">
         <CircuitNum h={h} size="next" />
         <span className="min-w-0 flex-1 border-s border-[var(--hairline-v2)] ps-4 sm:ps-[26px]">
@@ -165,7 +165,7 @@ function Sheet({ h, today, onClose }: { h: HearingWithCase; today: string; onClo
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end sm:block" role="dialog" aria-modal="true" aria-labelledby="roll-sheet-title">
       <button type="button" aria-label="إغلاق" tabIndex={-1} onClick={onClose} className="fade-enter absolute inset-0 bg-backdrop" />
-      <div className="relative flex max-h-[90dvh] flex-col overflow-hidden rounded-t-[28px] border border-border-2 bg-card shadow-pop animate-[sheet-up_260ms_cubic-bezier(0.32,0.72,0,1)] sm:absolute sm:inset-y-4 sm:end-4 sm:max-h-none sm:w-[440px] sm:rounded-[28px] sm:animate-[fade-in_180ms_ease-out]">
+      <div className="relative flex max-h-[90dvh] flex-col overflow-hidden rounded-t-xl border border-border-2 bg-card shadow-pop animate-[sheet-up_260ms_cubic-bezier(0.32,0.72,0,1)] sm:absolute sm:inset-y-4 sm:end-4 sm:max-h-none sm:w-[440px] sm:rounded-xl sm:animate-[fade-in_180ms_ease-out]">
         <div className="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-border sm:hidden" aria-hidden />
         <header className="flex items-start gap-4 border-b border-[var(--hairline-v2)] px-5 pb-4 pt-3 sm:px-6 sm:pt-6">
           <CircuitNum h={h} size="sheet" />
@@ -194,14 +194,14 @@ function Sheet({ h, today, onClose }: { h: HearingWithCase; today: string; onClo
           ) : null}
 
           {h.decision_type ? (
-            <div className="space-y-1.5 rounded-[18px] border border-border-2 bg-card-2 px-4 py-3 text-base text-text-2">
+            <div className="space-y-1.5 rounded-lg border border-border-2 bg-card-2 px-4 py-3 text-base text-text-2">
               <div><span className="text-text-3">القرار: </span><span className="font-semibold text-text">{DECISION[h.decision_type]}</span></div>
               {h.decision_text ? <p className="text-doc text-md text-text">{h.decision_text}</p> : null}
               {h.next_date ? <div><span className="text-text-3">الجلسة القادمة: </span><span className="num font-semibold text-text">{formatDayLabel(h.next_date)}</span></div> : null}
               {h.next_requirements ? <div><span className="text-text-3">المطلوب لها: </span>{h.next_requirements}</div> : null}
             </div>
           ) : saved ? (
-            <div role="status" className="rounded-[18px] bg-good-bg px-4 py-3 text-base text-good">
+            <div role="status" className="rounded-lg bg-good-bg px-4 py-3 text-base text-good">
               <div className="font-bold">اتسجّل القرار.</div>
               {saved.nextDate ? <div className="mt-0.5">الجلسة القادمة: <span className="num font-semibold">{formatDayLabel(saved.nextDate)}</span> — اتضافت للرول.</div> : null}
             </div>
@@ -209,7 +209,7 @@ function Sheet({ h, today, onClose }: { h: HearingWithCase; today: string; onClo
             <RecordDecision layout="sheet" hearingId={h.id} caseId={c.id} hearingDate={h.hearing_date} label={label}
               onSaved={(r) => setSaved({ decision: r.decision, nextDate: r.nextDate })} onCancel={onClose} />
           ) : (
-            <p className="rounded-[18px] bg-card-2 px-4 py-3 text-base leading-7 text-text-3">
+            <p className="rounded-lg bg-card-2 px-4 py-3 text-base leading-7 text-text-3">
               الجلسة دي لسه ما جاتش. بعدها، سجّل القرار من هنا أو اكتبه لـ Clausia زي ما سمعته.
             </p>
           )}

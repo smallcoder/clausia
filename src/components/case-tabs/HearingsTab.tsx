@@ -86,7 +86,7 @@ export async function HearingsTab({ caseId }: { caseId: string }) {
           ) : (
             <p className="px-5 py-5 text-base leading-7 text-text-3">لسه مفيش جلسات متسجلة للقضية دي. أضف أول جلسة بتاريخها، أو قول لـ Clausia ميعادها.</p>
           )}
-          <div className="overflow-hidden rounded-b-[22px] border-t border-border-2">
+          <div className="overflow-hidden rounded-b-lg border-t border-border-2">
             <AddHearing caseId={caseId} />
           </div>
         </Panel>

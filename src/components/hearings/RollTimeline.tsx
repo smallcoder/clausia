@@ -56,5 +56,5 @@ export function Timeline({ rows, today, next, label, showToday = false }: { rows
 }
 
 export function Empty({ children }: { children: ReactNode }) {
-  return <div className="rounded-[24px] border border-border-2 bg-card px-5 py-6 text-center text-base leading-7 text-text-3 shadow-card">{children}</div>;
+  return <div className="rounded-xl border border-border-2 bg-card px-5 py-6 text-center text-base leading-7 text-text-3 shadow-card">{children}</div>;
 }

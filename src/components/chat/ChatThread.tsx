@@ -131,7 +131,7 @@ export function ChatThread({ threadId, caseId, items, lookup, docs = {} }: {
             {m.role === "user" ? (
               <>
                 {m.attachments.length && AUTO_ATTACH.test(m.content) ? null : (
-                  <div className="max-w-[88%] self-end whitespace-pre-wrap break-words rounded-[22px] rounded-bl-[6px] border border-border-2 bg-card px-[17px] py-[13px] text-md leading-[1.75] text-text dark:bg-card-2 sm:max-w-[72%]">
+                  <div className="max-w-[88%] self-end whitespace-pre-wrap break-words rounded-lg rounded-bl-sm border border-border-2 bg-card px-[17px] py-[13px] text-md leading-[1.75] text-text dark:bg-card-2 sm:max-w-[72%]">
                     {m.content}
                   </div>
                 )}
@@ -213,7 +213,7 @@ function ClausiaLine({ children }: { children: ReactNode }) {
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
       <div className="flex items-center gap-2 self-start">
-        <span aria-hidden className="mark font-num inline-flex size-6 shrink-0 items-center justify-center rounded-[8px] text-xs font-extrabold sm:size-7 sm:rounded-[9px] sm:text-sm">C</span>
+        <span aria-hidden className="mark font-num inline-flex size-6 shrink-0 items-center justify-center rounded-sm text-xs font-extrabold sm:size-7 sm:text-sm">C</span>
         <span className="text-sm font-bold leading-[normal] text-title sm:hidden">Clausia</span>
       </div>
       <div className="min-w-0 flex-1 text-md leading-[1.8] text-text sm:pt-[3px]">{children}</div>
@@ -228,8 +228,8 @@ const READ: Record<ThreadDoc["status"], string> = { done: "اتقرت", reading:
 function AttachmentChip({ name, doc, tuck }: { name: string; doc?: ThreadDoc; tuck?: boolean }) {
   const meta = doc ? [doc.pages ? pagesLabel(doc.pages) : null, READ[doc.status]].filter(Boolean).join(" · ") : null;
   return (
-    <div className={cx("flex max-w-[88%] items-center gap-2.5 self-end rounded-[16px] border border-border-2 bg-card py-2 pe-2.5 ps-3.5 dark:bg-card-2 sm:max-w-[72%]", tuck && "-mt-1.5")}>
-      <span aria-hidden className="flex h-9 w-[30px] shrink-0 items-center justify-center rounded-md bg-paper-thumb text-xs font-extrabold text-[var(--paper-thumb-ink)]">
+    <div className={cx("flex max-w-[88%] items-center gap-2.5 self-end rounded-md border border-border-2 bg-card py-2 pe-2.5 ps-3.5 dark:bg-card-2 sm:max-w-[72%]", tuck && "-mt-1.5")}>
+      <span aria-hidden className="flex h-9 w-[30px] shrink-0 items-center justify-center rounded-sm bg-paper-thumb text-xs font-extrabold text-[var(--paper-thumb-ink)]">
         {doc?.image ? "IMG" : "PDF"}
       </span>
       <span className="min-w-0">

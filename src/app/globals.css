@@ -96,7 +96,6 @@
   --suggest: var(--gold); --suggest-soft: var(--accent-wash);
   --ok: var(--good); --ok-soft: var(--good-bg); --danger: var(--bad); --danger-soft: var(--bad-bg);
   --backdrop: rgba(15,22,38,0.4);
-  --radius: 20px; --radius-sm: 12px; --radius-lg: 28px;
   --shadow-1: var(--shadow-soft); --shadow-2: var(--shadow-card); --shadow-3: var(--shadow-pop);
 }
 
@@ -284,7 +283,6 @@
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Arabic", "SF Pro Text", system-ui, sans-serif;
   --font-num: -apple-system, "SF Pro Display", system-ui, var(--font-inter), sans-serif;
   --font-naskh: var(--font-naskh), serif;
-  --radius-card: var(--radius);
   --shadow-1: var(--shadow-1);
   --shadow-2: var(--shadow-2);
   --shadow-3: var(--shadow-3);
@@ -313,6 +311,18 @@
   --text-display: 54px;
   --text-display-lg: 76px;
   --text-display-xl: 92px;
+}
+
+/*
+ * Radius scale (DESIGN.md «Radius»): 12 / 20 / 26 and the pill (rounded-full), plus 8 for marks and tiles of 32px or less.
+ * Tailwind's own rounded-xs…4xl are reset, so a radius off this scale does not compile.
+ */
+@theme {
+  --radius-*: initial;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 26px;
 }
 
 html { background-color: var(--bg); }
@@ -375,10 +385,10 @@ body {
 
 /* Skeleton, quiet pulse */
 @keyframes skeleton-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-.skeleton { background: var(--line); border-radius: 8px; animation: skeleton-pulse 1.4s ease-in-out infinite; }
+.skeleton { background: var(--line); border-radius: var(--radius-sm); animation: skeleton-pulse 1.4s ease-in-out infinite; }
 /* v2 loading: solid shapes in the page's real layout, one calm shimmer sweeping the whole page (no spinners) */
 @keyframes skel-sweep { from { background-position: 150% 0; } to { background-position: -50% 0; } }
-.skel { background-color: var(--skel); border-radius: 8px; }
+.skel { background-color: var(--skel); border-radius: var(--radius-sm); }
 .skel-shimmer .skel {
   background-image: linear-gradient(100deg, transparent 30%, var(--skel-hi) 50%, transparent 70%);
   background-size: 200% 100%; background-attachment: fixed; animation: skel-sweep 1.8s ease-in-out infinite;
@@ -403,4 +413,4 @@ body {
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
-:focus-visible { outline: 2px solid var(--accent-base); outline-offset: 2px; border-radius: 6px; }
+:focus-visible { outline: 2px solid var(--accent-base); outline-offset: 2px; border-radius: var(--radius-sm); }

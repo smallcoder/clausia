@@ -22,7 +22,7 @@ const SSR_WEEKS = 3;
 function SideCard({ count, rows }: { count: number; rows: HearingWithCase[] }) {
   const more = count - rows.length;
   return (
-    <section aria-label="جلسات محتاجة قرار" className="rounded-[28px] border border-[var(--accent-edge)] bg-card px-6 pb-1.5 pt-2 shadow-card">
+    <section aria-label="جلسات محتاجة قرار" className="rounded-xl border border-[var(--accent-edge)] bg-card px-6 pb-1.5 pt-2 shadow-card">
       <Link href="/hearings?filter=undecided" className="flex items-center gap-3 pb-3 pt-4 transition hover:opacity-80">
         <span className="font-num text-2xl font-extralight leading-none text-gold">{two(count)}</span>
         <span>

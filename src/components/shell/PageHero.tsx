@@ -100,7 +100,7 @@ export function StatusChip({ tone, children }: { tone: "good" | "warn" | "neutra
 export function ClausiaSays({ children, label, size = "lg" }: { children: ReactNode; label?: string; size?: "lg" | "md" }) {
   return (
     <div className="flex items-start gap-3">
-      <span className={`mark font-num inline-flex shrink-0 items-center justify-center font-black shadow-mark ${size === "lg" ? "size-[30px] rounded-[9px] text-base" : "size-[26px] rounded-[8px] text-sm"}`}>C</span>
+      <span className={`mark font-num inline-flex shrink-0 items-center justify-center font-black shadow-mark ${size === "lg" ? "size-[30px] rounded-sm text-base" : "size-[26px] rounded-sm text-sm"}`}>C</span>
       <div className="min-w-0 flex-1 pt-0.5">
         {label ? <div className="text-sm font-bold text-gold">{label}</div> : null}
         <div className={`leading-[1.85] text-text-3 ${size === "lg" ? "text-md sm:text-lg" : "text-md"}`}>{children}</div>
@@ -112,7 +112,7 @@ export function ClausiaSays({ children, label, size = "lg" }: { children: ReactN
 /** Solid content card (28px radius, hairline, deep soft shadow). */
 export function Panel({ title, meta, children, className = "" }: { title?: ReactNode; meta?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section className={`rounded-[28px] border border-border-2 bg-card shadow-card ${className}`}>
+    <section className={`rounded-xl border border-border-2 bg-card shadow-card ${className}`}>
       {title ? (
         <div className="flex items-center justify-between gap-3 border-b border-[var(--hairline-v2)] px-6 py-4">
           <h2 className="text-lg font-bold text-title">{title}</h2>

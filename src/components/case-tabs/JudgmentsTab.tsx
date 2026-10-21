@@ -34,7 +34,7 @@ export function JudgmentsTab({ cf, caseId }: { cf: CaseFile; caseId: string }) {
                 {outcome ? <StatusChip tone={outcome.tone}>{outcome.label}</StatusChip> : null}
                 {suggested ? <Suggested /> : null}
               </div>
-              <div className="rounded-2xl bg-card-2 px-4 py-3">
+              <div className="rounded-md bg-card-2 px-4 py-3">
                 <p className="text-sm leading-4 text-text-4">المنطوق</p>
                 <p className="text-doc mt-1 text-md text-text">{j.operative_text}</p>
               </div>

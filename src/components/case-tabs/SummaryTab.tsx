@@ -86,7 +86,7 @@ export async function SummaryTab({ caseId }: { caseId: string }) {
           </Card>
         ) : null}
 
-        <section className="rounded-[var(--radius)] bg-brass-soft p-5">
+        <section className="rounded-lg bg-brass-soft p-5">
           <h2 className="font-semibold text-brass">تحليل Clausia</h2>
           <p className="mt-2 text-md leading-relaxed text-ink-2">سيكتب Clausia هنا رأيًا قانونيًا أو مذكرة من ملف القضية.</p>
           <Button variant="secondary" size="sm" className="mt-4" disabled>اكتب رأيًا قانونيًا (قريبًا)</Button>
@@ -103,7 +103,7 @@ export async function SummaryTab({ caseId }: { caseId: string }) {
               ["requests", "الطلبات والدفوع", counts.requests + counts.arguments], ["judgments", "الأحكام", counts.judgments],
             ] as const).map(([tab, label, n]) => (
               <li key={tab}>
-                <Link href={`/cases/${caseId}?tab=${tab}`} className="block rounded-[var(--radius-sm)] bg-surface-2 px-3 py-2 hover:border-line-strong">
+                <Link href={`/cases/${caseId}?tab=${tab}`} className="block rounded-md bg-surface-2 px-3 py-2 hover:border-line-strong">
                   <span className="num block text-lg leading-7 font-semibold text-ink">{n}</span>
                   <span className="text-ink-3">{label}</span>
                 </Link>

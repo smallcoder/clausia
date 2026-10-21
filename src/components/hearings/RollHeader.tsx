@@ -26,7 +26,7 @@ export function RollHeader({ back, eyebrow, title, action }: { back?: string; ey
 export function RollSays({ children }: { children: ReactNode }) {
   return (
     <div className="flex gap-3 px-2">
-      <span aria-hidden className="mark font-num inline-flex size-7 shrink-0 items-center justify-center rounded-[9px] text-sm font-extrabold">C</span>
+      <span aria-hidden className="mark font-num inline-flex size-7 shrink-0 items-center justify-center rounded-sm text-sm font-extrabold">C</span>
       <p className="mt-0.5 min-w-0 flex-1 text-base leading-[1.8] text-text-3">{children}</p>
     </div>
   );

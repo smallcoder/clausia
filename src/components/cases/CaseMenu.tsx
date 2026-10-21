@@ -20,7 +20,7 @@ export function CaseMenu({ caseId, chatHref, align, className }: { caseId: strin
     return () => { document.removeEventListener("mousedown", outside); document.removeEventListener("keydown", esc); };
   }, [open]);
   const close = () => setOpen(false);
-  const item = "flex min-h-11 items-center rounded-[14px] px-3.5 text-base font-medium text-text transition-colors hover:bg-card-2/70";
+  const item = "flex min-h-11 items-center rounded-md px-3.5 text-base font-medium text-text transition-colors hover:bg-card-2/70";
   return (
     <div ref={box} className="relative">
       <button type="button" onClick={() => setOpen(!open)} aria-label="المزيد" title="المزيد" aria-haspopup="menu" aria-expanded={open}
@@ -28,7 +28,7 @@ export function CaseMenu({ caseId, chatHref, align, className }: { caseId: strin
         <Ellipsis size={20} strokeWidth={2} aria-hidden />
       </button>
       {open ? (
-        <div role="menu" aria-label="القضية" className={`glass absolute top-[calc(100%+8px)] z-50 w-56 rounded-[20px] p-1.5 ${align === "end" ? "end-0" : "start-0"}`}>
+        <div role="menu" aria-label="القضية" className={`glass absolute top-[calc(100%+8px)] z-50 w-56 rounded-lg p-1.5 ${align === "end" ? "end-0" : "start-0"}`}>
           <Link role="menuitem" href={`/cases/${caseId}?tab=details`} onClick={close} className={item}>بيانات الدعوى</Link>
           <Link role="menuitem" href={`/cases/${caseId}?tab=hearings`} onClick={close} className={item}>الجلسات</Link>
           <Link role="menuitem" href={chatHref} onClick={close} className={item}>محادثة القضية</Link>

@@ -98,9 +98,9 @@ export function HomeComposer() {
         ))}
       </div>
       <input ref={fileRef} type="file" accept="application/pdf,image/*" className="sr-only" onChange={(e) => upload(e.target.files?.[0] ?? undefined)} />
-      <div className="glass rounded-[24px] px-3 pb-2.5 pt-3.5 sm:rounded-[26px] sm:px-3.5 sm:pb-3 sm:pt-4">
+      <div className="glass rounded-xl px-3 pb-2.5 pt-3.5 sm:px-3.5 sm:pb-3 sm:pt-4">
         <div className="flex items-start gap-2.5 px-1 sm:gap-3 sm:px-1.5 sm:pt-0.5">
-          <span aria-hidden className="mark font-num mt-0.5 inline-flex size-[22px] shrink-0 items-center justify-center rounded-[7px] text-xs font-extrabold sm:size-[26px] sm:rounded-[9px] sm:text-sm dark:size-6 dark:border dark:border-border sm:dark:size-7">C</span>
+          <span aria-hidden className="mark font-num mt-0.5 inline-flex size-[22px] shrink-0 items-center justify-center rounded-sm text-xs font-extrabold sm:size-[26px] sm:text-sm dark:size-6 dark:border dark:border-border sm:dark:size-7">C</span>
           <textarea
             ref={area}
             value={text}

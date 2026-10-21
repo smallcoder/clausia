@@ -26,7 +26,7 @@ const REQUEST_KIND: Record<string, string> = { primary: "طلب أصلي", alter
 const ARG_KIND: Record<string, string> = { formal_defense: "دفع شكلي", substantive_defense: "دفع موضوعي", argument: "دفاع" };
 
 /** Solid content card (mockup: 24–26px radius, hairline, deep soft shadow). */
-const CARD = "rounded-[24px] border border-border-2 bg-card shadow-card lg:rounded-[26px]";
+const CARD = "rounded-xl border border-border-2 bg-card shadow-card";
 
 /** «مقترحة · راجعها»: a 5px gold dot + 11px gold word (needs the lawyer's action). */
 export const Suggested = ({ label = "مقترحة · راجعها" }: { label?: string }) => (
@@ -34,7 +34,7 @@ export const Suggested = ({ label = "مقترحة · راجعها" }: { label?: 
 );
 
 /** The Clausia «C» mark (mockup: 32px / 11px radius / 15px on desktop, 26px / 9px / 12px on mobile; a hairline + inner light in dark). */
-const MARK = "mark font-num inline-flex shrink-0 items-center justify-center font-extrabold size-[26px] rounded-[9px] text-sm lg:size-8 lg:rounded-[11px] lg:text-md dark:border dark:border-white/8 dark:shadow-[var(--mark-shadow)]";
+const MARK = "mark font-num inline-flex shrink-0 items-center justify-center font-extrabold size-[26px] rounded-sm text-sm lg:size-8 lg:rounded-md lg:text-md dark:border dark:border-white/8 dark:shadow-[var(--mark-shadow)]";
 
 function pendingOf<T>(cf: CaseFile, table: string): T[] {
   return cf.pending_suggestions.filter((p) => p.table === table).map((p) => p.item as T);
@@ -43,7 +43,7 @@ function pendingOf<T>(cf: CaseFile, table: string): T[] {
 /** Source + quote block inside a sheet. Quoted court / document text is verbatim, in Naskh. */
 function SheetSource({ cf, item }: { cf: CaseFile; item: { review_status: string; created_by: string; source: CaseFile["facts"][number]["source"] } }) {
   return (
-    <div className="space-y-1.5 rounded-2xl bg-card-2 px-4 py-3 text-sm text-text-3">
+    <div className="space-y-1.5 rounded-md bg-card-2 px-4 py-3 text-sm text-text-3">
       <p>{sourceText(item.source, cf.documents)} · {item.review_status === "suggested" ? "مقترحة، لسه ما اتأكدتش" : "مؤكدة"} · {item.created_by === "model" ? "صاغها Clausia" : "كتبها المحامي"}</p>
       {item.source.quote ? <p className="text-doc text-base text-text-2">«{item.source.quote}»</p> : null}
       {item.source.document_id ? <a href={`/api/documents/${item.source.document_id}`} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center font-semibold text-text-2 underline-offset-4 hover:underline">فتح المستند</a> : null}
@@ -83,7 +83,7 @@ function ReviewBanner({ cf, hs, caseId, className }: { cf: CaseFile; hs: Hearing
   return (
     <div className={`space-y-2 lg:hidden ${className}`}>
       {rows.map((r) => {
-        const cls = "flex min-h-11 items-center gap-2.5 rounded-[18px] border border-[var(--accent-edge)] px-3.5 py-3 text-base text-text";
+        const cls = "flex min-h-11 items-center gap-2.5 rounded-lg border border-[var(--accent-edge)] px-3.5 py-3 text-base text-text";
         const body = (
           <>
             <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-gold" />
@@ -134,7 +134,7 @@ function Facts({ cf, caseId }: { cf: CaseFile; caseId: string }) {
   const c = cf.case;
   const fd = c.facts_date && c.facts_date_precision !== "unknown" ? formatDmy(c.facts_date, c.facts_date_precision) : null;
   return (
-    <section id="facts" className={`scroll-mt-24 ${CARD} rounded-[26px]`} aria-label="الوقائع">
+    <section id="facts" className={`scroll-mt-24 ${CARD} rounded-xl`} aria-label="الوقائع">
       <div className="flex items-baseline justify-between gap-3 px-[18px] pt-4 lg:px-6 lg:pb-1.5 lg:pt-[18px]">
         <h2 className="hidden text-lg font-bold text-title lg:block">الوقائع</h2>
         <span className="text-xs text-text-4">تاريخ الوقائع {fd ? <span className="num font-num">{fd}</span> : "مش محدد"} · بيحدد نسخة القانون</span>
@@ -142,7 +142,7 @@ function Facts({ cf, caseId }: { cf: CaseFile; caseId: string }) {
       {all.length ? (
         <div className="px-3 pb-1.5 pt-2.5 lg:px-4">
           {all.map((f, i) => (
-            <TapItem key={f.id} id={f.id} title="واقعة" tight className="rounded-2xl px-1.5 lg:px-2" row={<FactRow f={f} last={i === all.length - 1} cf={cf} />}>
+            <TapItem key={f.id} id={f.id} title="واقعة" tight className="rounded-md px-1.5 lg:px-2" row={<FactRow f={f} last={i === all.length - 1} cf={cf} />}>
               <p className="font-num text-sm font-bold text-title">{factDate(f.date, f.date_precision)}{f.date_text && f.date_text !== factDate(f.date, f.date_precision) ? <span className="font-sans font-normal text-text-4"> · «{f.date_text}»</span> : null}</p>
               <p className="text-doc text-lg text-text">{f.text}</p>
               <SheetSource cf={cf} item={f} />
@@ -163,7 +163,7 @@ function Facts({ cf, caseId }: { cf: CaseFile; caseId: string }) {
 function TextItem({ cf, caseId, table, item, kindLabel }: { cf: CaseFile; caseId: string; table: "case_requests" | "case_arguments"; item: Req | Arg; kindLabel: string | null }) {
   const suggested = item.review_status === "suggested";
   return (
-    <TapItem id={item.id} title={table === "case_requests" ? "طلب" : "دفع / دفاع"} tight className="-mx-2 mt-1.5 rounded-xl px-2 lg:mt-2"
+    <TapItem id={item.id} title={table === "case_requests" ? "طلب" : "دفع / دفاع"} tight className="-mx-2 mt-1.5 rounded-md px-2 lg:mt-2"
       row={<span className="block text-base leading-[1.7] text-text">{item.text}{suggested ? <span className="ms-2 inline-block"><Suggested /></span> : null}</span>}>
       {kindLabel ? <p className="text-sm font-bold text-text-3">{kindLabel}</p> : null}
       <p className="text-doc text-lg text-text">{item.text}</p>
@@ -189,7 +189,7 @@ function Sides({ cf, caseId, className }: { cf: CaseFile; caseId: string; classN
   const ours = args.filter((a) => a.side === "ours");
   const theirs = args.filter((a) => a.side === "opponent");
   // mobile: one card (4px 18px) with the two halves split by a hairline; desktop: two equal-height cards 14px apart
-  const card = "lg:flex-1 lg:rounded-[24px] lg:border lg:border-border-2 lg:bg-card lg:px-[22px] lg:py-[18px] lg:shadow-card";
+  const card = "lg:flex-1 lg:rounded-xl lg:border lg:border-border-2 lg:bg-card lg:px-[22px] lg:py-[18px] lg:shadow-card";
   const empty = (t: string) => <p className="mt-1.5 text-base leading-[1.7] text-text-4 lg:mt-2">{t}</p>;
   return (
     <div className={`${CARD} px-[18px] py-1 lg:flex lg:gap-3.5 lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none ${className}`}>
@@ -256,7 +256,7 @@ function HearingCard({ cf, hs, today, caseId, className }: { cf: CaseFile; hs: H
   // «سجّله» link inside stays a separate, non-nested target)
   return (
     <div className={`${CARD} relative px-[18px] py-4 transition-colors hover:bg-card-2/40 lg:p-[22px] ${className}`}>
-      <Link href={`/cases/${caseId}?tab=hearings`} aria-label="الجلسات" className="absolute inset-0 rounded-[inherit]" />
+      <Link href={`/cases/${caseId}?tab=hearings`} aria-label="الجلسات" className="absolute inset-0 rounded-[inherit]" /* ds-allow: the link overlay takes its card's radius */ />
       <div className="flex items-center gap-4 lg:gap-[18px]">
         <DayBlock iso={h.date} />
         <div className="min-w-0 flex-1 border-s border-[var(--hairline-v2)] ps-4 lg:ps-[18px]">
@@ -321,7 +321,7 @@ function Parties({ cf, caseId }: { cf: CaseFile; caseId: string }) {
       {rows.length ? (
         <div className="lg:[&>*]:border-t [&>*+*]:border-t [&>*]:border-[var(--hairline-v2)]">
           {rows.map((r, i) => r.id && r.party ? (
-            <TapItem key={r.id} id={r.id} title="طرف في الدعوى" className="-mx-2 rounded-xl px-2" row={line(r.name, r.role, r.suggested ? <Suggested label="مقترح · راجعه" /> : null)}>
+            <TapItem key={r.id} id={r.id} title="طرف في الدعوى" className="-mx-2 rounded-md px-2" row={line(r.name, r.role, r.suggested ? <Suggested label="مقترح · راجعه" /> : null)}>
               <div>
                 <p className="text-lg font-bold text-text">{r.name}</p>
                 <p className="text-sm text-text-3">{r.role}</p>
@@ -351,7 +351,7 @@ function Docs({ cf, caseId }: { cf: CaseFile; caseId: string }) {
         <div className="lg:[&>*]:border-t [&>*+*]:border-t [&>*]:border-[var(--hairline-v2)]">
           {shown.map((d) => (
             <a key={d.id} href={`/api/documents/${d.id}`} target="_blank" rel="noopener" title={d.file_name}
-              className="-mx-2 block min-h-11 rounded-xl px-2 py-3 transition-colors hover:bg-card-2/60">
+              className="-mx-2 block min-h-11 rounded-md px-2 py-3 transition-colors hover:bg-card-2/60">
               <span className="block truncate text-base font-semibold text-text">{docName(d)}</span>
               <span className="mt-0.5 block text-xs text-text-3">{[pagesLabel(d.page_count), READ_SHORT[d.read_status] ?? d.read_status].filter(Boolean).join(" · ")}</span>
             </a>

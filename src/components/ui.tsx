@@ -22,7 +22,7 @@ export function PageHeader({ title, subtitle, actions }: { title: ReactNode; sub
 
 /** Inset card: rounded 14px, very soft shadow, no hard border. */
 export function Card({ className, ...p }: ComponentProps<"section">) {
-  return <section {...p} className={cx("rounded-[var(--radius)] bg-surface shadow-1", className)} />;
+  return <section {...p} className={cx("rounded-lg bg-surface shadow-1", className)} />;
 }
 
 /** iOS-style inset grouped list. Children are rows; hairlines are drawn between them, inset from the leading edge. */
@@ -30,7 +30,7 @@ export function GroupedList({ className, header, footer, children }: { className
   return (
     <div className={className}>
       {header ? <div className="mb-2 px-4 text-sm leading-[1.45] font-medium text-ink-3">{header}</div> : null}
-      <div className="grouped overflow-hidden rounded-[var(--radius)] bg-surface shadow-1">{children}</div>
+      <div className="grouped overflow-hidden rounded-lg bg-surface shadow-1">{children}</div>
       {footer ? <div className="mt-2 px-4 text-sm leading-[1.45] text-ink-3">{footer}</div> : null}
     </div>
   );
@@ -77,7 +77,7 @@ export function Button({ variant = "primary", size = "md", className, ...p }: Co
     <button
       {...p}
       className={cx(
-        "inline-flex select-none items-center justify-center gap-1.5 rounded-[var(--radius-sm)] font-semibold transition duration-150 disabled:cursor-not-allowed disabled:opacity-45",
+        "inline-flex select-none items-center justify-center gap-1.5 rounded-md font-semibold transition duration-150 disabled:cursor-not-allowed disabled:opacity-45",
         size === "sm" ? "min-h-11 px-3.5 text-base leading-[1.55] lg:min-h-9" : "min-h-11 px-5 text-md leading-[1.6]",
         BTN[variant],
         className,
@@ -87,7 +87,7 @@ export function Button({ variant = "primary", size = "md", className, ...p }: Co
 }
 
 export function LinkButton({ variant = "secondary", className, ...p }: ComponentProps<typeof Link> & { variant?: BtnVariant }) {
-  return <Link {...p} className={cx("inline-flex min-h-11 items-center justify-center gap-1.5 rounded-[var(--radius-sm)] px-5 text-md leading-[1.6] font-semibold transition duration-150", BTN[variant], className)} />;
+  return <Link {...p} className={cx("inline-flex min-h-11 items-center justify-center gap-1.5 rounded-md px-5 text-md leading-[1.6] font-semibold transition duration-150", BTN[variant], className)} />;
 }
 
 type Tone = "neutral" | "accent" | "suggest" | "ok" | "danger" | "brass";
@@ -101,12 +101,12 @@ const TONE: Record<Tone, string> = {
 };
 
 export function Badge({ tone = "neutral", children, className }: { tone?: Tone; children: ReactNode; className?: string }) {
-  return <span className={cx("inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-sm leading-[1.45] font-medium", TONE[tone], className)}>{children}</span>;
+  return <span className={cx("inline-flex items-center gap-1 rounded-sm px-2 py-0.5 text-sm leading-[1.45] font-medium", TONE[tone], className)}>{children}</span>;
 }
 
 export function EmptyState({ title, hint, action, icon: Icon = Inbox }: { title: string; hint?: string; action?: ReactNode; icon?: LucideIcon }) {
   return (
-    <div className="flex flex-col items-center rounded-[var(--radius)] bg-surface px-6 py-10 text-center shadow-1">
+    <div className="flex flex-col items-center rounded-lg bg-surface px-6 py-10 text-center shadow-1">
       <span className="mb-3 flex size-12 items-center justify-center rounded-full bg-surface-2 text-ink-3">
         <Icon aria-hidden size={22} strokeWidth={1.5} />
       </span>
@@ -131,7 +131,7 @@ export function PageSkeleton({ rows = 5, cards = 1 }: { rows?: number; cards?: n
       {Array.from({ length: cards }).map((_, c) => (
         <div key={c} className="mb-7">
           <Skeleton className="mb-3 h-5 w-28" />
-          <div className="grouped overflow-hidden rounded-[var(--radius)] bg-surface shadow-1">
+          <div className="grouped overflow-hidden rounded-lg bg-surface shadow-1">
             {Array.from({ length: rows }).map((_, i) => (
               <div key={i} className="flex items-center gap-3 px-4 py-3.5">
                 <div className="flex-1 space-y-2"><Skeleton className="h-4 w-3/5" /><Skeleton className="h-3 w-2/5" /></div>

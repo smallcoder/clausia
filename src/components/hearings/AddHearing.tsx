@@ -9,7 +9,7 @@ import { cx } from "@/components/ui";
 import { formatDmy } from "@/lib/dates";
 import { addHearingAction, type HearingFormState } from "./actions";
 
-const input = "h-11 w-full rounded-2xl border border-border bg-field px-3 text-md text-text placeholder:text-text-4 focus:border-gold focus:outline-none";
+const input = "h-11 w-full rounded-md border border-border bg-field px-3 text-md text-text placeholder:text-text-4 focus:border-gold focus:outline-none";
 
 export function AddHearing({ caseId }: { caseId: string }) {
   const [open, setOpen] = useState(false);
@@ -54,7 +54,7 @@ export function AddHearing({ caseId }: { caseId: string }) {
           <input name="purpose" value={purpose} onChange={(e) => setPurpose(e.target.value)} className={input} placeholder="مثلاً: أول جلسة، لتقديم المستندات" autoComplete="off" />
         </label>
       </div>
-      {err ? <p className="rounded-xl bg-bad-bg px-3 py-2 text-base text-bad" role="alert">{err.error}</p> : null}
+      {err ? <p className="rounded-md bg-bad-bg px-3 py-2 text-base text-bad" role="alert">{err.error}</p> : null}
       {savedLine}
       <div className="flex items-center gap-2">
         <button type="submit" disabled={pending} className="bg-primary-fill inline-flex h-11 items-center justify-center rounded-full px-6 text-md font-bold transition disabled:opacity-60">

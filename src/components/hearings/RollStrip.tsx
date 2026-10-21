@@ -337,7 +337,7 @@ export function RollStrip({ center, selected, focusDay, today, counts, pinned, o
           </button>
         ) : null}
       </div>
-      <nav aria-label="أيام الرول" className="relative mt-2 sm:overflow-hidden sm:rounded-[30px] sm:border sm:border-border-2 sm:bg-card sm:shadow-card">
+      <nav aria-label="أيام الرول" className="relative mt-2 sm:overflow-hidden sm:rounded-xl sm:border sm:border-border-2 sm:bg-card sm:shadow-card">
         <button type="button" onClick={() => step(-1)} aria-label="الأسبوع اللي فات" aria-disabled={!vis.canPrev || undefined} className={cx(arrow, "start-1.5")}><ChevronRight size={16} strokeWidth={1.9} aria-hidden /></button>
         <div ref={scroller} data-roll-scroller
           className="no-scrollbar @container snap-x snap-mandatory overflow-x-auto overscroll-x-contain sm:scroll-px-12 sm:data-[dragging]:cursor-grabbing"
@@ -346,7 +346,7 @@ export function RollStrip({ center, selected, focusDay, today, counts, pinned, o
           onClickCapture={(e) => { if (suppressClick.current) { e.preventDefault(); e.stopPropagation(); suppressClick.current = false; } }}>
           <div ref={track} onKeyDown={onKeyDown} className="relative flex w-max select-none sm:gap-1.5 sm:px-12 sm:py-1.5">
             <span ref={pill} aria-hidden
-              className="pointer-events-none absolute left-0 top-0 rounded-[18px] bg-selected opacity-0 shadow-[0_4px_10px_-4px_var(--backdrop)] transition-[transform,width] duration-[260ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] sm:rounded-[22px]" />
+              className="pointer-events-none absolute left-0 top-0 rounded-lg bg-selected opacity-0 shadow-[0_4px_10px_-4px_var(--backdrop)] transition-[transform,width] duration-[260ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]" />
             {days.map((d) => {
               const on = d === selected;
               const solid = on && !measured; // before the pill is placed, the tile paints its own background
@@ -356,7 +356,7 @@ export function RollStrip({ center, selected, focusDay, today, counts, pinned, o
                 <a key={d} href={dayHref(d)} data-day={d} draggable={false} tabIndex={d === tabStop ? 0 : -1}
                   aria-current={on ? "date" : undefined}
                   onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return; e.preventDefault(); pick(d, "tap"); }}
-                  className={cx("relative w-[calc(100cqi/7)] shrink-0 snap-start rounded-[18px] pb-[7px] pt-2 text-center transition-[color] focus-visible:outline-offset-[-2px] sm:w-[calc((100cqi-132px)/7)] sm:rounded-[22px] sm:pb-[11px] sm:pt-3",
+                  className={cx("relative w-[calc(100cqi/7)] shrink-0 snap-start rounded-lg pb-[7px] pt-2 text-center transition-[color] focus-visible:outline-offset-[-2px] sm:w-[calc((100cqi-132px)/7)] sm:pb-[11px] sm:pt-3",
                     on ? "text-on-selected duration-200 delay-100" : "text-text duration-0 hover:bg-card-2",
                     solid && "bg-selected shadow-[0_4px_10px_-4px_var(--backdrop)]",
                     !on && d === today && "ring-1 ring-inset ring-[var(--accent-edge)]")}>

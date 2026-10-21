@@ -28,7 +28,7 @@ export async function FactsTab({ caseId }: { caseId: string }) {
               {f.date_text && f.date_text !== formatDmy(f.fact_date, f.date_precision) ? <span className="text-base leading-[1.55] text-ink-3">«{f.date_text}»</span> : null}
               {f.date_precision === "month" || f.date_precision === "year" ? <Badge>{f.date_precision === "month" ? "بالشهر" : "بالسنة"}</Badge> : null}
             </div>
-            <div className={cx("mt-1.5 rounded-[var(--radius)] p-4", suggested ? "bg-suggest-soft ring-1 ring-suggest/25" : "bg-surface shadow-1")}>
+            <div className={cx("mt-1.5 rounded-lg p-4", suggested ? "bg-suggest-soft ring-1 ring-suggest/25" : "bg-surface shadow-1")}>
               <div className="text-doc text-lg text-ink">
                 <InlineEdit action={editItemText} hidden={{ table: "case_facts", id: f.id, case_id: caseId }} initial={f.text} multiline display={f.text} />
               </div>

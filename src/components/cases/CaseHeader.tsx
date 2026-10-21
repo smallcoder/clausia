@@ -88,7 +88,7 @@ export function CaseHeader({ cf, caseId, chatHref, stats }: { cf: CaseFile; case
       </div>
 
       {/* below lg: the 2×2 spec card (mobile mockup) */}
-      <dl className="mt-4 grid grid-cols-2 overflow-hidden rounded-[22px] border border-border-2 bg-card shadow-card lg:hidden">
+      <dl className="mt-4 grid grid-cols-2 overflow-hidden rounded-lg border border-border-2 bg-card shadow-card lg:hidden">
         {spec.map((s, i) => (
           <div key={s.label} className={`min-w-0 border-[var(--hairline-v2)] px-3.5 py-3 ${i % 2 === 0 ? "border-e" : ""} ${i >= 2 ? "border-t" : ""}`}>
             <dt className="text-xs text-text-4">{s.short}</dt>
@@ -102,7 +102,7 @@ export function CaseHeader({ cf, caseId, chatHref, stats }: { cf: CaseFile; case
       </dl>
 
       {/* lg+: one card, 4 spec cells (1fr) | a 1px hairline | 3 stat cells (0.7fr), 20px top and bottom */}
-      <div className="mt-[22px] hidden grid-cols-[repeat(4,minmax(0,1fr))_1px_repeat(3,minmax(0,0.7fr))] items-stretch rounded-[26px] border border-border-2 bg-card py-5 shadow-card lg:grid">
+      <div className="mt-[22px] hidden grid-cols-[repeat(4,minmax(0,1fr))_1px_repeat(3,minmax(0,0.7fr))] items-stretch rounded-xl border border-border-2 bg-card py-5 shadow-card lg:grid">
         <dl className="contents">
           {spec.map((s, i) => (
             <div key={s.label} className={`min-w-0 px-6 ${i > 0 ? "border-s border-[var(--hairline-v2)]" : ""}`}>

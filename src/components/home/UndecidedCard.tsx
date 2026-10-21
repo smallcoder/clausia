@@ -8,7 +8,7 @@ import Link from "next/link";
 import { two } from "@/components/shell/PageHero";
 
 const HREF = "/hearings?filter=undecided";
-const CARD = "rounded-[24px] border border-border-2 bg-card shadow-card transition hover:shadow-pop md:rounded-[28px]";
+const CARD = "rounded-xl border border-border-2 bg-card shadow-card transition hover:shadow-pop";
 const NUM = "font-num font-extralight leading-none tracking-[-0.05em]";
 
 /** «جلسة فاتت من غير قرار» / «جلستين فاتوا…» / «N جلسات فاتت…» */

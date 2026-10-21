@@ -26,7 +26,7 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
   const Icon = mode === "light" ? Sun : mode === "dark" ? Moon : Monitor;
   return (
     <button type="button" onClick={next} aria-label={LABEL[mode]} title={LABEL[mode]}
-      className={`inline-flex size-10 items-center justify-center rounded-xl border border-border bg-chip text-text-3 shadow-soft transition hover:text-text ${className}`}>
+      className={`inline-flex size-10 items-center justify-center rounded-md border border-border bg-chip text-text-3 shadow-soft transition hover:text-text ${className}`}>
       <Icon size={18} strokeWidth={1.9} />
     </button>
   );
