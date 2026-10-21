@@ -13,7 +13,7 @@ import { caseLabel } from "@/lib/labels";
 import { getLlm, LlmUnavailableError, SpendCapError, type LlmMessage, type LlmToolCall } from "@/lib/llm";
 import { UNAVAILABLE_TEXT } from "@/lib/llm/unavailable";
 import { createProposal, normalizeForMatch, type DraftOp, type Proposal, type ResolvedFrom } from "@/lib/proposals";
-import { resolveRelativeDays, type RelativeDay } from "@/lib/relative-days";
+import { cairoDateOf, resolveRelativeDays, type RelativeDay } from "@/lib/relative-days";
 import type { Db } from "@/lib/supabase/server";
 import { isReadTool, READ_TOOL_SPECS, runReadTool } from "@/lib/tools/read";
 import { isWriteTool, OP_TITLE, WRITE_TOOL_ARGS, writeToolSpecs } from "@/lib/tools/registry";
@@ -67,7 +67,7 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promis
   state.saved = true;
   await db.from("chat_threads").update({ updated_at: new Date().toISOString() }).eq("id", thread.id);
 
-  const [history, caseContext, cardNotes, docs, sourceTexts, docPages] = await Promise.all([
+  const [history, caseContext, cardNotes, docs, { texts: sourceTexts, lawyer }, docPages] = await Promise.all([
     loadHistory(db, thread.id),
     thread.case_id ? loadCaseContext(db, thread.case_id) : Promise.resolve(null),
     loadCardNotes(db, thread.id),
@@ -76,7 +76,17 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promis
     loadDocPages(db, thread.id),
   ]);
 
-  const system = buildSystemPrompt({ caseContext, cardNotes, documents: docs });
+  // relative days («بكرة»، «الخميس الجاي») in the lawyer's own messages, each from its own time in Cairo — worked
+  // out here, never by the model, never from a paper. This message first, then older ones (newest first).
+  const relativeDays = {
+    current: resolveRelativeDays(text, userMsg.created_at),
+    earlier: lawyer.filter((m) => m.id !== userMsg.id).reverse()
+      .map((m) => ({ date: cairoDateOf(m.created_at), days: resolveRelativeDays(m.content, m.created_at) }))
+      .filter((e) => e.days.length),
+  };
+  const resolved = [...relativeDays.current, ...relativeDays.earlier.flatMap((e) => e.days)];
+
+  const system = buildSystemPrompt({ caseContext, cardNotes, documents: docs, relativeDays });
   const tools = [...READ_TOOL_SPECS, ...writeToolSpecs()];
   const messages: LlmMessage[] = history;
   const meta = { purpose: "chat" as const, officeId: input.officeId, userId: input.userId, threadId: thread.id };
@@ -154,7 +164,8 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promis
         continue;
       }
       // never guess: a date / year / number / court / circuit must be in the lawyer's words or an attached paper
-      const unsupported = notInSource(call.args, [text, ...sourceTexts]);
+      // (a date equal to one worked out from the lawyer's «بكرة» / «الخميس الجاي» counts as said)
+      const unsupported = notInSource(call.args, [text, ...sourceTexts], resolved);
       if (unsupported.length) {
         results.set(call.id, { error: `لم يُقترح: ${unsupported.join("؛ ")}. اسأل المحامي سؤال واحد قصير ومتخمّنش.` });
         continue;
@@ -163,7 +174,10 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promis
       if (typeof ref === "string" && ref) refsInCard.add(ref);
       drafts.push({
         call,
-        op: { tool: call.name, args: call.args, source: sourceOf((call.args.quote as string | undefined) ?? null, text, userMsg.id, docPages) },
+        op: {
+          tool: call.name, args: call.args, source: sourceOf((call.args.quote as string | undefined) ?? null, text, userMsg.id, docPages),
+          resolved_from: fromRelativeWords(call.args, [text, ...sourceTexts], resolved),
+        },
       });
     }
 
@@ -311,19 +325,23 @@ async function loadCardNotes(db: Db, threadId: string): Promise<string[]> {
   });
 }
 
-/** Texts the quotes may come from: every lawyer message in the thread + pages of documents uploaded here. */
-async function loadSourceTexts(db: Db, threadId: string): Promise<string[]> {
+/**
+ * Texts the quotes may come from: every lawyer message in the thread + pages of documents uploaded here.
+ * `lawyer` = the lawyer's messages alone, oldest first (their relative days are resolved; a paper's never are).
+ */
+async function loadSourceTexts(db: Db, threadId: string): Promise<{ texts: string[]; lawyer: { id: string; content: string; created_at: string }[] }> {
   const [{ data: msgs }, { data: docs }] = await Promise.all([
-    db.from("chat_messages").select("content").eq("thread_id", threadId).eq("role", "user"),
+    db.from("chat_messages").select("id, content, created_at").eq("thread_id", threadId).eq("role", "user").order("created_at"),
     db.from("documents").select("id").eq("thread_id", threadId),
   ]);
-  const texts = (msgs ?? []).map((m) => m.content);
+  const lawyer = msgs ?? [];
+  const texts = lawyer.map((m) => m.content);
   const ids = (docs ?? []).map((d) => d.id);
   if (ids.length) {
     const { data: pages } = await db.from("document_pages").select("text").in("document_id", ids);
     for (const p of pages ?? []) texts.push(p.text);
   }
-  return texts;
+  return { texts, lawyer };
 }
 
 const DATE_KEYS = ["date", "facts_date", "next_date", "appeal_deadline"] as const;
@@ -339,6 +357,14 @@ export function resolvedDatesOf(args: Record<string, unknown>, resolved: Relativ
     if (hit) out[k] = { word: hit.word, iso: hit.iso, label: hit.label };
   }
   return out;
+}
+
+/**
+ * The card's «بكرة = الخميس 22/10/2026» notes: date args whose value is not written in the texts but equals a day
+ * resolved from the lawyer's words. A date the lawyer also wrote out in full needs no note.
+ */
+export function fromRelativeWords(args: Record<string, unknown>, texts: string[], resolved: RelativeDay[]): Record<string, ResolvedFrom> {
+  return Object.fromEntries(Object.entries(resolvedDatesOf(args, resolved)).filter(([k]) => notInSource({ [k]: args[k] }, texts).length > 0));
 }
 
 /**
