@@ -120,16 +120,17 @@ export function whoLine(cf: CaseFile): { client: string | null; opponent: string
  * The header's spec sheet. `mobile` is the value as the mobile mockup writes it («772 / 2025»); the circuit drops a
  * leading «الدائرة» because its label already says it (mockups: «3 إيجارات · أول درجة»).
  */
-export function specSheet(cf: CaseFile): { label: string; short: string; value: string | null; mobile?: string; extra?: string; fem?: boolean }[] {
+/** `clip`: one line with «…» on mobile (long court / case-type names). */
+export function specSheet(cf: CaseFile): { label: string; short: string; value: string | null; mobile?: string; extra?: string; fem?: boolean; clip?: boolean }[] {
   const c = cf.case;
   const subject = heroSubject(cf, heroTitle(cf));
   const circuit = c.circuit?.replace(/^الدائرة\s+(?=\S)/u, "") ?? null;
   return [
     { label: "رقم الدعوى", short: "رقم الدعوى", value: c.case_number ? (c.case_year ? `${c.case_number} لسنة ${c.case_year}` : c.case_number) : null,
       mobile: c.case_number && c.case_year ? `${c.case_number} / ${c.case_year}` : undefined },
-    { label: "المحكمة", short: "المحكمة", value: c.court, fem: true },
+    { label: "المحكمة", short: "المحكمة", value: c.court, fem: true, clip: true },
     { label: "الدائرة", short: "الدائرة", value: circuit, extra: STAGE[c.stage], fem: true },
-    { label: "نوع الدعوى", short: "النوع", value: subject ?? c.case_type },
+    { label: "نوع الدعوى", short: "النوع", value: subject ?? c.case_type, clip: true },
   ];
 }
 
@@ -235,6 +236,8 @@ export function pendingHref(cf: CaseFile): string | undefined {
   const first = cf.pending_suggestions[0];
   if (!first) return undefined;
   if (first.table === "hearings") return `?tab=hearings#h-${first.id}`;
+  // judgments live in the hearings view (owner decision 2026-10-21)
+  if (first.table === "judgments") return `?tab=hearings#item-${first.id}`;
   return `#item-${first.id}`;
 }
 

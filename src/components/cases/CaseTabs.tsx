@@ -36,7 +36,7 @@ export function SegBar({ items, className = "" }: { items: { key: SegKey; label:
         const active = on === t.key;
         return (
           <button key={t.key} type="button" role="tab" aria-selected={active} aria-controls={`seg-${t.key}`} onClick={() => set(t.key)}
-            className={`h-9 flex-1 rounded-[18px] text-[13px] transition ${active
+            className={`tap h-9 flex-1 rounded-[18px] text-[13px] transition ${active
               ? "bg-selected font-semibold text-on-selected shadow-[0_4px_10px_-4px_rgba(18,26,43,0.5)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_6px_14px_-6px_rgba(0,0,0,0.6)]"
               : "font-medium text-[var(--glass-icon)] hover:text-text"}`}>
             {t.label} <span className="font-num opacity-70">{t.count}</span>
