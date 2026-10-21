@@ -1,17 +1,24 @@
-// OWNER: documents agent. The case's documents: upload, open/download, text per page, inline type, pending cards.
+// «المستندات» (?tab=documents): the case's papers as the mockup's 3-up paper grid (name, type, pages), the upload,
+// then one panel per document — its type (inline select), read state, open / download, pending proposals,
+// and the extracted text page by page (in Naskh).
+import { ChevronDown } from "lucide-react";
 import Link from "next/link";
+import { DocThumb, pagesLabel } from "@/components/documents/DocThumb";
 import { DocTypeSelect } from "@/components/documents/DocTypeSelect";
 import { UploadDocument } from "@/components/documents/UploadDocument";
-import { Badge, Card, DateText, EmptyState, SectionTitle } from "@/components/ui";
-import { READ_STATUS } from "@/lib/labels";
+import { Panel, StatusChip } from "@/components/shell/PageHero";
+import { formatDmy } from "@/lib/dates";
+import { DOC_TYPE, READ_STATUS } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
 
-const STATUS_TONE = { pending: "neutral", reading: "brass", done: "ok", failed: "danger" } as const;
+const STATUS_TONE = { pending: "neutral", reading: "accent", done: "good", failed: "bad" } as const;
 
 function sizeLabel(bytes: number | null) {
   if (!bytes) return null;
   return bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} م.ب` : `${Math.max(1, Math.round(bytes / 1024))} ك.ب`;
 }
+
+const firstWords = (t: string, n = 9) => t.trim().split(/\s+/).slice(0, n).join(" ");
 
 export async function DocumentsTab({ caseId }: { caseId: string }) {
   const db = await createClient();
@@ -28,85 +35,105 @@ export async function DocumentsTab({ caseId }: { caseId: string }) {
   const pagesOf = new Map<string, { page_no: number; text: string }[]>();
   for (const p of pages ?? []) pagesOf.set(p.document_id, [...(pagesOf.get(p.document_id) ?? []), p]);
   const hasPending = new Set((pending ?? []).map((p) => p.document_id));
+  const name = (d: { title: string | null; doc_type: string; file_name: string }) => d.title || DOC_TYPE[d.doc_type as keyof typeof DOC_TYPE] || d.file_name;
 
   return (
-    <div className="space-y-5 pb-4">
-      <Card className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <h2 className="font-semibold text-ink">إضافة مستند</h2>
-          <p className="mt-1 text-callout leading-relaxed text-ink-2">
-            صحيفة، مذكرة، محضر جلسة أو صورة بالهاتف (PDF أو صورة حتى 25 م.ب). يقرأ المساعد كل صفحة ويقترح ما وجده في بطاقة داخل محادثة الدعوى؛ لا يُحفظ شيء قبل تأكيدك.
-          </p>
+    <div className="space-y-4 pb-4">
+      <section className="rounded-[22px] border border-border-2 bg-card shadow-card">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-2 px-5 py-4">
+          <h2 className="text-[17px] font-bold text-text">
+            المستندات{docs?.length ? <span className="font-num ms-1.5 text-[13px] font-normal text-text-3">{docs.length}</span> : null}
+          </h2>
+          <UploadDocument caseId={caseId} />
         </div>
-        <div className="shrink-0"><UploadDocument caseId={caseId} /></div>
-      </Card>
-
-      <section>
-        <SectionTitle>المستندات{docs?.length ? <>{" "}<span className="num font-normal text-ink-3">({docs.length})</span></> : null}</SectionTitle>
-        {!docs?.length ? (
-          <EmptyState title="لا توجد مستندات في هذه الدعوى بعد" hint="ارفع أول مستند وسيقرأه المساعد صفحة صفحة." />
-        ) : (
-          <ul className="space-y-3">
-            {docs.map((d) => {
-              const ps = pagesOf.get(d.id) ?? [];
-              return (
-                <li key={d.id}>
-                  <Card className="p-4">
-                    <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
-                      <div className="min-w-0 flex-1">
-                        <h3 className="break-words font-semibold leading-snug text-ink">{d.title || d.file_name}</h3>
-                        {d.title ? <p className="mt-0.5 truncate text-caption text-ink-3" dir="auto">{d.file_name}</p> : null}
-                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-caption text-ink-3">
-                          <DocTypeSelect documentId={d.id} value={d.doc_type} />
-                          <Badge tone={STATUS_TONE[d.read_status]}>{READ_STATUS[d.read_status]}</Badge>
-                          {d.page_count ? <span>{d.page_count === 1 ? "صفحة واحدة" : d.page_count === 2 ? "صفحتان" : <><span className="num">{d.page_count}</span> {d.page_count <= 10 ? "صفحات" : "صفحة"}</>}</span> : null}
-                          <span>رُفع <DateText iso={d.created_at} /></span>
-                          {d.doc_date ? <span>بتاريخ <DateText iso={d.doc_date} /></span> : null}
-                          {sizeLabel(d.size_bytes) ? <span className="num">{sizeLabel(d.size_bytes)}</span> : null}
-                        </div>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-1">
-                        <a href={`/api/documents/${d.id}`} target="_blank" rel="noopener" className="inline-flex h-11 items-center rounded-[var(--radius-sm)] px-4 text-callout font-medium text-accent hover:bg-accent-soft">فتح</a>
-                        <a href={`/api/documents/${d.id}?download=1`} className="inline-flex h-11 items-center rounded-[var(--radius-sm)] px-4 text-callout font-medium text-ink-2 hover:bg-surface-2">تنزيل</a>
-                      </div>
-                    </div>
-
-                    {hasPending.has(d.id) ? (
-                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-[var(--radius-sm)] border border-suggest/25 bg-suggest-soft px-3 py-2">
-                        <span className="text-callout text-suggest">استخرج المساعد بيانات من هذا المستند بانتظار تأكيدك.</span>
-                        <Link href={`/cases/${caseId}?tab=chat`} className="text-callout font-semibold text-suggest underline-offset-4 hover:underline">مراجعة المقترحات</Link>
-                      </div>
-                    ) : null}
-                    {d.read_status === "failed" && d.read_error ? <p className="mt-3 text-callout text-danger">تعذرت القراءة: {d.read_error.slice(0, 160)}</p> : null}
-
-                    {ps.length ? (
-                      <details className="group mt-3 border-t border-line pt-3">
-                        <summary className="flex cursor-pointer list-none items-center gap-1.5 text-callout font-medium text-ink-2 hover:text-ink">
-                          <span className="inline-block transition group-open:rotate-90 rtl:rotate-180 rtl:group-open:rotate-90" aria-hidden>‹</span>
-                          النص المستخرج
-                        </summary>
-                        <div className="mt-3 space-y-3">
-                          {ps.map((p) => (
-                            <details key={p.page_no} open={ps.length === 1} className="rounded-[var(--radius-sm)] border border-line bg-surface-2">
-                              <summary className="cursor-pointer list-none px-3 py-2 text-caption font-semibold text-ink-3 hover:text-ink-2">
-                                صفحة <span className="num">{p.page_no}</span>
-                                <span className="ms-2 font-normal">{p.text.trim().split(/\s+/).slice(0, 8).join(" ")}…</span>
-                              </summary>
-                              <div className="text-doc max-h-[60vh] overflow-y-auto whitespace-pre-wrap break-words border-t border-line bg-surface px-4 py-3 text-[15px] text-ink">
-                                {p.text || "—"}
-                              </div>
-                            </details>
-                          ))}
-                        </div>
-                      </details>
-                    ) : null}
-                  </Card>
-                </li>
-              );
-            })}
+        <p className="max-w-[640px] px-5 pt-3.5 text-[13px] leading-6 text-text-3">
+          صحيفة، مذكرة، محضر جلسة أو صورة بالموبايل (PDF أو صورة لحد 25 م.ب). Clausia بيقرا كل صفحة ويقترح اللي لقاه في محادثة القضية، ومش بيتحفظ حاجة قبل ما تأكد.
+        </p>
+        {docs?.length ? (
+          <ul className="grid grid-cols-3 gap-3 px-5 pb-5 pt-4 sm:grid-cols-[repeat(3,minmax(0,132px))] sm:gap-5">
+            {docs.map((d) => (
+              <li key={d.id} className="min-w-0">
+                <a href={`/api/documents/${d.id}`} target="_blank" rel="noopener" className="group block" title={d.file_name}>
+                  <DocThumb note={d.read_status !== "done" ? READ_STATUS[d.read_status] : null} />
+                  <span className="mt-2 line-clamp-2 block text-center text-[12.5px] font-semibold leading-5 text-text sm:text-[13px]">{name(d)}</span>
+                </a>
+                <span className="mt-0.5 block truncate text-center text-[11.5px] text-text-3 sm:text-[12px]">
+                  {[d.title ? DOC_TYPE[d.doc_type as keyof typeof DOC_TYPE] : null, pagesLabel(d.page_count)].filter(Boolean).join(" · ") || " "}
+                </span>
+              </li>
+            ))}
           </ul>
+        ) : (
+          <p className="px-5 pb-5 pt-2 text-[14px] leading-7 text-text-3">لسه مفيش مستندات في القضية دي. ارفع أول ورقة، وClausia هيقراها صفحة صفحة.</p>
         )}
       </section>
+
+      {(docs ?? []).map((d) => {
+        const ps = pagesOf.get(d.id) ?? [];
+        const meta = [
+          `اترفع ${formatDmy(d.created_at)}`,
+          d.doc_date ? `بتاريخ ${formatDmy(d.doc_date)}` : null,
+          pagesLabel(d.page_count),
+          sizeLabel(d.size_bytes),
+        ].filter(Boolean).join(" · ");
+        return (
+          <Panel key={d.id} title={<span id={`doc-${d.id}`} className="scroll-mt-24">{name(d)}</span>} meta={<StatusChip tone={STATUS_TONE[d.read_status]}>{READ_STATUS[d.read_status]}</StatusChip>}
+            className="overflow-hidden">
+            <ul className="divide-y divide-border-2">
+              <li className="flex min-h-12 items-center justify-between gap-3 px-5 py-1.5">
+                <span className="text-[15px] text-text">النوع</span>
+                <DocTypeSelect documentId={d.id} value={d.doc_type} />
+              </li>
+              <li className="flex min-h-12 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-5 py-1.5">
+                <span className="min-w-0">
+                  <span className="block truncate text-[15px] text-text" dir="auto">{d.file_name}</span>
+                  <span className="block text-[12px] text-text-4">{meta}</span>
+                </span>
+                <span className="flex shrink-0 items-center gap-2">
+                  <a href={`/api/documents/${d.id}`} target="_blank" rel="noopener" className="bg-primary-fill inline-flex h-11 items-center rounded-full px-5 text-[14px] font-bold">فتح</a>
+                  <a href={`/api/documents/${d.id}?download=1`} className="inline-flex h-11 items-center rounded-full border border-border bg-chip px-5 text-[14px] text-text-2 shadow-soft hover:text-text">تنزيل</a>
+                </span>
+              </li>
+              {hasPending.has(d.id) ? (
+                <li className="flex min-h-12 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-5 py-2">
+                  <span className="flex items-center gap-2 text-[14px] text-text-2"><StatusChip tone="warn">مقترحات</StatusChip>Clausia طلّع من الورقة دي حاجات مستنية تأكيدك.</span>
+                  <Link href={`/cases/${caseId}?tab=chat`} className="inline-flex min-h-11 items-center text-[14px] font-semibold text-gold-text hover:underline">راجعها ←</Link>
+                </li>
+              ) : null}
+              {d.read_status === "failed" && d.read_error ? (
+                <li className="px-5 py-3 text-[14px] text-bad">ما قدرناش نقرا الورقة: {d.read_error.slice(0, 160)}</li>
+              ) : null}
+              {ps.length ? (
+                <li>
+                  <details className="group/text" open={ps.length <= 3}>
+                    <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-5 py-2 hover:bg-card-2/60 [&::-webkit-details-marker]:hidden">
+                      <span className="text-[15px] text-text">النص المستخرج</span>
+                      <span className="flex items-center gap-1.5 text-[13px] text-text-3">
+                        {pagesLabel(ps.length)}
+                        <ChevronDown aria-hidden size={16} strokeWidth={2} className="transition-transform group-open/text:rotate-180" />
+                      </span>
+                    </summary>
+                    <div className="space-y-2.5 px-4 pb-4 sm:px-5">
+                      {ps.map((p) => (
+                        <details key={p.page_no} open={p.page_no === ps[0].page_no} className="group/page overflow-hidden rounded-2xl border border-border-2 bg-card-2">
+                          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 py-2 [&::-webkit-details-marker]:hidden">
+                            <span className="shrink-0 text-[13px] font-bold text-text">صفحة <span className="font-num">{p.page_no}</span></span>
+                            <span className="text-doc min-w-0 flex-1 truncate text-[13px] text-text-3">{firstWords(p.text)}…</span>
+                            <ChevronDown aria-hidden size={15} strokeWidth={2} className="shrink-0 text-text-4 transition-transform group-open/page:rotate-180" />
+                          </summary>
+                          <div className="text-doc max-h-[60vh] overflow-y-auto whitespace-pre-wrap break-words border-t border-border-2 bg-field px-4 py-3 text-[15px] text-text sm:px-6">
+                            {p.text || "—"}
+                          </div>
+                        </details>
+                      ))}
+                    </div>
+                  </details>
+                </li>
+              ) : null}
+            </ul>
+          </Panel>
+        );
+      })}
     </div>
   );
 }

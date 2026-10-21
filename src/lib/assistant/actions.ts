@@ -18,7 +18,7 @@ export async function sendMessageAction(threadId: string, text: string): Promise
     const r = await runAssistantTurn(db, { threadId, userText: text, userId: s.user.id, officeId: s.officeId });
     revalidatePath(`/chat/${threadId}`);
     // an LLM failure already left a friendly assistant message in the thread: no second error in the composer
-    if (r.error && !r.assistantMessageIds.length) return { ok: false, error: "تعذّر رد المساعد", saved: true };
+    if (r.error && !r.assistantMessageIds.length) return { ok: false, error: "تعذّر رد Clausia", saved: true };
     return { ok: true, saved: true };
   } catch (e) {
     const saved = e instanceof TurnError && e.userMessageSaved;

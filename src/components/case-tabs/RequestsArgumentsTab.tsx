@@ -50,7 +50,7 @@ export async function RequestsArgumentsTab({ caseId }: { caseId: string }) {
         <SectionTitle>طلبات موكلنا</SectionTitle>
         {requests.length ? (
           <ul className="space-y-3">{requests.map((r) => <Item key={r.id} r={r} table="case_requests" caseId={caseId} kindLabel={r.kind ? REQUEST_KIND[r.kind] ?? r.kind : undefined} />)}</ul>
-        ) : <EmptyState title="لم تُسجل طلبات بعد" hint="اذكر للمساعد طلبات الموكل الأصلية والاحتياطية." />}
+        ) : <EmptyState title="لم تُسجل طلبات بعد" hint="اذكر لـ Clausia طلبات الموكل الأصلية والاحتياطية." />}
       </section>
       <section>
         <SectionTitle>دفوع ودفاع الخصم</SectionTitle>

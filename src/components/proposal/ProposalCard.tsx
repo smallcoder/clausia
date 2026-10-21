@@ -1,14 +1,17 @@
 "use client";
 /**
- * Confirmation card. Shows exactly what will be saved, op by op, with its source and quote.
- * Nothing is saved without a tap. Other features render it by passing the proposal object (+ a lookup of
- * uuid → display name, built on the server with `buildProposalLookup`).
+ * Confirmation card (docs/design/*Chat*.dc.html, «ملف قضية جديد»). One compact row per op: kind · value · source ·
+ * a check that selects it. Only fact rows carry a one-line truncated quote; every row's full verbatim quote is in
+ * its expand (the chevron). «احفظ · N» saves the selected rows; each row expands to its
+ * fields, its source and quote, and ✓ / تعديل / ✗ for that row alone. Nothing is saved without a tap.
+ * Mobile (<1024px): the card shows its first rows inline; «عدّل حاجة» / «كل العناصر» open it in a bottom sheet.
+ * Other features render it by passing the proposal object (+ a lookup of uuid → display name, `buildProposalLookup`).
  */
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
-import { Check, ChevronDown, FileCheck2, X } from "lucide-react";
-import { Badge, Button, cx } from "@/components/ui";
+import { Check, ChevronDown, FolderClosed, X } from "lucide-react";
+import { cx } from "@/components/ui";
 import { decideProposalAction } from "@/lib/assistant/actions";
 import { CASE_STATUS, DECISION, DOC_TYPE, PARTY_ROLE, STAGE } from "@/lib/labels";
 import type { Proposal, ProposalOp } from "@/lib/proposals";
@@ -17,16 +20,13 @@ import { OP_FIELDS, OP_TITLE, type FieldSpec } from "@/lib/tools/registry";
 type Edits = Record<string, Record<string, unknown>>;
 type Mode = "confirm" | "suggest" | "reject";
 
-const STATUS: Record<ProposalOp["status"], { label: string; tone: "neutral" | "ok" | "suggest" | "danger" }> = {
-  pending: { label: "بانتظار تأكيدك", tone: "neutral" },
-  confirmed: { label: "حُفظ", tone: "ok" },
-  suggested: { label: "حُفظ كمقترح", tone: "suggest" },
-  rejected: { label: "مرفوض", tone: "neutral" },
-  failed: { label: "تعذّر الحفظ", tone: "danger" },
-};
-
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const open = (s: ProposalOp["status"]) => s === "pending" || s === "failed";
+/** rows shown inline on mobile before «كل العناصر» opens the sheet */
+const MOBILE_ROWS = 5;
+
+/** «3 عناصر», Arabic count agreement */
+export const itemsLabel = (n: number) => (n === 1 ? "عنصر واحد" : n === 2 ? "عنصرين" : n <= 10 ? `${n} عناصر` : `${n} عنصر`);
 
 function opName(o: ProposalOp): string {
   const a = o.args as Record<string, string | number | undefined>;
@@ -37,12 +37,32 @@ function opName(o: ProposalOp): string {
   return OP_TITLE[o.tool];
 }
 
+/** The short label in the row's first column (the mockup's «الموكلة / الدعوى / الخصم / واقعة / الطلبات»). */
+function kindOf(o: ProposalOp): string {
+  const a = o.args as Record<string, unknown>;
+  switch (o.tool) {
+    case "create_client": return "الموكل";
+    case "create_case": return "الدعوى";
+    case "update_case": return "تعديل الدعوى";
+    case "add_party":
+      if (a.is_our_client) return "موكلنا";
+      return ["witness", "expert", "guarantor", "other"].includes(String(a.role)) ? (PARTY_ROLE[a.role as keyof typeof PARTY_ROLE] ?? "طرف") : "الخصم";
+    case "add_fact": return "واقعة";
+    case "add_request": return "طلب";
+    case "add_argument": return "دفع";
+    case "add_hearing": return "جلسة";
+    case "record_decision": return "قرار";
+    case "add_judgment": return "حكم";
+    case "attach_document": return "ورقة";
+  }
+}
+
 function summaryOf(o: ProposalOp): string {
   const a = o.args as Record<string, string | number | boolean | undefined>;
   const cut = (s: unknown, n = 70) => { const t = String(s ?? ""); return t.length > n ? `${t.slice(0, n)}…` : t; };
   switch (o.tool) {
     case "create_client": return [a.name, a.phone].filter(Boolean).join(" · ");
-    case "create_case": case "update_case": return [a.case_number && `رقم ${a.case_number}${a.case_year ? ` لسنة ${a.case_year}` : ""}`, a.court, a.circuit, a.title, a.status && CASE_STATUS[a.status as keyof typeof CASE_STATUS], a.stage && a.stage !== "first_instance" && STAGE[a.stage as keyof typeof STAGE]].filter(Boolean).join(" · ");
+    case "create_case": case "update_case": return [a.case_number && `رقم ${a.case_number}${a.case_year ? ` لسنة ${a.case_year}` : ""}`, a.title, a.court, a.circuit, a.status && CASE_STATUS[a.status as keyof typeof CASE_STATUS], a.stage && a.stage !== "first_instance" && STAGE[a.stage as keyof typeof STAGE]].filter(Boolean).join(" · ");
     case "add_party": return [a.name, a.role && PARTY_ROLE[a.role as keyof typeof PARTY_ROLE]].filter(Boolean).join(" · ");
     case "add_fact": return [a.date_text ?? a.date ?? "بدون تاريخ", cut(a.text)].join(" · ");
     case "add_request": case "add_argument": return cut(a.text, 90);
@@ -53,12 +73,21 @@ function summaryOf(o: ProposalOp): string {
   }
 }
 
+function titleOf(p: Proposal): string {
+  const has = (t: ProposalOp["tool"]) => p.ops.some((o) => o.tool === t);
+  if (has("create_case")) return "ملف قضية جديد";
+  if (has("create_client")) return "موكل جديد";
+  if (has("record_decision")) return "قرار الجلسة";
+  if (p.case_id) return "إضافات لملف القضية";
+  return "بطاقة تأكيد";
+}
+
 export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Proposal; lookup?: Record<string, string> }) {
   const router = useRouter();
   const [p, setP] = useState(initial);
   const [edits, setEdits] = useState<Edits>({});
-  // small open cards start expanded; big cards (documents: 10–25 ops) and decided cards start as compact rows
-  const [expanded, setExpanded] = useState<Set<string>>(() => new Set(initial.ops.length <= 3 ? initial.ops.filter((o) => open(o.status)).map((o) => o.op_id) : []));
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  const [selected, setSelected] = useState<Set<string>>(() => new Set(initial.ops.filter((o) => open(o.status)).map((o) => o.op_id)));
   const [editing, setEditing] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -71,20 +100,23 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
   if (sig !== seenSig) {
     setSeenSig(sig);
     setP(initial);
+    setSelected((s) => new Set(initial.ops.filter((o) => open(o.status) && s.has(o.op_id)).map((o) => o.op_id)));
   }
 
   const openOps = p.ops.filter((o) => open(o.status));
+  const chosen = openOps.filter((o) => selected.has(o.op_id));
   const createdCase = p.ops.find((o) => o.tool === "create_case" && o.result_id && (o.status === "confirmed" || o.status === "suggested"));
   const caseLink = createdCase?.result_id ?? (p.status !== "pending" ? p.case_id : null);
-  const warnings = p.ops.filter((o) => !o.quote_verified && open(o.status)).length;
+  const warnings = openOps.filter((o) => !o.quote_verified).length;
+  const newCase = p.ops.some((o) => o.tool === "create_case");
 
-  function decide(mode: Mode, opIds?: string[]) {
+  function decide(mode: Mode, opIds: string[]) {
+    if (!opIds.length) return;
     setError(null);
-    const ids = opIds ?? openOps.map((o) => o.op_id);
     const ed: Edits = {};
-    for (const id of ids) if (edits[id]) ed[id] = edits[id];
+    for (const id of opIds) if (edits[id]) ed[id] = edits[id];
     start(async () => {
-      const r = await decideProposalAction(p.id, { mode, opIds: ids, edits: mode === "reject" ? undefined : ed });
+      const r = await decideProposalAction(p.id, { mode, opIds, edits: mode === "reject" ? undefined : ed });
       if (!r.ok || !r.proposal) { setError(r.error ?? "تعذّر الحفظ"); return; }
       setP(r.proposal);
       setEditing(null);
@@ -92,16 +124,47 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
     });
   }
 
-  /** Why a lone ✓ on this op cannot work yet: an «@ref» it points at (in this card) is not saved. */
-  function blockedBy(o: ProposalOp): string | null {
+  /** The ops of this card that `o` points at with «@ref» and that are not saved yet. */
+  function depsOf(o: ProposalOp): ProposalOp[] {
+    const out: ProposalOp[] = [];
     for (const f of OP_FIELDS[o.tool]) {
       const v = o.args[f.key];
       if (f.type !== "ref" || typeof v !== "string" || !v.startsWith("@")) continue;
       const target = p.ops.find((x) => x.args.ref === v.slice(1));
-      if (!target || target.result_id) continue;
-      return target.status === "rejected" ? `العنصر المرتبط (${opName(target)}) مرفوض` : `أكّد العنصر المرتبط أولًا: ${opName(target)}`;
+      if (target && !target.result_id) out.push(target);
+    }
+    return out;
+  }
+
+  /** Why saving this op alone cannot work yet: an «@ref» it points at (in this card) is not saved. */
+  function blockedBy(o: ProposalOp, inSelection = false): string | null {
+    for (const t of depsOf(o)) {
+      if (t.status === "rejected") return `العنصر المرتبط (${opName(t)}) مرفوض`;
+      if (!inSelection || !selected.has(t.op_id)) return `أكّد العنصر المرتبط أولًا: ${opName(t)}`;
     }
     return null;
+  }
+
+  /** Select an op together with what it needs; unselect it together with what needs it. */
+  function toggleSelect(o: ProposalOp) {
+    setSelected((cur) => {
+      const n = new Set(cur);
+      if (n.has(o.op_id)) {
+        const drop = (x: ProposalOp) => {
+          n.delete(x.op_id);
+          for (const y of p.ops) if (n.has(y.op_id) && depsOf(y).some((d) => d.op_id === x.op_id)) drop(y);
+        };
+        drop(o);
+      } else {
+        const add = (x: ProposalOp) => {
+          if (!open(x.status)) return;
+          n.add(x.op_id);
+          for (const d of depsOf(x)) if (!n.has(d.op_id)) add(d);
+        };
+        add(o);
+      }
+      return n;
+    });
   }
 
   const showSheet = sheet && openOps.length > 0;
@@ -118,8 +181,17 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
   }, [showSheet]);
 
   const toggle = (id: string) => setExpanded((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const allOpenExpanded = openOps.length > 0 && openOps.every((o) => expanded.has(o.op_id));
+  function editSomething(mobile: boolean) {
+    if (mobile) {
+      setExpanded(new Set(openOps.map((o) => o.op_id)));
+      setSheet(true);
+      return;
+    }
+    setExpanded(allOpenExpanded ? new Set() : new Set(openOps.map((o) => o.op_id)));
+  }
 
-  function display(o: ProposalOp, f: FieldSpec, v: unknown): string | null {
+  function display(f: FieldSpec, v: unknown): string | null {
     if (v === undefined || v === null || v === "") return null;
     if (f.type === "bool") return v ? "نعم" : "لا";
     if (typeof f.type === "object") return f.type.enum[String(v)] ?? String(v);
@@ -134,130 +206,193 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
     return String(v);
   }
 
-  function sourceLine(o: ProposalOp) {
-    if (o.source.kind === "document") {
-      const name = (o.source.document_id && lookup[o.source.document_id]) || "مستند";
-      return `من المستند: ${name}${o.source.page ? ` — صفحة ${o.source.page}` : ""}`;
-    }
-    return "من رسالتك في المحادثة";
+  /** The source column: «من رسالتك» / «صحيفة دعوى ص 2» */
+  function sourceShort(o: ProposalOp): string {
+    if (o.source.kind !== "document") return "من رسالتك";
+    const name = (o.source.document_id && lookup[o.source.document_id]) || "الورقة";
+    return `${name}${o.source.page ? ` ص ${o.source.page}` : ""}`;
+  }
+  function sourceLong(o: ProposalOp): string {
+    if (o.source.kind !== "document") return "من رسالتك في المحادثة";
+    const name = (o.source.document_id && lookup[o.source.document_id]) || "مستند";
+    return `من الورقة: ${name}${o.source.page ? ` — صفحة ${o.source.page}` : ""}`;
   }
 
-  const card = (inSheet: boolean) => (
-    <div className={cx("bg-surface", inSheet ? "flex max-h-[85dvh] flex-col rounded-t-[var(--radius-lg)] shadow-3" : "overflow-hidden rounded-[var(--radius)] shadow-2")}>
-      {inSheet ? <div aria-hidden className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-line-strong" /> : null}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-4 pb-3 pt-3.5">
-        <div className="flex items-center gap-3">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-accent-soft text-accent"><FileCheck2 aria-hidden size={19} strokeWidth={1.5} /></span>
-          <div>
-            <p id={inSheet ? `sheet-title-${p.id}` : undefined} className="text-callout font-semibold text-ink">بطاقة تأكيد <span className="font-normal text-ink-3">·</span> <span className="num font-normal text-ink-3">{p.ops.length}</span></p>
-            <p className="text-caption text-ink-3">{openOps.length ? "لن يُحفظ شيء قبل تأكيدك. راجع كل عنصر." : "تم البتّ في هذه البطاقة."}</p>
+  const btn2 = "inline-flex h-[38px] flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-border bg-chip px-3 sm:px-4 text-[13px] text-text-2 transition hover:text-text disabled:opacity-50 sm:h-10 sm:flex-none sm:text-[13.5px]";
+
+  const card = (inSheet: boolean) => {
+    const limit = !inSheet && p.ops.length > MOBILE_ROWS + 1 && openOps.length > 0;
+    return (
+      <div className={cx("bg-card", inSheet
+        ? "flex max-h-[88dvh] flex-col rounded-t-[22px] border-t border-border shadow-pop"
+        : cx("overflow-hidden rounded-[20px] border border-border sm:rounded-[22px]", openOps.length ? "shadow-pop dark:shadow-card" : "shadow-card"))}>
+        {inSheet ? <div aria-hidden className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-card-3" /> : null}
+        <div className={cx("flex shrink-0 items-center gap-2.5 border-b border-border-2 px-3.5 py-3 sm:gap-3 sm:px-[18px] sm:py-3.5", openOps.length > 0 && "bg-linear-to-b from-[var(--accent-ring)] to-transparent dark:bg-none")}>
+          <span className="mark inline-flex size-[30px] shrink-0 items-center justify-center rounded-[9px] sm:size-[34px] sm:rounded-[10px]">
+            <FolderClosed aria-hidden size={17} strokeWidth={2.2} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p id={inSheet ? `sheet-title-${p.id}` : undefined} className="text-[14px] font-bold text-text sm:text-[15px]">{titleOf(p)}</p>
+            <p className="text-[11px] text-text-3 sm:text-xs">
+              {openOps.length ? <>{itemsLabel(p.ops.length)} · مش هيتحفظ حاجة قبل ما تأكد</> : decisionSummary(p)}
+            </p>
           </div>
+          {openOps.length ? (
+            warnings
+              ? <span className="hidden shrink-0 rounded-full bg-warn-bg px-2.5 py-0.5 text-[11.5px] font-semibold text-warn sm:inline">{warnings === 1 ? "عنصر محتاج مراجعة المصدر" : `${itemsLabel(warnings)} محتاجة مراجعة المصدر`}</span>
+              : <span className="hidden shrink-0 text-xs text-gold-text sm:inline">كل عنصر عليه مصدره</span>
+          ) : null}
+          {inSheet ? (
+            <button type="button" onClick={() => setSheet(false)} aria-label="إغلاق" className="-me-2 flex size-11 items-center justify-center rounded-full text-text-3 hover:bg-card-2">
+              <X aria-hidden size={20} strokeWidth={1.8} />
+            </button>
+          ) : null}
         </div>
-        {warnings ? <Badge tone="brass">{warnings === 1 ? "عنصر يحتاج مراجعة المصدر" : `${warnings} عناصر تحتاج مراجعة المصدر`}</Badge> : null}
-        {inSheet ? (
-          <button type="button" onClick={() => setSheet(false)} aria-label="إغلاق" className="-me-2 flex size-11 items-center justify-center rounded-full text-ink-3 hover:bg-surface-2">
-            <X aria-hidden size={20} strokeWidth={1.5} />
-          </button>
-        ) : null}
-      </div>
 
-      <ul className={cx("grouped border-t border-hairline", inSheet && "min-h-0 flex-1 overflow-y-auto overscroll-contain")}>
-        {p.ops.map((o) => {
-          const isOpen = expanded.has(o.op_id);
-          const isEditing = editing === o.op_id;
-          const st = STATUS[o.status];
-          const merged = { ...o.args, ...(edits[o.op_id] ?? {}) };
-          const blocked = open(o.status) ? blockedBy(o) : null;
-          return (
-            <li key={o.op_id} className={cx(o.status === "rejected" && "opacity-60")}>
-              <button type="button" onClick={() => toggle(o.op_id)} aria-expanded={isOpen}
-                className="flex min-h-11 w-full items-start gap-3 px-4 py-3 text-right transition-colors hover:bg-surface-2">
-                <span className="min-w-0 flex-1">
-                  <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <span className="text-callout font-semibold text-ink">{OP_TITLE[o.tool]}</span>
-                    {edits[o.op_id] || o.edited ? <Badge tone="accent">معدّل</Badge> : null}
-                    {!o.quote_verified && open(o.status) ? <Badge tone="brass">راجع المصدر</Badge> : null}
-                  </span>
-                  <span className="mt-0.5 block truncate text-callout text-ink-2">{summaryOf({ ...o, args: merged }) || "—"}</span>
-                </span>
-                <Badge tone={st.tone} className="shrink-0">{st.label}</Badge>
-                <ChevronDown aria-hidden size={18} strokeWidth={1.5} className={cx("mt-1 shrink-0 text-ink-3 transition-transform duration-200", isOpen && "rotate-180")} />
-              </button>
-
-              {isOpen ? (
-                <div className="space-y-3 px-4 pb-4">
-                  {isEditing ? (
-                    <EditFields op={o} values={merged} onChange={(k, v) => setEdits((e) => ({ ...e, [o.op_id]: { ...(e[o.op_id] ?? {}), [k]: v } }))} display={(f, v) => display(o, f, v)} />
+        <ul className={cx(inSheet && "min-h-0 flex-1 overflow-y-auto overscroll-contain")}>
+          {p.ops.map((o, i) => {
+            const isOpen = expanded.has(o.op_id);
+            const isEditing = editing === o.op_id;
+            const merged = { ...o.args, ...(edits[o.op_id] ?? {}) };
+            const live = open(o.status);
+            const lone = live ? blockedBy(o) : null;
+            const hard = live ? blockedBy(o, true) : null;
+            const sel = selected.has(o.op_id);
+            // only fact rows show their quote (one truncated line); the rest keep it in the expand
+            const factQuote = o.tool === "add_fact" && o.source.kind === "document" ? o.source.quote : null;
+            const tagList = [
+              edits[o.op_id] || o.edited ? <Tag key="e" tone="neutral">معدّل</Tag> : null,
+              !o.quote_verified && live ? <Tag key="q" tone="warn">راجع المصدر</Tag> : null,
+              o.status === "suggested" ? <Tag key="s" tone="warn">مقترح</Tag> : null,
+              o.status === "failed" ? <Tag key="f" tone="bad">ما اتحفظش</Tag> : null,
+            ].filter(Boolean);
+            const tags = tagList.length ? tagList : null;
+            return (
+              <li key={o.op_id} className={cx("border-b border-border-2", o.status === "rejected" && "opacity-55", limit && i >= MOBILE_ROWS && "lg:block hidden")}>
+                <div className="flex min-h-12 items-start gap-2.5 px-3.5 py-2.5 sm:gap-3.5 sm:px-[18px]">
+                  <span className="w-[60px] shrink-0 pt-0.5 text-[11px] font-semibold leading-5 text-text-3 sm:w-[74px] sm:text-xs sm:leading-[22px]">{kindOf(o)}</span>
+                  <button type="button" onClick={() => toggle(o.op_id)} aria-expanded={isOpen} className="min-w-0 flex-1 text-right">
+                    <span className="flex items-start gap-1 text-[13.5px] font-semibold leading-[22px] text-text sm:text-[14.5px]">
+                      <span className={cx("min-w-0", !isOpen && "line-clamp-1")}>{summaryOf({ ...o, args: merged }) || OP_TITLE[o.tool]}</span>
+                      <ChevronDown aria-hidden size={14} strokeWidth={2} className={cx("mt-1 shrink-0 text-text-4 transition-transform", isOpen && "rotate-180")} />
+                    </span>
+                    {factQuote && !isOpen ? <span className="text-doc block truncate text-[12.5px] leading-5 text-text-3 sm:text-[13px]">«{factQuote}»</span> : null}
+                    <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className="text-[11px] leading-[18px] text-text-4 sm:hidden">{o.source.kind === "document" ? `من ${sourceShort(o)}` : sourceShort(o)}</span>
+                      {tags}
+                    </span>
+                  </button>
+                  <span className="hidden max-w-[9.5rem] shrink-0 truncate text-[11.5px] leading-[22px] text-text-4 sm:block">{sourceShort(o)}</span>
+                  {live ? (
+                    <button type="button" role="checkbox" aria-checked={sel} aria-label={sel ? `شيل ${kindOf(o)} من الحفظ` : `ضيف ${kindOf(o)} للحفظ`}
+                      onClick={() => toggleSelect(o)} disabled={pending || (!sel && !!lone && lone.includes("مرفوض"))}
+                      className={cx("relative mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full transition before:absolute before:-inset-3 before:content-[''] disabled:opacity-40 sm:mt-0 sm:size-[22px]", sel ? "mark" : "border border-border bg-card-2 text-transparent hover:text-text-4")}>
+                      <Check aria-hidden size={12} strokeWidth={3.2} />
+                    </button>
                   ) : (
-                    <dl className="grid grid-cols-[minmax(5rem,8.5rem)_1fr] gap-x-4 gap-y-2 text-callout lg:grid-cols-[minmax(6rem,12rem)_1fr]">
-                      {OP_FIELDS[o.tool].map((f) => {
-                        const v = display(o, f, merged[f.key]);
-                        return v === null ? null : (
-                          <div key={f.key} className="contents">
-                            <dt className="text-ink-3">{f.label}</dt>
-                            <dd className="min-w-0 break-words text-ink">{f.type === "date" || f.type === "number" ? <span className="num">{v}</span> : v}</dd>
-                          </div>
-                        );
-                      })}
-                    </dl>
+                    <span aria-label={o.status === "rejected" ? "مرفوض" : o.status === "suggested" ? "اتحفظ كمقترح" : "اتحفظ"}
+                      className={cx("mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-full sm:mt-0 sm:size-[22px]",
+                        o.status === "rejected" ? "bg-card-2 text-text-4" : o.status === "suggested" ? "bg-warn-bg text-warn" : "bg-good-bg text-good")}>
+                      {o.status === "rejected" ? <X aria-hidden size={12} strokeWidth={3} /> : <Check aria-hidden size={12} strokeWidth={3.2} />}
+                    </span>
                   )}
-
-                  <div className="rounded-[var(--radius-sm)] bg-surface-2 px-3.5 py-2.5">
-                    <p className="text-xs text-ink-3">{sourceLine(o)}</p>
-                    {o.source.quote ? <p className="text-doc mt-1 text-[16px] text-ink">«{o.source.quote}»</p> : <p className="mt-1 text-xs text-ink-3">بدون اقتباس</p>}
-                    {!o.quote_verified ? <p className="mt-1.5 text-xs font-medium text-brass">لم أجد هذا النص في المصدر — راجعه</p> : null}
-                  </div>
-
-                  {o.status === "failed" && o.error ? <p className="rounded-[var(--radius-sm)] bg-danger-soft px-3 py-2 text-caption text-danger">{o.error}</p> : null}
-                  {o.result_id && o.tool === "create_case" ? <Link href={`/cases/${o.result_id}`} className="inline-block text-sm text-accent hover:underline">فتح ملف الدعوى</Link> : null}
-
-                  {open(o.status) ? (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Button size="sm" disabled={pending || !!blocked} title={blocked ?? undefined} onClick={() => decide("confirm", [o.op_id])}><Check aria-hidden size={16} strokeWidth={2} />تأكيد</Button>
-                      <Button size="sm" variant="secondary" disabled={pending} onClick={() => setEditing(isEditing ? null : o.op_id)}>{isEditing ? "إنهاء التعديل" : "تعديل"}</Button>
-                      <Button size="sm" variant="ghost" disabled={pending} onClick={() => decide("reject", [o.op_id])}><X aria-hidden size={16} strokeWidth={2} />رفض</Button>
-                      {blocked ? <p className="basis-full text-xs text-ink-3">{blocked}</p> : null}
-                    </div>
-                  ) : null}
                 </div>
-              ) : null}
+
+                {isOpen ? (
+                  <div className="space-y-3 px-3.5 pb-3.5 sm:ps-[106px] sm:pe-[18px]">
+                    {isEditing ? (
+                      <EditFields op={o} values={merged} onChange={(k, v) => setEdits((e) => ({ ...e, [o.op_id]: { ...(e[o.op_id] ?? {}), [k]: v } }))} display={display} />
+                    ) : (
+                      <dl className="grid grid-cols-[minmax(4.5rem,7.5rem)_1fr] gap-x-4 gap-y-1.5 text-[13.5px]">
+                        {OP_FIELDS[o.tool].map((f) => {
+                          const v = display(f, merged[f.key]);
+                          return v === null ? null : (
+                            <div key={f.key} className="contents">
+                              <dt className="text-text-3">{f.label}</dt>
+                              <dd className="min-w-0 break-words text-text">{f.type === "date" || f.type === "number" ? <span className="num">{v}</span> : v}</dd>
+                            </div>
+                          );
+                        })}
+                      </dl>
+                    )}
+
+                    <div className="rounded-xl bg-card-2 px-3.5 py-2.5">
+                      <p className="text-xs text-text-3">{sourceLong(o)}</p>
+                      {o.source.quote ? <p className="text-doc mt-1 text-[15px] text-text">«{o.source.quote}»</p> : <p className="mt-1 text-xs text-text-4">بدون اقتباس</p>}
+                      {!o.quote_verified ? <p className="mt-1.5 text-xs font-medium text-warn">ما لقيتش النص ده في المصدر، راجعه</p> : null}
+                    </div>
+
+                    {o.status === "failed" && o.error ? <p className="rounded-xl bg-bad-bg px-3 py-2 text-[13px] text-bad">{o.error}</p> : null}
+                    {o.result_id && o.tool === "create_case" ? <Link href={`/cases/${o.result_id}`} className="inline-flex min-h-11 items-center text-[13.5px] font-semibold text-gold-text hover:underline">فتح ملف القضية ←</Link> : null}
+
+                    {live ? (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button type="button" disabled={pending || !!lone} title={lone ?? undefined} onClick={() => decide("confirm", [o.op_id])}
+                          className="bg-primary-fill inline-flex h-9 items-center gap-1.5 rounded-xl px-3.5 text-[13px] font-bold transition disabled:opacity-50">
+                          <Check aria-hidden size={15} strokeWidth={2.6} />احفظ ده
+                        </button>
+                        <button type="button" disabled={pending} onClick={() => setEditing(isEditing ? null : o.op_id)} className={cx(btn2, "h-9 flex-none sm:h-9")}>
+                          {isEditing ? "خلّصت التعديل" : "تعديل"}
+                        </button>
+                        <button type="button" disabled={pending} onClick={() => decide("reject", [o.op_id])}
+                          className="inline-flex h-9 items-center gap-1 rounded-xl px-3 text-[13px] text-text-3 transition hover:text-bad disabled:opacity-50">
+                          <X aria-hidden size={15} strokeWidth={2.4} />ارفض
+                        </button>
+                        {lone ? <p className="basis-full text-xs text-text-4">{lone}</p> : null}
+                      </div>
+                    ) : null}
+                    {live && sel && hard ? <p className="text-xs text-text-4">{hard}</p> : null}
+                  </div>
+                ) : null}
+              </li>
+            );
+          })}
+          {limit ? (
+            <li className="border-b border-border-2 lg:hidden">
+              <button type="button" onClick={() => setSheet(true)} aria-haspopup="dialog"
+                className="flex w-full items-center justify-center gap-1 px-3.5 py-3 text-[13px] font-semibold text-gold-text">
+                كل العناصر · {itemsLabel(p.ops.length)}
+              </button>
             </li>
-          );
-        })}
-      </ul>
+          ) : null}
+        </ul>
 
-      {error ? <p className="mx-4 mb-3 shrink-0 rounded-[var(--radius-sm)] bg-danger-soft px-3 py-2 text-callout text-danger">{error}</p> : null}
+        {error ? <p className="mx-3.5 mt-3 shrink-0 rounded-xl bg-bad-bg px-3 py-2 text-[13.5px] text-bad sm:mx-[18px]">{error}</p> : null}
 
-      <div className={cx("flex shrink-0 flex-wrap items-center gap-2 border-t border-hairline px-4 py-3", inSheet ? "bg-surface pb-[calc(0.75rem+env(safe-area-inset-bottom))]" : "bg-surface-2/60")}>
-        {openOps.length ? (
-          <>
-            <Button size="sm" disabled={pending} onClick={() => decide("confirm")}>{pending ? "جارٍ الحفظ…" : openOps.length === p.ops.length ? "تأكيد الكل" : `تأكيد الباقي (${openOps.length})`}</Button>
-            <Button size="sm" variant="secondary" disabled={pending} onClick={() => decide("suggest")}>حفظ كمقترحات</Button>
-            <Button size="sm" variant="ghost" disabled={pending} onClick={() => decide("reject")} className="text-ink-2">رفض الكل</Button>
-          </>
-        ) : (
-          <p className="text-callout text-ink-2">{decisionSummary(p)}</p>
-        )}
-        {caseLink ? <Link href={`/cases/${caseLink}`} className="ms-auto text-sm font-medium text-accent hover:underline">ملف الدعوى ←</Link> : null}
+        <div className={cx("flex shrink-0 flex-col gap-2 px-3.5 py-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2.5 sm:px-[18px] sm:py-3.5", inSheet && "border-t border-border-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))]")}>
+          {openOps.length ? (
+            <>
+              <button type="button" disabled={pending || !chosen.length} onClick={() => decide("confirm", chosen.map((o) => o.op_id))}
+                className="bg-primary-fill h-[46px] rounded-[14px] px-[22px] text-[15px] font-extrabold transition disabled:opacity-50 sm:h-11 sm:rounded-[13px]">
+                {pending ? "بحفظ…" : `${newCase ? "احفظ الملف" : "احفظ"} · ${itemsLabel(chosen.length)}`}
+              </button>
+              <div className="flex gap-2 sm:contents">
+                <button type="button" disabled={pending || !chosen.length} onClick={() => decide("suggest", chosen.map((o) => o.op_id))} className={btn2}>احفظ كمقترحات</button>
+                {/* mobile: opens the sheet with every open row expanded; desktop (and inside the sheet): expands / collapses the rows */}
+                <button type="button" disabled={pending}
+                  onClick={() => editSomething(!inSheet && !window.matchMedia("(min-width: 1024px)").matches)} className={btn2}>
+                  {inSheet ? (allOpenExpanded ? "اقفل التفاصيل" : "عدّل حاجة") : (
+                    <><span className="lg:hidden">عدّل حاجة</span><span className="hidden lg:inline">{allOpenExpanded ? "اقفل التفاصيل" : "عدّل حاجة"}</span></>
+                  )}
+                </button>
+              </div>
+              <button type="button" disabled={pending} onClick={() => decide("reject", openOps.map((o) => o.op_id))}
+                className="h-9 self-center rounded-xl px-3 text-[13px] text-text-3 transition hover:text-bad disabled:opacity-50 sm:ms-auto">
+                ارفض الكل
+              </button>
+            </>
+          ) : (
+            <p className="text-[13.5px] text-text-2">{decisionSummary(p)}</p>
+          )}
+          {caseLink ? <Link href={`/cases/${caseLink}`} className={cx("inline-flex min-h-11 items-center text-[13.5px] font-semibold text-gold-text hover:underline", openOps.length ? "self-center" : "sm:ms-auto")}>فتح ملف القضية ←</Link> : null}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
-  // Mobile (<1024px): a pending card is a compact summary that opens a bottom sheet. Desktop: inline.
-  const pendingCard = openOps.length > 0;
   return (
     <>
-      {pendingCard ? (
-        <div className="flex items-center gap-3 rounded-[var(--radius)] bg-surface px-4 py-3 shadow-2 lg:hidden">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--radius-sm)] bg-accent-soft text-accent"><FileCheck2 aria-hidden size={19} strokeWidth={1.5} /></span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-callout font-semibold text-ink">بطاقة تأكيد <span className="font-normal text-ink-3">·</span> <span className="num font-normal text-ink-3">{openOps.length}</span> عناصر</span>
-            <span className="block truncate text-caption text-ink-3">{warnings ? `${warnings} تحتاج مراجعة المصدر` : "لن يُحفظ شيء قبل تأكيدك"}</span>
-          </span>
-          <Button size="sm" onClick={() => setSheet(true)} aria-haspopup="dialog">مراجعة</Button>
-        </div>
-      ) : null}
-      {showSheet ? null : <div className={cx(pendingCard && "hidden lg:block")}>{card(false)}</div>}
+      {card(false)}
       {showSheet ? (
         <div className="fixed inset-0 z-50 flex flex-col justify-end lg:hidden" role="dialog" aria-modal="true" aria-labelledby={`sheet-title-${p.id}`}>
           <button type="button" aria-label="إغلاق" tabIndex={-1} onClick={() => setSheet(false)} className="fade-enter absolute inset-0 bg-backdrop" />
@@ -268,24 +403,29 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
   );
 }
 
+function Tag({ tone, children }: { tone: "neutral" | "warn" | "bad"; children: React.ReactNode }) {
+  const cls = { neutral: "bg-card-2 text-text-3", warn: "bg-warn-bg text-warn", bad: "bg-bad-bg text-bad" }[tone];
+  return <span className={cx("inline-flex h-[18px] items-center rounded-full px-2 text-[10.5px] font-bold", cls)}>{children}</span>;
+}
+
 function decisionSummary(p: Proposal) {
   const n = (s: ProposalOp["status"]) => p.ops.filter((o) => o.status === s).length;
-  const parts = [n("confirmed") && `حُفظ ${n("confirmed")}`, n("suggested") && `مقترح ${n("suggested")}`, n("rejected") && `مرفوض ${n("rejected")}`].filter(Boolean);
+  const parts = [n("confirmed") && `اتحفظ ${n("confirmed")}`, n("suggested") && `مقترح ${n("suggested")}`, n("rejected") && `مرفوض ${n("rejected")}`, n("failed") && `ما اتحفظش ${n("failed")}`].filter(Boolean);
   return parts.join(" · ") || "—";
 }
 
 function EditFields({ op, values, onChange, display }: {
   op: ProposalOp; values: Record<string, unknown>; onChange: (k: string, v: unknown) => void; display: (f: FieldSpec, v: unknown) => string | null;
 }) {
-  const input = "min-h-11 w-full rounded-[var(--radius-sm)] border border-line bg-surface-2 px-3 py-2 text-body text-ink focus:border-accent focus:bg-surface focus:outline-none";
+  const input = "min-h-11 w-full rounded-xl border border-border bg-field px-3 py-2 text-[15px] text-text focus:border-gold focus:outline-none";
   return (
     <div className="space-y-2.5">
       {OP_FIELDS[op.tool].map((f) => {
         const v = values[f.key];
         const id = `${op.op_id}-${f.key}`;
         let control;
-        if (f.type === "ref") control = <p className="py-1 text-sm text-ink-2">{display(f, v) ?? "—"}</p>;
-        else if (f.type === "bool") control = <input id={id} type="checkbox" checked={!!v} onChange={(e) => onChange(f.key, e.target.checked)} className="h-4 w-4 accent-[var(--accent)]" />;
+        if (f.type === "ref") control = <p className="py-1 text-sm text-text-2">{display(f, v) ?? "—"}</p>;
+        else if (f.type === "bool") control = <input id={id} type="checkbox" checked={!!v} onChange={(e) => onChange(f.key, e.target.checked)} className="h-4 w-4 accent-[var(--primary)]" />;
         else if (typeof f.type === "object") {
           control = (
             <select id={id} value={String(v ?? "")} onChange={(e) => onChange(f.key, e.target.value || undefined)} className={input}>
@@ -304,7 +444,7 @@ function EditFields({ op, values, onChange, display }: {
         }
         return (
           <div key={f.key} className={cx(f.type === "bool" && "flex items-center gap-2")}>
-            <label htmlFor={id} className={cx("text-xs text-ink-3", f.type !== "bool" && "mb-1 block")}>{f.label}</label>
+            <label htmlFor={id} className={cx("text-xs text-text-3", f.type !== "bool" && "mb-1 block")}>{f.label}</label>
             {control}
           </div>
         );

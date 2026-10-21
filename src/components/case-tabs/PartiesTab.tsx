@@ -14,7 +14,7 @@ export async function PartiesTab({ caseId }: { caseId: string }) {
     .select("id, name, role, is_our_client, representative, notes, review_status, created_by_kind, source_kind, source_page, source_quote, document:documents!case_parties_source_document_id_fkey(file_name)")
     .eq("case_id", caseId).neq("review_status", "rejected").order("created_at");
   const parties = data ?? [];
-  if (!parties.length) return <EmptyState title="لا توجد أطراف بعد" hint="اذكر للمساعد أطراف الدعوى وصفاتهم، وسيقترحهم لتؤكدهم." />;
+  if (!parties.length) return <EmptyState title="لا توجد أطراف بعد" hint="اذكر لـ Clausia أطراف الدعوى وصفاتهم، وسيقترحهم لتؤكدهم." />;
 
   const groups = ORDER.map((role) => ({ role, items: parties.filter((p) => p.role === role) })).filter((g) => g.items.length);
 

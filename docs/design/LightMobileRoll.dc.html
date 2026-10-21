@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>فاتح · الرول (موبايل)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&amp;family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#E9EBEF}
+a{color:#121A2B;text-decoration:none}a:hover{color:#000000}
+input::placeholder{color:#7A7E85}
+button{font:inherit;cursor:pointer}
+</style>
+</helmet>
+<div dir="rtl" style="width: 390px; height: 1240px; position: relative; overflow: hidden; background: linear-gradient(180deg, #FFFFFF 0px, #F4F5F8 380px); color: #121A2B; font-family: -apple-system, BlinkMacSystemFont, 'SF Arabic', 'SF Pro Text', system-ui, 'Vazirmatn', sans-serif">
+
+  <div style="padding: 10px 10px 0">
+    <section style="position: relative; border-radius: 30px; padding: 12px 14px 18px; overflow: hidden; background: #FFFFFF; border: 1px solid rgba(18,26,43,0.07); box-shadow: 0 1px 2px rgba(18,26,43,0.05), 0 22px 46px -24px rgba(18,26,43,0.25)">
+      <div style="display: flex; align-items: center; justify-content: space-between">
+        <a href="LightMobileHome.dc.html" aria-label="رجوع" style="width: 40px; height: 40px; border-radius: 20px; background: #F1F3F6; border: 1px solid rgba(18,26,43,0.08); color: #121A2B; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></a>
+        <button aria-label="ترتيب" style="width: 40px; height: 40px; border-radius: 20px; background: #F1F3F6; border: 1px solid rgba(18,26,43,0.08); color: #121A2B; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 6h18"/><path d="M7 12h10"/><path d="M10 18h4"/></svg></button>
+      </div>
+      <div style="display: flex; align-items: center; gap: 14px; margin-top: 16px">
+        <div style="width: 54px; height: 54px; flex: 0 0 54px; border-radius: 17px; background: #141C2E; color: {{accent}}; box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 12px 26px -10px rgba(18,26,43,0.55); display: flex; align-items: center; justify-content: center"><svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg></div>
+        <div style="min-width: 0">
+          <div style="font-size: 12px; font-weight: 700; color: #7A5E24">الثلاثاء 20 أكتوبر 2026</div>
+          <h1 style="margin: 2px 0 0; font-size: 28px; line-height: 1.25; font-weight: 800; color: #121A2B">الرول</h1>
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 16px">
+          <div style="border-radius: 16px; padding: 10px 12px; background: #F4F6F9; border: 1px solid rgba(18,26,43,0.06)"><div style="font-family: -apple-system, 'SF Pro Display', system-ui, 'Inter', sans-serif; font-size: 24px; font-weight: 800; color: #121A2B; line-height: 1">03</div><div style="font-size: 11px; color: #5F636A; margin-top: 4px">جلسات النهارده</div></div>
+          <div style="border-radius: 16px; padding: 10px 12px; background: #F4F6F9; border: 1px solid rgba(18,26,43,0.06)"><div style="font-family: -apple-system, 'SF Pro Display', system-ui, 'Inter', sans-serif; font-size: 24px; font-weight: 800; color: #121A2B; line-height: 1">05</div><div style="font-size: 11px; color: #5F636A; margin-top: 4px">جلسات الأسبوع</div></div>
+          <div style="border-radius: 16px; padding: 10px 12px; background: #141C2E; color: {{accent}}; box-shadow: 0 10px 22px -10px rgba(18,26,43,0.5)"><div style="font-family: -apple-system, 'SF Pro Display', system-ui, 'Inter', sans-serif; font-size: 24px; font-weight: 800; line-height: 1">04</div><div style="font-size: 11px; font-weight: 600; margin-top: 4px">محتاجة قرار</div></div>
+      </div>
+    </section>
+  </div>
+
+  <div style="padding: 0 16px 200px">
+    <div style="display: flex; gap: 6px; margin-top: 14px">
+      <sc-for list="{{days}}" as="d" hint-placeholder-count="6">
+        <button style="flex: 1; height: 64px; border-radius: 16px; border: 1px solid {{d.border}}; background: {{d.bg}}; color: {{d.fg}}; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; box-shadow: {{d.shadow}}">
+          <span style="font-size: 10.5px; font-weight: 600; opacity: 0.8">{{d.name}}</span>
+          <span style="font-family: -apple-system, 'SF Pro Display', system-ui, 'Inter', sans-serif; font-size: 18px; font-weight: 800">{{d.num}}</span>
+          <span style="font-size: 9.5px; opacity: 0.75">{{d.count}}</span>
+        </button>
+      </sc-for>
+    </div>
+
+    <div style="display: flex; gap: 10px; margin-top: 16px">
+      <div style="width: 26px; height: 26px; flex: 0 0 26px; border-radius: 13px; background: #141C2E; color: {{accent}}; display: flex; align-items: center; justify-content: center; font-family: -apple-system, 'SF Pro Display', system-ui, 'Inter', sans-serif; font-weight: 900; font-size: 12px; box-shadow: 0 4px 10px rgba(18,26,43,0.3)">C</div>
+      <p style="margin: 2px 0 0; flex: 1; font-size: 14.5px; line-height: 1.75; color: #2A2D31">النهارده 3 جلسات في 3 محاكم. بعد كل جلسة، اكتبلي القرار زي ما سمعته، وأنا أسجّله وأعمل الجلسة الجاية.</p>
+    </div>
+
+    <sc-for list="{{courts}}" as="c" hint-placeholder-count="3">
+      <section style="margin-top: 14px; border-radius: 20px; background: #FFFFFF; border: 1px solid rgba(18,26,43,0.07); box-shadow: inset 0 1px 0 #FFFFFF, 0 1px 2px rgba(18,26,43,0.05), 0 18px 36px -18px rgba(18,26,43,0.22); overflow: hidden">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; border-bottom: 1px solid rgba(18,26,43,0.06); background: linear-gradient(180deg, {{accentTint}}, rgba(255,255,255,0))">
+          <span style="font-size: 13.5px; font-weight: 700">{{c.court}}</span>
+          <span style="font-size: 11px; color: #5F636A">{{c.place}}</span>
+        </div>
+        <a href="LightMobileCase.dc.html" style="display: flex; align-items: center; gap: 12px; padding: 12px 14px">
+          <div style="width: 40px; height: 40px; flex: 0 0 40px; border-radius: 12px; background: #141C2E; box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 4px 10px rgba(18,26,43,0.25); display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1">
+            <span style="font-size: 8.5px; color: #B8BBC0">دائرة</span>
+            <span style="font-family: -apple-system, 'SF Pro Display', system-ui, 'Inter', sans-serif; font-size: 16px; font-weight: 800; margin-top: 2px; color: {{accent}}">{{c.circuit}}</span>
+          </div>
+          <div style="flex: 1; min-width: 0">
+            <div style="font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{c.title}}</div>
+            <div style="font-size: 11.5px; color: #5F636A; margin-top: 1px">{{c.number}} · المطلوب: {{c.need}}</div>
+          </div>
+        </a>
+      </section>
+    </sc-for>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 12px 26px">
+    <div style="display: flex; gap: 6px; overflow: hidden; padding: 0 2px 10px">
+      <button style="flex: 0 0 auto; height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid rgba(18,26,43,0.08); background: #FFFFFF; color: #2A2D31; font-size: 12.5px; box-shadow: 0 2px 6px rgba(18,26,43,0.06)">اتأجلت لـ…</button>
+      <button style="flex: 0 0 auto; height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid rgba(18,26,43,0.08); background: #FFFFFF; color: #2A2D31; font-size: 12.5px; box-shadow: 0 2px 6px rgba(18,26,43,0.06)">اتحجزت للحكم</button>
+      <button style="flex: 0 0 auto; height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid rgba(18,26,43,0.08); background: #FFFFFF; color: #2A2D31; font-size: 12.5px; box-shadow: 0 2px 6px rgba(18,26,43,0.06)">صوّر محضر الجلسة</button>
+    </div>
+    <div style="border-radius: 26px; background: #FFFFFF; padding: 8px; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(18,26,43,0.08); box-shadow: inset 0 1px 0 #FFFFFF, 0 0 0 4px {{accentRing}}, 0 -6px 30px rgba(18,26,43,0.10), 0 24px 50px -20px rgba(18,26,43,0.35)">
+      <button aria-label="رسالة صوتية" style="width: 40px; height: 40px; border-radius: 20px; border: 1px solid rgba(18,26,43,0.08); background: #F1F3F6; color: #2A2D31; display: flex; align-items: center; justify-content: center">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><path d="M12 18v4"/></svg>
+      </button>
+      <input aria-label="قرار الجلسة" placeholder="قرار أي جلسة… مثلاً: الإخلاء اتأجلت 5/11" style="flex: 1; min-width: 0; height: 40px; border: 0; outline: none; background: transparent; font: inherit; font-size: 14.5px; color: #121A2B">
+      <button aria-label="إرسال" style="width: 42px; height: 42px; border-radius: 21px; border: 0; background: #141C2E; color: {{accent}}; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 8px 18px rgba(18,26,43,0.35)">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","options":["#D6C08F","#C9D1D9","#BCD0C3","#D4FF3A"],"default":"#D6C08F"},"$preview":{"width":390,"height":1240}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var accent = this.props.accent ?? '#D6C08F';
+    var hex = accent.replace('#', '');
+    var r = parseInt(hex.substr(0, 2), 16), g = parseInt(hex.substr(2, 2), 16), b = parseInt(hex.substr(4, 2), 16);
+    var rgba = function (a) { return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')'; };
+    var raw = [['السبت', '17', '1'], ['الأحد', '18', '1'], ['الاثنين', '19', '2'], ['الثلاثاء', '20', '3'], ['الأربعاء', '21', '2'], ['الخميس', '22', '1']];
+    var days = raw.map(function (d, i) {
+      var on = i === 3;
+      return { name: d[0], num: d[1], count: d[2] + ' جلسة', bg: on ? '#141C2E' : '#FFFFFF', fg: on ? accent : '#2A2D31', border: on ? 'rgba(18,26,43,0.4)' : 'rgba(18,26,43,0.08)', shadow: on ? 'inset 0 1px 0 rgba(255,255,255,0.12), 0 10px 22px rgba(18,26,43,0.35)' : '0 2px 6px rgba(18,26,43,0.06)' };
+    });
+    return {
+      accent: accent, accentWash: rgba(0.3), accentRing: rgba(0.22), accentTint: rgba(0.16),
+      days: days,
+      courts: [
+        { court: 'محكمة استئناف القاهرة', place: 'الدور 4 · قاعة 12', circuit: '7', title: 'كريم المثالي — صحة ونفاذ عقد بيع', number: '8833/2024', need: 'الاطلاع والمذكرات' },
+        { court: 'محكمة الجيزة الابتدائية', place: 'الدور 2', circuit: '5', title: 'منى الافتراضية — فصل تعسفي', number: '1290/2025', need: 'تقرير الخبير' },
+        { court: 'شمال القاهرة الابتدائية', place: 'العباسية', circuit: '3', title: 'عادل النموذجي — إخلاء', number: '772/2025', need: 'أصل عقد الإيجار' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

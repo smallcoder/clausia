@@ -29,7 +29,7 @@ async function main() {
     clientId = (await applyOp(db, "create_client", { name: "اختبار-جلسات موكل", quote: "اختبار" }, MANUAL)).id;
     caseId = (await applyOp(db, "create_case", { client: clientId, title: "اختبار-جلسات", court: "محكمة الاختبار", circuit: "الدائرة 1", client_role: "plaintiff", quote: "اختبار" }, MANUAL)).id;
 
-    const h1 = (await applyOp(db, "add_hearing", { case: caseId, date: "1/11/2026", purpose: "أول جلسة", quote: "جلسة 1/11/2026" }, MANUAL)).id;
+    const h1 = (await applyOp(db, "add_hearing", { case: caseId, date: "1/10/2026", purpose: "أول جلسة", quote: "جلسة 1/10/2026" }, MANUAL)).id;
     check("add_hearing creates the hearing", !!h1);
 
     // postponed without next_date → refused, nothing changes
@@ -37,9 +37,9 @@ async function main() {
     check("postponed without next_date is refused", !!e1 && /next hearing date/.test(e1), e1 ?? "accepted");
 
     // next_date before (or on) the hearing date → refused
-    const e2 = await refused(() => applyOp(db, "record_decision", { hearing: h1, decision: "postponed", next_date: "20/10/2026", quote: "أجلت" }, MANUAL));
+    const e2 = await refused(() => applyOp(db, "record_decision", { hearing: h1, decision: "postponed", next_date: "20/9/2026", quote: "أجلت" }, MANUAL));
     check("next_date before the hearing date is refused", !!e2 && /after the hearing date/.test(e2), e2 ?? "accepted");
-    const e3 = await refused(() => applyOp(db, "record_decision", { hearing: h1, decision: "postponed", next_date: "1/11/2026", quote: "أجلت" }, MANUAL));
+    const e3 = await refused(() => applyOp(db, "record_decision", { hearing: h1, decision: "postponed", next_date: "1/10/2026", quote: "أجلت" }, MANUAL));
     check("next_date equal to the hearing date is refused", !!e3, e3 ?? "accepted");
 
     // an unclear date is refused by the tool schema (never guessed)
@@ -55,15 +55,18 @@ async function main() {
     const old = rows.find((x) => x.id === h1);
     const nw = rows.find((x) => x.hearing_date === "2026-11-15");
     check("a new hearing exists on 15/11/2026", !!nw, JSON.stringify(rows.map((x) => x.hearing_date)));
+    // a hearing that has not happened yet cannot get a decision (owner rule; server-side guard in applyOp)
+    const eFuture = await refused(() => applyOp(db, "record_decision", { hearing: nw!.id, decision: "reserved_for_judgment", quote: "حجز" }, MANUAL));
+    check("decision on a future hearing is refused", !!eFuture, eFuture ?? "");
     check("new.previous_hearing_id = old", nw?.previous_hearing_id === h1, String(nw?.previous_hearing_id));
     check("old.next_hearing_id = new", !!nw && old?.next_hearing_id === nw.id, String(old?.next_hearing_id));
     check("rpc returns next_hearing_id", !!nw && (r.extra as { next_hearing_id?: string } | undefined)?.next_hearing_id === nw.id);
     check("decision saved on old (type, text, requirements)", old?.decision_type === "postponed" && old.decision_text === "أجلت لتقديم المستندات" && old.next_requirements === "تقديم أصل العقد");
     check("new hearing is undecided, purpose = requirements", nw?.decision_type === null && nw?.purpose === "تقديم أصل العقد");
-    check("caseHearings fills next_date / previous_date", old?.next_date === "2026-11-15" && nw?.previous_date === "2026-11-01");
+    check("caseHearings fills next_date / previous_date", old?.next_date === "2026-11-15" && nw?.previous_date === "2026-10-01");
 
     // hearingsInRange: the case join and client_name flattening (what home and the roll render)
-    const inRange = (await hearingsInRange(db, "2026-11-01", "2026-11-15")).filter((x) => x.case_id === caseId);
+    const inRange = (await hearingsInRange(db, "2026-10-01", "2026-11-15")).filter((x) => x.case_id === caseId);
     check("hearingsInRange returns both hearings", inRange.length === 2 && inRange.some((x) => x.id === h1) && inRange.some((x) => x.id === nw?.id), JSON.stringify(inRange.map((x) => x.hearing_date)));
     check("hearingsInRange joins court and client name", inRange.length > 0 && inRange.every((x) => x.case.court === "محكمة الاختبار" && x.case.client_name === "اختبار-جلسات موكل"), JSON.stringify(inRange.map((x) => [x.case.court, x.case.client_name])));
     check("hearingsInRange fills next_date on the postponed one", inRange.find((x) => x.id === h1)?.next_date === "2026-11-15");
@@ -81,12 +84,12 @@ async function main() {
       await other.auth.signInWithPassword({ email: process.env.OTHER_EMAIL, password: process.env.OTHER_PASSWORD });
       const odb = other as unknown as Db;
       check("other office sees none of the case's hearings", (await caseHearings(odb, caseId)).length === 0);
-      const e5 = await refused(() => applyOp(odb, "record_decision", { hearing: nw!.id, decision: "struck_off", quote: "x" }, MANUAL));
+      const e5 = await refused(() => applyOp(odb, "record_decision", { hearing: past, decision: "struck_off", quote: "x" }, MANUAL));
       check("other office cannot record a decision", !!e5, e5 ?? "accepted");
     }
 
     // reserved_for_judgment on the new hearing → case status
-    await applyOp(db, "record_decision", { hearing: nw!.id, decision: "reserved_for_judgment", decision_text: "حجز للحكم لجلسة 20/12/2026", quote: "حجز للحكم" }, MANUAL);
+    await applyOp(db, "record_decision", { hearing: past, decision: "reserved_for_judgment", decision_text: "حجز للحكم لجلسة 20/12/2026", quote: "حجز للحكم" }, MANUAL);
     const { data: c } = await sb.from("cases").select("status").eq("id", caseId).single();
     check("reserved_for_judgment sets case status", c?.status === "reserved_for_judgment", String(c?.status));
   } catch (e) {

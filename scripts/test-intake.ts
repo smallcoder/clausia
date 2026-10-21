@@ -21,8 +21,8 @@ const MESSAGES = [
   "طلباتنا: أصليًا إلزام الشركة بإتمام أعمال التشطيب، واحتياطيًا تعويض قدره 200 ألف جنيه.",
   "الشركة دفعت بعدم اختصاص المحكمة محليًا.",
   "أول جلسة كانت يوم 1/10/2026 للإعلان.",
-  "الجلسة اتأجلت لـ 15/12/2026 لتقديم مستندات",
-  "تحديث: في جلسة 15/12/2026 صدر حكم ابتدائي لصالحنا بإلزام الشركة بإتمام التشطيب، وآخر ميعاد للاستئناف 24/1/2027.",
+  "الجلسة اتأجلت لـ 15/10/2026 لتقديم مستندات",
+  "تحديث: في جلسة 15/10/2026 صدر حكم ابتدائي لصالحنا بإلزام الشركة بإتمام التشطيب، وآخر ميعاد للاستئناف 24/11/2026.",
 ];
 
 let failures = 0;
@@ -39,6 +39,13 @@ async function main() {
   const { data: member } = await db.from("office_members").select("office_id").eq("user_id", auth.user.id).single();
   if (!member) throw new Error("no office");
 
+  // start clean: the previous run's intake (kept as a demo) would make Clausia say «مسجلة بالفعل» — correct, but not a test
+  {
+    const { data: oldClients } = await db.from("clients").select("id").eq("name", "عادل منصور التجريبي");
+    await db.from("cases").delete().eq("case_number", "4521").eq("case_year", 2026);
+    if (oldClients?.length) await db.from("clients").delete().in("id", oldClients.map((c) => c.id));
+    await db.from("chat_threads").delete().eq("title", "اختبار الاستقبال بالمحادثة");
+  }
   const threadId = await createGeneralThread(db, "اختبار الاستقبال بالمحادثة");
   console.log(`thread ${threadId}\n`);
   const turnLog: { i: number; proposals: Proposal[]; text: string; rounds: number }[] = [];
@@ -99,11 +106,11 @@ async function main() {
   check((requests.data?.length ?? 0) >= 1, "client requests saved");
   check(!!args.data?.some((a) => a.side === "opponent" && a.text.includes("اختصاص")), "opponent defence saved");
   const first = hearings.data?.find((h) => h.hearing_date === "2026-10-01");
-  const next = hearings.data?.find((h) => h.hearing_date === "2026-12-15");
+  const next = hearings.data?.find((h) => h.hearing_date === "2026-10-15");
   check(!!first, "hearing 1/10/2026");
-  check(first?.decision_type === "postponed" && !!next && first.next_hearing_id === next.id, "postponed → next hearing 15/12/2026 created and linked");
+  check(first?.decision_type === "postponed" && !!next && first.next_hearing_id === next.id, "postponed → next hearing 15/10/2026 created and linked");
   check(!!next?.previous_hearing_id && (hearings.data?.length ?? 0) === 2, "exactly two hearings (no duplicate next hearing)");
-  check(!!judgments.data?.some((j) => j.appeal_deadline === "2027-01-24"), "judgment with the stated appeal deadline 24/1/2027");
+  check(!!judgments.data?.some((j) => j.appeal_deadline === "2026-11-24"), "judgment with the stated appeal deadline 24/11/2026");
 
   const items = [client, c, ...(parties.data ?? []), ...(facts.data ?? []), ...(requests.data ?? []), ...(args.data ?? []), ...(hearings.data ?? []), ...(judgments.data ?? [])].filter(Boolean) as { source_kind: string; created_by_kind: string; source_message_id: string | null; source_quote: string | null }[];
   const badProv = items.filter((x) => x.source_kind !== "chat" || x.created_by_kind !== "model" || !x.source_message_id || !msgIds.includes(x.source_message_id));

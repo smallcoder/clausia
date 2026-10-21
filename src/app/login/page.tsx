@@ -1,39 +1,46 @@
 "use client";
 import { useActionState, useState } from "react";
+import { ThemeToggle } from "@/components/shell/ThemeToggle";
 import { signIn, signUp, type AuthState } from "./actions";
+
+const FIELD = "mt-1.5 h-12 w-full rounded-2xl border border-border bg-field px-4 text-[15px] text-text shadow-soft placeholder:text-text-4 focus:border-gold/60 focus:outline-none";
 
 export default function LoginPage() {
   const [mode, setMode] = useState<"in" | "up">("in");
   const [state, action, pending] = useActionState(mode === "in" ? signIn : signUp, null as AuthState);
   return (
-    <main className="flex min-h-dvh items-center justify-center px-4">
+    <main className="relative flex min-h-dvh items-center justify-center px-4">
+      <ThemeToggle className="absolute end-4 top-4" />
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <div className="text-[2.125rem] font-bold tracking-tight text-ink">Clausia</div>
-          <p className="mt-2 text-body text-ink-2">ملف القضية، يُملأ بالمحادثة</p>
+          <div className="flex items-center justify-center gap-2.5">
+            <span className="mark font-num inline-flex size-10 items-center justify-center rounded-xl text-[22px] font-black shadow-mark">C</span>
+            <span className="font-num text-[28px] font-extrabold tracking-[-0.02em] text-text">Clausia</span>
+          </div>
+          <p className="mt-3 text-[15px] text-text-3">ملف القضية، يُملأ بالمحادثة مع Clausia</p>
         </div>
-        <form action={action} className="space-y-4 rounded-[var(--radius-lg)] bg-surface p-6 shadow-2">
+        <form action={action} className="space-y-4 rounded-[24px] border border-border-2 bg-card p-6 shadow-card">
           {mode === "up" ? (
-            <label className="block text-callout">
-              <span className="text-ink-2">اسم المكتب</span>
-              <input name="office_name" required className="mt-1 h-11 w-full rounded-[var(--radius-sm)] border border-line bg-surface-2 px-3.5 text-body text-ink focus:border-accent focus:bg-surface focus:outline-none" />
+            <label className="block text-[13px] font-semibold text-text-3">
+              اسم المكتب
+              <input name="office_name" required className={FIELD} />
             </label>
           ) : null}
-          <label className="block text-callout">
-            <span className="text-ink-2">البريد الإلكتروني</span>
-            <input name="email" type="email" required dir="ltr" autoComplete="email" className="mt-1 h-11 w-full rounded-[var(--radius-sm)] border border-line bg-surface-2 px-3.5 text-body text-ink focus:border-accent focus:bg-surface focus:outline-none text-left" />
+          <label className="block text-[13px] font-semibold text-text-3">
+            البريد الإلكتروني
+            <input name="email" type="email" required dir="ltr" autoComplete="email" className={`${FIELD} text-left`} />
           </label>
-          <label className="block text-callout">
-            <span className="text-ink-2">كلمة المرور</span>
-            <input name="password" type="password" required minLength={8} dir="ltr" autoComplete={mode === "in" ? "current-password" : "new-password"} className="mt-1 h-11 w-full rounded-[var(--radius-sm)] border border-line bg-surface-2 px-3.5 text-body text-ink focus:border-accent focus:bg-surface focus:outline-none text-left" />
+          <label className="block text-[13px] font-semibold text-text-3">
+            كلمة المرور
+            <input name="password" type="password" required minLength={8} dir="ltr" autoComplete={mode === "in" ? "current-password" : "new-password"} className={`${FIELD} text-left`} />
           </label>
-          {state?.error ? <p className="text-sm text-danger">{state.error}</p> : null}
-          {state?.info ? <p className="text-sm text-ok">{state.info}</p> : null}
-          <button disabled={pending} className="h-11 w-full rounded-[var(--radius-sm)] bg-accent text-body font-semibold text-accent-ink transition hover:opacity-90 disabled:opacity-60">
+          {state?.error ? <p className="text-sm text-bad">{state.error}</p> : null}
+          {state?.info ? <p className="text-sm text-good">{state.info}</p> : null}
+          <button disabled={pending} className="bg-primary-fill h-12 w-full rounded-full text-[15px] font-bold transition hover:brightness-105 disabled:opacity-60">
             {mode === "in" ? "دخول" : "إنشاء حساب ومكتب"}
           </button>
         </form>
-        <button onClick={() => setMode(mode === "in" ? "up" : "in")} className="mt-4 min-h-11 w-full text-center text-callout text-accent hover:opacity-80">
+        <button onClick={() => setMode(mode === "in" ? "up" : "in")} className="mt-4 min-h-11 w-full text-center text-[14px] font-semibold text-gold-text hover:opacity-80">
           {mode === "in" ? "مكتب جديد؟ أنشئ حسابًا" : "لديك حساب؟ سجّل الدخول"}
         </button>
       </div>

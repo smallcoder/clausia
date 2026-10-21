@@ -13,7 +13,7 @@ export async function FactsTab({ caseId }: { caseId: string }) {
     .select("id, fact_date, date_precision, date_text, text, sort_order, created_at, review_status, created_by_kind, source_kind, source_page, source_quote, source_document_id, document:documents!case_facts_source_document_id_fkey(file_name)")
     .eq("case_id", caseId).neq("review_status", "rejected");
   const facts = (data ?? []).sort(compareFacts);
-  if (!facts.length) return <EmptyState title="لا توجد وقائع بعد" hint="احكِ للمساعد في المحادثة ما حدث وتواريخه، أو ارفع صحيفة الدعوى، وسيقترح الوقائع لتؤكدها." />;
+  if (!facts.length) return <EmptyState title="لا توجد وقائع بعد" hint="احكِ لـ Clausia في المحادثة ما حدث وتواريخه، أو ارفع صحيفة الدعوى، وسيقترح الوقائع لتؤكدها." />;
 
   return (
     <ol className="relative space-y-4 border-s border-line ps-5">

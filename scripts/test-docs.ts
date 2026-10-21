@@ -12,7 +12,8 @@ import { normalizeDigits } from "@/lib/dates";
 import type { Database } from "@/lib/db/types";
 import { processDocument, type ProcessResult } from "@/lib/documents/process";
 import { safeFileName } from "@/lib/documents/files";
-import { decideProposal, normalizeForMatch } from "@/lib/proposals";
+import { decideProposal, normalizeForMatch, verifyQuote } from "@/lib/proposals";
+import { runAssistantTurn } from "@/lib/assistant/turn";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Db } from "@/lib/supabase/server";
 import { createGeneralThread, getOrCreateCaseThread } from "@/lib/threads";
@@ -44,7 +45,9 @@ async function report(db: Db, label: string, r: ProcessResult) {
   const texts = (pages ?? []).map((p) => p.text);
   const all = normalizeDigits(texts.join("\n"));
   const { data: prop } = r.proposalId ? await db.from("proposals").select("ops, message_id").eq("id", r.proposalId).single() : { data: null };
-  const ops = ((prop?.ops ?? []) as unknown as { tool: string; args: Record<string, unknown>; source: { page?: number; quote?: string }; quote_verified: boolean }[]);
+  type Op = { tool: string; args: Record<string, unknown>; source: { page?: number; quote?: string }; quote_verified: boolean };
+  // no card when Clausia first asks «مين موكلك؟»: check the drafted ops instead
+  const ops: Op[] = prop ? (prop.ops as unknown as Op[]) : r.ops.map((o) => ({ tool: o.tool, args: o.args, source: { page: o.source.page ?? undefined, quote: o.source.quote ?? undefined }, quote_verified: verifyQuote(o.source.quote, texts) }));
   for (const o of ops) {
     const main = String(o.args.name ?? o.args.text ?? o.args.case_number ?? o.args.doc_type ?? o.args.date ?? o.args.decision ?? "").slice(0, 60);
     const date = o.args.date ?? o.args.next_date;
@@ -53,7 +56,10 @@ async function report(db: Db, label: string, r: ProcessResult) {
   if (r.dropped.length) console.log(`  dropped: ${r.dropped.map((d) => `${d.tool} (${d.reason})`).join(" | ")}`);
   if (r.suspicious.length) console.log(`  suspicious_lines: ${r.suspicious.map((s) => `p${s.page} «${s.quote}»`).join(" | ")}`);
   check(r.pageCount > 0 && texts.every((t) => t.length > 50), "every page read with text");
-  check(ops.length > 0 && prop?.message_id === r.messageId, "one card linked to one assistant message");
+  if (r.needsClient) {
+    const { data: m } = await db.from("chat_messages").select("content").eq("id", r.messageId!).single();
+    check(!r.proposalId && (m?.content ?? "").includes("مين موكلك؟"), "client unclear: no card yet, Clausia asks «مين موكلك؟»");
+  } else check(ops.length > 0 && prop?.message_id === r.messageId, "one card linked to one assistant message");
   check(ops.every((o) => Number.isInteger(o.source.page) && o.source.page! >= 1 && o.source.page! <= r.pageCount && !!o.source.quote), "every op has a valid page and a quote");
   check(ops.every((o) => (WRITE_TOOLS as string[]).includes(o.tool)), "only registry tools");
   const verified = ops.filter((o) => o.quote_verified).length;
@@ -95,6 +101,21 @@ async function main() {
     check(cc.case_number === "4471" && Number(cc.case_year) === 2026, `claim sheet: case number/year as written (${cc.case_number}/${cc.case_year})`);
     check(ops1.some((o) => o.tool === "add_party" && String(o.args.name).includes("سامح")) && ops1.some((o) => o.tool === "add_party" && String(o.args.name).includes("المثال")), "claim sheet: both parties found");
     check(ops1.filter((o) => o.tool === "add_request").length >= 2, "claim sheet: requests found");
+    check(!ops1.some((o) => o.tool === "record_decision"), "claim sheet: no hearing decision (a hearing stays «needs decision»)");
+    // the lawyer answers «مين موكلك؟» → now Clausia drafts the card from the paper
+    const { data: { user: u } } = await db.auth.getUser();
+    const turn = await runAssistantTurn(db, { threadId: t1, userText: "موكلي هو سامح التجريبي عبد الفتاح، المدعي.", userId: u!.id, officeId });
+    const { data: card } = turn.proposalIds[0] ? await db.from("proposals").select("ops").eq("id", turn.proposalIds[0]).single() : { data: null };
+    const tools = ((card?.ops ?? []) as unknown as { tool: string; args: Record<string, unknown> }[]);
+    console.log(`  after the answer: ${tools.map((o) => o.tool).join(", ") || "(no card)"}`);
+    console.log(`  Clausia: ${turn.text.replace(/\s+/g, " ").slice(0, 220)}`);
+    // the demo office may already hold 4471/2026 (an earlier demo upload): then linking to it, or asking, is right too
+    const { count: dup } = await db.from("cases").select("id", { count: "exact", head: true }).eq("case_number", "4471").eq("case_year", 2026);
+    const linked = tools.some((o) => o.tool === "create_case") || (!!dup && tools.some((o) => o.tool === "update_case" || o.tool === "add_party"));
+    const askedAboutExisting = !!dup && !tools.length && /4471|موجود/.test(turn.text) && /؟/.test(turn.text);
+    check(tools.some((o) => o.tool === "create_client" && String(o.args.name).includes("سامح")) || askedAboutExisting, "after «مين موكلك؟»: card creates the named client (or asks about the existing case)");
+    check(linked || askedAboutExisting, "after «مين موكلك؟»: card creates the case (or links / asks about the existing 4471)");
+    check(!tools.some((o) => o.tool === "record_decision"), "after «مين موكلك؟»: no hearing decision from a claim sheet");
 
     // temp case for the other two
     const { data: c, error: ce } = await db.from("cases").insert({ title: "اختبار-مستندات", source_kind: "manual" }).select("id").single();

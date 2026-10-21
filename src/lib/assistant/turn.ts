@@ -11,13 +11,13 @@ import { formatDmy, todayIso } from "@/lib/dates";
 import type { Json } from "@/lib/db/types";
 import { caseLabel } from "@/lib/labels";
 import { getLlm, type LlmMessage, type LlmToolCall } from "@/lib/llm";
-import { createProposal, type DraftOp, type Proposal } from "@/lib/proposals";
+import { createProposal, normalizeForMatch, type DraftOp, type Proposal } from "@/lib/proposals";
 import type { Db } from "@/lib/supabase/server";
 import { isReadTool, READ_TOOL_SPECS, runReadTool } from "@/lib/tools/read";
 import { isWriteTool, OP_TITLE, WRITE_TOOL_ARGS, writeToolSpecs } from "@/lib/tools/registry";
 import { buildSystemPrompt, type CaseContext } from "./prompt";
 
-const MAX_ROUNDS = 4;
+const MAX_ROUNDS = 6;
 const HISTORY = 40;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** Write-tool args that hold a reference (uuid or «@ref»); other string args are free text and may start with "@". */
@@ -65,12 +65,13 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promis
   state.saved = true;
   await db.from("chat_threads").update({ updated_at: new Date().toISOString() }).eq("id", thread.id);
 
-  const [history, caseContext, cardNotes, docs, sourceTexts] = await Promise.all([
+  const [history, caseContext, cardNotes, docs, sourceTexts, docPages] = await Promise.all([
     loadHistory(db, thread.id),
     thread.case_id ? loadCaseContext(db, thread.case_id) : Promise.resolve(null),
     loadCardNotes(db, thread.id),
     db.from("documents").select("id, file_name, page_count, read_status").eq("thread_id", thread.id).order("created_at").then((r) => r.data ?? []),
     loadSourceTexts(db, thread.id),
+    loadDocPages(db, thread.id),
   ]);
 
   const system = buildSystemPrompt({ caseContext, cardNotes, documents: docs });
@@ -98,7 +99,7 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promis
     const { data: am, error: ae } = await db.from("chat_messages")
       .insert({ thread_id: thread.id, role: "assistant", content: res.text ?? "", tool_calls: stored as unknown as Json })
       .select("id").single();
-    if (ae || !am) throw new Error(ae?.message ?? "تعذّر حفظ رد المساعد");
+    if (ae || !am) throw new Error(ae?.message ?? "تعذّر حفظ رد Clausia");
     out.assistantMessageIds.push(am.id);
     if (res.text) out.text = out.text ? `${out.text}\n${res.text}` : res.text;
     messages.push({ role: "assistant", text: res.text ?? "", toolCalls: calls, raw: res.raw });
@@ -143,7 +144,7 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promis
       if (typeof ref === "string" && ref) refsInCard.add(ref);
       drafts.push({
         call,
-        op: { tool: call.name, args: call.args, source: { kind: "chat", message_id: userMsg.id, quote: (call.args.quote as string | undefined) ?? null } },
+        op: { tool: call.name, args: call.args, source: sourceOf((call.args.quote as string | undefined) ?? null, text, userMsg.id, docPages) },
       });
     }
 
@@ -164,7 +165,45 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }): Promis
     await db.from("chat_messages").insert({ thread_id: thread.id, role: "tool", content: "", tool_calls: storedTool as unknown as Json });
     messages.push({ role: "tool", results: toolResults });
   }
+
+  // never leave the lawyer with silence: say what happened even if the model spent every round on lookups
+  if (!out.text.trim()) {
+    let reply = "";
+    if (out.proposalIds.length) {
+      reply = "جهّزت لك بطاقة تأكيد. راجعها، ولما توافق أحفظها. مفيش حاجة اتحفظت لسه.";
+    } else {
+      try {
+        const r = await getLlm().chat({ system: `${system}\n\nاكتب الآن ردًا قصيرًا للمحامي بما وجدته وما تحتاجه منه، دون استدعاء أدوات.`, messages: [...messages, { role: "user", text: "لخّص لي اللي وصلتله وقولّي محتاج مني إيه." }], meta });
+        reply = r.text?.trim() ?? "";
+      } catch { /* fall through */ }
+      if (!reply) reply = "راجعت اللي عندي ولسه محتاج خطوة كمان. اكتب «كمّل» وأنا أجهّز البطاقة.";
+    }
+    const { data: m } = await db.from("chat_messages").insert({ thread_id: thread.id, role: "assistant", content: reply }).select("id").single();
+    if (m) out.assistantMessageIds.push(m.id);
+    out.text = reply;
+  }
   return out;
+}
+
+type DocPage = { document_id: string; page_no: number; text: string; norm: string };
+
+/** Pages of the papers attached to this thread (to tell a paper's quote from the lawyer's own words). */
+async function loadDocPages(db: Db, threadId: string): Promise<DocPage[]> {
+  const { data: docs } = await db.from("documents").select("id").eq("thread_id", threadId);
+  const ids = (docs ?? []).map((d) => d.id);
+  if (!ids.length) return [];
+  const { data } = await db.from("document_pages").select("document_id, page_no, text").in("document_id", ids);
+  return (data ?? []).map((p) => ({ ...p, norm: normalizeForMatch(p.text) }));
+}
+
+/** A quote found in an attached paper (and not in the lawyer's message) keeps the paper + page as its source. */
+function sourceOf(quote: string | null, lawyerText: string, messageId: string, pages: DocPage[]): DraftOp["source"] {
+  const q = quote ? normalizeForMatch(quote) : "";
+  if (q.length >= 6 && !normalizeForMatch(lawyerText).includes(q)) {
+    const hit = pages.find((p) => p.norm.includes(q));
+    if (hit) return { kind: "document", document_id: hit.document_id, page: hit.page_no, quote };
+  }
+  return { kind: "chat", message_id: messageId, quote };
 }
 
 function firstCaseUuid(ops: DraftOp[]): string | null {

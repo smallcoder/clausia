@@ -1,78 +1,223 @@
 @import "tailwindcss";
 
-/*
- * Clausia design tokens. Warm neutral paper, near-black ink, one deep ink-blue accent.
- * Full dark mode via prefers-color-scheme. Every colour literal in the app lives here.
- */
-:root {
-  color-scheme: light dark;
-  /* surfaces */
-  --paper: #fafaf9;          /* grouped background (warm system grey) */
-  --surface: #ffffff;        /* inset cards, rows */
-  --surface-2: #f4f4f5;      /* quiet fills inside cards */
-  --chrome: rgb(250 250 249 / 0.82); /* translucent bars */
-  /* ink */
-  --ink: #111111;
-  --ink-2: #5f5f63;
-  --ink-3: #8e8e93;
-  /* separators */
-  --line: #e7e7e9;
-  --line-strong: #d4d4d8;
-  --hairline: rgb(60 60 67 / 0.16);
-  /* accent: deep ink blue */
-  --accent: #1f3a68;
-  --accent-ink: #ffffff;
-  --accent-soft: #eef1f7;
-  /* tones */
-  --brass: #6b6b70;
-  --brass-soft: #f4f4f5;
-  --suggest: #a15c00;
-  --suggest-soft: #fff4e0;
-  --ok: #1f7a45;
-  --ok-soft: #e7f6ec;
-  --danger: #a5352f;
-  --danger-soft: #f9e6e4;
-  --backdrop: rgb(0 0 0 / 0.3);
-  /* shape */
-  --radius: 14px;
-  --radius-sm: 10px;
-  --radius-lg: 16px;
-  --shadow-1: 0 1px 2px rgb(40 32 20 / 0.05), 0 0 0 0.5px rgb(40 32 20 / 0.05);
-  --shadow-2: 0 2px 10px rgb(40 32 20 / 0.06), 0 0 0 0.5px rgb(40 32 20 / 0.05);
-  --shadow-3: 0 12px 40px rgb(40 32 20 / 0.16), 0 0 0 0.5px rgb(40 32 20 / 0.06);
+/* dark: follows the theme toggle (html[data-theme]) and otherwise the system */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) { @slot; }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) { @slot; }
+  }
 }
 
+/*
+ * Clausia design tokens — source of truth: docs/design/DESIGN.md and the *.dc.html mockups.
+ * Theme: follows the system; html[data-theme="light"|"dark"] (ThemeToggle) overrides it.
+ * Every colour literal in the app lives here.
+ */
+:root {
+  color-scheme: light;
+  /* ---- new design tokens (docs/design/DESIGN.md) ---- */
+  --accent-base: #D6C08F;                     /* champagne */
+  --accent-grad: linear-gradient(135deg, #DDCCA4 0%, #D6C08F 45%, #CDB687 100%);
+  --accent-shadow: rgba(214,192,143,0.75);
+  --accent-ring: rgba(214,192,143,0.22);
+  --accent-wash: rgba(214,192,143,0.28);
+  --accent-edge: rgba(214,192,143,0.35);
+  --accent-text: #7A5E24;                     /* accent used as text */
+  --ink-solid: #141C2E;                       /* the ink colour (logo tile, light primary) */
+  --bg: #F4F5F8;
+  --bg-image: linear-gradient(180deg, #FFFFFF 0px, #F4F5F8 380px);
+  --card: #FFFFFF;
+  --card-2: #F1F3F6;                          /* gray tiles, quiet fills */
+  --card-3: #ECEFF3;
+  --field: #FFFFFF;                           /* composer, inputs */
+  --chip: #FFFFFF;
+  --text: #121A2B;
+  --text-2: #2A2D31;
+  --text-3: #5F636A;
+  --text-4: #7A7E85;
+  --border: rgba(18,26,43,0.08);
+  --border-2: rgba(18,26,43,0.06);
+  --primary: #141C2E;                         /* filled primary action */
+  --primary-bg: #141C2E;
+  --on-primary: #D6C08F;
+  --primary-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 8px 18px rgba(18,26,43,0.35);
+  --hero: #FFFFFF;
+  --hero-border: rgba(18,26,43,0.08);
+  --tile: #F4F6F9;
+  --tile-border: rgba(18,26,43,0.06);
+  --mark-bg: #141C2E;
+  --amber: #C98A1E;                          /* suggested (not yet confirmed) marker */
+  --amber-bg: #FFF1DB;                       /* «محتاجة قرار» chip: amber, distinct from the champagne accent */
+  --amber-text: #9A5B00;
+  --paper-thumb: #F4F1EA;                    /* document thumbnail paper */
+  --court-tint: linear-gradient(180deg, rgba(214,192,143,0.14), transparent);
+  --mark-fg: #D6C08F;
+  --hero-shadow: 0 1px 2px rgba(18,26,43,0.05), 0 22px 46px -24px rgba(18,26,43,0.25);
+  --tile-hi-shadow: 0 10px 22px -10px rgba(18,26,43,0.5);
+  --tile-hi: #141C2E;                         /* highlighted stat tile (needs action) */
+  --tile-hi-text: #D6C08F;
+  --tile-hi-sub: rgba(214,192,143,0.8);
+  --good: #17663A;
+  --good-bg: rgba(23,102,58,0.1);
+  --bad: #B42318;
+  --bad-bg: rgba(180,35,24,0.08);
+  --warn: #8A5A00;
+  --warn-bg: rgba(214,192,143,0.28);
+  --shadow-card: inset 0 1px 0 #FFFFFF, 0 1px 2px rgba(18,26,43,0.05), 0 20px 40px -20px rgba(18,26,43,0.25);
+  --shadow-soft: 0 2px 6px rgba(18,26,43,0.06);
+  --shadow-pop: inset 0 1px 0 #FFFFFF, 0 0 0 4px var(--accent-ring), 0 30px 60px -24px rgba(18,26,43,0.35);
+  --shadow-accent: inset 0 1px 0 rgba(255,255,255,0.55), 0 18px 36px -16px var(--accent-shadow);
+  --shadow-mark: 0 4px 10px rgba(18,26,43,0.3);
+  --shadow-tile: 0 12px 26px -10px rgba(18,26,43,0.55);
+
+  /* ---- legacy names, mapped onto the new tokens (older components still use them) ---- */
+  --paper: var(--bg); --surface: var(--card); --surface-2: var(--card-2); --chrome: rgba(244,245,248,0.82);
+  --ink: var(--text); --ink-2: var(--text-3); --ink-3: var(--text-4);
+  --line: var(--border); --line-strong: rgba(18,26,43,0.14); --hairline: var(--border-2);
+  --accent: var(--primary); --accent-ink: var(--on-primary); --accent-soft: var(--card-2);
+  --brass: var(--accent-text); --brass-soft: var(--warn-bg);
+  --suggest: var(--warn); --suggest-soft: var(--warn-bg);
+  --ok: var(--good); --ok-soft: var(--good-bg); --danger: var(--bad); --danger-soft: var(--bad-bg);
+  --backdrop: rgba(11,15,24,0.4);
+  --radius: 16px; --radius-sm: 12px; --radius-lg: 22px;
+  --shadow-1: var(--shadow-soft); --shadow-2: var(--shadow-card); --shadow-3: var(--shadow-pop);
+}
+
+:root[data-theme="dark"] { color-scheme: dark;
+  --accent-text: #D6C08F;
+  --ink-solid: #141C2E;
+  --bg: #0B0F18;
+  --bg-image: radial-gradient(900px 480px at 50% -10%, rgba(214,192,143,0.07), transparent 70%);
+  --card: #141A27;
+  --card-2: #171D2B;
+  --card-3: #1E2535;
+  --field: #171E2D;
+  --chip: #171D2B;
+  --text: #EEF0F3;
+  --text-2: #D6D9DF;
+  --text-3: #9BA2AE;
+  --text-4: #7D8492;
+  --border: rgba(255,255,255,0.1);
+  --border-2: rgba(255,255,255,0.07);
+  --primary: #D6C08F;
+  --primary-bg: var(--accent-grad);
+  --on-primary: #121A2B;
+  --primary-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 8px 20px var(--accent-shadow);
+  --hero: #141C2E;
+  --hero-border: var(--accent-edge);
+  --tile: rgba(255,255,255,0.06);
+  --tile-border: rgba(255,255,255,0.1);
+  --mark-bg: var(--accent-grad);
+  --amber: #E8A93B;
+  --amber-bg: rgba(232,169,59,0.16);
+  --amber-text: #F2B95A;
+  --paper-thumb: #ECE7DC;
+  --court-tint: none;
+  --mark-fg: #121A2B;
+  --hero-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 30px 60px -24px rgba(0,0,0,0.9);
+  --tile-hi-shadow: var(--shadow-accent);
+  --tile-hi: var(--accent-grad);
+  --tile-hi-text: #121A2B;
+  --tile-hi-sub: rgba(18,26,43,0.75);
+  --good: #86EFB8;
+  --good-bg: rgba(134,239,184,0.12);
+  --bad: #FCA5A5;
+  --bad-bg: rgba(252,165,165,0.1);
+  --warn: #E8CF97;
+  --warn-bg: rgba(214,192,143,0.16);
+  --shadow-card: inset 0 1px 0 rgba(255,255,255,0.05), 0 20px 40px -20px rgba(0,0,0,0.7);
+  --shadow-soft: inset 0 1px 0 rgba(255,255,255,0.05);
+  --shadow-pop: inset 0 1px 0 rgba(255,255,255,0.05), 0 30px 70px -24px rgba(0,0,0,0.8);
+  --shadow-mark: 0 4px 12px rgba(214,192,143,0.25);
+  --shadow-tile: 0 12px 26px -10px rgba(0,0,0,0.6);
+  --shadow-accent: inset 0 1px 0 rgba(255,255,255,0.55), 0 18px 36px -16px var(--accent-shadow);
+
+  --chrome: rgba(11,15,24,0.8); --line-strong: rgba(255,255,255,0.16); --backdrop: rgba(0,0,0,0.6);
+}
 @media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #000000;
-    --surface: #1c1c1e;
-    --surface-2: #2c2c2e;
-    --chrome: rgb(10 10 10 / 0.78);
-    --ink: #f5f5f7;
-    --ink-2: #aeaeb2;
-    --ink-3: #8e8e93;
-    --line: #2c2c2e;
-    --line-strong: #3a3a3c;
-    --hairline: rgb(255 255 255 / 0.12);
-    --accent: #7aa2e8;
-    --accent-ink: #0b1426;
-    --accent-soft: #16213a;
-    --brass: #aeaeb2;
-    --brass-soft: #2c2c2e;
-    --suggest: #ffb340;
-    --suggest-soft: #3a2a0f;
-    --ok: #5fd08a;
-    --ok-soft: #123222;
-    --danger: #f08a80;
-    --danger-soft: #3a1b18;
-    --backdrop: rgb(0 0 0 / 0.55);
-    --shadow-1: 0 0 0 0.5px rgb(255 250 240 / 0.06);
-    --shadow-2: 0 2px 10px rgb(0 0 0 / 0.35), 0 0 0 0.5px rgb(255 250 240 / 0.07);
-    --shadow-3: 0 12px 40px rgb(0 0 0 / 0.6), 0 0 0 0.5px rgb(255 250 240 / 0.08);
+  :root:not([data-theme="light"]) { color-scheme: dark;
+  --accent-text: #D6C08F;
+  --ink-solid: #141C2E;
+  --bg: #0B0F18;
+  --bg-image: radial-gradient(900px 480px at 50% -10%, rgba(214,192,143,0.07), transparent 70%);
+  --card: #141A27;
+  --card-2: #171D2B;
+  --card-3: #1E2535;
+  --field: #171E2D;
+  --chip: #171D2B;
+  --text: #EEF0F3;
+  --text-2: #D6D9DF;
+  --text-3: #9BA2AE;
+  --text-4: #7D8492;
+  --border: rgba(255,255,255,0.1);
+  --border-2: rgba(255,255,255,0.07);
+  --primary: #D6C08F;
+  --primary-bg: var(--accent-grad);
+  --on-primary: #121A2B;
+  --primary-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 8px 20px var(--accent-shadow);
+  --hero: #141C2E;
+  --hero-border: var(--accent-edge);
+  --tile: rgba(255,255,255,0.06);
+  --tile-border: rgba(255,255,255,0.1);
+  --mark-bg: var(--accent-grad);
+  --amber: #E8A93B;
+  --amber-bg: rgba(232,169,59,0.16);
+  --amber-text: #F2B95A;
+  --paper-thumb: #ECE7DC;
+  --court-tint: none;
+  --mark-fg: #121A2B;
+  --hero-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 30px 60px -24px rgba(0,0,0,0.9);
+  --tile-hi-shadow: var(--shadow-accent);
+  --tile-hi: var(--accent-grad);
+  --tile-hi-text: #121A2B;
+  --tile-hi-sub: rgba(18,26,43,0.75);
+  --good: #86EFB8;
+  --good-bg: rgba(134,239,184,0.12);
+  --bad: #FCA5A5;
+  --bad-bg: rgba(252,165,165,0.1);
+  --warn: #E8CF97;
+  --warn-bg: rgba(214,192,143,0.16);
+  --shadow-card: inset 0 1px 0 rgba(255,255,255,0.05), 0 20px 40px -20px rgba(0,0,0,0.7);
+  --shadow-soft: inset 0 1px 0 rgba(255,255,255,0.05);
+  --shadow-pop: inset 0 1px 0 rgba(255,255,255,0.05), 0 30px 70px -24px rgba(0,0,0,0.8);
+  --shadow-mark: 0 4px 12px rgba(214,192,143,0.25);
+  --shadow-tile: 0 12px 26px -10px rgba(0,0,0,0.6);
+  --shadow-accent: inset 0 1px 0 rgba(255,255,255,0.55), 0 18px 36px -16px var(--accent-shadow);
+
+  --chrome: rgba(11,15,24,0.8); --line-strong: rgba(255,255,255,0.16); --backdrop: rgba(0,0,0,0.6);
   }
 }
 
 @theme inline {
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-card-2: var(--card-2);
+  --color-card-3: var(--card-3);
+  --color-field: var(--field);
+  --color-chip: var(--chip);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-text-4: var(--text-4);
+  --color-border: var(--border);
+  --color-border-2: var(--border-2);
+  --color-gold: var(--accent-base);
+  --color-gold-text: var(--accent-text);
+  --color-ink-solid: var(--ink-solid);
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-hero: var(--hero);
+  --color-tile: var(--tile);
+  --color-tile-hi-text: var(--tile-hi-text);
+  --color-good: var(--good);
+  --color-good-bg: var(--good-bg);
+  --color-bad: var(--bad);
+  --color-bad-bg: var(--bad-bg);
+  --color-warn: var(--warn);
+  --color-warn-bg: var(--warn-bg);
+  --color-amber: var(--amber);
+  --color-paper-thumb: var(--paper-thumb);
+  /* legacy */
   --color-paper: var(--paper);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
@@ -95,37 +240,55 @@
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-backdrop: var(--backdrop);
-  --font-sans: -apple-system, "SF Arabic", BlinkMacSystemFont, var(--font-plex), system-ui, sans-serif;
-  --font-naskh: var(--font-naskh), var(--font-plex), serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Arabic", "SF Pro Text", system-ui, var(--font-vazir), sans-serif;
+  --font-num: -apple-system, "SF Pro Display", system-ui, var(--font-inter), sans-serif;
+  --font-naskh: var(--font-naskh), serif;
   --radius-card: var(--radius);
   --shadow-1: var(--shadow-1);
   --shadow-2: var(--shadow-2);
   --shadow-3: var(--shadow-3);
-  /* type scale: text-title (page titles), text-headline (sections), text-body, text-callout, text-caption */
-  --text-title: 2.125rem;
-  --text-title--line-height: 1.15;
-  --text-title--letter-spacing: -0.01em;
+  --shadow-card: var(--shadow-card);
+  --shadow-soft: var(--shadow-soft);
+  --shadow-pop: var(--shadow-pop);
+  --shadow-accent: var(--shadow-accent);
+  --shadow-mark: var(--shadow-mark);
+  --shadow-tile: var(--shadow-tile);
+  /* type scale (mockups): display 34, title 26/22, body 16, callout 14, caption 12 */
+  --text-display: 2.125rem;
+  --text-display--line-height: 1.15;
+  --text-title: 1.625rem;
+  --text-title--line-height: 1.2;
   --text-headline: 1.375rem;
-  --text-headline--line-height: 1.35;
-  --text-body: 1.0625rem;
-  --text-body--line-height: 1.45;
-  --text-callout: 0.9375rem;
+  --text-headline--line-height: 1.3;
+  --text-body: 1rem;
+  --text-body--line-height: 1.6;
+  --text-callout: 0.875rem;
   --text-callout--line-height: 1.55;
-  --text-caption: 0.8125rem;
+  --text-caption: 0.75rem;
   --text-caption--line-height: 1.45;
 }
 
-html { background: var(--paper); }
+html { background-color: var(--bg); }
 body {
-  background: var(--paper);
-  color: var(--ink);
-  font-family: -apple-system, "SF Arabic", BlinkMacSystemFont, var(--font-plex), system-ui, sans-serif;
+  background-color: var(--bg);
+  background-image: var(--bg-image);
+  background-repeat: no-repeat;
+  color: var(--text);
+  font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.6;
-  font-feature-settings: "kern";
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
 }
+
+/* Numbers: SF Pro Display / Inter, tabular */
+.font-num { font-family: -apple-system, "SF Pro Display", system-ui, var(--font-inter), sans-serif; font-variant-numeric: tabular-nums; }
+/* The Clausia «C» mark (logo tile, Clausia avatar): ink in light, champagne in dark */
+.mark { background: var(--mark-bg); color: var(--mark-fg); }
+/* Accent gradient fill + highlighted tile */
+.bg-accent-grad { background: var(--accent-grad); }
+.bg-primary-fill { background: var(--primary-bg); color: var(--on-primary); box-shadow: var(--primary-shadow); }
+.bg-tile-hi { background: var(--tile-hi); color: var(--tile-hi-text); }
 
 /* Document text and quotes read better in Naskh */
 .text-doc { font-family: var(--font-naskh), serif; line-height: 1.95; }
@@ -164,4 +327,4 @@ body {
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+:focus-visible { outline: 2px solid var(--accent-base); outline-offset: 2px; border-radius: 6px; }
