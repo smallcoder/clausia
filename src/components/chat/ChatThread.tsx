@@ -4,12 +4,11 @@
  * the right, paper chips, confirmation cards, glass quick answers, and the glass composer in the 780px ChatDock.
  * Sending is optimistic (the lawyer's message shows at once); no streaming.
  */
-import { ArrowUp, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useOptimistic, useRef, useState, useTransition, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useOptimistic, useRef, useState, useTransition, type ReactNode } from "react";
 import { cx } from "@/components/ui";
 import { ProposalCard } from "@/components/proposal/ProposalCard";
-import { ChatDock } from "./ChatDock";
+import { ChatComposer } from "./ChatComposer";
 import { sendMessageAction } from "@/lib/assistant/actions";
 import { uploadDocumentAction } from "@/lib/documents/actions";
 import type { Proposal } from "@/lib/proposals";
@@ -69,14 +68,6 @@ export function ChatThread({ threadId, caseId, items, lookup, docs = {} }: {
     return () => { cancelAnimationFrame(raf); clearTimeout(late); };
   }, [shown.length, sending]);
 
-  // grow the composer with its text where `field-sizing: content` is unsupported (iOS Safari); max-h-40 caps it
-  useEffect(() => {
-    const el = boxRef.current;
-    if (!el || CSS.supports?.("field-sizing", "content")) return;
-    el.style.height = "auto";
-    el.style.height = `${el.scrollHeight + el.offsetHeight - el.clientHeight}px`;
-  }, [text]);
-
   function send(quick?: string) {
     const t = (quick ?? text).trim();
     if (!t || sending) return;
@@ -92,13 +83,6 @@ export function ChatThread({ threadId, caseId, items, lookup, docs = {} }: {
       }
       router.refresh();
     });
-  }
-
-  function onKey(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-      e.preventDefault();
-      send();
-    }
   }
 
   function onFile(f: File | undefined) {
@@ -181,37 +165,9 @@ export function ChatThread({ threadId, caseId, items, lookup, docs = {} }: {
       <div className="min-h-[30px] flex-1" />
 
       {/* the thread's own composer (optimistic send + upload): the v2 two-row glass box of the Chat mockups */}
-      <ChatDock>
-        {error ? (
-          <p role="alert" className="mb-2 flex items-start justify-between gap-2 rounded-2xl border border-border-2 bg-card px-3.5 py-2 text-[13.5px] text-bad shadow-soft">
-            <span>{error}</span>
-            <button type="button" onClick={() => setError(null)} className="shrink-0 text-xs underline">إخفاء</button>
-          </p>
-        ) : null}
-        <div className="glass rounded-[24px] px-3 pb-2.5 pt-3.5 sm:rounded-[26px] sm:px-3.5 sm:pb-3 sm:pt-4">
-          <div className="flex items-start gap-2.5 px-1 sm:gap-3 sm:px-1.5 sm:pt-0.5">
-            <span aria-hidden className="mark font-num mt-0.5 inline-flex size-[22px] shrink-0 items-center justify-center rounded-[7px] text-[11px] font-extrabold sm:size-[26px] sm:rounded-[9px] sm:text-[13px]">C</span>
-            <textarea ref={boxRef} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={onKey} rows={1}
-              placeholder={shown.length ? "ردّ على Clausia…" : "اكتب لـ Clausia…"} aria-label="رسالة لـ Clausia"
-              className="block max-h-40 min-h-[46px] min-w-0 flex-1 resize-none bg-transparent p-0 text-base leading-[1.6] text-text placeholder:text-text-4 focus:outline-none [field-sizing:content] sm:min-h-14 sm:text-[17px] sm:leading-[1.65]" />
-          </div>
-          <div className="mt-1.5 flex items-center gap-2 sm:mt-2">
-            <input ref={fileRef} type="file" accept="application/pdf,image/*" className="sr-only" id={`file-${threadId}`} onChange={(e) => onFile(e.target.files?.[0])} />
-            <label htmlFor={`file-${threadId}`} aria-label="إرفاق ورقة (PDF أو صورة)" title="إرفاق ورقة (PDF أو صورة)"
-              className={cx(ROUND, "cursor-pointer", busy && "pointer-events-none opacity-50")}>
-              <Plus aria-hidden size={18} strokeWidth={1.8} />
-            </label>
-            <div className="min-w-0 flex-1 truncate text-center text-[10.5px] text-text-4 sm:text-start sm:text-xs" aria-live="polite">
-              {status ?? <span className="sm:hidden">مفيش حاجة بتتحفظ من غير موافقتك</span>}
-            </div>
-            <button type="button" onClick={() => send()} disabled={!text.trim() || sending} aria-label="إرسال"
-              className={cx(HIT, "bg-primary-fill inline-flex size-[38px] shrink-0 items-center justify-center rounded-full transition disabled:cursor-not-allowed sm:size-10")}>
-              <ArrowUp aria-hidden size={19} strokeWidth={2.4} />
-            </button>
-          </div>
-        </div>
-        <p className="mt-2.5 hidden text-center text-[11.5px] leading-[normal] text-text-4 sm:block">Clausia بتجهّز، وإنت اللي بتأكد. مفيش حاجة بتتحفظ من غير موافقتك.</p>
-      </ChatDock>
+      <ChatComposer id={threadId} value={text} onChange={setText} onSend={() => send()} onFile={onFile}
+        sending={sending} busy={busy} status={status} error={error} onDismissError={() => setError(null)}
+        placeholder={shown.length ? "ردّ على Clausia…" : "اكتب لـ Clausia…"} boxRef={boxRef} fileRef={fileRef} />
     </div>
   );
 }
@@ -232,12 +188,8 @@ function quickAnswers(text: string): { label: string; text: string }[] {
   return opts.map((o) => ({ label: o, text: client ? `موكلي ${o}` : o }));
 }
 
-/** drawn at the mockup's size, tapped at 44px: an invisible ring around the control widens the hit area */
-const HIT = "relative before:absolute before:-inset-[3px] before:rounded-full before:content-[''] sm:before:-inset-0.5";
-/** round composer control (Chat mockup: hairline ring, no fill): 38px mobile, 40px desktop */
-const ROUND = cx(HIT, "inline-flex size-[38px] shrink-0 items-center justify-center rounded-full border border-border-2 glass-icon transition hover:text-text sm:size-10");
 /** quick answers and starters: glass chips (floating controls), 36px tall (44px hit area) */
-const CHIP = "glass relative inline-flex min-h-9 shrink-0 items-center rounded-full px-[15px] py-1 text-[13px] font-medium glass-icon transition hover:text-text before:absolute before:inset-x-0 before:-inset-y-1 before:content-['']";
+const CHIP = "tap glass inline-flex min-h-9 shrink-0 items-center rounded-full px-[15px] py-1 text-[13px] font-medium glass-icon transition hover:text-text";
 
 /**
  * Clausia's turn: the «C» mark and its text (cards go under the text). Desktop: the mark beside the text.

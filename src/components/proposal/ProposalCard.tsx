@@ -3,9 +3,10 @@
  * Confirmation card (docs/design/*Chat*.dc.html v2, «ملف قضية جديد»): a solid card with hairline rows, one per op:
  * kind · value (source under it) · a thin gold check that selects it. Only fact rows carry their quote (Naskh,
  * clamped); every row's full verbatim quote is in its expand (tap the row). «احفظ · N» (ink/white, no gold) saves
- * the selected rows and «عدّل» opens every row; «احفظ كمقترحات» / «ارفض الكل» sit quietly under the pair (not in the
- * mockup: kept pending an owner decision). Each row expands to its fields, its source and quote, and ✓ / تعديل / ✗
- * for that row alone. Nothing is saved without a tap.
+ * the selected rows and «عدّل» opens every row. The footer shows only that pair, as drawn; the other decisions
+ * («احفظ كمقترحات · ارفض الكل · فتح ملف القضية») appear on a quiet second line once «عدّل» has opened the rows
+ * (owner decision 2026-10-21). Each row expands to its fields, its source and quote, and ✓ / تعديل / ✗ for that row
+ * alone. Nothing is saved without a tap.
  * Mobile (<1024px): the card shows its first rows inline; «عدّل» / «كل العناصر» open it in a bottom sheet.
  * A decided card collapses to one line «اتحفظ N عنصر · افتح الملف» (expandable).
  * Other features render it by passing the proposal object (+ a lookup of uuid → display name, `buildProposalLookup`).
@@ -98,6 +99,8 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
   const [pending, start] = useTransition();
   const [sheet, setSheet] = useState(false);
   const [showDecided, setShowDecided] = useState(false);
+  /** «عدّل» was tapped: every open row is open and the footer's second line (the other decisions) shows */
+  const [more, setMore] = useState(false);
 
   // resync with a fresh prop after router.refresh() (card decided in another tab or by another feature);
   // keyed on the statuses so a local decision that the server already reflects is not thrown away
@@ -175,7 +178,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
   const showSheet = sheet && openOps.length > 0;
   useEffect(() => {
     if (!showSheet) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setSheet(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeSheet(); };
     const mq = window.matchMedia("(min-width: 1024px)");
     const onMq = () => { if (mq.matches) setSheet(false); };
     const prev = document.body.style.overflow;
@@ -186,14 +189,17 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
   }, [showSheet]);
 
   const toggle = (id: string) => setExpanded((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
-  const allOpenExpanded = openOps.length > 0 && openOps.every((o) => expanded.has(o.op_id));
+  /** «عدّل» opens every open row and the footer's second line; «اقفل» closes both. On mobile it opens the sheet. */
   function editSomething(mobile: boolean) {
-    if (mobile) {
-      setExpanded(new Set(openOps.map((o) => o.op_id)));
-      setSheet(true);
-      return;
-    }
-    setExpanded(allOpenExpanded ? new Set() : new Set(openOps.map((o) => o.op_id)));
+    const on = mobile || !more;
+    setMore(on);
+    setExpanded(on ? new Set(openOps.map((o) => o.op_id)) : new Set());
+    if (mobile) setSheet(true);
+  }
+  /** closing the sheet ends «عدّل» (the inline card on mobile keeps the mockup's footer) */
+  function closeSheet() {
+    setSheet(false);
+    setMore(false);
   }
 
   function display(f: FieldSpec, v: unknown): string | null {
@@ -246,7 +252,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
             </p>
           </div>
           {inSheet ? (
-            <button type="button" onClick={() => setSheet(false)} aria-label="إغلاق" className="-me-2 flex size-11 items-center justify-center rounded-full text-text-3 hover:bg-card-2">
+            <button type="button" onClick={closeSheet} aria-label="إغلاق" className="-me-2 flex size-11 items-center justify-center rounded-full text-text-3 hover:bg-card-2">
               <X aria-hidden size={20} strokeWidth={1.8} />
             </button>
           ) : null}
@@ -288,7 +294,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
                   {live ? (
                     <button type="button" role="checkbox" aria-checked={sel} aria-label={sel ? `شيل ${kindOf(o)} من الحفظ` : `ضيف ${kindOf(o)} للحفظ`}
                       onClick={() => toggleSelect(o)} disabled={pending || (!sel && !!lone && lone.includes("مرفوض"))}
-                      className={cx("relative mt-0.5 inline-flex size-[22px] shrink-0 items-center justify-center rounded-full border transition before:absolute before:-inset-3 before:content-[''] disabled:opacity-40",
+                      className={cx("tap mt-0.5 inline-flex size-[22px] shrink-0 items-center justify-center rounded-full border transition disabled:opacity-40",
                         sel ? "border-[var(--accent-edge)] text-gold" : "border-border text-transparent hover:text-text-4")}>
                       <Check aria-hidden size={12} strokeWidth={2.6} />
                     </button>
@@ -362,7 +368,8 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
 
         {error ? <p className="mx-4 mt-3 shrink-0 rounded-xl bg-bad-bg px-3 py-2 text-[13.5px] text-bad sm:mx-[22px]">{error}</p> : null}
 
-        <div className={cx("shrink-0 border-t border-[var(--hairline-v2)] px-4 pt-3.5 sm:px-[22px]", openOps.length ? "pb-2" : "pb-4", inSheet && "pb-[calc(0.5rem+env(safe-area-inset-bottom))]")}>
+        <div className={cx("shrink-0 border-t border-[var(--hairline-v2)] px-4 pt-3.5 sm:px-[22px]", openOps.length && more ? "pb-2" : "pb-4",
+          inSheet && (openOps.length && more ? "pb-[calc(0.5rem+env(safe-area-inset-bottom))]" : "pb-[calc(1rem+env(safe-area-inset-bottom))]"))}>
           {openOps.length ? (
             <>
               <div className="flex gap-2">
@@ -373,19 +380,19 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
                 {/* mobile: opens the sheet with every open row expanded; desktop (and inside the sheet): expands / collapses the rows */}
                 <button type="button" disabled={pending}
                   onClick={() => editSomething(!inSheet && !window.matchMedia("(min-width: 1024px)").matches)} className={btn2}>
-                  {inSheet ? (allOpenExpanded ? "اقفل" : "عدّل") : (
-                    <><span className="lg:hidden">عدّل</span><span className="hidden lg:inline">{allOpenExpanded ? "اقفل" : "عدّل"}</span></>
+                  {inSheet ? (more ? "اقفل" : "عدّل") : (
+                    <><span className="lg:hidden">عدّل</span><span className="hidden lg:inline">{more ? "اقفل" : "عدّل"}</span></>
                   )}
                 </button>
               </div>
-              {/* the other decisions stay one tap away, quietly, under the main pair (not in the mockup's footer:
-                  kept until the owner decides where they go) */}
-              <div className="mt-1 flex flex-wrap items-center justify-center gap-x-1">
+              {/* the other decisions: a quiet second line, only once «عدّل» has opened the rows (owner decision);
+                  before that the footer is the mockup's pair alone */}
+              {more ? <div className="mt-1 flex flex-wrap items-center justify-center gap-x-1">
                 <button type="button" disabled={pending || !chosen.length} onClick={() => decide("suggest", chosen.map((o) => o.op_id))} className={quiet}>احفظ كمقترحات</button>
                 <span aria-hidden className="text-text-4">·</span>
                 <button type="button" disabled={pending} onClick={() => decide("reject", openOps.map((o) => o.op_id))} className={cx(quiet, "hover:text-bad")}>ارفض الكل</button>
                 {caseLink ? <><span aria-hidden className="text-text-4">·</span><Link href={`/cases/${caseLink}`} className={cx(quiet, "font-semibold text-text-2")}>فتح ملف القضية ←</Link></> : null}
-              </div>
+              </div> : null}
             </>
           ) : (
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -425,7 +432,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
       {card(false)}
       {showSheet ? (
         <div className="fixed inset-0 z-50 flex flex-col justify-end lg:hidden" role="dialog" aria-modal="true" aria-labelledby={`sheet-title-${p.id}`}>
-          <button type="button" aria-label="إغلاق" tabIndex={-1} onClick={() => setSheet(false)} className="fade-enter absolute inset-0 bg-backdrop" />
+          <button type="button" aria-label="إغلاق" tabIndex={-1} onClick={closeSheet} className="fade-enter absolute inset-0 bg-backdrop" />
           <div className="sheet-enter relative">{card(true)}</div>
         </div>
       ) : null}
