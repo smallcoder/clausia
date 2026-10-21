@@ -100,9 +100,9 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
         placeholder="دوّر على قضية، اسأل Clausia، أو احكيلها عن قضية جديدة…"
         placeholderShort="دوّر، اسأل، أو ضيف قضية…"
         chips={[
-          { label: "قضية جديدة", text: "موكل جديد وعنده قضية: " },
-          { label: "دوّر على قضية", text: "دوّر لي على قضية " },
-          { label: "قضايا جلستها الأسبوع ده", short: "جلسات الأسبوع", text: "إيه القضايا اللي جلستها الأسبوع ده؟" },
+          { label: "قضية جديدة", icon: "plus", text: "موكل جديد وعنده قضية: " },
+          { label: "دوّر على قضية", icon: "search", text: "دوّر لي على قضية " },
+          { label: "قضايا جلستها الأسبوع ده", short: "جلسات الأسبوع", icon: "calendar", text: "إيه القضايا اللي جلستها الأسبوع ده؟" },
         ]}
       />
     </div>
