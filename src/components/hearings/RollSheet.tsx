@@ -43,7 +43,7 @@ export function CircuitNum({ h, size = "row" }: { h: HearingWithCase; size?: "ro
   return (
     <span aria-hidden className={cx("flex shrink-0 flex-col items-center text-center leading-none", size === "row" && "min-w-7 sm:w-10")}>
       <span className={cx("font-num font-extralight leading-none", digits, n ? "text-gold" : "text-text-4")}>{n ?? "—"}</span>
-      <span className={cx("mt-0.75", size === "row" ? "text-xs text-text-4" : "mt-1 text-xs text-text-3")}>دائرة</span>
+      <span className={cx("mt-0.75", size === "row" ? "text-xs text-text-4" : "text-xs text-text-3")}>دائرة</span>
     </span>
   );
 }
@@ -78,7 +78,7 @@ export function RollRow({ h, today, showDate = false, showCourt = false, showTod
     <button type="button" onClick={() => open?.(h)} aria-haspopup="dialog"
       className="flex w-full items-center gap-3.5 rounded-lg border border-border-2 bg-card px-4 py-3.25 text-start shadow-card transition hover:border-border sm:gap-5.5 sm:rounded-xl sm:px-6 sm:py-4.5">
       <CircuitNum h={h} />
-      <span className="min-w-0 flex-1 border-s border-[var(--hairline-v2)] ps-3.5 sm:ps-5.5">
+      <span className="min-w-0 flex-1 border-s border-border-2 ps-3.5 sm:ps-5.5">
         <span className="flex items-center justify-between gap-2">
           <span className="min-w-0 truncate text-base font-semibold text-text sm:whitespace-normal sm:text-md">{hearingTitle(h)}</span>
           <span className="shrink-0 sm:hidden">{status}</span>
@@ -121,7 +121,7 @@ export function RollNext({ h, today }: { h: HearingWithCase; today: string }) {
     <div className="rounded-xl border border-border-2 bg-card p-4.5 shadow-card sm:flex sm:items-center sm:gap-6.5 sm:px-6.5 sm:py-6">
       <button type="button" onClick={() => open?.(h)} aria-haspopup="dialog" className="flex w-full min-w-0 items-center gap-4 text-start sm:flex-1 sm:gap-6.5">
         <CircuitNum h={h} size="next" />
-        <span className="min-w-0 flex-1 border-s border-[var(--hairline-v2)] ps-4 sm:ps-6.5">
+        <span className="min-w-0 flex-1 border-s border-border-2 ps-4 sm:ps-6.5">
           <span className="block text-md font-semibold leading-[1.5] text-text sm:text-lg">{hearingTitle(h)}</span>
           {num ? (
             <span className="mt-0.75 block text-sm text-text-3">
@@ -132,7 +132,7 @@ export function RollNext({ h, today }: { h: HearingWithCase; today: string }) {
           {needLine ? <span className="mt-3.5 hidden sm:block">{needLine}</span> : null}
         </span>
       </button>
-      {needLine ? <div className="mt-4 border-t border-[var(--hairline-v2)] pt-3.25 sm:hidden">{needLine}</div> : null}
+      {needLine ? <div className="mt-4 border-t border-border-2 pt-3.25 sm:hidden">{needLine}</div> : null}
       {canDecide ? (
         <button type="button" onClick={() => open?.(h)} aria-haspopup="dialog"
           className="bg-primary-fill mt-3.5 inline-flex h-11 w-full shrink-0 items-center justify-center rounded-full px-5.5 text-base font-bold transition hover:opacity-90 sm:mt-0 sm:h-[46px] sm:w-auto sm:self-end">
@@ -167,9 +167,9 @@ function Sheet({ h, today, onClose }: { h: HearingWithCase; today: string; onClo
       <button type="button" aria-label="إغلاق" tabIndex={-1} onClick={onClose} className="fade-enter absolute inset-0 bg-backdrop" />
       <div className="relative flex max-h-[90dvh] flex-col overflow-hidden rounded-t-xl border border-border-2 bg-card shadow-pop animate-[sheet-up_260ms_cubic-bezier(0.32,0.72,0,1)] sm:absolute sm:inset-y-4 sm:end-4 sm:max-h-none sm:w-[440px] sm:rounded-xl sm:animate-[fade-in_180ms_ease-out]">
         <div className="mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full bg-border sm:hidden" aria-hidden />
-        <header className="flex items-start gap-4 border-b border-[var(--hairline-v2)] px-5 pb-4 pt-3 sm:px-6 sm:pt-6">
+        <header className="flex items-start gap-4 border-b border-border-2 px-5 pb-4 pt-3 sm:px-6 sm:pt-6">
           <CircuitNum h={h} size="sheet" />
-          <div className="min-w-0 flex-1 border-s border-[var(--hairline-v2)] ps-4">
+          <div className="min-w-0 flex-1 border-s border-border-2 ps-4">
             <div className="truncate text-sm font-semibold text-text-3">{[courtOf(h), h.location?.trim() || c.circuit?.trim()].filter(Boolean).join(" · ")}</div>
             <h2 id="roll-sheet-title" className="mt-0.5 text-lg font-bold leading-snug text-title">{hearingTitle(h)}</h2>
             <div className="mt-1 text-sm text-text-3">
@@ -215,7 +215,7 @@ function Sheet({ h, today, onClose }: { h: HearingWithCase; today: string; onClo
           )}
         </div>
 
-        <footer className={cx("border-t border-[var(--hairline-v2)] px-5 pt-3 pb-[calc(16px+env(safe-area-inset-bottom))] sm:px-6", saved && "flex gap-2")} /* ds-allow: safe-area inset needs calc() */>
+        <footer className={cx("border-t border-border-2 px-5 pt-3 pb-[calc(16px+env(safe-area-inset-bottom))] sm:px-6", saved && "flex gap-2")} /* ds-allow: safe-area inset needs calc() */>
           {saved ? (
             <button type="button" onClick={onClose} className="bg-primary-fill inline-flex h-11 flex-1 items-center justify-center rounded-full text-md font-bold">تمام</button>
           ) : null}
