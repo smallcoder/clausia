@@ -376,11 +376,17 @@ async function loadCardNotes(db: Db, threadId: string): Promise<string[]> {
  */
 async function loadSourceTexts(db: Db, threadId: string): Promise<{ texts: string[]; lawyer: { id: string; content: string; created_at: string }[] }> {
   const [{ data: msgs }, { data: docs }] = await Promise.all([
-    db.from("chat_messages").select("id, content, created_at").eq("thread_id", threadId).eq("role", "user").order("created_at"),
+    db.from("chat_messages").select("id, content, created_at, attachments").eq("thread_id", threadId).eq("role", "user").order("created_at"),
     db.from("documents").select("id").eq("thread_id", threadId),
   ]);
-  const lawyer = msgs ?? [];
-  const texts = lawyer.map((m) => m.content);
+  const rows = msgs ?? [];
+  const texts = rows.map((m) => m.content);
+  // relative days come only from the lawyer's own sentences in the recent window: not from an upload row
+  // («أرفقتُ مستندًا: جلسة بكرة.pdf» is a file name), and not from weeks-old messages beyond the history window
+  const lawyer = rows
+    .filter((m) => !(Array.isArray(m.attachments) && m.attachments.length))
+    .slice(-HISTORY)
+    .map(({ id, content, created_at }) => ({ id, content, created_at }));
   const ids = (docs ?? []).map((d) => d.id);
   if (ids.length) {
     const { data: pages } = await db.from("document_pages").select("text").in("document_id", ids);

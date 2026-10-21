@@ -72,7 +72,7 @@ async function post(model: string, body: unknown, timeoutMs = 120_000, signal?: 
   const cancel = () => ctrl.abort();
   if (signal?.aborted) ctrl.abort();
   else signal?.addEventListener("abort", cancel, { once: true });
-  const why = () => (signal?.aborted ? "Gemini call cancelled: the chat turn's time limit passed" : `Gemini timeout after ${timeoutMs}ms`);
+  const why = () => (signal?.aborted ? "Gemini call cancelled: the chat turn's time limit passed" : `Gemini timeout after ${Math.max(0, timeoutMs)}ms`);
   try {
     let r: Response;
     try {

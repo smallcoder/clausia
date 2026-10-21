@@ -7,6 +7,8 @@
  * Vague phrases («الأسبوع الجاي»، «أول الشهر»، «آخر الأسبوع»، «قريب»، «كمان كام يوم»، a bare «الخميس») are not
  * resolved: Clausia asks. Only the lawyer's message text goes in here, never a paper's text.
  * Pure: no clock — callers pass the message's created_at.
+ * Known limit: it does not read meaning, so «مش بكرة» or a quoted «الخصم قال بكرة» still resolve. The card shows
+ * «بكرة = الخميس 22/10/2026» next to every such date, and the lawyer confirms or edits it there.
  */
 import { addDaysIso, formatDayLabel } from "@/lib/dates";
 
