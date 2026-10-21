@@ -296,7 +296,7 @@ body {
   pointer-events: none;
 }
 /* tailwind divide-* utilities become hairlines too */
-.divide-y > * + *, .divide-line > * + * { border-color: var(--border-2) !important; }
+.divide-y > * + * { border-color: var(--border-2) !important; }
 
 /* Skeleton, quiet pulse */
 @keyframes skeleton-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }

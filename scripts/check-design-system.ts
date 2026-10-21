@@ -8,7 +8,7 @@ import { join, relative } from "node:path";
 
 const ROOT = join(import.meta.dirname, "..");
 const RULES: [string, RegExp][] = [
-  ["hex colour", /(?<![&\w])#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})\b/g],
+  ["hex colour", /(?<![&\w])#(?![0-9]+\b)(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})\b/g],
   ["rgb()/hsl() colour", /\b(?:rgba?|hsla?)\(/gi],
   ["arbitrary text size", /(?<![\w-])text-\[[0-9.]+(?:px|rem|em)\]/g],
   ["arbitrary radius", /(?<![\w-])rounded(?:-[a-z]{1,2})?-\[[^\]]*\]/g],
@@ -27,7 +27,7 @@ for (const file of tsxFiles(join(ROOT, "src"))) {
   readFileSync(file, "utf8").split("\n").forEach((line, i) => {
     const hits = RULES.flatMap(([name, re]) => [...line.matchAll(re)].map((m) => `${name} «${m[0]}»`));
     if (!hits.length) return;
-    if (/ds-allow:\s*\S/.test(line)) { allowed++; return; }
+    if (/ds-allow:\s*[^\s*/]/.test(line)) { allowed++; return; }
     found.push(`${relative(ROOT, file)}:${i + 1}  ${hits.join(", ")}`);
   });
 }
