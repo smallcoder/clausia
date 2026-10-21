@@ -27,15 +27,15 @@ export async function PartiesTab({ caseId }: { caseId: string }) {
             {g.items.map((p) => {
               const suggested = p.review_status === "suggested";
               return (
-                <li key={p.id} className={cx("rounded-[var(--radius)] border p-4",
-                  suggested ? "border-suggest/30 bg-suggest-soft/40" : p.is_our_client ? "border-accent/30 bg-accent-soft" : "border-line bg-surface")}>
+                <li key={p.id} className={cx("rounded-lg border p-4",
+                  suggested ? "border-gold/30 bg-gold-bg/40" : p.is_our_client ? "border-primary/30 bg-card-2" : "border-border bg-card")}>
                   <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-semibold text-ink">{p.name}</p>
+                    <p className="font-semibold text-text">{p.name}</p>
                     {p.is_our_client ? <Badge tone="accent">موكلنا</Badge> : null}
                   </div>
-                  {p.representative ? <p className="mt-1 text-callout text-ink-2">يمثله: {p.representative}</p> : null}
-                  {p.notes ? <p className="mt-1 text-callout text-ink-3">{p.notes}</p> : null}
-                  {p.source_quote ? <p className="mt-2 text-callout text-ink-3">المصدر: «{p.source_quote}»</p> : null}
+                  {p.representative ? <p className="mt-1 text-base leading-[1.55] text-text-3">يمثله: {p.representative}</p> : null}
+                  {p.notes ? <p className="mt-1 text-base leading-[1.55] text-text-4">{p.notes}</p> : null}
+                  {p.source_quote ? <p className="mt-2 text-base leading-[1.55] text-text-4">المصدر: «{p.source_quote}»</p> : null}
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                     <SourceBadge row={p} documentName={p.document?.file_name} />
                     {suggested ? <ReviewButtons table="case_parties" id={p.id} caseId={caseId} /> : null}

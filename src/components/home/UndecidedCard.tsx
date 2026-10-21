@@ -8,7 +8,7 @@ import Link from "next/link";
 import { two } from "@/components/shell/PageHero";
 
 const HREF = "/hearings?filter=undecided";
-const CARD = "rounded-[24px] border border-border-2 bg-card shadow-card transition hover:shadow-pop md:rounded-[28px]";
+const CARD = "rounded-xl border border-border-2 bg-card shadow-card transition hover:shadow-pop";
 const NUM = "font-num font-extralight leading-none tracking-[-0.05em]";
 
 /** «جلسة فاتت من غير قرار» / «جلستين فاتوا…» / «N جلسات فاتت…» */
@@ -20,7 +20,7 @@ function sub(n: number) {
 
 function Label({ on }: { on: boolean }) {
   return (
-    <span className={`flex items-center gap-1.5 text-[12.5px] font-semibold leading-[17px] md:gap-2 md:text-[13px] ${on ? "text-gold" : "text-text-3"}`}>
+    <span className={`flex items-center gap-1.5 text-sm font-semibold leading-[17px] md:gap-2 ${on ? "text-gold" : "text-text-3"}`}>
       {on ? <span aria-hidden className="size-1.5 rounded-full bg-gold" /> : null}محتاجة قرار
     </span>
   );
@@ -28,7 +28,7 @@ function Label({ on }: { on: boolean }) {
 
 function Pill() {
   return (
-    <span className="bg-primary-fill inline-flex h-9 shrink-0 items-center gap-1 rounded-full px-3.5 text-[13px] font-semibold md:h-[38px] md:gap-1.5 md:px-4 md:text-[13.5px]">
+    <span className="bg-primary-fill inline-flex h-9 shrink-0 items-center gap-1 rounded-full px-3.5 text-sm font-semibold md:h-[38px] md:gap-1.5 md:px-4 md:text-base">
       سجّلها <ChevronLeft strokeWidth={2.2} aria-hidden className="size-[13px] md:size-3.5" />
     </span>
   );
@@ -41,20 +41,20 @@ export function UndecidedCard({ count, className = "" }: { count: number; classN
   return (
     <Link href={HREF} aria-label={label} className={`${CARD} ${className}`}>
       {/* mobile: number · label + line · pill */}
-      <span className="flex items-center gap-3.5 px-[18px] py-4 md:hidden">
-        <span className={`${NUM} text-[52px] ${on ? "text-gold" : "text-title"}`}>{two(count)}</span>
+      <span className="flex items-center gap-3.5 px-4.5 py-4 md:hidden">
+        <span className={`${NUM} text-display ${on ? "text-gold" : "text-title"}`}>{two(count)}</span>
         <span className="min-w-0 flex-1">
           <Label on={on} />
-          <span className="mt-[3px] block text-[12px] leading-4 text-text-3">{line}</span>
+          <span className="mt-0.75 block text-sm leading-4 text-text-3">{line}</span>
         </span>
         {on ? <Pill /> : null}
       </span>
       {/* desktop: label · huge number · line + pill */}
-      <span className="hidden h-full flex-col p-[26px] md:flex">
+      <span className="hidden h-full flex-col p-6.5 md:flex">
         <Label on={on} />
-        <span className={`${NUM} flex flex-1 items-center text-[92px] ${on ? "text-gold" : "text-title"}`}>{two(count)}</span>
+        <span className={`${NUM} flex flex-1 items-center text-display-xl ${on ? "text-gold" : "text-title"}`}>{two(count)}</span>
         <span className="flex min-h-[38px] items-center justify-between gap-3">
-          <span className="text-[13px] leading-[17px] text-text-3">{line}</span>
+          <span className="text-sm leading-[17px] text-text-3">{line}</span>
           {on ? <Pill /> : null}
         </span>
       </span>

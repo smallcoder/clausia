@@ -39,18 +39,18 @@ export default async function ThreadPage({ params }: { params: Promise<{ threadI
   const back = t.case_id ? `/cases/${t.case_id}` : "/chat";
 
   return (
-    <div className="mx-auto flex w-full flex-1 flex-col gap-[18px] px-3.5 sm:max-w-[820px] sm:gap-[22px] sm:px-6 sm:pt-5">
+    <div className="mx-auto flex w-full flex-1 flex-col gap-4.5 px-3.5 sm:max-w-[820px] sm:gap-5.5 sm:px-6 sm:pt-5">
       {/* mobile: the thread's own top row (sticky, glass: floating controls), over a soft page-colour fade so the
           messages scrolling under it do not show through the glass */}
-      <div className="sticky top-0 z-40 -mx-3.5 -mb-[18px] flex items-center gap-2.5 bg-[linear-gradient(to_bottom,var(--bg)_70%,transparent)] px-3.5 pb-6 pt-3.5 sm:hidden">
+      <div className="sticky top-0 z-40 -mx-3.5 -mb-4.5 flex items-center gap-2.5 bg-[linear-gradient(to_bottom,var(--bg)_70%,transparent)] px-3.5 pb-6 pt-3.5 sm:hidden">
         <Link href={back} aria-label={t.case_id ? "رجوع لملف القضية" : "رجوع للمحادثات"} className={ROUND}>
           <ChevronRight aria-hidden size={20} strokeWidth={2.2} />
         </Link>
         <MaybeLink href={caseHref} className="glass flex h-[42px] min-w-0 flex-1 items-center gap-2.5 rounded-full pe-3.5 ps-1.5">
-          <span aria-hidden className="mark font-num inline-flex size-7 shrink-0 items-center justify-center rounded-[9px] text-[13px] font-extrabold">C</span>
+          <span aria-hidden className="mark font-num inline-flex size-7 shrink-0 items-center justify-center rounded-sm text-sm font-extrabold">C</span>
           <span className="min-w-0 leading-[1.2]">
-            <span className="font-num block text-[14px] font-bold text-title">Clausia</span>
-            <span className="block truncate text-[11px] text-text-3">{label}</span>
+            <span className="font-num block text-base font-bold text-title">Clausia</span>
+            <span className="block truncate text-xs text-text-3">{label}</span>
           </span>
         </MaybeLink>
         <Link href="/chat" aria-label="محادثة جديدة" title="محادثة جديدة" className={ROUND}>
@@ -59,7 +59,7 @@ export default async function ThreadPage({ params }: { params: Promise<{ threadI
       </div>
 
       {/* desktop: the small centered glass pill, nothing else above the first message */}
-      <MaybeLink href={caseHref} className="glass hidden h-8 max-w-full items-center gap-2 self-center rounded-2xl px-3.5 text-[12.5px] sm:inline-flex">
+      <MaybeLink href={caseHref} className="glass hidden h-8 max-w-full items-center gap-2 self-center rounded-md px-3.5 text-sm sm:inline-flex">
         <span className="shrink-0 text-text-3">{kind}</span>
         <span aria-hidden className="text-text-4">·</span>
         <span className="truncate font-semibold text-text">{label}</span>

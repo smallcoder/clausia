@@ -39,19 +39,19 @@ export function UploadDocument({ caseId, threadId, compact = false }: { caseId?:
     <div className="flex max-w-[22rem] flex-col gap-2">
       <input ref={input} type="file" accept={ACCEPT} className="sr-only" aria-label="اختر مستندًا" onChange={(e) => onFile(e.target.files?.[0])} disabled={pending} />
       <button type="button" onClick={() => input.current?.click()} disabled={pending}
-        className={cx("inline-flex h-11 items-center justify-center gap-1.5 self-start rounded-full px-5 text-[14px] font-bold transition disabled:opacity-60",
+        className={cx("inline-flex h-11 items-center justify-center gap-1.5 self-start rounded-full px-5 text-base font-bold transition disabled:opacity-60",
           compact ? "border border-border bg-chip text-text-2 shadow-soft hover:text-text" : "bg-primary-fill")}>
         {pending ? "بيقرا…" : "ارفع مستند"}
       </button>
       {pending && name ? (
-        <p className="text-[13px] text-text-3" role="status">
+        <p className="text-sm text-text-3" role="status">
           جارٍ رفع «{name}» وقراءة صفحاته. قد يستغرق ذلك دقيقة للمستندات الطويلة.
         </p>
       ) : null}
-      {error ? <p className="text-[13px] text-bad" role="alert">{error}</p> : null}
-      {warning && !pending ? <p className="text-[13px] text-[var(--amber-text)]" role="status">{warning}</p> : null}
+      {error ? <p className="text-sm text-bad" role="alert">{error}</p> : null}
+      {warning && !pending ? <p className="text-sm text-gold" role="status">{warning}</p> : null}
       {done && !pending ? (
-        <p className="text-[13px] text-good" role="status">
+        <p className="text-sm text-good" role="status">
           {done.proposal ? "تمت القراءة. المقترحات بانتظار مراجعتك في محادثة الدعوى." : "تمت القراءة وحُفظ النص."}
         </p>
       ) : null}

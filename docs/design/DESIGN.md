@@ -11,8 +11,45 @@ The 20 `*.dc.html` files here are the approved screens: Home, Chat, Case, Roll a
 ## Type
 - UI: `-apple-system, BlinkMacSystemFont, 'SF Arabic', 'SF Pro Text', system-ui, 'Vazirmatn', sans-serif`
 - Numbers: `-apple-system, 'SF Pro Display', system-ui, 'Inter', sans-serif`. Stats are large and light (weight 200–300).
-- Quoted legal or court text: `'Noto Naskh Arabic', serif`
-- Page titles are 44–46px desktop and 30–36px mobile, weight 700. Eyebrows are 12–13px, muted.
+- Quoted legal or court text: `'Noto Naskh Arabic', serif` (`.text-doc`, verbatim).
+- Page titles are 44px desktop and 30px mobile, weight 700. Eyebrows are 12.5px, muted.
+
+### Type scale (`--text-*` in `src/app/globals.css`)
+Seven steps. Tailwind's own `text-xs…9xl` are switched off (`--text-*: initial`), so any other size does not compile.
+
+| Class | Size | Typical use |
+|---|---|---|
+| `text-xs` | 11px | small labels, table heads, footnotes |
+| `text-sm` | 12.5px | eyebrows, meta lines, chips |
+| `text-base` | 14px | secondary body, menus, buttons |
+| `text-md` | 15.5px | body (the `body` default), chat text |
+| `text-lg` | 18px | card titles, section heads, day numbers |
+| `text-xl` | 30px | mobile page titles, stat numbers |
+| `text-2xl` | 44px | desktop page titles, big stat numbers |
+
+The only sizes outside the seven are three display sizes, for big light numerals only:
+
+| Class | Size | Use |
+|---|---|---|
+| `text-display` | 54px | the next hearing's circuit digit (mobile), the undecided count (mobile), the case's day digit (desktop) |
+| `text-display-lg` | 76px | the next hearing's circuit digit (desktop) |
+| `text-display-xl` | 92px | the undecided count on Home (desktop) |
+
+No step carries a line-height: text inherits it (body 1.6) or sets `leading-*` next to the size.
+
+## Radius (`--radius-*`)
+| Class | Radius | Use |
+|---|---|---|
+| `rounded-sm` | 8px | only on elements of 32px or less: the «C» marks, their skeletons, the 30px file thumb, the chat bubble's tail |
+| `rounded-md` | 12px | inputs, menu items, small cards, document thumbnails |
+| `rounded-lg` | 20px | cards (`Card`, `Section`), tab capsule items, chips' containers |
+| `rounded-xl` | 26px | page cards, sheets, the composer |
+| `rounded-full` | pill | buttons, chips, dots, avatars |
+
+Tailwind's own `rounded-xs…4xl` are switched off (`--radius-*: initial`).
+
+## Spacing
+Tailwind's spacing scale (`--spacing: 4px`; any 0.25 step works, e.g. `px-4.5` = 18px, `mt-0.75` = 3px). An arbitrary spacing value is kept only where no step fits, with a `ds-allow:` comment on the line: the safe-area `calc(…env(safe-area-inset-bottom))` paddings, the case menu's `top-[calc(100%+8px)]`, the facts timeline dot's `-start-[1.6rem]`.
 
 ## Color (one identity, navy ink and champagne)
 | Token | Light | Dark |
@@ -28,6 +65,27 @@ The 20 `*.dc.html` files here are the approved screens: Home, Chat, Case, Roll a
 
 - Never use a gold fill, a gradient or a glow on buttons. Gold is used for text, small dots, thin outlines and big light numbers only.
 - Status uses a small dot plus a word: needs decision is gold, reserved is muted, active is green (`#1F7A4A` light, `#7FD3A4` dark), and against-us is red (`#A23B3B` light, `#E9A0A0` dark).
+
+### Tokens (`src/app/globals.css`) — one name per meaning
+Every colour literal lives in `globals.css`. Light values are on `:root`; dark values are in `:root[data-theme="dark"]` and again in the `prefers-color-scheme: dark` block (keep the two in sync). Use them as utilities (`bg-card`, `text-text-3`, `border-border-2`, `text-gold` …).
+
+| Group | Tokens |
+|---|---|
+| surfaces | `bg` (+ `bg-image` glow), `card`, `card-2`, `card-3`, `field`, `chip` |
+| text | `text`, `title`, `text-2`, `text-3` (muted), `text-4` (faint) |
+| lines | `border`, `border-2` (hairline), `border-strong` (hover outline) |
+| ink | `ink-solid` (ink in both themes, for print on the paper thumb), `mark-bg`, `mark-fg`, `selected`, `on-selected`, `primary`, `on-primary` |
+| gold (needs action) | `gold`, `gold-bg` (10% wash), `gold-edge` (30% outline / ring) |
+| status | `good`, `good-bg`, `bad`, `bad-bg` |
+| paper thumbnail | `paper-thumb`, `paper-thumb-ink` |
+| shadows | `shadow-card`, `shadow-soft`, `shadow-pop`, `shadow-mark`, `primary-shadow`, `tab-shadow`, `mark-shadow` |
+| glass | `glass-bg`, `glass-filter`, `glass-border`, `glass-shadow`, `glass-icon` |
+| other | `fade` (behind the composer), `skel`, `skel-hi`, `backdrop` |
+
+Removed in the 2026-10-21 cleanup (do not bring back): the v1 / legacy names `paper`, `surface(-2)`, `ink`, `ink-2`, `ink-3`, `line`, `line-strong`, `hairline`, `hairline-v2`, `accent`, `accent-ink`, `accent-soft`, `accent-base`, `accent-text`, `accent-wash`, `accent-ring`, `accent-edge`, `accent-grad`, `accent-shadow`, `brass(-soft)`, `suggest(-soft)`, `ok(-soft)`, `danger(-soft)`, `warn(-bg)`, `amber(-bg/-text)`, `gold-text`, `primary-bg`, `page`, `chrome`, `court-tint`, `hero*`, `tile*`, `shadow-1/2/3`, `shadow-accent`, `shadow-tile`, `radius`, `radius-card`, the old `text-display/title/headline/body/callout/caption` sizes.
+
+### Rules for code
+`scripts/check-design-system.ts` (run by `scripts/final-check.sh`) fails on any of these in `src/**/*.tsx`: a hex colour, `rgb(` / `rgba(` / `hsl(`, an arbitrary `text-[…px]`, an arbitrary `rounded…-[…]`. A real exception carries `// ds-allow: <why>` (or `/* ds-allow: <why> */`) on the same line. Today: the `theme-color` meta in `layout.tsx` and the `rounded-[inherit]` link overlay in `CaseOverview.tsx`.
 
 ## Glass recipe
 - Dark: a radial white sheen 15%→4% over `rgba(32,37,50,0.5)`, backdrop blur 30px, saturate 160%; a 1px white border at 9%; an inset top-left highlight; a deep shadow.
@@ -52,7 +110,7 @@ The 20 `*.dc.html` files here are the approved screens: Home, Chat, Case, Roll a
 - Cases: the third stat is «محتاجة قرار» with its own filter; each row keeps its review marker; extra status filters scroll on mobile; an active filter's clear pill comes first in the row (at the right).
 - Roll: the day strip is one continuous row of days that scrolls sideways (RTL: the past on the right, the future on the left) with snap to days — drag on mobile; trackpad, shift+wheel or mouse drag on desktop. On desktop, the two small quiet glass prev/next buttons at the two ends of the strip scroll it smoothly by one week (the target week's Saturday lands at the start); the next-week arrow points left. Tapping a day selects it: the selected pill slides to it and the hearings below change with a short crossfade. With reduced motion, every change is instant.
 - Roll: the strip shows Saturday–Thursday. Friday is hidden unless that week's Friday has a hearing (or is the chosen day).
-- Roll (owner addition, not in the mockup): a small line above the strip — at the start (right) the month of the days in view («أكتوبر 2026», 12.5px, text-3), updating while you scroll.
+- Roll (owner addition, not in the mockup): a small line above the strip — at the start (right) the month of the days in view («أكتوبر 2026», `text-sm` 12.5px, text-3), updating while you scroll.
 - Roll (owner addition, not in the mockup): at the end of that line, an «النهارده» chip appears only while today is out of view; tapping it scrolls back to today and selects it.
 - Chat: the card footer's second line (save as suggestions · reject all · open case) shows only after «عدّل»; the /chat list uses the thread's style.
 - Loading: one shared skeleton in each page's real layout (title, stats, card or table shapes), card + hairline tokens, one calm shimmer, no spinners; the top bar and composer stay visible.

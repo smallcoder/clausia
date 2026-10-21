@@ -322,9 +322,9 @@ export function RollStrip({ center, selected, focusDay, today, counts, pinned, o
   const arrow = "glass glass-icon tap absolute top-1/2 z-10 hidden size-9 -translate-y-1/2 items-center justify-center rounded-full transition hover:text-text aria-disabled:cursor-default aria-disabled:text-text-4 aria-disabled:opacity-50 aria-disabled:hover:text-text-4 sm:inline-flex";
 
   return (
-    <div className="mt-[18px] leading-[normal] sm:mt-[26px]">
+    <div className="mt-4.5 leading-[normal] sm:mt-6.5">
       <div className="flex h-7 items-center justify-between gap-3 px-1 sm:px-2">
-        <span className="text-[12.5px] text-text-3" data-roll-month>{arMonthYear(mid)}</span>
+        <span className="text-sm text-text-3" data-roll-month>{arMonthYear(mid)}</span>
         {/* screen readers: the month in view and the selected day, announced politely when they change */}
         <div role="status" aria-live="polite" className="sr-only" data-roll-status>
           <span>{arMonthYear(mid)}</span>
@@ -332,12 +332,12 @@ export function RollStrip({ center, selected, focusDay, today, counts, pinned, o
         </div>
         {todayOut ? (
           <button type="button" onClick={() => { pick(today, "today"); bring(tileOf(weekStart(today)) ? weekStart(today) : today, "start"); }}
-            className="tap fade-enter inline-flex h-7 items-center rounded-full border border-[var(--accent-edge)] px-3 text-[12px] font-semibold text-gold transition hover:bg-[var(--accent-wash)]">
+            className="tap fade-enter inline-flex h-7 items-center rounded-full border border-gold-edge px-3 text-sm font-semibold text-gold transition hover:bg-gold-bg">
             النهارده
           </button>
         ) : null}
       </div>
-      <nav aria-label="أيام الرول" className="relative mt-2 sm:overflow-hidden sm:rounded-[30px] sm:border sm:border-border-2 sm:bg-card sm:shadow-card">
+      <nav aria-label="أيام الرول" className="relative mt-2 sm:overflow-hidden sm:rounded-xl sm:border sm:border-border-2 sm:bg-card sm:shadow-card">
         <button type="button" onClick={() => step(-1)} aria-label="الأسبوع اللي فات" aria-disabled={!vis.canPrev || undefined} className={cx(arrow, "start-1.5")}><ChevronRight size={16} strokeWidth={1.9} aria-hidden /></button>
         <div ref={scroller} data-roll-scroller
           className="no-scrollbar @container snap-x snap-mandatory overflow-x-auto overscroll-x-contain sm:scroll-px-12 sm:data-[dragging]:cursor-grabbing"
@@ -346,7 +346,7 @@ export function RollStrip({ center, selected, focusDay, today, counts, pinned, o
           onClickCapture={(e) => { if (suppressClick.current) { e.preventDefault(); e.stopPropagation(); suppressClick.current = false; } }}>
           <div ref={track} onKeyDown={onKeyDown} className="relative flex w-max select-none sm:gap-1.5 sm:px-12 sm:py-1.5">
             <span ref={pill} aria-hidden
-              className="pointer-events-none absolute left-0 top-0 rounded-[18px] bg-selected opacity-0 shadow-[0_4px_10px_-4px_var(--backdrop)] transition-[transform,width] duration-[260ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] sm:rounded-[22px]" />
+              className="pointer-events-none absolute left-0 top-0 rounded-lg bg-selected opacity-0 shadow-[0_4px_10px_-4px_var(--backdrop)] transition-[transform,width] duration-[260ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]" />
             {days.map((d) => {
               const on = d === selected;
               const solid = on && !measured; // before the pill is placed, the tile paints its own background
@@ -356,15 +356,15 @@ export function RollStrip({ center, selected, focusDay, today, counts, pinned, o
                 <a key={d} href={dayHref(d)} data-day={d} draggable={false} tabIndex={d === tabStop ? 0 : -1}
                   aria-current={on ? "date" : undefined}
                   onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return; e.preventDefault(); pick(d, "tap"); }}
-                  className={cx("relative w-[calc(100cqi/7)] shrink-0 snap-start rounded-[18px] pb-[7px] pt-2 text-center transition-[color] focus-visible:outline-offset-[-2px] sm:w-[calc((100cqi-132px)/7)] sm:rounded-[22px] sm:pb-[11px] sm:pt-3",
+                  className={cx("relative w-[calc(100cqi/7)] shrink-0 snap-start rounded-lg pb-1.75 pt-2 text-center transition-[color] focus-visible:outline-offset-[-2px] sm:w-[calc((100cqi-132px)/7)] sm:pb-2.75 sm:pt-3",
                     on ? "text-on-selected duration-200 delay-100" : "text-text duration-0 hover:bg-card-2",
                     solid && "bg-selected shadow-[0_4px_10px_-4px_var(--backdrop)]",
-                    !on && d === today && "ring-1 ring-inset ring-[var(--accent-edge)]")}>
-                  <span className={cx("block text-[10.5px] transition-colors sm:text-[12px]", on ? "text-on-selected/80 duration-200 delay-100" : cx("duration-0", d === today ? "font-semibold text-gold" : "text-text-3"))}>
+                    !on && d === today && "ring-1 ring-inset ring-gold-edge")}>
+                  <span className={cx("block text-xs transition-colors sm:text-sm", on ? "text-on-selected/80 duration-200 delay-100" : cx("duration-0", d === today ? "font-semibold text-gold" : "text-text-3"))}>
                     <span className="sm:hidden">{WEEKDAY_SHORT[wd]}</span><span className="hidden sm:inline">{WEEKDAY_LONG[wd]}</span>
                   </span>
-                  <span className={cx("font-num mt-0.5 block text-[19px] leading-[1.1] sm:mt-[3px] sm:text-[26px]", on ? "font-medium" : "font-light")}>{Number(d.slice(8))}</span>
-                  <span aria-hidden className="mt-[5px] flex h-1 justify-center gap-[2px] sm:mt-1.5 sm:h-[5px] sm:gap-[3px]">
+                  <span className={cx("font-num mt-0.5 block text-lg leading-[1.1] sm:mt-0.75 sm:text-xl", on ? "font-medium" : "font-light")}>{Number(d.slice(8))}</span>
+                  <span aria-hidden className="mt-1.25 flex h-1 justify-center gap-0.5 sm:mt-1.5 sm:h-[5px] sm:gap-0.75">
                     {Array.from({ length: Math.min(n, 6) }, (_, i) => <span key={i} className={cx("size-1 rounded-full transition-colors sm:size-[5px]", on ? "bg-on-selected/85 duration-200 delay-100" : "bg-text-4 duration-0")} />)}
                   </span>
                   <span className="sr-only">{d === today ? "النهارده، " : ""}{formatDmy(d)}، {counts.has(d) ? dayCount(n) : ""}</span>

@@ -11,7 +11,7 @@ export function DocTypeSelect({ documentId, value }: { documentId: string; value
   const [error, setError] = useState(false);
   const router = useRouter();
   return (
-    <label className="inline-flex items-center gap-2 text-[13px] text-text-3">
+    <label className="inline-flex items-center gap-2 text-sm text-text-3">
       <span className="sr-only">نوع المستند</span>
       <select
         value={current}
@@ -25,7 +25,7 @@ export function DocTypeSelect({ documentId, value }: { documentId: string; value
             if (!r.ok) { setCurrent(prev); setError(true); } else router.refresh();
           });
         }}
-        className="h-11 rounded-2xl border border-border bg-field px-3 text-[14px] font-medium text-text hover:border-[var(--line-strong)] focus:border-gold focus:outline-none disabled:opacity-60"
+        className="h-11 rounded-md border border-border bg-field px-3 text-base font-medium text-text hover:border-border-strong focus:border-gold focus:outline-none disabled:opacity-60"
       >
         {Object.entries(DOC_TYPE).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
       </select>

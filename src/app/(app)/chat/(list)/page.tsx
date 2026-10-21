@@ -50,9 +50,9 @@ export default async function ChatHome() {
   const waitingCount = rows.filter((r) => waiting.has(r.t.id)).length;
 
   return (
-    <div className="mx-auto flex w-full flex-1 flex-col gap-[18px] px-3.5 pt-2.5 sm:max-w-[820px] sm:gap-[22px] sm:px-6 sm:pt-5">
+    <div className="mx-auto flex w-full flex-1 flex-col gap-4.5 px-3.5 pt-2.5 sm:max-w-[820px] sm:gap-5.5 sm:px-6 sm:pt-5">
       {/* the thread's header language: one small centered glass pill (what this is · how many), nothing else */}
-      <div className="glass inline-flex h-8 max-w-full items-center gap-2 self-center rounded-2xl px-3.5 text-[12.5px]">
+      <div className="glass inline-flex h-8 max-w-full items-center gap-2 self-center rounded-md px-3.5 text-sm">
         <h1 className="shrink-0 font-semibold text-text">المحادثات</h1>
         <span aria-hidden className="text-text-4">·</span>
         <span className="truncate text-text-3"><span className="font-num">{chatsLabel(rows.length)}</span></span>
@@ -68,29 +68,29 @@ export default async function ChatHome() {
       </div>
 
       {rows.length === 0 ? (
-        <div className="rounded-[24px] border border-border-2 bg-card px-5 py-6 shadow-card">
+        <div className="rounded-xl border border-border-2 bg-card px-5 py-6 shadow-card">
           <ClausiaSays size="md">لسه مافيش محادثات. احكي لـ Clausia عن موكل أو قضية من تحت، أو ارفع ورقة.</ClausiaSays>
         </div>
       ) : (
-        <ul className="overflow-hidden rounded-[24px] border border-border-2 bg-card shadow-card">
+        <ul className="overflow-hidden rounded-xl border border-border-2 bg-card shadow-card">
           {rows.map(({ t, m, at }) => {
             const c = t.case_id ? caseById.get(t.case_id) : null;
             const preview = m ? `${m.role === "user" ? "أنت: " : ""}${m.content.replace(/\*\*/g, "").replace(/\s+/g, " ").slice(0, 140)}` : "لا رسائل بعد";
             return (
-              <li key={t.id} className="not-first:border-t not-first:border-[var(--hairline-v2)]">
-                <Link href={`/chat/${t.id}`} className="flex min-h-[68px] items-center gap-3.5 px-4 py-3.5 transition hover:bg-card-2 sm:px-[22px]">
+              <li key={t.id} className="not-first:border-t not-first:border-border-2">
+                <Link href={`/chat/${t.id}`} className="flex min-h-[68px] items-center gap-3.5 px-4 py-3.5 transition hover:bg-card-2 sm:px-5.5">
                   {c ? (
-                    <span aria-hidden className="inline-flex size-9 shrink-0 items-center justify-center rounded-[12px] border border-border-2 bg-card-2 text-text-3"><FolderClosed size={17} strokeWidth={1.9} /></span>
+                    <span aria-hidden className="inline-flex size-9 shrink-0 items-center justify-center rounded-md border border-border-2 bg-card-2 text-text-3"><FolderClosed size={17} strokeWidth={1.9} /></span>
                   ) : (
-                    <span aria-hidden className="mark font-num inline-flex size-9 shrink-0 items-center justify-center rounded-[12px] text-[15px] font-extrabold">C</span>
+                    <span aria-hidden className="mark font-num inline-flex size-9 shrink-0 items-center justify-center rounded-md text-md font-extrabold">C</span>
                   )}
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[15px] font-semibold text-title">{c ? caseLabel(c) : t.title || "محادثة عامة"}</span>
-                    <span className="mt-0.5 block truncate text-[12.5px] text-text-3">{c?.court ? `${c.court} · ` : ""}{preview}</span>
+                    <span className="block truncate text-md font-semibold text-title">{c ? caseLabel(c) : t.title || "محادثة عامة"}</span>
+                    <span className="mt-0.5 block truncate text-sm text-text-3">{c?.court ? `${c.court} · ` : ""}{preview}</span>
                   </span>
                   {waiting.has(t.id) ? <span className="hidden sm:inline-flex"><StatusChip tone="warn">فيها بطاقة</StatusChip></span> : null}
                   <span className="flex shrink-0 flex-col items-end gap-1">
-                    <span className="num font-num text-[12.5px] text-text-4">{formatDmy(cairoDay(at))}</span>
+                    <span className="num font-num text-sm text-text-4">{formatDmy(cairoDay(at))}</span>
                     {waiting.has(t.id) ? <span role="img" aria-label="فيها بطاقة" className="size-1.5 rounded-full bg-gold sm:hidden" /> : null}
                   </span>
                   <ChevronLeft aria-hidden size={18} strokeWidth={1.8} className="hidden shrink-0 text-text-4 sm:block" />

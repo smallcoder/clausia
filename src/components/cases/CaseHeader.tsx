@@ -21,7 +21,7 @@ const TONE = { good: ["bg-good", "text-good"], warn: ["bg-gold", "text-gold"], n
 function StatusPill({ status }: { status: string }) {
   const [dot, text] = TONE[statusTone(status)];
   return (
-    <span className={`box-content inline-flex h-7 items-center gap-1.5 rounded-full border border-[var(--hairline-v2)] px-3 text-[12.5px] font-semibold ${text}`}>
+    <span className={`box-content inline-flex h-7 items-center gap-1.5 rounded-full border border-border-2 px-3 text-sm font-semibold ${text}`}>
       <span aria-hidden className={`size-1.5 rounded-full ${dot}`} />{CASE_STATUS[status as keyof typeof CASE_STATUS] ?? status}
     </span>
   );
@@ -36,13 +36,13 @@ function StatCell({ s, first }: { s: HeroStat; first: boolean }) {
   const gold = s.highlight && Number(s.value) > 0;
   const body = (
     <>
-      <div className={`stat-num text-[32px] tracking-normal ${gold ? "text-gold" : "text-title"}`}>{typeof s.value === "number" ? two(s.value) : s.value}</div>
-      <div className={`mt-[7px] flex items-center gap-[5px] text-[11.5px] leading-4 ${gold ? "text-gold" : "text-text-3"}`}>
+      <div className={`stat-num text-xl tracking-normal ${gold ? "text-gold" : "text-title"}`}>{typeof s.value === "number" ? two(s.value) : s.value}</div>
+      <div className={`mt-1.75 flex items-center gap-1.25 text-xs leading-4 ${gold ? "text-gold" : "text-text-3"}`}>
         {gold ? <span aria-hidden className="size-[5px] rounded-full bg-gold" /> : null}{s.label}
       </div>
     </>
   );
-  const cls = `block min-w-0 px-6 ${first ? "" : "border-s border-[var(--hairline-v2)]"}`;
+  const cls = `block min-w-0 px-6 ${first ? "" : "border-s border-border-2"}`;
   if (!s.href) return <div className={cls}>{body}</div>;
   // a same-page hash (e.g. #item-…) must fire hashchange so the item sheet opens: plain <a>
   return s.href.includes("#")
@@ -66,7 +66,7 @@ export function CaseHeader({ cf, caseId, chatHref, stats }: { cf: CaseFile; case
       {/* desktop row 1: 40px back · breadcrumb … status chip · «…» (owner decision: «…» next to the chip) */}
       <div className="hidden items-center gap-3 px-2 pt-6 sm:flex">
         <Link href="/cases" aria-label="رجوع" className={`${ROUND} sm:size-10`}><ChevronRight size={20} strokeWidth={2.2} aria-hidden /></Link>
-        <nav aria-label="المسار" className="min-w-0 flex-1 truncate text-[13px] text-text-3">
+        <nav aria-label="المسار" className="min-w-0 flex-1 truncate text-sm text-text-3">
           <Link href="/cases" className="tap hover:text-text hover:underline">القضايا</Link>
           {number ? <><span aria-hidden className="mx-1.5 text-text-4">/</span><span className="font-semibold text-text">{number}</span></> : null}
         </nav>
@@ -75,26 +75,26 @@ export function CaseHeader({ cf, caseId, chatHref, stats }: { cf: CaseFile; case
       </div>
 
       {/* who: mobile = eyebrow + status, name, «ضد» below; desktop = eyebrow, then name + «ضد» on one line */}
-      <div className="px-1 pt-[18px] sm:mt-[22px] sm:px-2 sm:pt-0">
+      <div className="px-1 pt-4.5 sm:mt-5.5 sm:px-2 sm:pt-0">
         <div className="flex items-center justify-between">
-          <span className="text-[12px] font-semibold text-gold sm:text-[12.5px]">{who.client ? "موكلنا" : "القضية"}</span>
+          <span className="text-sm font-semibold text-gold">{who.client ? "موكلنا" : "القضية"}</span>
           <span className="sm:hidden"><StatusPill status={cf.case.status} /></span>
         </div>
-        <h1 className="mt-1.5 text-[28px] font-bold leading-[1.2] text-title sm:mt-1 sm:text-[42px] sm:leading-[1.15]">
+        <h1 className="mt-1.5 text-xl font-bold leading-[1.2] text-title sm:mt-1 sm:text-2xl sm:leading-[1.15]">
           {who.client ?? who.fallback}
-          {who.opponent ? <span className="max-sm:hidden"><span className="ms-2.5 text-[22px] font-normal text-text-4">ضد</span> <span className="text-[26px] font-medium text-text">{who.opponent}</span></span> : null}
+          {who.opponent ? <span className="max-sm:hidden"><span className="ms-2.5 text-lg font-normal text-text-4">ضد</span> <span className="text-xl font-medium text-text">{who.opponent}</span></span> : null}
         </h1>
-        {who.opponent ? <p className="mt-[3px] text-[16px] text-text sm:hidden"><span className="text-text-4">ضد</span> {who.opponent}</p> : null}
+        {who.opponent ? <p className="mt-0.75 text-md text-text sm:hidden"><span className="text-text-4">ضد</span> {who.opponent}</p> : null}
       </div>
 
       {/* below lg: the 2×2 spec card (mobile mockup) */}
-      <dl className="mt-4 grid grid-cols-2 overflow-hidden rounded-[22px] border border-border-2 bg-card shadow-card lg:hidden">
+      <dl className="mt-4 grid grid-cols-2 overflow-hidden rounded-lg border border-border-2 bg-card shadow-card lg:hidden">
         {spec.map((s, i) => (
-          <div key={s.label} className={`min-w-0 border-[var(--hairline-v2)] px-3.5 py-3 ${i % 2 === 0 ? "border-e" : ""} ${i >= 2 ? "border-t" : ""}`}>
-            <dt className="text-[11px] text-text-4">{s.short}</dt>
+          <div key={s.label} className={`min-w-0 border-border-2 px-3.5 py-3 ${i % 2 === 0 ? "border-e" : ""} ${i >= 2 ? "border-t" : ""}`}>
+            <dt className="text-xs text-text-4">{s.short}</dt>
             {/* long court / type names stay one line with «…», the full name in the tooltip (owner decision) */}
             <dd title={s.clip && s.value ? s.value : undefined}
-              className={`mt-1 text-[14px] leading-[1.4] ${s.clip ? "truncate" : ""} ${s.value ? "font-semibold text-text" : "text-text-4"}`}>
+              className={`mt-1 text-base leading-[1.4] ${s.clip ? "truncate" : ""} ${s.value ? "font-semibold text-text" : "text-text-4"}`}>
               {s.value ? s.mobile ?? s.value : empty(s.fem)}
             </dd>
           </div>
@@ -102,18 +102,18 @@ export function CaseHeader({ cf, caseId, chatHref, stats }: { cf: CaseFile; case
       </dl>
 
       {/* lg+: one card, 4 spec cells (1fr) | a 1px hairline | 3 stat cells (0.7fr), 20px top and bottom */}
-      <div className="mt-[22px] hidden grid-cols-[repeat(4,minmax(0,1fr))_1px_repeat(3,minmax(0,0.7fr))] items-stretch rounded-[26px] border border-border-2 bg-card py-5 shadow-card lg:grid">
+      <div className="mt-5.5 hidden grid-cols-[repeat(4,minmax(0,1fr))_1px_repeat(3,minmax(0,0.7fr))] items-stretch rounded-xl border border-border-2 bg-card py-5 shadow-card lg:grid">
         <dl className="contents">
           {spec.map((s, i) => (
-            <div key={s.label} className={`min-w-0 px-6 ${i > 0 ? "border-s border-[var(--hairline-v2)]" : ""}`}>
-              <dt className="text-[11.5px] leading-4 text-text-4">{s.label}</dt>
-              <dd className={`mt-[7px] text-[15px] leading-[1.4] ${s.value ? "font-semibold text-text" : "text-text-4"}`}>
+            <div key={s.label} className={`min-w-0 px-6 ${i > 0 ? "border-s border-border-2" : ""}`}>
+              <dt className="text-xs leading-4 text-text-4">{s.label}</dt>
+              <dd className={`mt-1.75 text-md leading-[1.4] ${s.value ? "font-semibold text-text" : "text-text-4"}`}>
                 {s.value ?? empty(s.fem)}{s.value && s.extra ? ` · ${s.extra}` : null}
               </dd>
             </div>
           ))}
         </dl>
-        <div aria-hidden className="-my-1 bg-[var(--hairline-v2)]" />
+        <div aria-hidden className="-my-1 bg-border-2" />
         {stats.map((s, i) => <StatCell key={s.label} s={s} first={i === 0} />)}
       </div>
     </header>
@@ -124,13 +124,13 @@ export function CaseHeader({ cf, caseId, chatHref, stats }: { cf: CaseFile; case
 export function CaseSubHeader({ cf, caseId, title }: { cf: CaseFile; caseId: string; title: string }) {
   const who = whoLine(cf);
   return (
-    <header className="flex items-start gap-3 pt-2 sm:gap-[18px] sm:px-2 sm:pt-6">
-      <span className="sm:mt-[18px]"><BackBtn href={`/cases/${caseId}`} /></span>
+    <header className="flex items-start gap-3 pt-2 sm:gap-4.5 sm:px-2 sm:pt-6">
+      <span className="sm:mt-4.5"><BackBtn href={`/cases/${caseId}`} /></span>
       <div className="min-w-0 pt-0.5 sm:pt-0">
-        <Link href={`/cases/${caseId}`} className="text-[12px] font-semibold text-text-3 hover:text-text sm:text-[13px]">
+        <Link href={`/cases/${caseId}`} className="text-sm font-semibold text-text-3 hover:text-text">
           {who.client ?? who.fallback}{who.client && who.opponent ? <span className="text-text-4"> ضد </span> : null}{who.client && who.opponent ? who.opponent : null}
         </Link>
-        <h1 className="mt-1 text-[30px] font-bold leading-[1.2] text-title sm:text-[44px] sm:leading-[1.15]">{title}</h1>
+        <h1 className="mt-1 text-xl font-bold leading-[1.2] text-title sm:text-2xl sm:leading-[1.15]">{title}</h1>
       </div>
     </header>
   );

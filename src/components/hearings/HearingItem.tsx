@@ -30,10 +30,10 @@ export function HearingItem({ h, today, showCourt = false, showCircuit = true, s
     <li className="px-5 py-3.5 print:break-inside-avoid print:px-0 print:py-2">
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
         <div className="min-w-0">
-          <Link href={`/cases/${c.id}?tab=hearings`} className="text-[15px] font-bold text-text hover:underline">
+          <Link href={`/cases/${c.id}?tab=hearings`} className="text-md font-bold text-text hover:underline">
             {caseLabel(c)}
           </Link>
-          {c.title && (c.case_number || c.case_year) ? <p className="mt-0.5 text-[13px] text-text-3">{c.title}</p> : null}
+          {c.title && (c.case_number || c.case_year) ? <p className="mt-0.5 text-sm text-text-3">{c.title}</p> : null}
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           {c.status === "reserved_for_judgment" && !h.decision_type ? <StatusChip tone="neutral">{CASE_STATUS[c.status]}</StatusChip> : null}
@@ -41,7 +41,7 @@ export function HearingItem({ h, today, showCourt = false, showCircuit = true, s
           <DecisionBadge h={h} today={today} />
         </div>
       </div>
-      <dl className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-[12.5px] text-text-3">
+      <dl className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-sm text-text-3">
         {showDate ? <div><dt className="sr-only">التاريخ</dt><dd className="num font-num font-semibold text-text">{formatDmy(h.hearing_date)}</dd></div> : null}
         {showCourt ? <div><dt className="sr-only">المحكمة</dt><dd>{c.court ?? "محكمة غير محددة"}</dd></div> : null}
         {showCircuit && c.circuit ? <div><dt className="sr-only">الدائرة</dt><dd>{c.circuit}</dd></div> : null}
@@ -50,8 +50,8 @@ export function HearingItem({ h, today, showCourt = false, showCircuit = true, s
           <dd className="inline">{c.client_name ?? "غير محدد"}{c.client_role ? <span className="text-text-4"> ({PARTY_ROLE[c.client_role]})</span> : null}</dd>
         </div>
       </dl>
-      {needed ? <p className="mt-1 text-[14px] text-text-2"><span className="text-text-4">المطلوب: </span>{needed}</p> : null}
-      {h.decision_text ? <p className="mt-1 text-[14px] text-text-2"><span className="text-text-4">القرار: </span>{h.decision_text}</p> : null}
+      {needed ? <p className="mt-1 text-base text-text-2"><span className="text-text-4">المطلوب: </span>{needed}</p> : null}
+      {h.decision_text ? <p className="mt-1 text-base text-text-2"><span className="text-text-4">القرار: </span>{h.decision_text}</p> : null}
       {decide && !h.decision_type ? <div className="print:hidden"><RecordDecision hearingId={h.id} caseId={c.id} hearingDate={h.hearing_date} label={`${caseLabel(c)}، جلسة ${formatDmy(h.hearing_date)}`} compact /></div> : null}
     </li>
   );

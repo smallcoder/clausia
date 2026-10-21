@@ -13,18 +13,18 @@ function Row({ h }: { h: HearingWithCase }) {
   const place = placeLine(h);
   const need = h.purpose?.trim() || null;
   return (
-    <Link href={`/cases/${h.case_id}`} className="group flex items-center gap-3.5 border-t border-[var(--hairline-v2)] py-3 md:gap-[18px] md:py-4">
+    <Link href={`/cases/${h.case_id}`} className="group flex items-center gap-3.5 border-t border-border-2 py-3 md:gap-4.5 md:py-4">
       <span title={h.case.circuit ?? undefined}
-        className="font-num w-[22px] shrink-0 text-center text-[22px] font-light text-gold md:w-[30px] md:text-[26px]">
+        className="font-num w-[22px] shrink-0 text-center text-lg font-light text-gold md:w-[30px] md:text-xl">
         {circuitNo(h.case.circuit)}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[14px] font-semibold leading-[18px] text-text group-hover:underline md:text-[15.5px] md:leading-[21px]">{rowTitle(h)}</span>
+        <span className="block truncate text-base font-semibold leading-[18px] text-text group-hover:underline md:text-md md:leading-[21px]">{rowTitle(h)}</span>
         {/* desktop: where it is; mobile: what's needed (or where, when nothing is noted) */}
-        <span className="mt-[3px] hidden truncate text-[12.5px] leading-[17px] text-text-3 md:block">{place}</span>
-        <span className="mt-0.5 block truncate text-[11.5px] leading-4 text-text-3 md:hidden">{need ?? place}</span>
+        <span className="mt-0.75 hidden truncate text-sm leading-[17px] text-text-3 md:block">{place}</span>
+        <span className="mt-0.5 block truncate text-xs leading-4 text-text-3 md:hidden">{need ?? place}</span>
       </span>
-      {need ? <span className="hidden max-w-[34%] shrink-0 truncate text-[12.5px] leading-[17px] text-text-3 md:block">{need}</span> : null}
+      {need ? <span className="hidden max-w-[34%] shrink-0 truncate text-sm leading-[17px] text-text-3 md:block">{need}</span> : null}
     </Link>
   );
 }
@@ -42,21 +42,21 @@ export function TodayCard({ todays, tomorrows, tomorrow, nextDate, className = "
   const title = showTomorrow ? `جلسات بكره · ${formatLongDay(tomorrow)}` : "جلسات النهارده";
   return (
     <section aria-label={showTomorrow ? "جلسات بكره" : "جلسات النهارده"}
-      className={`min-w-0 rounded-[24px] border border-border-2 bg-card px-[18px] py-1 shadow-card md:rounded-[28px] md:px-[26px] md:py-2 ${className}`}>
-      <h2 className="pb-1 pt-3 text-[11.5px] font-normal leading-4 text-text-4 md:pb-1.5 md:font-medium md:pt-4 md:text-[12px]">{title}</h2>
+      className={`min-w-0 rounded-xl border border-border-2 bg-card px-4.5 py-1 shadow-card md:px-6.5 md:py-2 ${className}`}>
+      <h2 className="pb-1 pt-3 text-xs font-normal leading-4 text-text-4 md:pb-1.5 md:font-medium md:pt-4 md:text-sm">{title}</h2>
       {list.length ? (
         <div>
           {list.slice(0, MAX_ROWS).map((h) => <Row key={h.id} h={h} />)}
           {more > 0 ? (
-            <Link href="/hearings" className="flex min-h-11 items-center border-t border-[var(--hairline-v2)] text-[13px] font-semibold text-text-2 hover:text-text">
+            <Link href="/hearings" className="flex min-h-11 items-center border-t border-border-2 text-sm font-semibold text-text-2 hover:text-text">
               و{hearingsCount(more)} كمان في الرول ←
             </Link>
           ) : null}
         </div>
       ) : (
-        <div className="border-t border-[var(--hairline-v2)] py-5 md:py-6">
-          <div className="text-[15px] font-semibold text-text md:text-[15.5px]">مفيش جلسات النهارده ولا بكره</div>
-          <div className="mt-1 text-[12.5px] text-text-3">
+        <div className="border-t border-border-2 py-5 md:py-6">
+          <div className="text-md font-semibold text-text">مفيش جلسات النهارده ولا بكره</div>
+          <div className="mt-1 text-sm text-text-3">
             {nextDate ? <>أقرب جلسة يوم {formatLongDay(nextDate)} · </> : null}
             <Link href="/hearings" className="font-semibold text-text-2 hover:text-text">افتح الرول ←</Link>
           </div>

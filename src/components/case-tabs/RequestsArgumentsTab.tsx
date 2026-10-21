@@ -17,12 +17,12 @@ type Row = {
 function Item({ r, table, caseId, kindLabel }: { r: Row; table: "case_requests" | "case_arguments"; caseId: string; kindLabel?: string }) {
   const suggested = r.review_status === "suggested";
   return (
-    <li className={cx("rounded-[var(--radius)] border p-4", suggested ? "border-suggest/30 bg-suggest-soft/40" : "border-line bg-surface")}>
+    <li className={cx("rounded-lg border p-4", suggested ? "border-gold/30 bg-gold-bg/40" : "border-border bg-card")}>
       {kindLabel ? <Badge className="mb-2">{kindLabel}</Badge> : null}
-      <div className="text-[15px] leading-relaxed text-ink">
+      <div className="text-md leading-relaxed text-text">
         <InlineEdit action={editItemText} hidden={{ table, id: r.id, case_id: caseId }} initial={r.text} multiline display={r.text} />
       </div>
-      {r.source_quote ? <p className="mt-2 text-callout text-ink-3">المصدر: «{r.source_quote}»</p> : null}
+      {r.source_quote ? <p className="mt-2 text-base leading-[1.55] text-text-4">المصدر: «{r.source_quote}»</p> : null}
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
         <SourceBadge row={r} documentName={r.document?.file_name} />
         {suggested ? <ReviewButtons table={table} id={r.id} caseId={caseId} /> : null}

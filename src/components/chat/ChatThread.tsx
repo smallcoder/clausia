@@ -125,13 +125,13 @@ export function ChatThread({ threadId, caseId, items, lookup, docs = {} }: {
         </ClausiaLine>
       ) : null}
 
-      <ol className="flex flex-col gap-[18px] sm:gap-[22px]">
+      <ol className="flex flex-col gap-4.5 sm:gap-5.5">
         {shown.map((m) => (
-          <li key={m.id} className="flex flex-col gap-[18px] sm:gap-[22px]">
+          <li key={m.id} className="flex flex-col gap-4.5 sm:gap-5.5">
             {m.role === "user" ? (
               <>
                 {m.attachments.length && AUTO_ATTACH.test(m.content) ? null : (
-                  <div className="max-w-[88%] self-end whitespace-pre-wrap break-words rounded-[22px] rounded-bl-[6px] border border-border-2 bg-card px-[17px] py-[13px] text-[15px] leading-[1.75] text-text dark:bg-card-2 sm:max-w-[72%] sm:text-base">
+                  <div className="max-w-[88%] self-end whitespace-pre-wrap break-words rounded-lg rounded-bl-sm border border-border-2 bg-card px-4.25 py-3.25 text-md leading-[1.75] text-text dark:bg-card-2 sm:max-w-[72%]">
                     {m.content}
                   </div>
                 )}
@@ -194,7 +194,7 @@ function quickAnswers(text: string): { label: string; text: string }[] {
 }
 
 /** quick answers and starters: glass chips (floating controls), 36px tall (44px hit area) */
-const CHIP = "tap glass inline-flex min-h-9 shrink-0 items-center rounded-full px-[15px] py-1 text-[13px] font-medium glass-icon transition hover:text-text";
+const CHIP = "tap glass inline-flex min-h-9 shrink-0 items-center rounded-full px-3.75 py-1 text-sm font-medium glass-icon transition hover:text-text";
 
 /**
  * Clausia's turn: the «C» mark and its text (cards go under the text). Desktop: the mark beside the text.
@@ -203,7 +203,7 @@ const CHIP = "tap glass inline-flex min-h-9 shrink-0 items-center rounded-full p
 /** The model could not answer (402 / 429 / 5xx / timeout): one calm notice, not a Clausia sentence. */
 function UnavailableNotice() {
   return (
-    <p role="status" className="inline-flex items-center gap-2 rounded-full border border-border-2 bg-card-2 px-4 py-2 text-[14px] leading-6 text-text-2">
+    <p role="status" className="inline-flex items-center gap-2 rounded-full border border-border-2 bg-card-2 px-4 py-2 text-base leading-6 text-text-2">
       <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-text-4" />{UNAVAILABLE_TEXT}
     </p>
   );
@@ -213,10 +213,10 @@ function ClausiaLine({ children }: { children: ReactNode }) {
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
       <div className="flex items-center gap-2 self-start">
-        <span aria-hidden className="mark font-num inline-flex size-6 shrink-0 items-center justify-center rounded-[8px] text-[11px] font-extrabold sm:size-7 sm:rounded-[9px] sm:text-[13px]">C</span>
-        <span className="text-[13px] font-bold leading-[normal] text-title sm:hidden">Clausia</span>
+        <span aria-hidden className="mark font-num inline-flex size-6 shrink-0 items-center justify-center rounded-sm text-xs font-extrabold sm:size-7 sm:text-sm">C</span>
+        <span className="text-sm font-bold leading-[normal] text-title sm:hidden">Clausia</span>
       </div>
-      <div className="min-w-0 flex-1 text-[15px] leading-[1.8] text-text sm:pt-[3px] sm:text-base">{children}</div>
+      <div className="min-w-0 flex-1 text-md leading-[1.8] text-text sm:pt-0.75">{children}</div>
     </div>
   );
 }
@@ -228,13 +228,13 @@ const READ: Record<ThreadDoc["status"], string> = { done: "اتقرت", reading:
 function AttachmentChip({ name, doc, tuck }: { name: string; doc?: ThreadDoc; tuck?: boolean }) {
   const meta = doc ? [doc.pages ? pagesLabel(doc.pages) : null, READ[doc.status]].filter(Boolean).join(" · ") : null;
   return (
-    <div className={cx("flex max-w-[88%] items-center gap-2.5 self-end rounded-[16px] border border-border-2 bg-card py-2 pe-2.5 ps-3.5 dark:bg-card-2 sm:max-w-[72%]", tuck && "-mt-1.5")}>
-      <span aria-hidden className="flex h-9 w-[30px] shrink-0 items-center justify-center rounded-md bg-paper-thumb text-[8px] font-extrabold text-[var(--paper-thumb-ink)]">
+    <div className={cx("flex max-w-[88%] items-center gap-2.5 self-end rounded-md border border-border-2 bg-card py-2 pe-2.5 ps-3.5 dark:bg-card-2 sm:max-w-[72%]", tuck && "-mt-1.5")}>
+      <span aria-hidden className="flex h-9 w-[30px] shrink-0 items-center justify-center rounded-sm bg-paper-thumb text-xs font-extrabold text-paper-thumb-ink">
         {doc?.image ? "IMG" : "PDF"}
       </span>
       <span className="min-w-0">
-        <span className="block truncate text-[13px] font-semibold leading-[normal] text-text" dir="auto">{name}</span>
-        {meta ? <span className={cx("block text-[11px] leading-[normal]", doc?.status === "failed" ? "text-bad" : "text-text-3")}>{meta}</span> : null}
+        <span className="block truncate text-sm font-semibold leading-[normal] text-text" dir="auto">{name}</span>
+        {meta ? <span className={cx("block text-xs leading-[normal]", doc?.status === "failed" ? "text-bad" : "text-text-3")}>{meta}</span> : null}
       </span>
     </div>
   );

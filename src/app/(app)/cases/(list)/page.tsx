@@ -61,7 +61,7 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
       <FilterChips sp={sp} counts={counts} />
 
       {filtered ? (
-        <p className="mt-1 px-1 text-xs text-text-3 sm:mt-2" aria-live="polite">
+        <p className="mt-1 px-1 text-sm leading-4 text-text-3 sm:mt-2" aria-live="polite">
           <span className="font-num">{rows.length}</span> {rows.length === 1 ? "قضية" : "قضايا"}
           {sp.q ? <> تطابق «{sp.q}»</> : null}
           {" · "}<Link href="/cases" className="tap font-semibold text-text underline-offset-2 hover:underline">مسح التصفية</Link>
@@ -69,7 +69,7 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
       ) : null}
 
       {sorted.length ? (
-        <section aria-label="القضايا" className="mt-1 overflow-hidden rounded-[24px] border border-border-2 bg-card px-[18px] shadow-card sm:mt-3.5 sm:rounded-[28px] md:px-0">
+        <section aria-label="القضايا" className="mt-1 overflow-hidden rounded-xl border border-border-2 bg-card px-4.5 shadow-card sm:mt-3.5 md:px-0">
           <CaseListHeader />
           <ul>
             {sorted.map((r) => (
@@ -79,17 +79,17 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
           </ul>
         </section>
       ) : (
-        <section className="mt-1 rounded-[24px] border border-border-2 bg-card px-6 py-12 text-center shadow-card sm:mt-3.5 sm:rounded-[28px]">
+        <section className="mt-1 rounded-xl border border-border-2 bg-card px-6 py-12 text-center shadow-card sm:mt-3.5">
           {filtered ? (
             <>
-              <h2 className="text-[17px] font-bold text-title">مفيش قضايا مطابقة</h2>
-              <p className="mx-auto mt-1.5 max-w-md text-[14px] leading-7 text-text-3">جرّب رقم الدعوى لوحده، أو جزء من اسم الموكل أو الخصم، أو شيل التصفية. أو اسأل Clausia تحت.</p>
-              <Link href="/cases" className="mt-4 inline-flex h-11 items-center rounded-full border border-border px-5 text-[13.5px] font-semibold text-text hover:bg-card-2">كل القضايا</Link>
+              <h2 className="text-lg font-bold text-title">مفيش قضايا مطابقة</h2>
+              <p className="mx-auto mt-1.5 max-w-md text-base leading-7 text-text-3">جرّب رقم الدعوى لوحده، أو جزء من اسم الموكل أو الخصم، أو شيل التصفية. أو اسأل Clausia تحت.</p>
+              <Link href="/cases" className="mt-4 inline-flex h-11 items-center rounded-full border border-border px-5 text-base font-semibold text-text hover:bg-card-2">كل القضايا</Link>
             </>
           ) : (
             <>
-              <h2 className="text-[17px] font-bold text-title">لسه مفيش قضايا</h2>
-              <p className="mx-auto mt-1.5 max-w-md text-[14px] leading-7 text-text-3">احكي لـ Clausia تحت عن الموكل والدعوى، أو ارفع الصحيفة، وهي تجهّز الملف وتستنى تأكيدك.</p>
+              <h2 className="text-lg font-bold text-title">لسه مفيش قضايا</h2>
+              <p className="mx-auto mt-1.5 max-w-md text-base leading-7 text-text-3">احكي لـ Clausia تحت عن الموكل والدعوى، أو ارفع الصحيفة، وهي تجهّز الملف وتستنى تأكيدك.</p>
             </>
           )}
         </section>

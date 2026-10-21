@@ -29,21 +29,21 @@ export function JudgmentsTab({ cf, caseId }: { cf: CaseFile; caseId: string }) {
           return (
             <li key={j.id} id={`item-${j.id}`} className="scroll-mt-24 space-y-3 px-4 py-4 sm:px-6">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className="text-[15px] font-bold text-text">{j.date ? <>حكم <span className="num font-num">{formatDmy(j.date)}</span></> : "حكم (التاريخ مش متسجل)"}</span>
+                <span className="text-md font-bold text-text">{j.date ? <>حكم <span className="num font-num">{formatDmy(j.date)}</span></> : "حكم (التاريخ مش متسجل)"}</span>
                 <StatusChip tone="neutral">{JUDGMENT_KIND[j.kind as keyof typeof JUDGMENT_KIND] ?? j.kind}</StatusChip>
                 {outcome ? <StatusChip tone={outcome.tone}>{outcome.label}</StatusChip> : null}
                 {suggested ? <Suggested /> : null}
               </div>
-              <div className="rounded-2xl bg-card-2 px-4 py-3">
-                <p className="text-xs text-text-4">المنطوق</p>
-                <p className="text-doc mt-1 text-[16px] text-text">{j.operative_text}</p>
+              <div className="rounded-md bg-card-2 px-4 py-3">
+                <p className="text-sm leading-4 text-text-4">المنطوق</p>
+                <p className="text-doc mt-1 text-md text-text">{j.operative_text}</p>
               </div>
-              <p className="text-[13.5px] text-text-2">
+              <p className="text-base text-text-2">
                 {j.appeal_deadline ? <>آخر ميعاد للطعن: <span className="num font-num font-bold">{formatDmy(j.appeal_deadline)}</span> <span className="text-text-4">· كما ذكره المحامي</span>{j.appeal_deadline_note ? <span className="mt-1 block text-text-4">{j.appeal_deadline_note}</span> : null}</>
                   : <span className="text-text-4">ميعاد الطعن مش متسجل. Clausia مش بيحسبه؛ قوله لـ Clausia لو عايز تسجله.</span>}
               </p>
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-[11px] text-text-4">{sourceText(j.source, cf.documents)}</span>
+                <span className="text-xs text-text-4">{sourceText(j.source, cf.documents)}</span>
                 {suggested ? <div className="w-full sm:w-64"><SheetReview table="judgments" id={j.id} caseId={caseId} /></div> : null}
               </div>
             </li>
