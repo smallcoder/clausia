@@ -49,9 +49,9 @@ export function AppHeader({ initials, officeName, email, alerts, userId, holiday
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, [open]);
-  // the top bar sits above the page only (the chat panel has its own header); below 1280 the phone's chat header replaces it
+  // desktop: the top bar spans the whole frame (logo on the start edge, icons on the end edge), above the chat panel and the page; below 1280 the phone's chat header replaces it
   return (
-    <header className="sticky top-0 z-40 mx-auto hidden h-22 w-full max-w-page grid-cols-[1fr_auto_1fr] items-center gap-2 px-10 xl:grid">
+    <header className="sticky top-0 z-40 hidden h-22 w-full grid-cols-[1fr_auto_1fr] items-center gap-2 xl:grid">
       <Link href="/" className="flex items-center gap-2.5 justify-self-start" aria-label="Clausia — الرئيسية">
         <span className="sm:hidden"><ClausiaMark size={40} /></span>
         <span className="hidden sm:inline-flex"><ClausiaMark size={36} /></span>

@@ -12,7 +12,7 @@ function initialsOf(name: string) {
 }
 
 /**
- * Shell: the chat-first split layout (docs/design/split). The top bar sits above the page only; each page owns its width
+ * Shell: the chat-first split layout (docs/design/split). The top bar spans the whole frame (1600), above the chat and the page; each page owns its width
  * (1280px of content, up to its column); the chat panel is the @chat slot, always open on desktop (SplitShell).
  */
 export default async function AppLayout({ children, chat }: { children: React.ReactNode; chat: React.ReactNode }) {
