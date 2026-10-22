@@ -113,13 +113,15 @@ try {
         const rec = page.getByRole("button", { name: /^سجّل قرار جلسة/ }).first();
         if (await rec.count()) { await rec.click(); await page.waitForTimeout(700); await shot(page, `Home-sheet-1920-${t}`); await page.keyboard.press("Escape"); }
         // «تجاهل» on the first card: it goes, and stays gone after a reload
-        const before = await page.locator('aside section[aria-label="لاحظت"] article').count();
-        await page.locator('aside section[aria-label="لاحظت"] article button:has-text("تجاهل")').first().click();
-        await page.waitForTimeout(1500);
+        const cards = page.locator('aside section[aria-label="لاحظت"] article');
+        const first = (await cards.first().innerText()).replace(/\s+/g, " ");
+        await cards.first().locator('button:has-text("تجاهل")').first().click();
+        await page.waitForTimeout(4000); // the save and the refresh (which brings the next card in) have landed
         await shot(page, `Home-ignored-1920-${t}`);
         await go(page, "/");
-        const after = await page.locator('aside section[aria-label="لاحظت"] article').count();
-        console.log(`${t}: cards before ${before}, after «تجاهل» + reload ${after}`);
+        const texts = (await cards.allInnerTexts()).map((x) => x.replace(/\s+/g, " "));
+        console.log(`${t}: the dismissed card is ${texts.includes(first) ? "STILL THERE (FAIL)" : "gone after a reload"}; ${texts.length} cards now (the next one came in)`);
+        if (texts.includes(first)) process.exitCode = 1;
         await admin.from("dismissed_notices").delete().eq("user_id", userId); // the next shots show the card again
       }
       await ctx.close();

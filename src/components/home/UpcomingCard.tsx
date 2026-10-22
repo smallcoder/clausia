@@ -18,7 +18,8 @@ function Row({ h, today }: { h: HearingWithCase; today: string }) {
         <span className="block truncate text-md font-semibold leading-[normal] text-text group-hover:underline">{rowTitle(h)}</span>
         <span className="mt-0.75 block truncate text-sm leading-[normal] text-text-3">{placeLine(h)}</span>
       </span>
-      {need ? <span className="hidden max-w-[34%] shrink-0 truncate text-sm leading-[normal] text-text-3 md:block" /* ds-allow: a share of the row (34%), not a length */>{need}</span> : null}
+      {/* the page column is narrow below 1920 (the chat takes its share): the title keeps the room then */}
+      {need ? <span className="hidden max-w-[34%] shrink-0 truncate text-sm leading-[normal] text-text-3 3xl:block" /* ds-allow: a share of the row (34%), not a length */>{need}</span> : null}
     </Link>
   );
 }
