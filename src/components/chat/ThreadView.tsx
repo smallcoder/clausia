@@ -1,10 +1,10 @@
 import "server-only";
-/** Server part of a thread: loads the visible messages, their cards, the thread's papers and the names the cards need. */
+/** Server part of a session: loads the visible messages, their cards, the thread's papers and the names the cards need. */
 import { buildProposalLookup } from "@/lib/assistant/lookup";
 import { DOC_TYPE } from "@/lib/labels";
 import type { Proposal } from "@/lib/proposals";
 import type { Db } from "@/lib/supabase/server";
-import { ChatThread, type ChatItem, type ThreadDoc } from "./ChatThread";
+import type { ChatItem, ThreadDoc } from "./ChatThread";
 
 export interface ThreadData {
   items: ChatItem[];
@@ -94,10 +94,4 @@ export async function loadThread(db: Db, threadId: string): Promise<ThreadData> 
       openQuestion,
     },
   };
-}
-
-/** The whole thread UI for a case's «المحادثة» tab (the /chat/[threadId] page uses loadThread + ChatThread with its hero). */
-export async function ThreadView({ db, threadId, caseId }: { db: Db; threadId: string; caseId?: string | null }) {
-  const t = await loadThread(db, threadId);
-  return <ChatThread threadId={threadId} caseId={caseId ?? null} items={t.items} lookup={t.lookup} docs={t.docs} />;
 }

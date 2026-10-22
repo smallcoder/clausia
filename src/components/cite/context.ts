@@ -20,8 +20,6 @@ export interface CiteSource {
 
 export interface Cite {
   active: CiteSource | null;
-  /** the page is split in two columns (a chat thread, desktop) */
-  split: boolean;
   open: (src: CiteSource) => void;
   close: () => void;
 }
@@ -29,10 +27,10 @@ export interface Cite {
 /** An item's sheet (a native modal <dialog>) provides its close function here: a chip inside it closes the sheet before opening the panel. */
 export const SheetCloseCtx = createContext<() => void>(() => {});
 
-export const CiteCtx =createContext<Cite>({ active: null, split: false, open: () => {}, close: () => {} });
+export const CiteCtx =createContext<Cite>({ active: null, open: () => {}, close: () => {} });
 export const useCite = () => useContext(CiteCtx);
 
-const DESKTOP = "(min-width: 1024px)";
+const DESKTOP = "(min-width: 1280px)";
 const subscribe = (cb: () => void) => { const mq = window.matchMedia(DESKTOP); mq.addEventListener("change", cb); return () => mq.removeEventListener("change", cb); };
-/** lg and up (the same breakpoint as the cards' sheet); false on the server and during hydration */
+/** xl and up (the split layout: chat + page side by side); false on the server and during hydration */
 export const useDesktop = () => useSyncExternalStore(subscribe, () => window.matchMedia(DESKTOP).matches, () => false);

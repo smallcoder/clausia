@@ -1,16 +1,21 @@
 "use client";
 /**
- * Thread UI (docs/design/*Chat*.dc.html, v2): solid lawyer bubbles on the left, Clausia lines with the «C» mark on
- * the right, paper chips, confirmation cards, glass quick answers, and the glass composer in the 780px ChatDock.
- * Sending is optimistic (the lawyer's message shows at once); no streaming.
+ * The body of the chat panel (docs/design/split/*): the messages (solid lawyer bubbles on the left, Clausia's lines on
+ * the right in a 720px column), paper chips, confirmation cards, glass quick answers — in the panel's own scroll area —
+ * and the app's one composer under them. Sending is optimistic (the lawyer's message shows at once); no streaming.
+ * A session that does not exist yet (threadId null) is made by its first message, then the URL points at it (?s=).
  */
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useOptimistic, useRef, useState, useTransition, type ReactNode } from "react";
 import { cx } from "@/components/ui";
 import { ProposalCard } from "@/components/proposal/ProposalCard";
 import { useReadProgress } from "@/components/documents/useReadProgress";
 import { ChatComposer } from "./ChatComposer";
+import { useDraft } from "./draft";
+import { shortDay, withSession } from "./panel-types";
 import { sendMessageAction } from "@/lib/assistant/actions";
+import { composerSendAction, composerUploadAction } from "@/lib/assistant/composer-actions";
+import { modePlaceholder } from "@/lib/assistant/modes";
 import { uploadDocumentAction } from "@/lib/documents/actions";
 import { UNAVAILABLE_TEXT } from "@/lib/llm/unavailable";
 import type { Proposal } from "@/lib/proposals";
@@ -32,45 +37,52 @@ export interface ThreadDoc {
   image: boolean;
 }
 
-const EXAMPLES_GENERAL = [
-  "موكل جديد اسمه … وتليفونه …",
-  "رفعنا دعوى رقم … لسنة … أمام محكمة …",
-  "الجلسة اتأجلت لـ 15/12/2026 لتقديم مستندات",
-];
-const EXAMPLES_CASE = [
-  "الجلسة اتأجلت لـ 15/12/2026 لتقديم مستندات",
-  "الخصم دفع بعدم قبول الدعوى لرفعها من غير ذي صفة",
-  "طلباتنا: إلزام المدعى عليه بأداء …",
-];
-
 /** The upload posts «أرفقتُ مستندًا: X» for the lawyer; the chip says it already, so no bubble for it. */
 const AUTO_ATTACH = /^أرفقتُ مستندًا: /;
 
-export function ChatThread({ threadId, caseId, items, lookup, docs = {}, initialText = "" }: {
-  threadId: string; caseId: string | null; items: ChatItem[]; lookup: Record<string, string>; docs?: Record<string, ThreadDoc>;
-  /** a starter sentence already in the box (from the brief's chip); it is not sent */
-  initialText?: string;
+export function ChatThread({ threadId, caseId, hearing, items, lookup, docs = {}, chips = [], starter = "" }: {
+  /** null = a new session (the first message makes it) */
+  threadId: string | null;
+  caseId: string | null;
+  /** a new session made from here is about this hearing */
+  hearing: { id: string; date: string } | null;
+  items: ChatItem[];
+  lookup: Record<string, string>;
+  docs?: Record<string, ThreadDoc>;
+  chips?: { label: string; text: string }[];
+  /** a starter sentence already in the box (from a brief chip's link); it is not sent */
+  starter?: string;
 }) {
   const router = useRouter();
-  const [text, setText] = useState(initialText);
+  const pathname = usePathname();
+  const params = useSearchParams();
+  const { text, setText, mode, setMode } = useDraft();
   const [error, setError] = useState<string | null>(null);
   const [sending, startSend] = useTransition();
   const [uploading, startUpload] = useTransition();
   const [shown, addOptimistic] = useOptimistic(items, (cur, t: string) => [...cur, { id: `tmp-${cur.length}`, role: "user" as const, content: t, createdAt: new Date().toISOString(), attachments: [], proposals: [] }]);
-  const endRef = useRef<HTMLDivElement>(null);
+  const scroller = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const boxRef = useRef<HTMLTextAreaElement>(null);
 
-  // keep the latest message in view above the docked composer (the composer is the last thing in the page)
-  // (again after the dock has measured its spacer, which lands a frame or two later)
+  // a starter sentence from a link fills the box once (it never sends)
+  const applied = useRef("");
   useEffect(() => {
-    if (!endRef.current) return;
-    const go = () => window.scrollTo({ top: document.documentElement.scrollHeight });
+    if (starter && applied.current !== starter) { applied.current = starter; setText(starter); }
+  }, [starter, setText]);
+
+  // keep the latest message in view: the panel's own scroll area (not the window)
+  useEffect(() => {
+    const el = scroller.current;
+    if (!el) return;
+    const go = () => el.scrollTo({ top: el.scrollHeight });
     go();
-    const raf = requestAnimationFrame(() => requestAnimationFrame(go));
-    const late = setTimeout(go, 250);
-    return () => { cancelAnimationFrame(raf); clearTimeout(late); };
-  }, [shown.length, sending]);
+    const raf = requestAnimationFrame(go);
+    return () => cancelAnimationFrame(raf);
+  }, [threadId, shown.length, sending]);
+
+  /** a session was just made: the URL points at it (the hearing link and the starter are done with) */
+  const open = (id: string) => router.replace(withSession(pathname, new URLSearchParams(params.toString()), id));
 
   function send(quick?: string) {
     const t = (quick ?? text).trim();
@@ -79,11 +91,22 @@ export function ChatThread({ threadId, caseId, items, lookup, docs = {}, initial
     if (quick === undefined) setText("");
     startSend(async () => {
       addOptimistic(t);
-      const r = await sendMessageAction(threadId, t);
-      if (!r.ok) {
-        setError(r.error ?? "تعذّر الإرسال");
+      let err: string | undefined;
+      let saved = false; // the lawyer's message is in the thread
+      if (threadId) {
+        const r = await sendMessageAction(threadId, t, mode);
+        err = r.error;
+        saved = !!r.saved;
+      } else {
+        const r = await composerSendAction({ caseId, hearingId: hearing?.id }, t, mode);
+        err = r.error;
+        saved = !!r.threadId;
+        if (r.threadId) open(r.threadId);
+      }
+      if (err) {
+        setError(err);
         // not in the thread (session expired, thread missing…): give the text back instead of losing it
-        if (!r.saved) setText((cur) => cur || t);
+        if (!saved) setText((cur) => cur || t);
       }
       router.refresh();
     });
@@ -94,12 +117,18 @@ export function ChatThread({ threadId, caseId, items, lookup, docs = {}, initial
     setError(null);
     const fd = new FormData();
     fd.set("file", f);
-    fd.set("threadId", threadId);
-    if (caseId) fd.set("caseId", caseId);
     startUpload(async () => {
       try {
-        const r = await uploadDocumentAction(fd);
-        if (!r.ok) setError(`لم يُرفع «${f.name}»: ${r.error ?? "حدث خطأ"}`);
+        let r: { ok?: boolean; error?: string; threadId?: string };
+        if (threadId) {
+          fd.set("threadId", threadId);
+          if (caseId) fd.set("caseId", caseId);
+          r = await uploadDocumentAction(fd);
+        } else {
+          r = await composerUploadAction({ caseId, hearingId: hearing?.id }, fd);
+          if (r.threadId) open(r.threadId);
+        }
+        if (r.error && !r.threadId && !r.ok) setError(`لم يُرفع «${f.name}»: ${r.error ?? "حدث خطأ"}`);
       } catch {
         setError(`لم يُرفع «${f.name}»: تعذّر الاتصال`);
       }
@@ -115,67 +144,70 @@ export function ChatThread({ threadId, caseId, items, lookup, docs = {}, initial
   const status = sending ? "Clausia بيكتب…" : uploading ? reading : null;
 
   return (
-    <div className="flex flex-1 flex-col">
-      {shown.length === 0 ? (
-        <ClausiaLine>
-          <p>{caseId ? "اكتب لي اللي استجد في القضية دي، أو ارفع ورقة." : "احكي لي عن الموكل أو القضية، أو ارفع الصحيفة."} هجهّز لك اللي هيتحفظ في بطاقة، ومش هيتحفظ حاجة قبل ما تأكد.</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {(caseId ? EXAMPLES_CASE : EXAMPLES_GENERAL).map((x) => (
-              <button key={x} type="button" onClick={() => { setText(x); boxRef.current?.focus(); }} className={CHIP}>{x}</button>
-            ))}
-          </div>
-        </ClausiaLine>
-      ) : null}
+    <>
+      <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        <div className="mx-auto flex w-full max-w-messages flex-col gap-4 px-4 py-4 xl:px-4.5 xl:py-6">
+          {shown.length === 0 ? (
+            <ClausiaLine>
+              <p>{hearing ? `جلسة ${shortDay(hearing.date)}: قول لي حصل إيه فيها، أو ارفع ورقة منها.` : caseId ? "اكتب لي اللي استجد في القضية دي، أو ارفع ورقة." : "أهلًا. احكي لي عن الموكل أو القضية، أو ارفع الصحيفة."} هجهّز لك اللي هيتحفظ في بطاقة، ومش هيتحفظ حاجة قبل ما تأكد.</p>
+            </ClausiaLine>
+          ) : null}
 
-      <ol className="flex flex-col gap-4.5 sm:gap-5.5">
-        {shown.map((m) => (
-          <li key={m.id} className="flex flex-col gap-4.5 sm:gap-5.5">
-            {m.role === "user" ? (
-              <>
-                {m.attachments.length && AUTO_ATTACH.test(m.content) ? null : (
-                  <div className="max-w-bubble self-end whitespace-pre-wrap break-words rounded-lg rounded-bl-sm border border-border-2 bg-card px-4.25 py-3.25 text-md leading-[1.75] text-text dark:bg-card-2 sm:max-w-bubble-sm">
-                    {m.content}
-                  </div>
-                )}
-                {m.attachments.map((a, i) => <AttachmentChip key={a.documentId || a.fileName} name={a.fileName} doc={docs[a.documentId]} tuck={i === 0 && !AUTO_ATTACH.test(m.content)} />)}
-              </>
-            ) : m.content === UNAVAILABLE_TEXT && !m.proposals.length ? (
-              <ClausiaLine><UnavailableNotice /></ClausiaLine>
-            ) : (
-              <ClausiaLine>
-                {m.content.trim() ? <p className="whitespace-pre-wrap break-words"><Prose text={m.content} /></p> : null}
-                {m === lastSpoken && answers.length ? (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {answers.map((a, i) => (
-                      <button key={a.label} type="button" onClick={() => send(a.text)} className={CHIP}>
-                        {a.label}
-                      </button>
+          <ol className="flex flex-col gap-4">
+            {shown.map((m) => (
+              <li key={m.id} className="flex flex-col gap-4">
+                {m.role === "user" ? (
+                  <>
+                    {m.attachments.length && AUTO_ATTACH.test(m.content) ? null : (
+                      <div className="max-w-bubble self-end whitespace-pre-wrap break-words rounded-lg rounded-bl-sm border border-border-2 bg-card px-3.5 py-2.5 text-md leading-[1.7] text-text dark:bg-card-2 xl:max-w-bubble-sm">
+                        {m.content}
+                      </div>
+                    )}
+                    {m.attachments.map((a, i) => <AttachmentChip key={a.documentId || a.fileName} name={a.fileName} doc={docs[a.documentId]} tuck={i === 0 && !AUTO_ATTACH.test(m.content)} />)}
+                  </>
+                ) : m.content === UNAVAILABLE_TEXT && !m.proposals.length ? (
+                  <ClausiaLine><UnavailableNotice /></ClausiaLine>
+                ) : (
+                  <ClausiaLine>
+                    {m.content.trim() ? <p className="whitespace-pre-wrap break-words"><Prose text={m.content} /></p> : null}
+                    {m === lastSpoken && answers.length ? (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {answers.map((a) => (
+                          <button key={a.label} type="button" onClick={() => send(a.text)} className={CHIP}>
+                            {a.label}
+                          </button>
+                        ))}
+                        <button type="button" onClick={() => boxRef.current?.focus()} className={CHIP}>هكتب الرد</button>
+                      </div>
+                    ) : null}
+                    {m.proposals.map((p, i) => (
+                      <div key={p.id} className={cx((m.content.trim() || i > 0) && "mt-3.5")}><ProposalCard proposal={p} lookup={lookup} /></div>
                     ))}
-                    <button type="button" onClick={() => boxRef.current?.focus()} className={CHIP}>هكتب الرد</button>
-                  </div>
-                ) : null}
-                {m.proposals.map((p, i) => (
-                  <div key={p.id} className={cx((m.content.trim() || i > 0) && "mt-3.5")}><ProposalCard proposal={p} lookup={lookup} /></div>
-                ))}
-              </ClausiaLine>
-            )}
-          </li>
-        ))}
-        {status ? (
-          <li aria-live="polite">
-            <ClausiaLine><p className="animate-pulse text-text-3">{status}</p></ClausiaLine>
-          </li>
-        ) : null}
-      </ol>
-      <div ref={endRef} />
+                  </ClausiaLine>
+                )}
+              </li>
+            ))}
+            {status ? (
+              <li aria-live="polite">
+                <ClausiaLine><p className="animate-pulse text-text-3">{status}</p></ClausiaLine>
+              </li>
+            ) : null}
+          </ol>
 
-      <div className="min-h-7.5 flex-1" />
+          {chips.length && !busy ? (
+            <div className="flex flex-wrap gap-1.5">
+              {chips.map((c) => (
+                <button key={c.label} type="button" onClick={() => { setText(c.text); boxRef.current?.focus(); }} className={CHIP}>{c.label}</button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </div>
 
-      {/* the thread's own composer (optimistic send + upload): the v2 two-row glass box of the Chat mockups */}
-      <ChatComposer id={threadId} value={text} onChange={setText} onSend={() => send()} onFile={onFile}
+      <ChatComposer id="panel" value={text} onChange={setText} onSend={() => send()} onFile={onFile}
         sending={sending} busy={busy} status={status} error={error} onDismissError={() => setError(null)}
-        placeholder={shown.length ? "ردّ على Clausia…" : "اكتب لـ Clausia…"} boxRef={boxRef} fileRef={fileRef} />
-    </div>
+        placeholder={modePlaceholder(mode, !!caseId)} mode={mode} onMode={setMode} boxRef={boxRef} fileRef={fileRef} />
+    </>
   );
 }
 
@@ -198,10 +230,6 @@ function quickAnswers(text: string): { label: string; text: string }[] {
 /** quick answers and starters: glass chips (floating controls), 36px tall (44px hit area) */
 const CHIP = "tap glass inline-flex min-h-9 shrink-0 items-center rounded-full px-3.75 py-1 text-sm font-medium glass-icon transition hover:text-text";
 
-/**
- * Clausia's turn: the «C» mark and its text (cards go under the text). Desktop: the mark beside the text.
- * Mobile: a «C · Clausia» label row, the text full width under it.
- */
 /** The model could not answer (402 / 429 / 5xx / timeout): one calm notice, not a Clausia sentence. */
 function UnavailableNotice() {
   return (
@@ -211,16 +239,9 @@ function UnavailableNotice() {
   );
 }
 
+/** Clausia's turn: its text full width (the panel header already carries the «C» mark); cards go under the text. */
 function ClausiaLine({ children }: { children: ReactNode }) {
-  return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
-      <div className="flex items-center gap-2 self-start">
-        <span aria-hidden className="mark font-num inline-flex size-6 shrink-0 items-center justify-center rounded-sm text-xs font-extrabold sm:size-7 sm:text-sm">C</span>
-        <span className="text-sm font-bold leading-[normal] text-title sm:hidden">Clausia</span>
-      </div>
-      <div className="min-w-0 flex-1 text-md leading-[1.8] text-text sm:pt-0.75">{children}</div>
-    </div>
-  );
+  return <div className="min-w-0 text-md leading-[1.9] text-text">{children}</div>;
 }
 
 const pagesLabel = (n: number) => (n === 1 ? "صفحة واحدة" : n === 2 ? "صفحتين" : n <= 10 ? `${n} صفحات` : `${n} صفحة`);
@@ -230,7 +251,7 @@ const READ: Record<ThreadDoc["status"], string> = { done: "اتقرت", reading:
 function AttachmentChip({ name, doc, tuck }: { name: string; doc?: ThreadDoc; tuck?: boolean }) {
   const meta = doc ? [doc.pages ? pagesLabel(doc.pages) : null, READ[doc.status]].filter(Boolean).join(" · ") : null;
   return (
-    <div className={cx("flex max-w-bubble items-center gap-2.5 self-end rounded-md border border-border-2 bg-card py-2 pe-2.5 ps-3.5 dark:bg-card-2 sm:max-w-bubble-sm", tuck && "-mt-1.5")}>
+    <div className={cx("flex max-w-bubble items-center gap-2.5 self-end rounded-md border border-border-2 bg-card py-2 pe-2.5 ps-3.5 dark:bg-card-2 xl:max-w-bubble-sm", tuck && "-mt-1.5")}>
       <span aria-hidden className="flex h-9 w-7.5 shrink-0 items-center justify-center rounded-sm bg-paper-thumb text-xs font-extrabold text-paper-thumb-ink">
         {doc?.image ? "IMG" : "PDF"}
       </span>
