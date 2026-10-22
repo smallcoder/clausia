@@ -31,7 +31,7 @@ export type LlmMessage =
 
 /** Who/what the call is for — goes to the llm_calls log. */
 export interface CallMeta {
-  purpose: "chat" | "doc_read_page" | "doc_extract" | "test";
+  purpose: "chat" | "doc_read_page" | "doc_extract" | "doc_column" | "test";
   officeId?: string | null;
   userId?: string | null;
   threadId?: string | null;
