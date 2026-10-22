@@ -8,7 +8,7 @@ function initialsOf(name: string) {
   return (w.length > 1 ? w[0][0] + w[1][0] : (w[0] ?? "C").slice(0, 2)) || "C";
 }
 
-/** Shell: the v2 top bar; each page owns its width (pages ≤1360px, Home/Chat 960px, composer 780px). */
+/** Shell: the v2 top bar; each page owns its width (pages 1280px of content, Home/Chat 960px, docked composer 780px); the top bar takes the same column as the page. */
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const db = await createClient();
   const session = await getSession(db);

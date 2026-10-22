@@ -10,8 +10,12 @@ import type { CaseRow } from "@/lib/cases";
 import { addDaysIso } from "@/lib/dates";
 import { CASE_STATUS } from "@/lib/labels";
 
-/** md+ column template, shared by the header and every row so they line up. */
-export const COLS = "md:grid md:grid-cols-[minmax(0,2.3fr)_minmax(0,1.9fr)_minmax(0,0.7fr)_minmax(0,0.9fr)] md:gap-6";
+/**
+ * md+ column template, shared by the header and every row so they line up. Fixed widths as the mockup draws them
+ * (HeadLightCases): case 460 / court 400 / next hearing 150 / the rest for the marker, 24px apart. The tracks shrink
+ * together on a narrower screen, but the marker column never goes below 120px (the mockup's own template lets it hit 0).
+ */
+export const COLS = "md:grid md:grid-cols-[minmax(0,460px)_minmax(0,400px)_150px_minmax(120px,1fr)] md:gap-6";
 
 /** «client — subject». DB titles read «subject — client ضد opponent», so the subject is the part before « — ». */
 export function caseTitle(r: CaseRow): string {

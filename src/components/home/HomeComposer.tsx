@@ -1,8 +1,9 @@
 "use client";
 /**
  * The Home composer, drawn as docs/design/*Home.dc.html (a Home-only variant of shell/Composer's hero size):
- * starter chips, then the glass box — C mark + 2-line field, attach and mic at the start, send at the end.
- * Desktop: the «Clausia بتجهّز…» line under the box, no fade. Mobile: the short reminder sits inside the
+ * starter chips, then the glass box — C mark + 2-line field, attach at the start, send at the end (no mic, owner decision).
+ * Desktop: the «Clausia بتجهّز…» line under the box; the composer is part of the Home stack and sticks to the bottom
+ * only when the content is long (see Dock). Mobile: the short reminder sits inside the
  * button row, the dock fades the page under it. Same send / upload actions as the shared composer.
  */
 import { ArrowUp, File, Gavel, List, Plus, User } from "lucide-react";
@@ -139,24 +140,40 @@ function Round({ label, onClick, disabled, children }: { label: string; onClick?
 }
 
 /**
- * Fixed to the viewport bottom like the mockup (780px column), with a spacer of the same measured height in the
- * page flow so the last card never sits under it. Mobile: 40/12/18 padding over the page fade; desktop: 0/24/24, no fade.
+ * Mobile: fixed to the viewport bottom (40/12/18 padding over the page fade), with a spacer of the same measured
+ * height in the page flow so the last card never sits under it.
+ * Desktop: part of the Home stack (GridLightHome): 44px under the cards, the full column wide, right under the
+ * content, and `sticky bottom-0`, so with long content it stays at the bottom of the screen. While it is stuck the
+ * page fades out under it. The 64px block after it (plus the dock's 24px padding) is the top bar's 88px: it makes
+ * the stack centre in the whole screen as the mockup draws it, although the top bar sits in the flow here.
  */
 function Dock({ children }: { children: React.ReactNode }) {
   const box = useRef<HTMLDivElement>(null);
+  const end = useRef<HTMLDivElement>(null);
   const [h, setH] = useState(0);
+  const [stuck, setStuck] = useState(false);
   useEffect(() => {
     if (!box.current) return;
     const ro = new ResizeObserver(([e]) => setH(Math.ceil(e.borderBoxSize?.[0]?.blockSize ?? e.target.getBoundingClientRect().height)));
     ro.observe(box.current);
     return () => ro.disconnect();
   }, []);
+  // `end` sits where the dock would be if it did not stick: when that is below the screen, the dock is stuck
+  useEffect(() => {
+    if (!end.current) return;
+    const io = new IntersectionObserver(([e]) => setStuck(!e.isIntersecting && e.boundingClientRect.top > 0));
+    io.observe(end.current);
+    return () => io.disconnect();
+  }, []);
   return (
     <>
-      <div aria-hidden style={{ height: h }} className="shrink-0" />
-      <div ref={box} className="fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(18px+env(safe-area-inset-bottom))] pt-10 bg-fade sm:px-6 sm:pb-6 sm:pt-15" /* ds-allow: safe-area inset needs calc() */>
-        <div className="mx-auto w-full max-w-composer">{children}</div>
+      <div aria-hidden style={{ height: h }} className="shrink-0 sm:hidden" />
+      {/* desktop fade, only while stuck: the fade token is solid for its lower 55%, so this is sized to make that solid part start at the top of the chips (nothing shows through behind them) */}
+      <div aria-hidden style={{ height: Math.ceil(h / 0.55) }} className={`bg-fade pointer-events-none fixed inset-x-0 bottom-0 z-20 hidden transition-opacity sm:block ${stuck ? "opacity-100" : "opacity-0"}`} />
+      <div ref={box} className="fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(18px+env(safe-area-inset-bottom))] pt-10 max-sm:bg-fade sm:sticky sm:inset-x-auto sm:mt-11 sm:px-0 sm:pb-6 sm:pt-0" /* ds-allow: safe-area inset needs calc() */>
+        {children}
       </div>
+      <div ref={end} aria-hidden className="hidden h-16 shrink-0 sm:block" />
     </>
   );
 }

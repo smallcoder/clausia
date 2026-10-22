@@ -1,5 +1,5 @@
 // The conversations with Clausia. No mockup draws this page, so it uses the thread's style (owner decision
-// 2026-10-21): the 820px column, the thread's small centered glass pill instead of a page header, one solid row per
+// 2026-10-21): the 960px column (Home and Chat share it), the thread's small centered glass pill instead of a page header, one solid row per
 // conversation (latest first), and the thread's two-row glass composer for a new one.
 import { ChevronLeft, FolderClosed } from "lucide-react";
 import Link from "next/link";
@@ -50,7 +50,7 @@ export default async function ChatHome() {
   const waitingCount = rows.filter((r) => waiting.has(r.t.id)).length;
 
   return (
-    <div className="mx-auto flex w-full flex-1 flex-col gap-4.5 px-3.5 pt-2.5 sm:max-w-chat sm:gap-5.5 sm:px-6 sm:pt-5">
+    <div className="mx-auto flex w-full flex-1 flex-col gap-4.5 px-3.5 pt-2.5 sm:max-w-narrow sm:gap-5.5 sm:px-6 sm:pt-5">
       {/* the thread's header language: one small centered glass pill (what this is · how many), nothing else */}
       <div className="glass inline-flex h-8 max-w-full items-center gap-2 self-center rounded-md px-3.5 text-sm">
         <h1 className="shrink-0 font-semibold text-text">المحادثات</h1>

@@ -251,10 +251,9 @@
  * A width used in two or more places for the same job is named here; a one-off uses a spacing step or carries a ds-allow reason.
  */
 @theme {
-  --container-page: 1360px;        /* desktop page column: Cases, Case, Roll */
-  --container-home: 960px;         /* Home column */
-  --container-chat: 820px;         /* Chat column */
-  --container-composer: 780px;     /* the composer, on Home and over a chat */
+  --container-page: 1360px;        /* the 1280 page column (Cases, Case, Roll) plus its 40px side gutters; the top bar uses the same box */
+  --container-narrow: 960px;       /* the Home and Chat column: 912 of content plus 24px side gutters; the top bar uses the same box */
+  --container-composer: 780px;     /* the docked composer on inner pages and over a chat */
   --container-bubble: 88%;         /* a chat bubble's widest share of the column, on mobile */
   --container-bubble-sm: 72%;      /* the same on desktop */
 }
@@ -310,8 +309,8 @@ body {
   .tap { position: relative; }
   .tap::after { content: ""; position: absolute; inset-block: min(0px, calc((100% - 44px) / 2)); inset-inline: min(0px, calc((100% - 44px) / 2)); }
 }
-/* the soft fade behind the floating composer */
-.bg-fade { background: var(--fade); }
+/* the soft fade behind the floating composer (a utility, so a variant like max-sm:bg-fade works) */
+@utility bg-fade { background: var(--fade); }
 /* big light stat numbers */
 @layer components {
 .stat-num { font-family: -apple-system, "SF Pro Display", system-ui, var(--font-inter), sans-serif; font-weight: 300; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
