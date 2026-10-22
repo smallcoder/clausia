@@ -1613,6 +1613,64 @@ export type Database = {
         }
         Relationships: []
       }
+      proposal_events: {
+        Row: {
+          action: string
+          created_at: string
+          created_by: string | null
+          id: string
+          office_id: string
+          op_ids: string[]
+          proposal_id: string
+          undo_data: Json | null
+          undoes_event_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          office_id?: string
+          op_ids: string[]
+          proposal_id: string
+          undo_data?: Json | null
+          undoes_event_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          office_id?: string
+          op_ids?: string[]
+          proposal_id?: string
+          undo_data?: Json | null
+          undoes_event_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "proposal_events_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposal_events_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "proposals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proposal_events_undoes_event_id_fkey"
+            columns: ["undoes_event_id"]
+            isOneToOne: false
+            referencedRelation: "proposal_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       proposals: {
         Row: {
           case_id: string | null
