@@ -168,8 +168,8 @@ function Dock({ children }: { children: React.ReactNode }) {
   return (
     <>
       <div aria-hidden style={{ height: h }} className="shrink-0 sm:hidden" />
-      {/* desktop fade, only while stuck; its top edge is 60px over the dock, as the mobile dock's pt-15 */}
-      <div aria-hidden style={{ height: h + 60 }} className={`bg-fade pointer-events-none fixed inset-x-0 bottom-0 z-20 hidden transition-opacity sm:block ${stuck ? "opacity-100" : "opacity-0"}`} />
+      {/* desktop fade, only while stuck: the fade token is solid for its lower 55%, so this is sized to make that solid part start at the top of the chips (nothing shows through behind them) */}
+      <div aria-hidden style={{ height: Math.ceil(h / 0.55) }} className={`bg-fade pointer-events-none fixed inset-x-0 bottom-0 z-20 hidden transition-opacity sm:block ${stuck ? "opacity-100" : "opacity-0"}`} />
       <div ref={box} className="fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(18px+env(safe-area-inset-bottom))] pt-10 max-sm:bg-fade sm:sticky sm:inset-x-auto sm:mt-11 sm:px-0 sm:pb-6 sm:pt-0" /* ds-allow: safe-area inset needs calc() */>
         {children}
       </div>
