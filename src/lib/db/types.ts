@@ -50,6 +50,8 @@ export type Database = {
           office_id: string
           review_status: Database["public"]["Enums"]["item_status"]
           side: Database["public"]["Enums"]["argument_side"]
+          source_char_end: number | null
+          source_char_start: number | null
           source_document_id: string | null
           source_kind: Database["public"]["Enums"]["source_kind"]
           source_message_id: string | null
@@ -67,6 +69,8 @@ export type Database = {
           office_id?: string
           review_status?: Database["public"]["Enums"]["item_status"]
           side?: Database["public"]["Enums"]["argument_side"]
+          source_char_end?: number | null
+          source_char_start?: number | null
           source_document_id?: string | null
           source_kind?: Database["public"]["Enums"]["source_kind"]
           source_message_id?: string | null
@@ -84,6 +88,8 @@ export type Database = {
           office_id?: string
           review_status?: Database["public"]["Enums"]["item_status"]
           side?: Database["public"]["Enums"]["argument_side"]
+          source_char_end?: number | null
+          source_char_start?: number | null
           source_document_id?: string | null
           source_kind?: Database["public"]["Enums"]["source_kind"]
           source_message_id?: string | null
@@ -135,6 +141,8 @@ export type Database = {
           office_id: string
           review_status: Database["public"]["Enums"]["item_status"]
           sort_order: number | null
+          source_char_end: number | null
+          source_char_start: number | null
           source_document_id: string | null
           source_kind: Database["public"]["Enums"]["source_kind"]
           source_message_id: string | null
@@ -154,6 +162,8 @@ export type Database = {
           office_id?: string
           review_status?: Database["public"]["Enums"]["item_status"]
           sort_order?: number | null
+          source_char_end?: number | null
+          source_char_start?: number | null
           source_document_id?: string | null
           source_kind?: Database["public"]["Enums"]["source_kind"]
           source_message_id?: string | null
@@ -173,6 +183,8 @@ export type Database = {
           office_id?: string
           review_status?: Database["public"]["Enums"]["item_status"]
           sort_order?: number | null
+          source_char_end?: number | null
+          source_char_start?: number | null
           source_document_id?: string | null
           source_kind?: Database["public"]["Enums"]["source_kind"]
           source_message_id?: string | null
@@ -226,6 +238,8 @@ export type Database = {
           representative: string | null
           review_status: Database["public"]["Enums"]["item_status"]
           role: Database["public"]["Enums"]["party_role"]
+          source_char_end: number | null
+          source_char_start: number | null
           source_document_id: string | null
           source_kind: Database["public"]["Enums"]["source_kind"]
           source_message_id: string | null
@@ -246,6 +260,8 @@ export type Database = {
           representative?: string | null
           review_status?: Database["public"]["Enums"]["item_status"]
           role: Database["public"]["Enums"]["party_role"]
+          source_char_end?: number | null
+          source_char_start?: number | null
           source_document_id?: string | null
           source_kind?: Database["public"]["Enums"]["source_kind"]
           source_message_id?: string | null
@@ -266,6 +282,8 @@ export type Database = {
           representative?: string | null
           review_status?: Database["public"]["Enums"]["item_status"]
           role?: Database["public"]["Enums"]["party_role"]
+          source_char_end?: number | null
+          source_char_start?: number | null
           source_document_id?: string | null
           source_kind?: Database["public"]["Enums"]["source_kind"]
           source_message_id?: string | null
@@ -320,6 +338,8 @@ export type Database = {
           kind: string | null
           office_id: string
           review_status: Database["public"]["Enums"]["item_status"]
+          source_char_end: number | null
+          source_char_start: number | null
           source_document_id: string | null
           source_kind: Database["public"]["Enums"]["source_kind"]
           source_message_id: string | null
@@ -336,6 +356,8 @@ export type Database = {
           kind?: string | null
           office_id?: string
           review_status?: Database["public"]["Enums"]["item_status"]
+          source_char_end?: number | null
+          source_char_start?: number | null
           source_document_id?: string | null
           source_kind?: Database["public"]["Enums"]["source_kind"]
           source_message_id?: string | null
@@ -352,6 +374,8 @@ export type Database = {
           kind?: string | null
           office_id?: string
           review_status?: Database["public"]["Enums"]["item_status"]
+          source_char_end?: number | null
+          source_char_start?: number | null
           source_document_id?: string | null
           source_kind?: Database["public"]["Enums"]["source_kind"]
           source_message_id?: string | null
@@ -408,6 +432,8 @@ export type Database = {
           office_id: string
           previous_stage_case_id: string | null
           review_status: Database["public"]["Enums"]["item_status"]
+          source_char_end: number | null
+          source_char_start: number | null
           source_document_id: string | null
           source_kind: Database["public"]["Enums"]["source_kind"]
           source_message_id: string | null
@@ -436,6 +462,8 @@ export type Database = {
           office_id?: string
           previous_stage_case_id?: string | null
           review_status?: Database["public"]["Enums"]["item_status"]
+          source_char_end?: number | null
+          source_char_start?: number | null
           source_document_id?: string | null
           source_kind?: Database["public"]["Enums"]["source_kind"]
           source_message_id?: string | null
@@ -464,6 +492,8 @@ export type Database = {
           office_id?: string
           previous_stage_case_id?: string | null
           review_status?: Database["public"]["Enums"]["item_status"]
+          source_char_end?: number | null
+          source_char_start?: number | null
           source_document_id?: string | null
           source_kind?: Database["public"]["Enums"]["source_kind"]
           source_message_id?: string | null
@@ -622,6 +652,8 @@ export type Database = {
           office_id: string
           phone: string | null
           review_status: Database["public"]["Enums"]["item_status"]
+          source_char_end: number | null
+          source_char_start: number | null
           source_document_id: string | null
           source_kind: Database["public"]["Enums"]["source_kind"]
           source_message_id: string | null
@@ -641,6 +673,8 @@ export type Database = {
           office_id?: string
           phone?: string | null
           review_status?: Database["public"]["Enums"]["item_status"]
+          source_char_end?: number | null
+          source_char_start?: number | null
           source_document_id?: string | null
           source_kind?: Database["public"]["Enums"]["source_kind"]
           source_message_id?: string | null
@@ -660,6 +694,8 @@ export type Database = {
           office_id?: string
           phone?: string | null
           review_status?: Database["public"]["Enums"]["item_status"]
+          source_char_end?: number | null
+          source_char_start?: number | null
           source_document_id?: string | null
           source_kind?: Database["public"]["Enums"]["source_kind"]
           source_message_id?: string | null
@@ -854,6 +890,8 @@ export type Database = {
           decision_created_by_kind:
             | Database["public"]["Enums"]["actor_kind"]
             | null
+          decision_source_char_end: number | null
+          decision_source_char_start: number | null
           decision_source_document_id: string | null
           decision_source_kind:
             | Database["public"]["Enums"]["source_kind"]
@@ -872,6 +910,8 @@ export type Database = {
           previous_hearing_id: string | null
           purpose: string | null
           review_status: Database["public"]["Enums"]["item_status"]
+          source_char_end: number | null
+          source_char_start: number | null
           source_document_id: string | null
           source_kind: Database["public"]["Enums"]["source_kind"]
           source_message_id: string | null
@@ -887,6 +927,8 @@ export type Database = {
           decision_created_by_kind?:
             | Database["public"]["Enums"]["actor_kind"]
             | null
+          decision_source_char_end?: number | null
+          decision_source_char_start?: number | null
           decision_source_document_id?: string | null
           decision_source_kind?:
             | Database["public"]["Enums"]["source_kind"]
@@ -905,6 +947,8 @@ export type Database = {
           previous_hearing_id?: string | null
           purpose?: string | null
           review_status?: Database["public"]["Enums"]["item_status"]
+          source_char_end?: number | null
+          source_char_start?: number | null
           source_document_id?: string | null
           source_kind?: Database["public"]["Enums"]["source_kind"]
           source_message_id?: string | null
@@ -920,6 +964,8 @@ export type Database = {
           decision_created_by_kind?:
             | Database["public"]["Enums"]["actor_kind"]
             | null
+          decision_source_char_end?: number | null
+          decision_source_char_start?: number | null
           decision_source_document_id?: string | null
           decision_source_kind?:
             | Database["public"]["Enums"]["source_kind"]
@@ -938,6 +984,8 @@ export type Database = {
           previous_hearing_id?: string | null
           purpose?: string | null
           review_status?: Database["public"]["Enums"]["item_status"]
+          source_char_end?: number | null
+          source_char_start?: number | null
           source_document_id?: string | null
           source_kind?: Database["public"]["Enums"]["source_kind"]
           source_message_id?: string | null
@@ -1019,6 +1067,8 @@ export type Database = {
           operative_text: string
           outcome: string | null
           review_status: Database["public"]["Enums"]["item_status"]
+          source_char_end: number | null
+          source_char_start: number | null
           source_document_id: string | null
           source_kind: Database["public"]["Enums"]["source_kind"]
           source_message_id: string | null
@@ -1040,6 +1090,8 @@ export type Database = {
           operative_text: string
           outcome?: string | null
           review_status?: Database["public"]["Enums"]["item_status"]
+          source_char_end?: number | null
+          source_char_start?: number | null
           source_document_id?: string | null
           source_kind?: Database["public"]["Enums"]["source_kind"]
           source_message_id?: string | null
@@ -1061,6 +1113,8 @@ export type Database = {
           operative_text?: string
           outcome?: string | null
           review_status?: Database["public"]["Enums"]["item_status"]
+          source_char_end?: number | null
+          source_char_start?: number | null
           source_document_id?: string | null
           source_kind?: Database["public"]["Enums"]["source_kind"]
           source_message_id?: string | null
@@ -1306,6 +1360,8 @@ export type Database = {
           p_hearing_id: string
           p_next_date?: string
           p_next_requirements?: string
+          p_source_char_end?: number
+          p_source_char_start?: number
           p_source_document_id?: string
           p_source_kind?: Database["public"]["Enums"]["source_kind"]
           p_source_message_id?: string
