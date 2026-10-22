@@ -52,3 +52,14 @@ Schema: `supabase/migrations/20261020150000_base_schema.sql`. Types: `src/lib/db
 ## getCaseFile(caseId)
 `src/lib/case-file.ts` — the whole case as one JSON (`CaseFile` type, `schema_version: 1`). Confirmed items in
 their sections; `suggested` items listed in `pending_suggestions`. This is what the opinion LLM reads.
+
+## Appeal deadlines (item 5, behind `NEXT_PUBLIC_FEATURE_DEADLINES`)
+Migrations `20261022170000_deadlines.sql` and `20261022170100_holiday_reports_withdraw.sql` (additive).
+- `case_deadlines` (office table, standard office RLS): one row per saved deadline of a judgment (`kind` appeal | cassation, `unique (judgment_id, kind)`).
+  `days` is read by code from the article text, `raw_last_day = start_date + days` (art. 15), `last_day` after moving off a Friday / an approved holiday (art. 18).
+  The row keeps the article's `version_id`, `article_sha256` and the verbatim `article_text` it was computed from, `urgent`, `start_basis`
+  (`judgment_date` | `service_date`, art. 213), `holidays_reviewed` (false = the card said «راجع الإجازات»), and `reminders int[]` (days before the last day).
+  Written only by `applyOp('add_deadline')` (code-made, internal tool) after the lawyer's tap.
+- `holidays` (SHARED): everyone reads; insert / update / delete only `is_admin()`. Only `approved` rows are used in a computation.
+- `holiday_reports` (office): an office inserts (pending only) and reads its own and may withdraw a pending one; an admin reads all and decides.
+- `app_admins` (SHARED): no policy and no grant: not readable or writable from the app. `is_admin()` (security definer) reads it.

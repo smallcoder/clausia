@@ -125,7 +125,7 @@ if (caseId) {
   // app_admins: no one can read or write it from the app (not even an admin)
   for (const [name, C, uid] of [["DEMO", A, uidA], ["OTHER", B, uidB]] as const) {
     const ins = await C.from("app_admins").insert({ user_id: uid }).select("user_id");
-    check(`${name} cannot insert into app_admins`, !!ins.error && !ins.data?.length, ins.error?.message ?? "inserted!");
+    check(`${name} cannot insert into app_admins`, !ins.data?.length && !!ins.error, ins.error?.message ?? "inserted!");
     const rd = await C.from("app_admins").select("user_id");
     check(`${name} cannot read app_admins`, !!rd.error || !rd.data?.length, rd.error?.message ?? `${rd.data?.length} rows`);
     const up = await C.from("app_admins").update({ created_at: new Date().toISOString() }).eq("user_id", uidA).select("user_id");
@@ -138,7 +138,7 @@ if (caseId) {
   const { count: hCount } = await B.from("holidays").select("id", { count: "exact", head: true });
   check("OTHER reads the shared holidays", (hCount ?? 0) > 0, `${hCount} rows`);
   const hi = await B.from("holidays").insert({ holiday_date: "2099-01-01", name: "اختبار اختراق", status: "approved" }).select("id");
-  check("OTHER (not an admin) cannot insert a holiday", !!hi.error && !hi.data?.length, hi.error?.message ?? "inserted!");
+  check("OTHER (not an admin) cannot insert a holiday", !hi.data?.length && !!hi.error, hi.error?.message ?? "inserted!");
   const { data: someH } = await A.from("holidays").select("id, name, status").limit(1).single();
   const hu = await B.from("holidays").update({ status: "approved", name: "اختبار اختراق" }).eq("id", someH!.id).select("id");
   const hd = await B.from("holidays").delete().eq("id", someH!.id).select("id");

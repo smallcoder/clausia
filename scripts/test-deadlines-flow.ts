@@ -72,12 +72,12 @@ try {
   const jp2 = await judgmentCard(b2.caseId, b2.threadId, "20/10/2026");
   await decideProposal(D, jp2.id, { mode: "confirm" });
   const cards = await cardsOf(b2.threadId);
-  check(cards.length === 1 && cards[0].status === "pending" && cards[0].message_id, "a confirmed final judgment proposes ONE pending card, with the assistant line above it");
+  check(cards.length === 1 && cards[0].status === "pending" && !!cards[0].message_id, "a confirmed final judgment proposes ONE pending card, with the assistant line above it");
   check((await deadlinesOf(b2.caseId)).length === 0, "nothing is saved before the tap");
   const judgmentId = (await db.from("judgments").select("id").eq("case_id", b2.caseId).single()).data!.id;
   const again = await proposeDeadlinesForJudgment(D, { judgmentId, threadId: b2.threadId });
   check(!again.proposed && again.why === "a card is waiting", "a second proposal for the same judgment is not made while one waits", again.proposed ? "" : again.why);
-  const entry = (await loadDeadlineCards(D, [{ ...(cards[0] as never) }]))[cards[0].id];
+  const entry = (await loadDeadlineCards(D, [cards[0] as never]))[cards[0].id];
   const card = "card" in entry ? entry.card : null;
   const ap = card?.rows[0];
   check(!!card && ap?.kind === "appeal" && ap.state === "ready" && ap.days === 40 && ap.last_day === "2026-11-29" && ap.review_holidays, "the card: 40 days from art. 227, last day 29/11/2026, «راجع الإجازات» (no approved holidays yet)", JSON.stringify(ap));
@@ -98,7 +98,7 @@ try {
   check(svc.save?.start_basis === "service_date" && svc.save.start_date === "2026-10-21" && svc.save.last_day === "2026-11-30" && !svc.card.startError, "not حضوري: start = the typed service date, last day 30/11/2026", JSON.stringify(svc.save?.last_day));
   // urgent
   const urg = await buildDeadlines(D, { caseId: b2.caseId, judgmentId, kind: "appeal", startBasis: "judgment_date", urgent: true, reminders: [] });
-  check(urg.save?.days === 15 && urg.save.urgent && urg.save.last_day === "2026-11-04", "urgent: 15 days from the urgent sentence of art. 227, last day 4/11/2026");
+  check(urg.save?.days === 15 && !!urg.save.urgent && urg.save.last_day === "2026-11-04", "urgent: 15 days from the urgent sentence of art. 227, last day 4/11/2026");
 
   // the tap: confirm with the lawyer's inputs (urgent, reminders 3 and 1); the numbers are recomputed, not taken from the card
   const done = await decideProposal(D, cards[0].id, { mode: "confirm", opIds: ["op1"], edits: { op1: { urgent: true, reminders: [3, 1, 3] } } });
@@ -164,7 +164,7 @@ try {
     const jf = await applyOp(D, "add_judgment", { case: f.caseId, date: "22/1/2031", kind: "final", operative_text: "حكمت المحكمة برفض الدعوى", quote: "حكمت" }, { review_status: "confirmed", created_by_kind: "lawyer", source_kind: "manual" });
     // 22/1/2031 + 40 = 3/3/2031 (a Monday): a draft holiday there does not move it, and 2031 has an approved holiday so no «راجع الإجازات»
     const r1 = await buildDeadlines(D, { caseId: f.caseId, judgmentId: jf.id, kind: "appeal", startBasis: "judgment_date", urgent: false, reminders: [] });
-    check(r1.save?.raw_last_day === "2031-03-03" && r1.save.last_day === "2031-03-03" && r1.save.holidays_reviewed, "a DRAFT holiday on the last day does not move it; a year with an approved holiday is not flagged", JSON.stringify(r1.save?.last_day));
+    check(r1.save?.raw_last_day === "2031-03-03" && r1.save.last_day === "2031-03-03" && !!r1.save.holidays_reviewed, "a DRAFT holiday on the last day does not move it; a year with an approved holiday is not flagged", JSON.stringify(r1.save?.last_day));
     await db.from("holidays").update({ status: "approved" }).eq("id", h.data!.id);
     const r2 = await buildDeadlines(D, { caseId: f.caseId, judgmentId: jf.id, kind: "appeal", startBasis: "judgment_date", urgent: false, reminders: [] });
     check(r2.save?.last_day === "2031-03-05", "after approval: 3/3 and 4/3 are holidays, the last day moves to Wednesday 5/3/2031", JSON.stringify(r2.save?.last_day));
