@@ -57,7 +57,7 @@ function date(v: string | undefined) {
 function span(p: Provenance): { source_char_start: number | null; source_char_end: number | null } {
   const s = p.source_char_start;
   const e = p.source_char_end;
-  const ok = p.source_kind === "document" && Number.isInteger(s) && Number.isInteger(e) && s! >= 0 && e! > s!;
+  const ok = p.source_kind === "document" && !!p.source_document_id && Number.isInteger(s) && Number.isInteger(e) && s! >= 0 && e! > s!;
   return ok ? { source_char_start: s!, source_char_end: e! } : { source_char_start: null, source_char_end: null };
 }
 
