@@ -1486,6 +1486,47 @@ export type Database = {
           },
         ]
       }
+      reminders: {
+        Row: {
+          created_at: string
+          created_by: string
+          dismissed_at: string | null
+          for_date: string
+          id: string
+          kind: string
+          office_id: string
+          remind_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          dismissed_at?: string | null
+          for_date: string
+          id?: string
+          kind?: string
+          office_id?: string
+          remind_at: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          dismissed_at?: string | null
+          for_date?: string
+          id?: string
+          kind?: string
+          office_id?: string
+          remind_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reminders_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
