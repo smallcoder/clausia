@@ -7,7 +7,8 @@
  *   editCell      the wording of a cell's answer. The cell becomes the lawyer's (created_by_kind 'lawyer', confirmed); its page,
  *                 quote and span are kept. Only a cell that has an answer: an answer needs a page and a quote (table check
  *                 doc_column_cells_answer_source_ck), and a «مش مذكور» cell has none.
- *   confirmCell   a suggested cell becomes confirmed (one tap)
+ *   confirmCell   a suggested cell becomes confirmed (one tap). When no cell of a suggested column is left suggested, the column
+ *                 is confirmed too (its «مقترح» mark goes)
  *   removeColumn  deletes the column; its cells go with it (on delete cascade). Refused unless `confirmed` is true: the screen
  *                 sets it only from the confirm step's button.
  */
@@ -28,11 +29,17 @@ async function columnCase(db: Db, columnId: string): Promise<string | null> {
   return data?.case_id ?? null;
 }
 
-/** the cell's case and whether it has an answer, or null when the cell is not there for this lawyer */
-async function cell(db: Db, cellId: string): Promise<{ caseId: string; hasAnswer: boolean } | null> {
-  const { data } = await db.from("doc_column_cells").select("answer, doc_columns(case_id)").eq("id", cellId).maybeSingle();
+/** the cell's column, case and whether it has an answer, or null when the cell is not there for this lawyer */
+async function cell(db: Db, cellId: string): Promise<{ columnId: string; caseId: string; hasAnswer: boolean } | null> {
+  const { data } = await db.from("doc_column_cells").select("column_id, answer, doc_columns(case_id)").eq("id", cellId).maybeSingle();
   const col = Array.isArray(data?.doc_columns) ? data?.doc_columns[0] : data?.doc_columns;
-  return data && col ? { caseId: col.case_id, hasAnswer: data.answer !== null } : null;
+  return data && col ? { columnId: data.column_id, caseId: col.case_id, hasAnswer: data.answer !== null } : null;
+}
+
+/** a column saved as suggestions becomes confirmed when none of its cells is still suggested (its «مقترح» mark goes) */
+async function settleColumn(db: Db, columnId: string): Promise<void> {
+  const { data } = await db.from("doc_column_cells").select("id").eq("column_id", columnId).eq("review_status", "suggested").limit(1);
+  if (!data?.length) await db.from("doc_columns").update({ review_status: "confirmed" }).eq("id", columnId).eq("review_status", "suggested");
 }
 
 export async function renameColumn(db: Db, columnId: string, title: string): Promise<EditResult> {
@@ -55,14 +62,18 @@ export async function editCell(db: Db, cellId: string, answer: string): Promise<
   // the lawyer's wording; the page, quote and span stay (they are where the paper says it)
   const { error, data } = await db.from("doc_column_cells")
     .update({ answer: a, created_by_kind: "lawyer", review_status: "confirmed" }).eq("id", cellId).not("answer", "is", null).select("id");
-  return error || !data?.length ? fail(SAVE_FAILED) : { ok: true, caseId: c.caseId };
+  if (error || !data?.length) return fail(SAVE_FAILED);
+  await settleColumn(db, c.columnId);
+  return { ok: true, caseId: c.caseId };
 }
 
 export async function confirmCell(db: Db, cellId: string): Promise<EditResult> {
   const c = await cell(db, cellId);
   if (!c) return fail(NO_CELL);
   const { error } = await db.from("doc_column_cells").update({ review_status: "confirmed" }).eq("id", cellId).eq("review_status", "suggested");
-  return error ? fail(SAVE_FAILED) : { ok: true, caseId: c.caseId };
+  if (error) return fail(SAVE_FAILED);
+  await settleColumn(db, c.columnId);
+  return { ok: true, caseId: c.caseId };
 }
 
 export async function removeColumn(db: Db, columnId: string, confirmed: boolean): Promise<EditResult> {

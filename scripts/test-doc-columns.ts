@@ -120,6 +120,7 @@ console.log("— issue #65: names, ordinals, months, negation");
 const PAGE4 = [
   "يلتزم السعيد بغرامة قدرها 500 جنيه عن كل أسبوع تأخير.",
   "يلتزم عادل بغرامة قدرها 500 جنيه عن كل أسبوع تأخير.",
+  "تلتزم عادلة بغرامة قدرها 500 جنيه عن كل أسبوع تأخير.",
   "الطرف الأول يلتزم بغرامة قدرها 500 جنيه عن كل أسبوع تأخير.",
   "تلتزم كريمة بغرامة قدرها 500 جنيه عن كل أسبوع تأخير.",
   "تلتزم ريمة بغرامة قدرها 500 جنيه عن كل أسبوع تأخير.",
@@ -142,6 +143,8 @@ check(j4("عادل بغرامة قدرها 500 جنيه", q4("عادل")).answer
 check(refused(j4("عادلة بغرامة قدرها 500 جنيه", q4("عادل")), "كلمة أو اسم"), "«عادلة» for «عادل» is refused");
 check(j4("المستأجر بسداد غرامة قدرها 500 جنيه", q4("المستأجرون")).answer !== null && j4("غرامة قدرها 500 جنيه", q4("غرامات")).answer !== null, "an ending the answer leaves off is kept («المستأجرون» → «المستأجر», «غرامات» → «غرامة»)");
 check(refused(j4("غرامات قدرها 500 جنيه", q4("السعيد")), "كلمة أو اسم") && refused(j4("المستأجرين بغرامة قدرها 500 جنيه", q4("عادل")), "كلمة أو اسم"), "…but an ending the answer adds («غرامات» for a quote without it) is refused");
+// known trade-off (see the PR): the answer may DROP an ending of the quote's word, because a noun and a name look alike
+check(j4("عادل بغرامة قدرها 500 جنيه", q4("تلتزم عادلة")).answer !== null, "trade-off: «عادل» for a quote that has «عادلة» passes (the answer never adds a letter, it may leave one off)");
 // 2) an ordinal is not a month
 check(j4("الطرف الأول بغرامة قدرها 500 جنيه", q4("الطرف الأول")).answer !== null, "control: «الطرف الأول» for «الطرف الأول» is kept");
 check(refused(j4("الطرف الثاني بغرامة قدرها 500 جنيه", q4("الطرف الأول")), "كلمة أو اسم"), "«الطرف الثاني» for «الطرف الأول» is refused");
@@ -328,7 +331,10 @@ async function main() {
     const c7a = await cell7(docA1);
     check(cf.ok && c7a.review_status === "confirmed" && c7a.answer === s1.answer && c7a.created_by_kind === "model" && (await cell7(docA2)).review_status === "suggested", "confirm: one cell becomes confirmed, still the model's with its answer; the other stays suggested");
     check((await confirmCell(db, s1.id)).ok, "confirm: a second tap changes nothing and is not an error");
+    const colState = async () => (await db.from("doc_columns").select("review_status").eq("id", col7!.id).single()).data?.review_status;
+    check((await colState()) === "suggested", "confirm: the column stays suggested while one of its cells is still suggested");
     check((await confirmCell(db, s2.id)).ok && (await cell7(docA2)).review_status === "confirmed", "confirm: a suggested «مش مذكور» cell can be confirmed too");
+    check((await colState()) === "confirmed", "confirm: when no cell is left suggested the column is confirmed too (its «مقترح» mark goes)");
     // a suggested cell that is edited is confirmed by the same save
     await db.from("doc_column_cells").update({ review_status: "suggested" }).eq("id", s1.id);
     await editCell(db, s1.id, "غرامة 500 جنيه");
