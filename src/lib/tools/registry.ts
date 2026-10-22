@@ -157,6 +157,17 @@ export const WRITE_TOOL_ARGS = {
     note: z.string().max(300).optional(),
     quote: quote.optional(),
   }).refine((a) => !a.answer || !!a.quote, { message: "الإجابة بدون اقتباس من الورقة", path: ["quote"] }),
+  // Made ONLY by code (src/lib/deadlines/propose.ts) after a judgment is saved; internal like the two above. The args are the lawyer's
+  // inputs (facts), never a number: `applyOp` reads the days from the article text and works out the last day itself.
+  add_deadline: z.object({
+    case: ref("الدعوى"),
+    judgment: ref("الحكم"),
+    kind: enumOf(["appeal", "cassation"] as const),
+    start_basis: enumOf(["judgment_date", "service_date"] as const).default("judgment_date"),
+    service_date: z.string().optional().describe("تاريخ إعلان الحكم d/m/yyyy، لما الحكم مش حضوري"),
+    urgent: z.boolean().default(false),
+    reminders: z.array(z.number().int().min(1).max(365)).max(8).default([7, 1]),
+  }),
 } as const;
 
 export type WriteTool = keyof typeof WRITE_TOOL_ARGS;
@@ -164,7 +175,7 @@ export type WriteArgs<T extends WriteTool> = z.infer<(typeof WRITE_TOOL_ARGS)[T]
 export const WRITE_TOOLS = Object.keys(WRITE_TOOL_ARGS) as WriteTool[];
 export const isWriteTool = (n: string): n is WriteTool => n in WRITE_TOOL_ARGS;
 /** Tools only code may propose (see above): not offered to the model, refused if it calls them. */
-export const INTERNAL_TOOLS = ["add_doc_column", "add_doc_cell"] as const satisfies readonly WriteTool[];
+export const INTERNAL_TOOLS = ["add_doc_column", "add_doc_cell", "add_deadline"] as const satisfies readonly WriteTool[];
 export const isInternalTool = (n: string): boolean => (INTERNAL_TOOLS as readonly string[]).includes(n);
 
 export const WRITE_TOOL_DESCRIPTIONS: Record<WriteTool, string> = {
@@ -182,6 +193,7 @@ export const WRITE_TOOL_DESCRIPTIONS: Record<WriteTool, string> = {
   attach_document: "اقتراح ربط مستند مرفوع بدعوى وتحديد نوعه.",
   add_doc_column: "عمود جديد في جدول مستندات الدعوى (من سؤال المحامي). يصنعه الكود فقط.",
   add_doc_cell: "خانة في عمود مستندات: إجابة السؤال من مستند واحد. يصنعها الكود فقط.",
+  add_deadline: "ميعاد طعن (استئناف / نقض) يحسبه الكود من نص المادة بعد تسجيل حكم. يصنعه الكود فقط.",
 };
 
 /** Field list for rendering/editing a confirmation card generically. */
@@ -205,6 +217,7 @@ export const OP_TITLE: Record<WriteTool, string> = {
   attach_document: "ربط مستند",
   add_doc_column: "عمود جديد",
   add_doc_cell: "خانة في العمود",
+  add_deadline: "ميعاد طعن",
 };
 
 export const OP_FIELDS: Record<WriteTool, FieldSpec[]> = {
@@ -311,6 +324,7 @@ export const OP_FIELDS: Record<WriteTool, FieldSpec[]> = {
     { key: "answer", label: "الإجابة", type: "longtext" },
     { key: "note", label: "ملاحظة", type: "readonly" },
   ],
+  add_deadline: [], // drawn by DeadlineCard, not as fields
 };
 
 /** Tool specs for the provider (JSON Schema from zod). */

@@ -4,6 +4,7 @@ import "server-only";
  * Uses the caller's RLS-bound client, so a user can only ever write into their own office.
  */
 import { formatDmy, parseDmy, todayIso } from "@/lib/dates";
+import { buildDeadlines } from "@/lib/deadlines/service";
 import type { Db } from "@/lib/supabase/server";
 import type { Database } from "@/lib/db/types";
 import { WRITE_TOOL_ARGS, type WriteArgs, type WriteTool } from "./registry";
@@ -83,7 +84,7 @@ function must<R extends { data: unknown; error: { message: string } | null }>(r:
 /** Puts the database back as it was before one applied op (a card is saved all or nothing). */
 export type Undo = () => Promise<void>;
 
-type Table = "clients" | "cases" | "case_parties" | "case_facts" | "case_requests" | "case_arguments" | "hearings" | "judgments" | "doc_columns" | "doc_column_cells";
+type Table = "clients" | "cases" | "case_parties" | "case_facts" | "case_requests" | "case_arguments" | "hearings" | "judgments" | "doc_columns" | "doc_column_cells" | "case_deadlines";
 const del = (db: Db, table: Table, id: string): Undo => async () => { must(await db.from(table).delete().eq("id", id).select("id")); };
 
 /** Validate + execute. Returns the id of the created/updated row (for @ref resolution) and how to undo it. */
@@ -247,6 +248,19 @@ export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Prov
         ...(answer ? span({ ...p, source_kind: "document", source_document_id: documentId }) : { source_char_start: null, source_char_end: null }),
       }).select("id").single());
       return { id: row.id, undo: del(db, "doc_column_cells", row.id) };
+    }
+    case "add_deadline": {
+      const x = a as WriteArgs<"add_deadline">;
+      // the days and the last day are worked out HERE, by code, from the article text and the approved holidays; only the lawyer's inputs come from the card
+      const built = await buildDeadlines(db, {
+        caseId: resolveRef(x.case, refs)!, judgmentId: resolveRef(x.judgment, refs)!, kind: x.kind,
+        startBasis: x.start_basis, serviceDate: x.service_date, urgent: x.urgent, reminders: x.reminders,
+      });
+      if (!built.save) throw new Error(built.blocked ?? "ماقدرتش أحسب الميعاد");
+      const row = must(await db.from("case_deadlines").insert({
+        ...built.save, review_status: p.review_status, created_by_kind: "lawyer", source_kind: "manual", // the lawyer's tap on «حطهم في الرول» is the act; code made the numbers
+      }).select("id").single());
+      return { id: row.id, undo: del(db, "case_deadlines", row.id) };
     }
   }
 }
