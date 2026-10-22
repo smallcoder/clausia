@@ -12,12 +12,14 @@ import type { Json } from "@/lib/db/types";
 import { caseLabel } from "@/lib/labels";
 import { getLlm, LlmUnavailableError, SpendCapError, type ChatRequest, type LlmMessage, type LlmToolCall } from "@/lib/llm";
 import { UNAVAILABLE_TEXT } from "@/lib/llm/unavailable";
+import { DEFAULT_TITLE, titleFrom } from "@/lib/threads";
 import { createProposal, normalizeForMatch, type DraftOp, type Proposal, type ResolvedFrom } from "@/lib/proposals";
 import { findSpan } from "@/lib/quote-match";
 import { cairoDateOf, resolveRelativeDays, type RelativeDay } from "@/lib/relative-days";
 import type { Db } from "@/lib/supabase/server";
 import { isReadTool, READ_TOOL_SPECS, runReadTool } from "@/lib/tools/read";
 import { isInternalTool, isWriteTool, OP_TITLE, WRITE_TOOL_ARGS, writeToolSpecs } from "@/lib/tools/registry";
+import type { ChatMode } from "./modes";
 import { buildSystemPrompt, type CaseContext } from "./prompt";
 
 const MAX_ROUNDS = 6;
@@ -46,7 +48,8 @@ export class TurnError extends Error {
   }
 }
 
-type TurnInput = { threadId: string; userText: string; userId: string; officeId: string };
+/** `mode`: the composer's mode tab for this message (ask / rulings / draft / analyze); it only changes one line of the system prompt. */
+type TurnInput = { threadId: string; userText: string; userId: string; officeId: string; mode?: ChatMode };
 
 /** A whole chat turn — every model and tool call in it — gets 2 minutes (owner decision 2026-10-21). */
 export const TURN_LIMIT_MS = 120_000;
@@ -90,13 +93,14 @@ function withinTurn<T>(work: Promise<T>, clock: Clock): Promise<T> {
 async function turn(db: Db, input: TurnInput, state: { saved: boolean }, clock: Clock): Promise<TurnResult> {
   const text = input.userText.trim();
   if (!text) throw new Error("الرسالة فارغة");
-  const { data: thread, error: te } = await db.from("chat_threads").select("id, case_id, title").eq("id", input.threadId).single();
+  const { data: thread, error: te } = await db.from("chat_threads").select("id, case_id, hearing_id, title").eq("id", input.threadId).single();
   if (te || !thread) throw new Error("المحادثة غير موجودة");
 
   const { data: userMsg, error: ue } = await db.from("chat_messages").insert({ thread_id: thread.id, role: "user", content: text }).select("id, created_at").single();
   if (ue || !userMsg) throw new Error(ue?.message ?? "تعذّر حفظ الرسالة");
   state.saved = true;
-  await db.from("chat_threads").update({ updated_at: new Date().toISOString() }).eq("id", thread.id);
+  // the session's title: the lawyer's first message, cut to about 40 characters (a session made by an upload keeps its file name)
+  await db.from("chat_threads").update({ updated_at: new Date().toISOString(), ...(!thread.title || thread.title === DEFAULT_TITLE ? { title: titleFrom(text) } : {}) }).eq("id", thread.id);
 
   const [history, caseContext, cardNotes, docs, { texts: sourceTexts, lawyer }, docPages] = await Promise.all([
     loadHistory(db, thread.id),
@@ -117,7 +121,8 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }, clock: 
   };
   const resolved = [...relativeDays.current, ...relativeDays.earlier.flatMap((e) => e.days)];
 
-  const system = buildSystemPrompt({ caseContext, cardNotes, documents: docs, relativeDays });
+  const hearing = thread.hearing_id ? (await db.from("hearings").select("id, hearing_date").eq("id", thread.hearing_id).maybeSingle()).data : null;
+  const system = buildSystemPrompt({ caseContext, cardNotes, documents: docs, relativeDays, mode: input.mode, hearing: hearing ? { id: hearing.id, date: formatDmy(hearing.hearing_date) } : null });
   const tools = [...READ_TOOL_SPECS, ...writeToolSpecs()];
   const messages: LlmMessage[] = history;
   const meta = { purpose: "chat" as const, officeId: input.officeId, userId: input.userId, threadId: thread.id };

@@ -1,58 +1,63 @@
 "use server";
 /**
- * The composer on every screen. A target says which conversation the message goes to:
- * - new:    a new general conversation (new client / case, or a question)
- * - case:   that case's own conversation
- * - thread: an existing conversation
- * The model still only proposes; nothing is saved before the lawyer confirms a card.
+ * The chat panel's composer, for a session that does not exist yet (the first message makes it).
+ * A new session belongs to a context: the general one (no case), a case, or one hearing of a case.
+ * Existing sessions send through sendMessageAction (optimistic). The model still only proposes;
+ * nothing is saved before the lawyer confirms a card.
  */
 import { revalidatePath } from "next/cache";
 import { uploadDocumentAction } from "@/lib/documents/actions";
 import { createClient, getSession } from "@/lib/supabase/server";
-import { createGeneralThread, dropIfEmpty, getOrCreateCaseThread } from "@/lib/threads";
+import { createThread, dropNewIfEmpty, titleFrom } from "@/lib/threads";
+import { parseMode } from "./modes";
 import { runAssistantTurn } from "./turn";
 
-export type ComposerTarget = { kind: "new" } | { kind: "case"; caseId: string } | { kind: "thread"; threadId: string };
+export type NewSessionTarget = { caseId?: string | null; hearingId?: string | null };
 
-async function resolve(db: Awaited<ReturnType<typeof createClient>>, t: ComposerTarget, title: string) {
-  if (t.kind === "thread") return t.threadId;
-  if (t.kind === "case") return getOrCreateCaseThread(db, t.caseId);
-  return createGeneralThread(db, title.replace(/\s+/g, " ").slice(0, 60) || "محادثة جديدة");
-}
-
-export async function composerSendAction(target: ComposerTarget, text: string): Promise<{ threadId?: string; error?: string }> {
+export async function composerSendAction(target: NewSessionTarget, text: string, mode?: string): Promise<{ threadId?: string; error?: string }> {
   const msg = text.trim();
   if (!msg) return { error: "اكتب رسالتك أولًا" };
   if (msg.length > 8000) return { error: "الرسالة طويلة جدًا" };
   const db = await createClient();
   const s = await getSession(db);
   if (!s) return { error: "انتهت الجلسة، سجّل الدخول من جديد" };
-  const threadId = await resolve(db, target, msg);
+  let threadId: string;
   try {
-    await runAssistantTurn(db, { threadId, userText: msg, userId: s.user.id, officeId: s.officeId });
+    // a hearing's session is labelled by its date; any other new session by the lawyer's first words
+    threadId = await createThread(db, { caseId: target.caseId, hearingId: target.hearingId, title: target.hearingId ? null : titleFrom(msg) });
   } catch (e) {
-    // the message never got in: no empty new thread; the composer keeps the text
-    if (target.kind === "new" && (await dropIfEmpty(db, threadId))) return { error: e instanceof Error ? e.message : "تعذّر الإرسال" };
+    return { error: e instanceof Error ? e.message : "تعذّر بدء المحادثة" };
+  }
+  try {
+    await runAssistantTurn(db, { threadId, userText: msg, userId: s.user.id, officeId: s.officeId, mode: parseMode(mode) });
+  } catch (e) {
+    // the message never got in: no empty session; the composer keeps the text
+    if (await dropNewIfEmpty(db, threadId)) return { error: e instanceof Error ? e.message : "تعذّر الإرسال" };
     // otherwise the lawyer's message is saved; the thread shows it and lets them retry
   }
-  revalidatePath(`/chat/${threadId}`);
+  revalidatePath("/", "layout");
   return { threadId };
 }
 
-export async function composerUploadAction(target: ComposerTarget, form: FormData): Promise<{ threadId?: string; error?: string }> {
+export async function composerUploadAction(target: NewSessionTarget, form: FormData): Promise<{ threadId?: string; error?: string }> {
   const db = await createClient();
   const s = await getSession(db);
   if (!s) return { error: "انتهت الجلسة، سجّل الدخول من جديد" };
   const file = form.get("file");
-  const threadId = await resolve(db, target, file instanceof File ? file.name : "مستند جديد");
+  let threadId: string;
+  try {
+    threadId = await createThread(db, { caseId: target.caseId, hearingId: target.hearingId, title: target.hearingId ? null : file instanceof File ? file.name.slice(0, 40) : "مستند جديد" });
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "تعذّر بدء المحادثة" };
+  }
   form.set("threadId", threadId);
-  if (target.kind === "case") form.set("caseId", target.caseId);
+  if (target.caseId) form.set("caseId", target.caseId);
   const r = await uploadDocumentAction(form);
   if (!r.ok && !r.warning) {
-    // a failed upload into a brand-new conversation must not leave an empty thread behind
-    if (target.kind === "new" && (await dropIfEmpty(db, threadId))) return { error: r.error ?? "تعذّر رفع الملف" };
+    // a failed upload into a brand-new session must not leave an empty session behind
+    if (await dropNewIfEmpty(db, threadId)) return { error: r.error ?? "تعذّر رفع الملف" };
     return { threadId, error: r.error };
   }
-  revalidatePath(`/chat/${threadId}`);
+  revalidatePath("/", "layout");
   return { threadId };
 }

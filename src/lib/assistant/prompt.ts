@@ -1,6 +1,7 @@
 /** Arabic system prompt for the chat assistant. Pure: callers pass the context in. */
 import { formatDayLabel, formatDmy, todayIso } from "@/lib/dates";
 import { PARTY_ROLE } from "@/lib/labels";
+import type { ChatMode } from "./modes";
 import type { RelativeDay } from "@/lib/relative-days";
 
 export interface CaseContext {
@@ -16,8 +17,23 @@ export interface CaseContext {
   hearings: { id: string; date: string; purpose: string | null; decided: boolean }[];
 }
 
+/**
+ * One line per composer mode (src/lib/assistant/modes.ts). For now a mode only steers the reply; it adds no tool and no source.
+ * The never-guess rules above stay in force in every mode.
+ */
+export const MODE_PROMPT: Record<ChatMode, string> = {
+  ask: "وضع المحامي الحالي: «اسأل». أجب عن سؤاله، أو سجّل ما يحكيه بالطريقة المعتادة.",
+  rulings: "وضع المحامي الحالي: «أحكام». يسأل عن أحكام أو مبادئ قضائية. ليس عندك مصدر أحكام بعد: لا تذكر رقم طعن ولا حكمًا ولا مبدأً من ذاكرتك أبدًا، وقل له بوضوح إنك لا تملك مصدرًا موثوقًا الآن، واعرض عليه ما في ملف القضية فقط.",
+  draft: "وضع المحامي الحالي: «صيغ». يريد مسودة نص (مذكرة أو إنذار أو صيغة). اكتبها في ردّك كنص عادي من ملف القضية وكلام المحامي فقط، واترك أي بيان ناقص فارغًا بين قوسين [……] ولا تخمّنه. المسودة لا تُحفظ: لا تستدعِ أدوات الكتابة إلا إن ذكر معلومة جديدة تستحق الحفظ.",
+  analyze: "وضع المحامي الحالي: «حلّل». يريد تحليلًا لموقف القضية أو لمستند من المتاح في الملف والمحادثة: نقاط القوة والضعف والثغرات وما ينقص. لا تضف وقائع ولا تواريخ من عندك، واذكر مصدر كل نقطة.",
+};
+
 export interface PromptInput {
   caseContext?: CaseContext | null;
+  /** the composer's mode for this message (default: no mode line) */
+  mode?: ChatMode;
+  /** this session is about one hearing of the case (its date, d/m/yyyy, and id) */
+  hearing?: { id: string; date: string } | null;
   /** outcome of the cards already shown in this thread (see turn.ts) */
   cardNotes?: string[];
   documents?: { id: string; file_name: string; page_count: number | null; read_status: string }[];
@@ -65,6 +81,10 @@ export function buildSystemPrompt(p: PromptInput): string {
     parts.push(lines.join("\n"));
   }
 
+  if (c && p.hearing) {
+    parts.push(`\nهذه المحادثة (الجلسة) مخصصة لجلسة ${p.hearing.date} (hearing_id = ${p.hearing.id}) من الدعوى نفسها؛ ملف الدعوى كله متاح لك كالمعتاد.`);
+  }
+
   if (p.documents?.length) {
     parts.push(`\nمستندات مرفوعة في هذه المحادثة (اقرأ نصها بـ get_document_text عند الحاجة):\n${p.documents.map((x) => `- ${x.file_name} (document_id = ${x.id}، صفحات: ${x.page_count ?? "?"}، القراءة: ${x.read_status})`).join("\n")}`);
   }
@@ -81,5 +101,6 @@ export function buildSystemPrompt(p: PromptInput): string {
   if (p.cardNotes?.length) {
     parts.push(`\nنتائج بطاقات التأكيد في هذه المحادثة (الأحدث آخرًا):\n${p.cardNotes.join("\n")}`);
   }
+  if (p.mode) parts.push(`\n${MODE_PROMPT[p.mode]}`);
   return parts.join("\n");
 }
