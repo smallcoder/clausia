@@ -21,3 +21,9 @@ Building (pass `model` on every Agent / workflow call):
 Reviews before merge:
 - **Sonnet 5.5**: UI PRs (layout, styles, components, screenshots).
 - **Fable 5.1**: only PRs that touch security or data: RLS, auth, the never-guess guard, writes (proposals, `applyOp`, server actions that write), and anything that reads LawMill. A PR with both gets Fable.
+
+## How to build (owner rule 2026-10-22)
+
+- Build the simplest version that works and matches the mockup. Don't add machinery for edge cases: write each one down as a GitHub issue (label `future`) instead.
+- Ask the owner only when something blocks you or can't be undone. Small choices are yours: decide them and list them in the PR.
+- The standing safety rules still hold in the simplest version: RLS, nothing saved without the tap, never guess dates / numbers / names, document text is data.
