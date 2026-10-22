@@ -13,6 +13,8 @@ import { SheetEditText, SheetReview, TapItem } from "@/components/cases/ItemShee
 import { pagesLabel } from "@/components/documents/DocThumb";
 import type { CaseFile } from "@/lib/case-file";
 import { formatDayLabel, formatDmy } from "@/lib/dates";
+import type { PendingEdits, PendingRow } from "@/lib/edits";
+import { Change, SuggestedTag, WaitingLine } from "@/components/cases/Suggest";
 import {
   MONTHS, READ_SHORT, aboutItem, agoLabel, citeOf, daysBetween, docName, factDate, partyRows, pendingHref, pendingWords, shortDmy, sourceText,
   summarySegments, untilLabel, type HearingState,
@@ -63,14 +65,25 @@ function SheetSource({ cf, item, about }: { cf: CaseFile; item: { id: string; re
  * Desktop: «ملخص Clausia» + the full templated summary (hearing, review in gold). Mobile: no label and only the case's
  * own summary sentence (the hearing card and the review banner carry the rest); without one, the full summary.
  */
-function Summary({ cf, hs, today, className }: { cf: CaseFile; hs: HearingState; today: string; className: string }) {
+function Summary({ cf, hs, today, className, edits }: { cf: CaseFile; hs: HearingState; today: string; className: string; edits?: PendingEdits }) {
+  // a summary the chat proposed: the old one struck, the new one in the text, all in a gold wash
+  const next = edits?.casePatch?.summary;
+  const proposed = typeof next === "string" && next.trim() !== (cf.case.summary ?? "").trim() ? next : null;
+  const was = cf.case.summary?.trim() || null;
+  if (proposed) cf = { ...cf, case: { ...cf.case, summary: proposed } };
   const segs = summarySegments(cf, hs, today).map((s, i) => s.gold ? <span key={i} className="font-semibold text-gold">{s.text}</span> : <span key={i}>{s.text}</span>);
   const own = cf.case.summary?.trim();
   return (
     <div className={`flex items-start gap-2.5 px-1 lg:gap-3.5 lg:px-2 ${className}`}>
       <span aria-hidden className={MARK}>C</span>
-      <div className="min-w-0 flex-1">
-        <div className="hidden text-sm font-semibold text-gold lg:block">ملخص Clausia</div>
+      <div className={`min-w-0 flex-1 ${proposed ? "gold-wash rounded-lg px-3.5 py-2.5" : ""}`}>
+        {proposed ? (
+          <div>
+            <div className="flex items-center gap-1.5 text-sm font-semibold text-gold">ملخص مقترح<SuggestedTag /></div>
+            {was ? <p className="mt-1 text-base leading-[1.8] text-text-4 line-through">{was}</p> : null}
+          </div>
+        ) : null}
+        <div className={`hidden text-sm font-semibold text-gold lg:block ${proposed ? "lg:hidden" : ""}`}>ملخص Clausia</div>
         <p className="mt-0.5 text-base leading-[1.8] text-text lg:hidden">{own ? (/[.!؟]$/u.test(own) ? own : `${own}.`) : segs}</p>
         <p className="mt-1 hidden text-lg leading-[1.85] text-text lg:block">{segs}</p>
       </div>
@@ -130,26 +143,57 @@ function FactRow({ f, last, cf }: { f: Fact; last: boolean; cf: CaseFile }) {
   );
 }
 
-function Facts({ cf, caseId }: { cf: CaseFile; caseId: string }) {
-  const all = [...cf.facts, ...pendingOf<Fact>(cf, "case_facts")].sort((a, b) => {
-    const da = a.date && a.date_precision !== "unknown" ? a.date : null;
-    const db = b.date && b.date_precision !== "unknown" ? b.date : null;
-    if (da === db) return 0;
-    if (!da) return 1;
-    if (!db) return -1;
-    return da < db ? -1 : 1;
+/** A new row of the timeline that the chat proposed (a fact, a hearing, a decision): a gold wash, the date in gold, «مستني تأكيدك». */
+function NewFactRow({ r, last }: { r: PendingRow; last: boolean }) {
+  return (
+    <div className="gold-wash mb-1.5 rounded-md px-1.5 lg:px-2" data-pending-row>
+      <span className="flex gap-3.5">
+        <span className="font-num w-16 shrink-0 pt-1 text-sm font-semibold text-gold lg:w-19.5"><span className="num">{r.date ?? "غير محدد"}</span></span>
+        <span className="flex w-2.25 shrink-0 flex-col items-center" aria-hidden>
+          <span className="mt-2.25 size-dot-lg shrink-0 rounded-full bg-gold" />
+          {!last ? <span className="mt-1 w-px flex-1 bg-border-2" /> : null}
+        </span>
+        <span className="min-w-0 flex-1 pb-3">
+          <span className="text-doc block text-md text-text" style={{ lineHeight: 1.9 }}>{r.text}</span>
+          <WaitingLine />
+        </span>
+      </span>
+    </div>
+  );
+}
+
+type TimelineEntry = { sort: string | null; fact?: Fact; row?: PendingRow };
+
+function Facts({ cf, caseId, edits }: { cf: CaseFile; caseId: string; edits?: PendingEdits }) {
+  const all: TimelineEntry[] = [
+    ...[...cf.facts, ...pendingOf<Fact>(cf, "case_facts")].map((f) => ({ sort: f.date && f.date_precision !== "unknown" ? f.date : null, fact: f })),
+    ...(edits?.timeline ?? []).map((r) => ({ sort: r.sortIso, row: r })),
+  ].sort((a, b) => {
+    if (a.sort === b.sort) return 0;
+    if (!a.sort) return 1;
+    if (!b.sort) return -1;
+    return a.sort < b.sort ? -1 : 1;
   });
   const c = cf.case;
   const fd = c.facts_date && c.facts_date_precision !== "unknown" ? formatDmy(c.facts_date, c.facts_date_precision) : null;
+  const patch = edits?.casePatch;
+  const newFd = patch?.facts_date ? formatDmy(patch.facts_date, (patch.facts_date_precision ?? "day") as "day") : null;
+  const fdProposed = newFd && newFd !== fd ? newFd : null;
   return (
     <section id="facts" className={`scroll-mt-24 ${CARD} rounded-xl`} aria-label="الوقائع">
       <div className="flex items-baseline justify-between gap-3 px-4.5 pt-4 lg:px-6 lg:pb-1.5 lg:pt-4.5">
         <h2 className="hidden text-lg font-bold text-title lg:block">الوقائع</h2>
-        <span className="text-xs text-text-4">تاريخ الوقائع {fd ? <span className="num font-num">{fd}</span> : "مش محدد"} · بيحدد نسخة القانون</span>
+        {fdProposed ? (
+          <span className="gold-wash inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs text-gold">
+            تاريخ الوقائع <Change old={fd} next={fdProposed} className="num font-num" /> <SuggestedTag />
+          </span>
+        ) : (
+          <span className="text-xs text-text-4">تاريخ الوقائع {fd ? <span className="num font-num">{fd}</span> : "مش محدد"} · بيحدد نسخة القانون</span>
+        )}
       </div>
       {all.length ? (
         <div className="px-3 pb-1.5 pt-2.5 lg:px-4">
-          {all.map((f, i) => (
+          {all.map((e, i) => e.row ? <NewFactRow key={e.row.key} r={e.row} last={i === all.length - 1} /> : e.fact && ((f) => (
             <TapItem key={f.id} id={f.id} title="واقعة" tight className="rounded-md px-1.5 lg:px-2" row={<FactRow f={f} last={i === all.length - 1} cf={cf} />}>
               <p className="font-num text-sm font-bold text-title">{factDate(f.date, f.date_precision)}{f.date_text && f.date_text !== factDate(f.date, f.date_precision) ? <span className="font-sans font-normal text-text-4"> · «{f.date_text}»</span> : null}</p>
               <p className="text-doc text-lg text-text">{f.text}</p>
@@ -157,7 +201,7 @@ function Facts({ cf, caseId }: { cf: CaseFile; caseId: string }) {
               {f.review_status === "suggested" ? <SheetReview table="case_facts" id={f.id} caseId={caseId} /> : null}
               <SheetEditText table="case_facts" id={f.id} caseId={caseId} initial={f.text} />
             </TapItem>
-          ))}
+          ))(e.fact))}
         </div>
       ) : (
         <p className="px-4.5 pb-5 pt-3 text-base leading-7 text-text-3 lg:px-6">لسه مفيش وقائع. احكي لـ Clausia اللي حصل وتواريخه، أو ارفع صحيفة الدعوى.</p>
@@ -191,13 +235,25 @@ function SideLabel({ tone, children }: { tone: "good" | "bad"; children: ReactNo
   );
 }
 
-function Sides({ cf, caseId, className }: { cf: CaseFile; caseId: string; className: string }) {
+/** A request or an argument the chat proposed: a gold wash, «مستني تأكيدك». */
+function NewText({ r }: { r: PendingRow }) {
+  return (
+    <div className="gold-wash -mx-2 mt-1.5 rounded-md px-2 py-1.5 lg:mt-2" data-pending-row>
+      <span className="block text-base leading-[1.7] text-text">{r.text}</span>
+      <WaitingLine />
+    </div>
+  );
+}
+
+function Sides({ cf, caseId, className, edits }: { cf: CaseFile; caseId: string; className: string; edits?: PendingEdits }) {
   const requests = [...cf.requests, ...pendingOf<Req>(cf, "case_requests")];
   const args = [...cf.arguments, ...pendingOf<Arg>(cf, "case_arguments")];
   const ours = args.filter((a) => a.side === "ours");
   const theirs = args.filter((a) => a.side === "opponent");
   // mobile: one card (4px 18px) with the two halves split by a hairline; desktop: two equal-height cards 14px apart
   const card = "lg:flex-1 lg:rounded-xl lg:border lg:border-border-2 lg:bg-card lg:px-5.5 lg:py-4.5 lg:shadow-card";
+  const newOurs = [...(edits?.requests ?? []), ...(edits?.arguments ?? []).filter((r) => r.side === "ours")];
+  const newTheirs = (edits?.arguments ?? []).filter((r) => r.side !== "ours");
   const empty = (t: string) => <p className="mt-1.5 text-base leading-[1.7] text-text-4 lg:mt-2">{t}</p>;
   return (
     <div className={`${CARD} px-4.5 py-1 lg:flex lg:gap-3.5 lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none ${className}`}>
@@ -206,14 +262,16 @@ function Sides({ cf, caseId, className }: { cf: CaseFile; caseId: string; classN
         <div>
           {requests.map((r) => <TextItem key={r.id} cf={cf} caseId={caseId} table="case_requests" item={r} kindLabel={r.kind ? REQUEST_KIND[r.kind] ?? r.kind : null} />)}
           {ours.map((a) => <TextItem key={a.id} cf={cf} caseId={caseId} table="case_arguments" item={a} kindLabel={`دفاعنا${a.kind ? ` · ${ARG_KIND[a.kind] ?? a.kind}` : ""}`} />)}
-          {!requests.length && !ours.length ? empty("لسه مفيش طلبات متسجلة.") : null}
+          {newOurs.map((r) => <NewText key={r.key} r={r} />)}
+          {!requests.length && !ours.length && !newOurs.length ? empty("لسه مفيش طلبات متسجلة.") : null}
         </div>
       </section>
       <section className={`py-3.5 ${card}`}>
         <SideLabel tone="bad">ضدنا · دفوع الخصم</SideLabel>
         <div>
           {theirs.map((a) => <TextItem key={a.id} cf={cf} caseId={caseId} table="case_arguments" item={a} kindLabel={a.kind ? ARG_KIND[a.kind] ?? a.kind : null} />)}
-          {!theirs.length ? empty("لسه مفيش دفوع للخصم متسجلة.") : null}
+          {newTheirs.map((r) => <NewText key={r.key} r={r} />)}
+          {!theirs.length && !newTheirs.length ? empty("لسه مفيش دفوع للخصم متسجلة.") : null}
         </div>
       </section>
     </div>
@@ -233,7 +291,7 @@ function DayBlock({ iso }: { iso: string }) {
   );
 }
 
-function HearingCard({ cf, hs, today, caseId, className }: { cf: CaseFile; hs: HearingState; today: string; caseId: string; className: string }) {
+function HearingCard({ cf, hs, today, caseId, className, edits }: { cf: CaseFile; hs: HearingState; today: string; caseId: string; className: string; edits?: PendingEdits }) {
   const circuit = cf.case.circuit;
   const all = <Link href={`/cases/${caseId}?tab=hearings`} className="-my-3 inline-flex min-h-11 shrink-0 items-center text-sm text-text-3 hover:text-text hover:underline">الجلسات ←</Link>;
   const h = hs.next ?? hs.undecided;
@@ -295,6 +353,17 @@ function HearingCard({ cf, hs, today, caseId, className }: { cf: CaseFile; hs: H
           {decide}
         </div>
       ) : null}
+      {/* a decision the chat proposed: the next hearing (old struck → new) and the decision, in a gold wash */}
+      {edits?.decisions.length ? (
+        <div className="gold-wash relative mt-4.5 space-y-2.5 rounded-lg px-4 py-3" data-pending-row>
+          {edits.decisions.flatMap((d) => d.rows).map((r) => (
+            <div key={r.key}>
+              <div className="flex items-center gap-1.5 text-xs text-gold">{r.label}<SuggestedTag /></div>
+              <div className="mt-0.75 text-md font-semibold leading-[1.5]"><Change old={r.old} next={r.new} /></div>
+            </div>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -313,7 +382,7 @@ function ListCard({ title, end, children, className = "" }: { title?: string; en
   );
 }
 
-function Parties({ cf, caseId }: { cf: CaseFile; caseId: string }) {
+function Parties({ cf, caseId, edits }: { cf: CaseFile; caseId: string; edits?: PendingEdits }) {
   const rows = partyRows(cf.parties, pendingOf<Party>(cf, "case_parties"));
   const line = (name: string, role: string, extra?: ReactNode) => (
     <span className="block py-3">
@@ -326,8 +395,14 @@ function Parties({ cf, caseId }: { cf: CaseFile; caseId: string }) {
   );
   return (
     <ListCard title="الأطراف">
-      {rows.length ? (
+      {rows.length || edits?.parties.length ? (
         <div className="lg:[&>*]:border-t [&>*+*]:border-t [&>*]:border-[var(--border-2)]">
+          {(edits?.parties ?? []).map((n) => (
+            <div key={n.key} className="gold-wash -mx-2 my-1.5 rounded-md px-2" data-pending-row>
+              {line(n.name, `${n.ours ? "موكلنا · " : ""}${n.role}`, <SuggestedTag />)}
+              <span className="-mt-2 mb-2 block"><WaitingLine /></span>
+            </div>
+          ))}
           {rows.map((r, i) => r.id && r.party ? (
             <TapItem key={r.id} id={r.id} title="طرف في الدعوى" className="-mx-2 rounded-md px-2" row={line(r.name, r.role, r.suggested ? <Suggested label="مقترح · راجعه" /> : null)}>
               <div>
@@ -375,26 +450,26 @@ function Docs({ cf, caseId }: { cf: CaseFile; caseId: string }) {
 
 // ---------- Page body ----------
 
-export function CaseOverview({ cf, hs, today, caseId }: { cf: CaseFile; hs: HearingState; today: string; caseId: string }) {
+export function CaseOverview({ cf, hs, today, caseId, edits }: { cf: CaseFile; hs: HearingState; today: string; caseId: string; edits?: PendingEdits }) {
   const parties = partyRows(cf.parties, pendingOf<Party>(cf, "case_parties")).length;
   const facts = cf.facts.length + pendingOf<Fact>(cf, "case_facts").length;
   return (
     <TabScope>
       <div className="mt-3 flex flex-col gap-3 leading-[1.35] lg:mt-8.5 lg:grid lg:grid-cols-[minmax(0,1.85fr)_minmax(0,1fr)] lg:items-start lg:gap-4.5">
         <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-4.5">
-          <Summary cf={cf} hs={hs} today={today} className="order-2 mt-1.5 lg:order-none lg:mt-0" />
+          <Summary cf={cf} hs={hs} today={today} edits={edits} className="order-2 mt-1.5 lg:order-none lg:mt-0" />
           <ReviewBanner cf={cf} hs={hs} caseId={caseId} className="order-3" />
           <SegBar className="order-4 mt-2.5 lg:hidden" items={[
             { key: "facts", label: "الوقائع", count: facts },
             { key: "docs", label: "المستندات", count: cf.documents.length },
             { key: "parties", label: "الأطراف", count: parties },
           ]} />
-          <Seg k="facts" className="order-5 lg:order-none"><Facts cf={cf} caseId={caseId} /></Seg>
-          <Sides cf={cf} caseId={caseId} className="order-6 lg:order-none" />
+          <Seg k="facts" className="order-5 lg:order-none"><Facts cf={cf} caseId={caseId} edits={edits} /></Seg>
+          <Sides cf={cf} caseId={caseId} edits={edits} className="order-6 lg:order-none" />
         </div>
         <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-4.5">
-          <HearingCard cf={cf} hs={hs} today={today} caseId={caseId} className="order-1 lg:order-none" />
-          <Seg k="parties" className="order-5 lg:order-none"><Parties cf={cf} caseId={caseId} /></Seg>
+          <HearingCard cf={cf} hs={hs} today={today} caseId={caseId} edits={edits} className="order-1 lg:order-none" />
+          <Seg k="parties" className="order-5 lg:order-none"><Parties cf={cf} caseId={caseId} edits={edits} /></Seg>
           <Seg k="docs" className="order-5 lg:order-none"><Docs cf={cf} caseId={caseId} /></Seg>
         </div>
       </div>

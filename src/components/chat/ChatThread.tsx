@@ -20,6 +20,7 @@ import { composerSendAction, composerUploadAction } from "@/lib/assistant/compos
 import { modePlaceholder } from "@/lib/assistant/modes";
 import { uploadDocumentAction } from "@/lib/documents/actions";
 import { UNAVAILABLE_TEXT } from "@/lib/llm/unavailable";
+import type { EditRow } from "@/lib/edits";
 import type { Proposal } from "@/lib/proposals";
 
 export interface ChatItem {
@@ -42,7 +43,7 @@ export interface ThreadDoc {
 /** The upload posts «أرفقتُ مستندًا: X» for the lawyer; the chip says it already, so no bubble for it. */
 const AUTO_ATTACH = /^أرفقتُ مستندًا: /;
 
-export function ChatThread({ threadId, caseId, hearing, items, lookup, deadlines = {}, docs = {}, chips = [], starter = "" }: {
+export function ChatThread({ threadId, caseId, hearing, items, lookup, rows = {}, deadlines = {}, docs = {}, chips = [], starter = "" }: {
   /** null = a new session (the first message makes it) */
   threadId: string | null;
   caseId: string | null;
@@ -50,6 +51,8 @@ export function ChatThread({ threadId, caseId, hearing, items, lookup, deadlines
   hearing: { id: string; date: string } | null;
   items: ChatItem[];
   lookup: Record<string, string>;
+  /** «old ← new» lines of the change ops in the cards (see ProposalCard) */
+  rows?: Record<string, EditRow[]>;
   /** the deadlines cards' data by proposal id (empty with the flag off) */
   deadlines?: Record<string, DeadlineCardEntry>;
   docs?: Record<string, ThreadDoc>;
@@ -188,7 +191,7 @@ export function ChatThread({ threadId, caseId, hearing, items, lookup, deadlines
                       <div key={p.id} className={cx((m.content.trim() || i > 0) && "mt-3.5")}>
                         {p.ops.some((o) => o.tool === "add_deadline")
                           ? (deadlines[p.id] ? <DeadlineCard proposal={p} entry={deadlines[p.id]} /> : null) // flag off: no card
-                          : <ProposalCard proposal={p} lookup={lookup} />}
+                          : <ProposalCard proposal={p} lookup={lookup} rows={rows} />}
                       </div>
                     ))}
                   </ClausiaLine>

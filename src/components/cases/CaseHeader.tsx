@@ -14,8 +14,10 @@ import type { ReactNode } from "react";
 import { BackBtn, two, type HeroStat } from "@/components/shell/PageHero";
 import { PageTitle, TitleRow, TitleStats, type TitleStatData } from "@/components/shell/TitleRow";
 import type { CaseFile } from "@/lib/case-file";
+import type { PendingEdits } from "@/lib/edits";
 import { CASE_STATUS } from "@/lib/labels";
 import { CaseMenu } from "./CaseMenu";
+import { Change, SuggestedTag, Was } from "./Suggest";
 import { specSheet, statusTone, whoLine } from "./case-view";
 
 const TONE = { good: ["bg-good", "text-good"], warn: ["bg-gold", "text-gold"], neutral: ["bg-text-4", "text-text-3"] } as const;
@@ -26,6 +28,18 @@ function StatusPill({ status }: { status: string }) {
   return (
     <span className={`box-content inline-flex h-7 items-center gap-1.5 rounded-full border border-border-2 px-3 text-sm font-semibold ${text}`}>
       <span aria-hidden className={`size-1.5 rounded-full ${dot}`} />{CASE_STATUS[status as keyof typeof CASE_STATUS] ?? status}
+    </span>
+  );
+}
+
+/** The status chip; a proposed status shows the old word struck, the new chip in a gold wash and the «مقترح» tag. */
+function StatusSlot({ status, proposed }: { status: string; proposed: string | null }) {
+  if (!proposed) return <StatusPill status={status} />;
+  return (
+    <span className="inline-flex items-center gap-2">
+      <Was>{CASE_STATUS[status as keyof typeof CASE_STATUS] ?? status}</Was>
+      <span className="gold-wash rounded-full"><StatusPill status={proposed} /></span>
+      <SuggestedTag />
     </span>
   );
 }
@@ -53,9 +67,15 @@ function StatCell({ s, first }: { s: HeroStat; first: boolean }) {
     : <Link href={s.href} className={`${cls} transition hover:opacity-80`}>{body}</Link>;
 }
 
-export function CaseHeader({ cf, caseId, stats }: { cf: CaseFile; caseId: string; stats: HeroStat[] }) {
+export function CaseHeader({ cf, caseId, stats, edits }: { cf: CaseFile; caseId: string; stats: HeroStat[]; edits?: PendingEdits }) {
   const who = whoLine(cf);
   const spec = specSheet(cf);
+  // fields the chat proposed to change: the cell keeps today's value struck and shows the new one in gold
+  const patch = edits?.casePatch;
+  const after = patch ? specSheet({ ...cf, case: { ...cf.case, ...(patch as Partial<CaseFile["case"]>) } }) : null;
+  const changed = (i: number) => !!after && (after[i].value !== spec[i].value || after[i].extra !== spec[i].extra);
+  const proposedStatus = patch?.status && patch.status !== cf.case.status ? patch.status : null;
+  const full = (s: (typeof spec)[number]) => (s.value ? `${s.value}${s.extra ? ` · ${s.extra}` : ""}` : null);
   const number = spec[0].value;
   const empty = (fem?: boolean) => (fem ? "مش متسجلة" : "مش متسجل");
   return (
@@ -73,7 +93,7 @@ export function CaseHeader({ cf, caseId, stats }: { cf: CaseFile; caseId: string
           <Link href="/cases" className="tap hover:text-text hover:underline">القضايا</Link>
           {number ? <><span aria-hidden className="mx-1.5 text-text-4">/</span><span className="font-semibold text-text">{number}</span></> : null}
         </nav>
-        <StatusPill status={cf.case.status} />
+        <StatusSlot status={cf.case.status} proposed={proposedStatus} />
         <CaseMenu caseId={caseId} align="end" className="size-10" />
       </div>
 
@@ -81,7 +101,7 @@ export function CaseHeader({ cf, caseId, stats }: { cf: CaseFile; caseId: string
       <div className="px-1 pt-4.5 sm:mt-5.5 sm:px-2 sm:pt-0">
         <div className="flex items-center justify-between">
           <span className="text-sm font-semibold text-gold">{who.client ? "موكلنا" : "القضية"}</span>
-          <span className="sm:hidden"><StatusPill status={cf.case.status} /></span>
+          <span className="sm:hidden"><StatusSlot status={cf.case.status} proposed={proposedStatus} /></span>
         </div>
         <h1 className="mt-1.5 text-xl font-bold leading-[1.2] text-title sm:mt-1 sm:text-2xl sm:leading-[1.15]">
           {who.client ?? who.fallback}
@@ -93,12 +113,12 @@ export function CaseHeader({ cf, caseId, stats }: { cf: CaseFile; caseId: string
       {/* below lg: the 2×2 spec card (mobile mockup) */}
       <dl className="mt-4 grid grid-cols-2 overflow-hidden rounded-lg border border-border-2 bg-card shadow-card lg:hidden">
         {spec.map((s, i) => (
-          <div key={s.label} className={`min-w-0 border-border-2 px-3.5 py-3 ${i % 2 === 0 ? "border-e" : ""} ${i >= 2 ? "border-t" : ""}`}>
-            <dt className="text-xs text-text-4">{s.short}</dt>
+          <div key={s.label} className={`min-w-0 border-border-2 px-3.5 py-3 ${i % 2 === 0 ? "border-e" : ""} ${i >= 2 ? "border-t" : ""} ${changed(i) ? "gold-wash" : ""}`}>
+            <dt className={changed(i) ? "flex items-center gap-1.5 text-xs text-gold" : "text-xs text-text-4"}>{s.short}{changed(i) ? <SuggestedTag /> : null}</dt>
             {/* long court / type names stay one line with «…», the full name in the tooltip (owner decision) */}
             <dd title={s.clip && s.value ? s.value : undefined}
               className={`mt-1 text-base leading-[1.4] ${s.clip ? "truncate" : ""} ${s.value ? "font-semibold text-text" : "text-text-4"}`}>
-              {s.value ? s.mobile ?? s.value : empty(s.fem)}
+              {changed(i) && after ? <Change old={s.value ? s.mobile ?? s.value : null} next={after[i].mobile ?? after[i].value ?? empty(s.fem)} /> : s.value ? s.mobile ?? s.value : empty(s.fem)}
             </dd>
           </div>
         ))}
@@ -111,10 +131,10 @@ export function CaseHeader({ cf, caseId, stats }: { cf: CaseFile; caseId: string
         <div className="grid grid-cols-2 gap-y-4 rounded-xl border border-border-2 bg-card py-5 shadow-card @3xl:grid-cols-4 @3xl:gap-y-0 @7xl:grid-cols-[repeat(4,minmax(0,1fr))_1px_repeat(3,minmax(0,0.7fr))] @7xl:items-stretch">
           <dl className="contents">
             {spec.map((s, i) => (
-              <div key={s.label} className={`min-w-0 px-6 ${i % 2 ? "border-s border-border-2" : ""} ${i >= 2 ? "border-t border-border-2 pt-4" : ""} @3xl:border-t-0 @3xl:pt-0 ${i > 0 ? "@3xl:border-s @3xl:border-border-2" : ""}`}>
-                <dt className="text-xs leading-4 text-text-4">{s.label}</dt>
+              <div key={s.label} className={`min-w-0 px-6 ${i % 2 ? "border-s border-border-2" : ""} ${i >= 2 ? "border-t border-border-2 pt-4" : ""} @3xl:border-t-0 @3xl:pt-0 ${i > 0 ? "@3xl:border-s @3xl:border-border-2" : ""} ${changed(i) ? "gold-wash rounded-lg py-3" : ""}`}>
+                <dt className={changed(i) ? "flex items-center gap-1.5 text-xs leading-4 text-gold" : "text-xs leading-4 text-text-4"}>{s.label}{changed(i) ? <SuggestedTag /> : null}</dt>
                 <dd className={`mt-1.75 text-md leading-[1.4] ${s.value ? "font-semibold text-text" : "text-text-4"}`}>
-                  {s.value ?? empty(s.fem)}{s.value && s.extra ? ` · ${s.extra}` : null}
+                  {changed(i) && after ? <Change old={full(s)} next={full(after[i]) ?? empty(s.fem)} /> : <>{s.value ?? empty(s.fem)}{s.value && s.extra ? ` · ${s.extra}` : null}</>}
                 </dd>
               </div>
             ))}
