@@ -44,6 +44,8 @@ const fact = (text: string, fact_date: string | null, created_at = "2026-01-01T0
   eq("card: memo required, no memo on file → «المذكرة لسه متكتبتش»", c.missing.map((m) => m.line), ["المذكرة لسه متكتبتش"]);
   eq("card: who = client's first name", c.who, "كريم");
 }
+eq("who: a company keeps two words", buildCard(input({ hearing: hearing({ client: "شركة الافتراض للاستيراد" }) })).who, "شركة الافتراض");
+eq("who: no client → the case number", buildCard(input({ hearing: hearing({ client: null }) })).who, "8833");
 {
   const c = buildCard(input({ hearing: hearing({ location: "الدور 4 · قاعة 12" }) }));
   eq("card: meta adds the location only when it is on file", c.meta, "محكمة استئناف القاهرة · الدور 4 · قاعة 12");
