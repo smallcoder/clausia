@@ -1,7 +1,7 @@
 // The case page header (docs/design/*Case.dc.html), v2: who first — «موكلنا», the client's name big, «ضد <opponent>».
 // Desktop (item 19): row 1 = back · breadcrumb «القضايا / <number>» … status chip, then «…» at the far end (owner:
 // it holds the moved links — case data, hearings, case chat, JSON); row 2 = eyebrow
-// + the name with «ضد <opponent>» on the same line; row 3 = one solid card of 7 cells split by hairlines — number,
+// + the name with «ضد <opponent>» on the same line; row 3 = one solid card of 7 cells split by hairlines (it wraps by the width of its column, see below) — number,
 // court, circuit, type | facts, docs, needs review (big light numbers, gold only when > 0).
 // Mobile: back + «…» floating, eyebrow + status, the name, «ضد» below, then a 2×2 solid spec card, no stats (the tabs
 // and the banner carry them). Sizes follow the mockups to the pixel. Text the mockups leave at `line-height: normal`
@@ -104,20 +104,26 @@ export function CaseHeader({ cf, caseId, stats }: { cf: CaseFile; caseId: string
         ))}
       </dl>
 
-      {/* lg+: one card, 4 spec cells (1fr) | a 1px hairline | 3 stat cells (0.7fr), 20px top and bottom */}
-      <div className="mt-5.5 hidden grid-cols-[repeat(4,minmax(0,1fr))_1px_repeat(3,minmax(0,0.7fr))] items-stretch rounded-xl border border-border-2 bg-card py-5 shadow-card lg:grid">
-        <dl className="contents">
-          {spec.map((s, i) => (
-            <div key={s.label} className={`min-w-0 px-6 ${i > 0 ? "border-s border-border-2" : ""}`}>
-              <dt className="text-xs leading-4 text-text-4">{s.label}</dt>
-              <dd className={`mt-1.75 text-md leading-[1.4] ${s.value ? "font-semibold text-text" : "text-text-4"}`}>
-                {s.value ?? empty(s.fem)}{s.value && s.extra ? ` · ${s.extra}` : null}
-              </dd>
-            </div>
-          ))}
-        </dl>
-        <div aria-hidden className="-my-1 bg-border-2" />
-        {stats.map((s, i) => <StatCell key={s.label} s={s} first={i === 0} />)}
+      {/* lg+: one card of 7 cells. It follows the width of its own column (the page column is narrower than the screen now: the
+          chat panel sits beside it): ≥1280 wide — one row, 4 spec cells | hairline | 3 stats; ≥768 — the 4 spec cells over the 3 stats;
+          narrower — the spec cells 2 × 2, then the stats. Nothing scrolls sideways and no text is clipped. */}
+      <div className="@container mt-5.5 hidden lg:block">
+        <div className="grid grid-cols-2 gap-y-4 rounded-xl border border-border-2 bg-card py-5 shadow-card @3xl:grid-cols-4 @3xl:gap-y-0 @7xl:grid-cols-[repeat(4,minmax(0,1fr))_1px_repeat(3,minmax(0,0.7fr))] @7xl:items-stretch">
+          <dl className="contents">
+            {spec.map((s, i) => (
+              <div key={s.label} className={`min-w-0 px-6 ${i % 2 ? "border-s border-border-2" : ""} ${i >= 2 ? "border-t border-border-2 pt-4" : ""} @3xl:border-t-0 @3xl:pt-0 ${i > 0 ? "@3xl:border-s @3xl:border-border-2" : ""}`}>
+                <dt className="text-xs leading-4 text-text-4">{s.label}</dt>
+                <dd className={`mt-1.75 text-md leading-[1.4] ${s.value ? "font-semibold text-text" : "text-text-4"}`}>
+                  {s.value ?? empty(s.fem)}{s.value && s.extra ? ` · ${s.extra}` : null}
+                </dd>
+              </div>
+            ))}
+          </dl>
+          <div aria-hidden className="-my-1 hidden bg-border-2 @7xl:block" />
+          <div className="col-span-full grid grid-cols-3 border-t border-border-2 pt-4 @7xl:contents">
+            {stats.map((s, i) => <StatCell key={s.label} s={s} first={i === 0} />)}
+          </div>
+        </div>
       </div>
     </header>
   );
