@@ -48,6 +48,28 @@ async function main() {
     check(after.ops.map((o) => o.status).join(",") === "pending,pending,failed", "ops: pending, pending, failed", after.ops.map((o) => o.status).join(","));
     check(after.ops.every((o) => !o.result_id), "no op keeps a result id");
 
+    // 1b) the same with a paper source that carries a span: the decision, the child hearing and both spans are undone
+    const { data: tc } = await db.from("cases").insert({ title: "اختبار-تراجع-الجملة", source_kind: "manual" }).select("id").single();
+    try {
+      const { data: h } = await db.from("hearings").insert({ case_id: tc!.id, hearing_date: "2026-01-05" }).select("id").single();
+      const span = { kind: "document" as const, document_id: null, page: 1, quote: "تأجيل", char_start: 10, char_end: 15 };
+      const p2 = await createProposal(db, {
+        threadId: t1, sourceTexts: ["تأجيل لجلسة 2/2/2026"],
+        ops: [
+          { tool: "record_decision", args: { hearing: h!.id, decision: "postponed", next_date: "2/2/2026", quote: "تأجيل" }, source: span },
+          { tool: "add_party", args: { case: "00000000-0000-4000-8000-000000000000", name: "خصم وهمي", role: "defendant", quote: "تأجيل" }, source: span },
+        ],
+      });
+      let t2msg = "";
+      try { await decideProposal(db, p2.id, { mode: "confirm" }); } catch (e) { t2msg = e instanceof Error ? e.message : String(e); }
+      check(t2msg.startsWith("ماتحفظش حاجة"), "a failed save (decision with a span, then a bad op) says nothing was saved");
+      const { data: hs } = await db.from("hearings").select("id, decision_type, decision_source_char_start, decision_source_char_end, decided_at, next_hearing_id").eq("case_id", tc!.id);
+      check(hs?.length === 1 && hs[0].decision_type === null && hs[0].decision_source_char_start === null && hs[0].decision_source_char_end === null && hs[0].decided_at === null && hs[0].next_hearing_id === null,
+        "the hearing is as before: no decision, no span, no child hearing", JSON.stringify(hs));
+    } finally {
+      await db.from("cases").delete().eq("id", tc!.id);
+    }
+
     // 2) a turn cut short in its second round
     const realFetch = globalThis.fetch;
     let n = 0;

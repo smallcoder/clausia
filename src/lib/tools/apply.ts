@@ -18,6 +18,9 @@ export interface Provenance {
   source_document_id?: string | null;
   source_page?: number | null;
   source_quote?: string | null;
+  /** where the quote sits in the page's original text (null for old rows, chat and manual sources) */
+  source_char_start?: number | null;
+  source_char_end?: number | null;
 }
 
 export const MANUAL: Provenance = { review_status: "confirmed", created_by_kind: "lawyer", source_kind: "manual" };
@@ -50,6 +53,14 @@ function date(v: string | undefined) {
   return p ? { iso: p.iso, precision: p.precision } : null;
 }
 
+/** A span is stored only as a real range on a paper source; anything else is null (the tables check the same). */
+function span(p: Provenance): { source_char_start: number | null; source_char_end: number | null } {
+  const s = p.source_char_start;
+  const e = p.source_char_end;
+  const ok = p.source_kind === "document" && !!p.source_document_id && Number.isInteger(s) && Number.isInteger(e) && s! >= 0 && e! > s!;
+  return ok ? { source_char_start: s!, source_char_end: e! } : { source_char_start: null, source_char_end: null };
+}
+
 function prov(p: Provenance) {
   return {
     review_status: p.review_status,
@@ -59,6 +70,7 @@ function prov(p: Provenance) {
     source_document_id: p.source_document_id ?? null,
     source_page: p.source_page ?? null,
     source_quote: p.source_quote ?? null,
+    ...span(p),
   };
 }
 
@@ -173,6 +185,7 @@ export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Prov
         p_source_kind: p.source_kind, p_created_by_kind: p.created_by_kind,
         p_source_message_id: p.source_message_id ?? undefined, p_source_document_id: p.source_document_id ?? undefined,
         p_source_page: p.source_page ?? undefined, p_source_quote: p.source_quote ?? undefined,
+        p_source_char_start: span(p).source_char_start ?? undefined, p_source_char_end: span(p).source_char_end ?? undefined,
       });
       if (error) throw new Error(error.message);
       const created = !h0.next_hearing_id ? ((data as { next_hearing_id?: string | null } | null)?.next_hearing_id ?? null) : null;

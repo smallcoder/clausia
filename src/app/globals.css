@@ -259,6 +259,7 @@
 @theme {
   --container-page: 1360px;        /* the 1280 page column (Cases, Case, Roll) plus its 40px side gutters; the top bar uses the same box */
   --container-narrow: 960px;       /* the Home and Chat column: 912 of content plus 24px side gutters; the top bar uses the same box */
+  --container-split: 1680px;       /* a chat thread with the paper panel open: two 1fr columns in 1600 plus 40px gutters; the top bar uses the same box */
   --container-composer: 780px;     /* the docked composer on inner pages and over a chat */
   --container-bubble: 88%;         /* a chat bubble's widest share of the column, on mobile */
   --container-bubble-sm: 72%;      /* the same on desktop */
@@ -380,3 +381,6 @@ body {
 }
 
 :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: var(--radius-sm); }
+/* a box that only receives focus from code (the paper panel when it opens) shows no ring; the source chip is a pill, its ring stays one */
+[tabindex="-1"]:focus-visible { outline: none; }
+[data-cite-id]:focus-visible { border-radius: calc(infinity * 1px); }

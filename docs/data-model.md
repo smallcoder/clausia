@@ -22,6 +22,7 @@ Schema: `supabase/migrations/20261020150000_base_schema.sql`. Types: `src/lib/db
 | `source_message_id` | chat_messages.id | chat source |
 | `source_document_id`, `source_page` | documents.id, page no | document source |
 | `source_quote` | text | exact words that support the item (checked against the source) |
+| `source_char_start`, `source_char_end` | int, int | where the quote sits in the page's ORIGINAL text (`document_pages.text.slice(start, end)`, end exclusive); worked out by code when the quote was verified, never by the model. Null for older rows and for chat / manual sources: the paper panel then finds the quote with the same code matcher. A hearing's decision keeps its own (`decision_source_char_*`) |
 | `created_by` | auth user | who saved it |
 
 ## Tables

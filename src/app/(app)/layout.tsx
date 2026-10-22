@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { CiteMain, CiteProvider } from "@/components/cite/CiteProvider";
 import { AppHeader } from "@/components/shell/AppHeader";
 import { undecidedPastCount } from "@/lib/hearings";
 import { createClient, getSession } from "@/lib/supabase/server";
@@ -18,9 +19,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     undecidedPastCount(db).catch(() => 0),
   ]);
   return (
-    <div className="flex min-h-dvh flex-col">
-      <AppHeader initials={initialsOf(session.displayName || "أ ت")} officeName={office?.name ?? ""} email={session.user.email ?? ""} alerts={alerts} />
-      <main className="flex w-full flex-1 flex-col">{children}</main>
-    </div>
+    <CiteProvider>
+      <div className="flex min-h-dvh flex-col">
+        <AppHeader initials={initialsOf(session.displayName || "أ ت")} officeName={office?.name ?? ""} email={session.user.email ?? ""} alerts={alerts} />
+        <CiteMain>{children}</CiteMain>
+      </div>
+    </CiteProvider>
   );
 }

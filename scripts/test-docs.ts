@@ -45,9 +45,9 @@ async function report(db: Db, label: string, r: ProcessResult) {
   const texts = (pages ?? []).map((p) => p.text);
   const all = normalizeDigits(texts.join("\n"));
   const { data: prop } = r.proposalId ? await db.from("proposals").select("ops, message_id").eq("id", r.proposalId).single() : { data: null };
-  type Op = { tool: string; args: Record<string, unknown>; source: { page?: number; quote?: string }; quote_verified: boolean };
+  type Op = { tool: string; args: Record<string, unknown>; source: { page?: number; quote?: string; char_start?: number | null; char_end?: number | null }; quote_verified: boolean };
   // no card when Clausia first asks «مين موكلك؟»: check the drafted ops instead
-  const ops: Op[] = prop ? (prop.ops as unknown as Op[]) : r.ops.map((o) => ({ tool: o.tool, args: o.args, source: { page: o.source.page ?? undefined, quote: o.source.quote ?? undefined }, quote_verified: verifyQuote(o.source.quote, texts) }));
+  const ops: Op[] = prop ? (prop.ops as unknown as Op[]) : r.ops.map((o) => ({ tool: o.tool, args: o.args, source: { page: o.source.page ?? undefined, quote: o.source.quote ?? undefined, char_start: o.source.char_start, char_end: o.source.char_end }, quote_verified: verifyQuote(o.source.quote, texts) }));
   for (const o of ops) {
     const main = String(o.args.name ?? o.args.text ?? o.args.case_number ?? o.args.doc_type ?? o.args.date ?? o.args.decision ?? "").slice(0, 60);
     const date = o.args.date ?? o.args.next_date;
@@ -64,6 +64,10 @@ async function report(db: Db, label: string, r: ProcessResult) {
   check(ops.every((o) => (WRITE_TOOLS as string[]).includes(o.tool)), "only registry tools");
   const verified = ops.filter((o) => o.quote_verified).length;
   check(verified >= Math.ceil(ops.length * 0.7), `quotes verified against the page text (${verified}/${ops.length})`);
+  // «source to the sentence»: every verified quote carries the span of its sentence in the page's ORIGINAL text, found by code
+  const spanned = ops.filter((o) => o.quote_verified && o.source.char_start != null && o.source.char_end != null
+    && normalizeForMatch(texts[o.source.page! - 1].slice(o.source.char_start, o.source.char_end)) === normalizeForMatch(o.source.quote!));
+  check(spanned.length === verified, `every verified quote has a span, and page.slice(start, end) reads as the quote (${spanned.length}/${verified})`);
   const invented = ops.flatMap((o) => [o.args.date, o.args.next_date, o.args.facts_date].filter(Boolean) as string[])
     .filter((d) => { const m = datePattern.exec(normalizeDigits(d)); return m ? !new RegExp(`(^|\\D)0?${m[1]}\\s*[/\\-.]\\s*0?${m[2]}\\s*[/\\-.]\\s*${m[3]}`).test(all) : false; });
   check(invented.length === 0, `no invented dates${invented.length ? `: ${invented.join(", ")}` : ""}`);
@@ -143,16 +147,22 @@ async function main() {
     const p2 = await decideProposal(db, r2.proposalId!, { mode: "confirm" });
     const failedOps = p2.ops.filter((o) => o.status !== "confirmed");
     check(failedOps.length === 0, `hearing photo: confirm all applied every op${failedOps.length ? ` (${failedOps.map((o) => `${o.tool}: ${o.status}`).join(", ")})` : ""}`);
-    const { data: hs } = await db.from("hearings").select("id, hearing_date, decision_type, next_hearing_id, previous_hearing_id, source_kind, source_document_id, source_page, source_quote").eq("case_id", c.id).order("hearing_date");
+    const { data: hs } = await db.from("hearings").select("id, hearing_date, decision_type, next_hearing_id, previous_hearing_id, source_kind, source_document_id, source_page, source_quote, source_char_start, source_char_end, decision_source_char_start, decision_source_char_end").eq("case_id", c.id).order("hearing_date");
     const h21 = (hs ?? []).filter((x) => x.hearing_date === "2026-04-21");
     const h26 = (hs ?? []).find((x) => x.hearing_date === "2026-05-26");
     check(h21.length === 1 && h21[0].decision_type === "postponed", `after confirm: one 21/4/2026 hearing, decided (${h21.length} rows, ${h21[0]?.decision_type})`);
     check(!!h26 && h26.previous_hearing_id === h0.id && h21[0]?.next_hearing_id === h26.id, "after confirm: 26/5/2026 child hearing linked to the existing one");
     check(h26?.source_kind === "document" && h26?.source_document_id === d2.id && h26?.source_page === 1 && !!h26?.source_quote, "after confirm: child hearing carries document provenance (kind, document, page 1, quote)");
+    const dec2 = p2.ops.find((o) => o.tool === "record_decision");
+    check(h26?.source_char_start != null && h26?.source_char_end != null && h26.source_char_end > h26.source_char_start, `after confirm: child hearing saved its span (${h26?.source_char_start}–${h26?.source_char_end})`);
+    check(dec2?.source.char_start != null && h21[0]?.decision_source_char_start === dec2.source.char_start && h21[0]?.decision_source_char_end === dec2.source.char_end, "after confirm: the decision kept its own span (decision_source_char_start/end)");
+    const { data: pg2 } = await db.from("document_pages").select("text").eq("document_id", d2.id).eq("page_no", 1).single();
+    check(!!h26?.source_quote && h26.source_char_start != null && normalizeForMatch(pg2!.text.slice(h26.source_char_start, h26.source_char_end!)) === normalizeForMatch(h26.source_quote), "after confirm: the saved span reads as the saved quote on the page");
     const { data: att } = await db.from("documents").select("case_id, doc_type").eq("id", d2.id).single();
     check(att?.case_id === c.id && att?.doc_type !== "judgment", `after confirm: photo attached to the case, not typed «حكم» (${att?.doc_type})`);
-    const { data: parties } = await db.from("case_parties").select("name, source_kind, source_document_id").eq("case_id", c.id);
+    const { data: parties } = await db.from("case_parties").select("name, source_kind, source_document_id, source_page, source_quote, source_char_start, source_char_end").eq("case_id", c.id);
     check((parties ?? []).every((x) => x.source_kind === "document" && x.source_document_id === d2.id), `after confirm: parties carry document provenance (${(parties ?? []).length})`);
+    check((parties ?? []).length > 0 && (parties ?? []).every((x) => x.source_char_start != null && x.source_char_end != null && normalizeForMatch(pg2!.text.slice(x.source_char_start, x.source_char_end)) === normalizeForMatch(x.source_quote ?? "")), "after confirm: parties saved a span that reads as their quote");
 
     // 3) opponent memo with an injected instruction
     const d3 = await upload(db, officeId, "opponent-memo.pdf", "application/pdf", t2, c.id);

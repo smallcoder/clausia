@@ -4,7 +4,7 @@ import "server-only";
  * the card UI calls `decideProposal` (wrapped as a server action by the chat feature).
  * Nothing reaches the content tables until `decideProposal` runs for that op.
  */
-import { normalizeDigits } from "@/lib/dates";
+import { normalizeForMatch } from "@/lib/quote-match";
 import type { Db } from "@/lib/supabase/server";
 import type { Json } from "@/lib/db/types";
 import { applyOp, type Provenance, type RefMap, type Undo } from "@/lib/tools/apply";
@@ -16,6 +16,13 @@ export interface OpSource {
   document_id?: string | null;
   page?: number | null;
   quote?: string | null;
+  /**
+   * Where `quote` sits in the page's ORIGINAL text (page_text.slice(char_start, char_end)), worked out by code when
+   * the quote was checked against the page (src/lib/quote-match.ts), never by the model. Only for document sources;
+   * absent when the quote was not verified or the span could not be mapped.
+   */
+  char_start?: number | null;
+  char_end?: number | null;
 }
 
 export interface ProposalOp {
@@ -50,14 +57,7 @@ export interface Proposal {
   created_at: string;
 }
 
-/** Loose match: digits normalised, diacritics/tatweel/punctuation and spacing ignored, alef/ya/ta-marbuta folded. */
-export function normalizeForMatch(s: string): string {
-  return normalizeDigits(s)
-    .replace(/[ً-ْـ]/g, "")
-    .replace(/[إأآٱ]/g, "ا").replace(/[ىی]/g, "ي").replace(/ک/g, "ك").replace(/ة/g, "ه")
-    .replace(/[^\p{L}\p{N}]+/gu, "")
-    .toLowerCase();
-}
+export { normalizeForMatch };
 
 /** True when the quote appears in one of the source texts (lawyer's messages or the document page). */
 export function verifyQuote(quote: string | null | undefined, sourceTexts: string[]): boolean {
@@ -88,12 +88,18 @@ export async function createProposal(
     const parsed = WRITE_TOOL_ARGS[o.tool].safeParse(o.args);
     if (!parsed.success) throw new Error(`${o.tool}: ${parsed.error.issues.map((x) => `${x.path.join(".")}: ${x.message}`).join("; ")}`);
     const quote = (o.args.quote as string | undefined) ?? o.source.quote ?? null;
+    const verified = verifyQuote(quote, input.sourceTexts);
+    // a verified paper quote should carry its span (the callers map it with code); if one does not, no span is stored
+    // and the panel finds the sentence with the same matcher when it opens
+    if (verified && o.source.kind === "document" && (o.source.char_start == null || o.source.char_end == null)) {
+      console.warn(`[proposals] verified quote with no span (op ${i + 1} ${o.tool}, document ${o.source.document_id ?? "?"}, page ${o.source.page ?? "?"})`);
+    }
     return {
       op_id: `op${i + 1}`,
       tool: o.tool,
       args: o.args,
       source: { ...o.source, quote },
-      quote_verified: verifyQuote(quote, input.sourceTexts),
+      quote_verified: verified,
       status: "pending",
       ...(o.resolved_from && Object.keys(o.resolved_from).length ? { resolved_from: o.resolved_from } : {}),
     };
@@ -161,6 +167,8 @@ export async function decideProposal(
       source_document_id: o.source.document_id ?? null,
       source_page: o.source.page ?? null,
       source_quote: (args.quote as string | undefined) ?? o.source.quote ?? null,
+      // the span belongs to the quote the model gave; a quote the lawyer rewrote has none (the panel finds it again)
+      ...(edit && "quote" in edit && edit.quote !== o.args.quote ? {} : { source_char_start: o.source.char_start ?? null, source_char_end: o.source.char_end ?? null }),
     };
     try {
       const res = await applyOp(db, o.tool, args, provenance, refs);

@@ -4,7 +4,8 @@
 // Nothing renders when the case has no judgment.
 import { Suggested } from "@/components/cases/CaseOverview";
 import { SheetReview } from "@/components/cases/ItemSheet";
-import { sourceText } from "@/components/cases/case-view";
+import { SourceChip } from "@/components/cite/SourceChip";
+import { aboutItem, citeOf, sourceText } from "@/components/cases/case-view";
 import { Panel, StatusChip } from "@/components/shell/PageHero";
 import type { CaseFile } from "@/lib/case-file";
 import { formatDmy } from "@/lib/dates";
@@ -43,7 +44,10 @@ export function JudgmentsTab({ cf, caseId }: { cf: CaseFile; caseId: string }) {
                   : <span className="text-text-4">ميعاد الطعن مش متسجل. Clausia مش بيحسبه؛ قوله لـ Clausia لو عايز تسجله.</span>}
               </p>
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-xs text-text-4">{sourceText(j.source, cf.documents)}</span>
+                {(() => {
+                  const cite = citeOf(`item:${j.id}`, j.source, cf.documents, aboutItem("حكم", j.operative_text));
+                  return cite ? <SourceChip cite={cite} /> : <span className="text-xs text-text-4">{sourceText(j.source, cf.documents)}</span>;
+                })()}
                 {suggested ? <div className="w-full sm:w-64"><SheetReview table="judgments" id={j.id} caseId={caseId} /></div> : null}
               </div>
             </li>

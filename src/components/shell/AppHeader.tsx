@@ -7,6 +7,7 @@ import { Bell, CalendarDays, FolderClosed, House, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useCite } from "@/components/cite/context";
 import { ThemeToggle } from "./ThemeToggle";
 
 const TABS = [
@@ -35,6 +36,8 @@ export function AppHeader({ initials, officeName, email, alerts }: { initials: s
   const on = activeTab(path);
   /** the top bar takes the page's column: Home and Chat are the narrow one, every other page the wide one */
   const narrow = path === "/" || path.startsWith("/chat");
+  /** a thread with the paper panel open is two columns (docs/design/next/Cite*): the top bar takes that wide box on desktop */
+  const { split } = useCite();
   const [open, setOpen] = useState(false);
   const menu = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -44,7 +47,7 @@ export function AppHeader({ initials, officeName, email, alerts }: { initials: s
     return () => document.removeEventListener("mousedown", close);
   }, [open]);
   return (
-    <header className={`sticky top-0 z-40 mx-auto ${path.startsWith("/chat/") || /^\/cases\/[^/]+/.test(path) ? "hidden sm:grid" : "grid"} h-18 w-full grid-cols-[1fr_auto_1fr] items-center gap-2 px-3.5 sm:h-22 ${narrow ? "max-w-narrow sm:px-6" : "max-w-page sm:px-10"}`}>
+    <header className={`sticky top-0 z-40 mx-auto ${path.startsWith("/chat/") || /^\/cases\/[^/]+/.test(path) ? "hidden sm:grid" : "grid"} h-18 w-full grid-cols-[1fr_auto_1fr] items-center gap-2 px-3.5 sm:h-22 ${split ? "max-w-narrow sm:px-6 lg:max-w-split lg:px-10" : narrow ? "max-w-narrow sm:px-6" : "max-w-page sm:px-10"}`}>
       <Link href="/" className="flex items-center gap-2.5 justify-self-start" aria-label="Clausia — الرئيسية">
         <span className="sm:hidden"><ClausiaMark size={40} /></span>
         <span className="hidden sm:inline-flex"><ClausiaMark size={36} /></span>

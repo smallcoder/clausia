@@ -2,6 +2,7 @@
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 import { ChevronLeft, Inbox, type LucideIcon } from "lucide-react";
+import { SourceChip } from "@/components/cite/SourceChip";
 import { formatDmy, type DatePrecision } from "@/lib/dates";
 
 export function cx(...c: (string | false | null | undefined)[]) {
@@ -154,17 +155,26 @@ export function DateText({ iso, precision = "day", className }: { iso: string | 
  * Provenance marker for any case item: who wrote it (model/lawyer), whether confirmed, and where it came from.
  * Pass the row's provenance columns.
  */
-export function SourceBadge({ row, documentName }: {
-  row: { review_status?: string | null; created_by_kind?: string | null; source_kind?: string | null; source_page?: number | null };
+export function SourceBadge({ row, documentName, about }: {
+  row: {
+    review_status?: string | null; created_by_kind?: string | null; source_kind?: string | null; source_page?: number | null;
+    /** with these (and `id`) a paper source is a chip that opens the paper at the sentence */
+    id?: string; source_document_id?: string | null; source_quote?: string | null; source_char_start?: number | null; source_char_end?: number | null;
+  };
   documentName?: string | null;
+  about?: string | null;
 }) {
   const suggested = row.review_status === "suggested";
+  const label = `${documentName ?? "مستند"}${row.source_page ? ` · ص ${row.source_page}` : ""}`;
   const from = row.source_kind === "document" ? `${documentName ?? "مستند"}${row.source_page ? ` ص ${row.source_page}` : ""}` : row.source_kind === "chat" ? "من المحادثة" : "إدخال يدوي";
+  const paper = row.source_kind === "document" && row.id && row.source_document_id;
   return (
     <span className="inline-flex flex-wrap items-center gap-1">
       {suggested ? <Badge tone="suggest">مقترح · بانتظار التأكيد</Badge> : null}
       <Badge tone={row.created_by_kind === "model" ? "accent" : "neutral"}>{row.created_by_kind === "model" ? "صاغه Clausia" : "المحامي"}</Badge>
-      <span className="text-sm leading-4 text-text-4">{from}</span>
+      {paper ? (
+        <SourceChip cite={{ id: `item:${row.id}`, documentId: row.source_document_id!, page: row.source_page ?? 1, start: row.source_char_start ?? null, end: row.source_char_end ?? null, quote: row.source_quote ?? null, label, about: about ?? null }} />
+      ) : <span className="text-sm leading-4 text-text-4">{from}</span>}
     </span>
   );
 }
