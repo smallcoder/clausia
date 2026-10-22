@@ -1,24 +1,28 @@
 /**
- * The roll's own header and Clausia line, drawn to docs/design/*Roll.dc.html (the shared PageHero / ClausiaSays
- * wrap the action under the title on mobile and use other sizes). Header: eyebrow + «الرول» on the start side,
- * the controls on the end side of the same row, bottom-aligned (desktop: «05 جلسات الأسبوع»; mobile: the
- * «محتاجة قرار» pill).
+ * The roll's own header and Clausia line. Header, desktop: the shared title row (shell/TitleRow, as the Cases mockup
+ * draws it) — «الرول» (34px), the stats inline, the controls («النهارده») at the far end, a hairline under it; the
+ * day strip comes below the hairline. Mobile (drawn to docs/design/*Roll.dc.html): eyebrow + «الرول» on the start
+ * side, the «محتاجة قرار» pill on the end side of the same row, bottom-aligned. The eyebrow (the date) is phone-only:
+ * on desktop the day's own heading says it.
  */
 import type { ReactNode } from "react";
 import { BackBtn } from "@/components/shell/PageHero";
+import { PageTitle, TitleRow, TitleStats, type TitleStatData } from "@/components/shell/TitleRow";
 
-export function RollHeader({ back, eyebrow, title, action }: { back?: string; eyebrow: ReactNode; title: ReactNode; action?: ReactNode }) {
+export function RollHeader({ back, eyebrow, title, stats = [], action }: { back?: string; eyebrow: ReactNode; title: ReactNode; stats?: TitleStatData[]; action?: ReactNode }) {
   return (
-    <header className="flex items-end justify-between gap-6 px-1 pt-3 leading-[normal] sm:px-2 sm:pt-9">
-      <div className="flex min-w-0 items-start gap-3 sm:gap-4">
-        {back ? <BackBtn href={back} /> : null}
+    <TitleRow className="flex items-end justify-between gap-6 px-1 pt-3 leading-[normal] sm:justify-start">
+      <div className="flex min-w-0 items-start gap-3 sm:items-center sm:gap-4">
+        {/* the round button is 44px tall on desktop: its margin keeps the row as tall as the title */}
+        {back ? <span className="sm:-my-1.5"><BackBtn href={back} /></span> : null}
         <div className="min-w-0">
-          <div className="text-sm font-semibold text-text-3 sm:tracking-[0.02em]">{eyebrow}</div>
-          <h1 className="mt-1 text-xl font-bold leading-[1.1] text-title sm:mt-1.5 sm:text-2xl">{title}</h1>
+          <div className="text-sm font-semibold text-text-3 sm:hidden">{eyebrow}</div>
+          <PageTitle className="mt-1 sm:mt-0">{title}</PageTitle>
         </div>
       </div>
-      {action}
-    </header>
+      <TitleStats stats={stats} mobile={false} />
+      {action ? <div className="sm:ms-auto">{action}</div> : null}
+    </TitleRow>
   );
 }
 
