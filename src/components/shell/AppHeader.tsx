@@ -35,7 +35,7 @@ export function AppHeader({ initials, officeName, email, alerts, holidays = fals
   const path = usePathname();
   const on = activeTab(path);
   /** the top bar takes the page's column: Home and Chat are the narrow one, every other page the wide one */
-  const narrow = path === "/" || path.startsWith("/chat");
+  const narrow = path === "/" || path.startsWith("/chat") || path.startsWith("/settings");
   /** a thread with the paper panel open is two columns (docs/design/next/Cite*): the top bar takes that wide box on desktop */
   const { split } = useCite();
   const [open, setOpen] = useState(false);

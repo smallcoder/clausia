@@ -21,10 +21,12 @@ import { RollHeader, RollSays } from "@/components/hearings/RollHeader";
 import { reducedMotion, RollStrip, stripRange, type SelectHow } from "@/components/hearings/RollStrip";
 import { dayName, Empty, Timeline } from "@/components/hearings/RollTimeline";
 import { arDate, arDayMonth, nCourts, nHearings, WEEKDAY_LONG, weekdayOf } from "@/components/hearings/roll-text";
+import { DeadlineRows } from "@/components/hearings/DeadlineRows";
 import { StatusChip } from "@/components/shell/PageHero";
 import type { TitleStatData } from "@/components/shell/TitleRow";
 import { cx } from "@/components/ui";
 import { addDaysIso, formatDmy, parseDmy } from "@/lib/dates";
+import type { RollDeadline } from "@/lib/deadlines/types";
 import { courtOf, groupBy, nextUndecided, weekStart, type HearingWithCase } from "@/lib/hearings";
 
 export type View = "day" | "week";
@@ -48,15 +50,18 @@ function readUrl(search: string | URLSearchParams, today: string): Sel {
 /** The per-day rows and which weeks (by Saturday) are loaded. Mutable; `ver` re-renders. */
 class Cache {
   rows = new Map<string, HearingWithCase[]>();
+  /** saved appeal deadlines (last days and reminders) per day; empty with the flag off */
+  dl = new Map<string, RollDeadline[]>();
   weeks = new Map<string, "fresh" | "stale">();
   busy = new Set<string>();
   /** bumped when the server sends fresh rows: reads started before that are dropped when they land */
   gen = 0;
-  put(from: string, to: string, rows: HearingWithCase[]) {
+  put(from: string, to: string, rows: HearingWithCase[], deadlines: RollDeadline[] = []) {
     for (let w = weekStart(from); w <= to; w = addDaysIso(w, 7)) {
       this.weeks.set(w, "fresh");
-      for (let i = 0; i < 7; i++) this.rows.delete(addDaysIso(w, i));
+      for (let i = 0; i < 7; i++) { this.rows.delete(addDaysIso(w, i)); this.dl.delete(addDaysIso(w, i)); }
     }
+    for (const d of deadlines) this.dl.set(d.date, [...(this.dl.get(d.date) ?? []), d]);
     for (const h of rows) {
       const a = this.rows.get(h.hearing_date);
       if (a) a.push(h);
@@ -65,6 +70,7 @@ class Cache {
   }
   has(iso: string) { return this.weeks.has(weekStart(iso)); }
   day(iso: string) { return this.rows.get(iso) ?? []; }
+  deadlines(iso: string) { return this.dl.get(iso) ?? []; }
   week(sat: string) { return Array.from({ length: 7 }, (_, i) => this.day(addDaysIso(sat, i))).flat(); }
 }
 
@@ -74,6 +80,8 @@ interface Props {
   from: string;
   to: string;
   rows: HearingWithCase[];
+  /** saved appeal deadlines for the same range (the server's first render) */
+  deadlines?: RollDeadline[];
   /** the «محتاجة قرار» pill (mobile header) and the desktop side card — server-rendered */
   pill: ReactNode;
   /** past hearings with no decision: the gold stat of the desktop title row */
@@ -81,9 +89,9 @@ interface Props {
   side: ReactNode;
 }
 
-export function RollDay({ today, from, to, rows, pill, undecided, side }: Props) {
+export function RollDay({ today, from, to, rows, deadlines = [], pill, undecided, side }: Props) {
   const sp = useSearchParams();
-  const [cache] = useState(() => { const c = new Cache(); c.put(from, to, rows); return c; });
+  const [cache] = useState(() => { const c = new Cache(); c.put(from, to, rows, deadlines); return c; });
   const [ver, setVer] = useState(0);
   const [sel, setSel] = useState<Sel>(() => readUrl(sp, today));
   const [center, setCenter] = useState(() => weekStart(readUrl(sp, today).date));
@@ -124,7 +132,7 @@ export function RollDay({ today, from, to, rows, pill, undecided, side }: Props)
       const gen = cache.gen;
       hearingsRangeAction(a, b)
         // a read from before the latest server render may hold pre-decision rows: drop it
-        .then((got) => { if (gen !== cache.gen) return; cache.put(a, b, got); setVer((v) => v + 1); })
+        .then((got) => { if (gen !== cache.gen) return; cache.put(a, b, got.hearings, got.deadlines); setVer((v) => v + 1); })
         .catch(() => {}) // tried again the next time these weeks come into view
         .finally(() => { if (gen === cache.gen) r.forEach((w) => cache.busy.delete(w)); });
     }
@@ -146,10 +154,10 @@ export function RollDay({ today, from, to, rows, pill, undecided, side }: Props)
     cache.gen++;
     cache.busy.clear(); // their results will be dropped; these weeks may be read again now
     for (const w of cache.weeks.keys()) cache.weeks.set(w, "stale");
-    cache.put(from, to, rows);
+    cache.put(from, to, rows, deadlines);
     setVer((v) => v + 1);
     ensureRef.current(visible.current.first, visible.current.last);
-  }, [rows, from, to, cache]);
+  }, [rows, from, to, cache]); // eslint-disable-line react-hooks/exhaustive-deps -- `deadlines` arrives with `rows` in the same render
 
   // ---- selection ---------------------------------------------------------------------------------------------------
   const change = useCallback((next: Sel, how: SelectHow | "history") => {
@@ -304,6 +312,7 @@ function Content({ s, today, cache, select }: { s: Sel; today: string; cache: Ca
         <h2 className="text-lg font-bold text-title">{dayName(date, today)}</h2>
         {dayRows.length ? <span className="text-sm text-text-3">{nHearings(dayRows.length)} · {nCourts(nCourt)}</span> : null}
       </div>
+      <DeadlineRows rows={cache.deadlines(date)} today={today} />
       {dayRows.length ? (
         <Timeline rows={dayRows} today={today} next={nx?.h} label={nextLabel} />
       ) : (

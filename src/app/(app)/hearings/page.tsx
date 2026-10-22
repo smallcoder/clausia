@@ -11,6 +11,8 @@ import { Empty } from "@/components/hearings/RollTimeline";
 import { two } from "@/components/shell/PageHero";
 import { Composer, type ComposerChip } from "@/components/shell/Composer";
 import { addDaysIso, formatDmy, parseDmy, todayIso } from "@/lib/dates";
+import { deadlinesInRange } from "@/lib/deadlines/roll";
+import type { RollDeadline } from "@/lib/deadlines/types";
 import { courtOf, hearingsInRange, undecidedPastCount, undecidedPastHearings, weekStart, type HearingWithCase } from "@/lib/hearings";
 import { createClient } from "@/lib/supabase/server";
 
@@ -64,8 +66,9 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
   const to = addDaysIso(wk, 7 * SSR_WEEKS + 6);
 
   const db = await createClient();
-  const [rows, undecidedCount, undecidedRows] = await Promise.all([
+  const [rows, deadlines, undecidedCount, undecidedRows] = await Promise.all([
     undecidedMode ? Promise.resolve([] as HearingWithCase[]) : hearingsInRange(db, from, to),
+    undecidedMode ? Promise.resolve([] as RollDeadline[]) : deadlinesInRange(db, from, to),
     undecidedPastCount(db),
     // the whole list for ?filter=undecided; otherwise the oldest few, for the side card
     undecidedPastHearings(db, undecidedMode ? 200 : SIDE_ROWS),
@@ -110,7 +113,7 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
             </div>
           </>
         ) : (
-          <RollDay today={today} from={from} to={to} rows={rows} pill={pill} undecided={undecidedCount}
+          <RollDay today={today} from={from} to={to} rows={rows} deadlines={deadlines} pill={pill} undecided={undecidedCount}
             side={undecidedCount > 0 ? <SideCard count={undecidedCount} rows={undecidedRows} /> : null} />
         )}
       </RollSheet>

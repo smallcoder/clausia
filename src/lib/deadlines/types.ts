@@ -61,3 +61,18 @@ export const REMINDER_CHOICES = [
   { days: 3, label: "3 أيام" },
   { days: 1, label: "يوم قبلها" },
 ] as const;
+
+/** One line of the Roll: the last day of a saved deadline (gold) or one of its reminders. */
+export interface RollDeadline {
+  id: string;
+  /** the day this line shows on */
+  date: string;
+  type: "last_day" | "reminder";
+  /** for a reminder: how many days before the last day */
+  days_before: number;
+  kind: DeadlineKind;
+  last_day: string;
+  case_id: string;
+  case_title: string;
+  case_number: string | null;
+}
