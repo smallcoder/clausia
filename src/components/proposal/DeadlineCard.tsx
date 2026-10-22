@@ -11,6 +11,7 @@ import { CalendarDays, File, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
+import { useUndoToast } from "@/components/shell/UndoToast";
 import { cx } from "@/components/ui";
 import { decideProposalAction } from "@/lib/assistant/actions";
 import { previewDeadlinesAction } from "@/lib/deadlines/actions";
@@ -124,6 +125,7 @@ function Row({ row, card, onOpen }: { row: DeadlineCardData["rows"][number]; car
 
 export function DeadlineCard({ proposal, entry }: { proposal: Proposal; entry: DeadlineCardEntry }) {
   const router = useRouter();
+  const undoToast = useUndoToast();
   const op = proposal.ops.find((o) => o.tool === "add_deadline")!;
   const [p, setP] = useState(proposal);
   const [card, setCard] = useState<DeadlineCardData | null>("card" in entry ? entry.card : null);
@@ -157,7 +159,7 @@ export function DeadlineCard({ proposal, entry }: { proposal: Proposal; entry: D
   const save = () => {
     start(async () => {
       const r = await decideProposalAction(p.id, { mode: "confirm", opIds: [op.op_id], edits: { [op.op_id]: { start_basis: basis, service_date: basis === "service_date" ? service : undefined, urgent: hasAppeal ? urgent : false, reminders } } });
-      if (r.ok && r.proposal) { setP(r.proposal); setError(null); router.refresh(); } else setError(r.error ?? "تعذّر الحفظ");
+      if (r.ok && r.proposal) { setP(r.proposal); setError(null); if (r.undoEventId) undoToast.show({ eventIds: [r.undoEventId], count: 1 }); router.refresh(); } else setError(r.error ?? "تعذّر الحفظ");
     });
   };
 

@@ -18,6 +18,7 @@ import { Check, ChevronDown, FolderClosed, X } from "lucide-react";
 import { useCite, type CiteSource } from "@/components/cite/context";
 import { SourceChip, SourceLabel } from "@/components/cite/SourceChip";
 import { Was } from "@/components/cases/Suggest";
+import { useUndoToast } from "@/components/shell/UndoToast";
 import { cx } from "@/components/ui";
 import { decideProposalAction } from "@/lib/assistant/actions";
 import { CASE_STATUS, DECISION, DOC_TYPE, PARTY_ROLE, STAGE } from "@/lib/labels";
@@ -123,6 +124,7 @@ export function ProposalCard({ proposal: initial, lookup = {}, rows = {} }: {
   rows?: Record<string, EditRow[]>;
 }) {
   const router = useRouter();
+  const undoToast = useUndoToast();
   const [p, setP] = useState(initial);
   const [edits, setEdits] = useState<Edits>({});
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
@@ -165,6 +167,8 @@ export function ProposalCard({ proposal: initial, lookup = {}, rows = {} }: {
     start(async () => {
       const r = await decideProposalAction(p.id, { mode, opIds, edits: mode === "reject" ? undefined : ed });
       if (!r.ok || !r.proposal) { setError(r.error ?? "تعذّر الحفظ"); return; }
+      // a confirm that can be reverted: the toast with «تراجع» (10 seconds)
+      if (r.undoEventId) undoToast.show({ eventIds: [r.undoEventId], count: p.ops.filter((o) => opIds.includes(o.op_id)).reduce((n, o) => n + (rowsOf(o).length || 1), 0) });
       setP(r.proposal);
       setEditing(null);
       router.refresh();

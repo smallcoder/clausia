@@ -16,6 +16,7 @@ import type { ReactNode } from "react";
 import { CitePanel } from "@/components/cite/CitePanel";
 import { CONFIRM_SLOT } from "@/components/cases/ConfirmBar";
 import { DraftProvider, type Account } from "@/components/chat/draft";
+import { UndoToastProvider } from "@/components/shell/UndoToast";
 import { cx } from "@/components/ui";
 
 function sheetOpen(path: string, sp: URLSearchParams): boolean {
@@ -39,6 +40,7 @@ export function SplitShell({ header, chat, account, children }: { header: ReactN
   const open = sheetOpen(path, sp);
   return (
     <DraftProvider account={account}>
+    <UndoToastProvider>
       <div className="xl:px-5">
       <div className="xl:mx-auto xl:w-full xl:max-w-frame">
       {header}
@@ -63,6 +65,7 @@ export function SplitShell({ header, chat, account, children }: { header: ReactN
       </div>
       </div>
       <CitePanel />
+    </UndoToastProvider>
     </DraftProvider>
   );
 }
