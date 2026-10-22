@@ -121,7 +121,7 @@ export async function splitPages(bytes: Uint8Array, mime: string): Promise<{ fil
   return { files: out, total };
 }
 
-async function pool<T, R>(items: T[], limit: number, fn: (item: T, i: number) => Promise<R>): Promise<R[]> {
+export async function pool<T, R>(items: T[], limit: number, fn: (item: T, i: number) => Promise<R>): Promise<R[]> {
   const out = new Array<R>(items.length);
   let next = 0;
   let failed: { e: unknown } | null = null; // first failure stops the other workers from starting new pages
@@ -136,7 +136,7 @@ async function pool<T, R>(items: T[], limit: number, fn: (item: T, i: number) =>
 }
 
 /** Page text as data: neutralise anything that could close our wrapper tags. */
-function asData(text: string): string {
+export function asData(text: string): string {
   return text.replace(/<\s*\/?\s*(page|document)\b[^>]*>/gi, "[وسم محذوف]");
 }
 
@@ -166,7 +166,7 @@ export function findInjectionLines(pages: string[]): { page: number; quote: stri
 }
 
 /** Model-reported + pattern-found lines, de-duplicated by text. */
-function mergeSuspicious(a: { page: number; quote: string }[], b: { page: number; quote: string }[]) {
+export function mergeSuspicious(a: { page: number; quote: string }[], b: { page: number; quote: string }[]) {
   const out = [...a];
   for (const x of b) {
     const k = normalizeForMatch(x.quote);
@@ -176,13 +176,13 @@ function mergeSuspicious(a: { page: number; quote: string }[], b: { page: number
 }
 
 /** An op whose content repeats a suspicious line is never proposed. */
-function touchesSuspicious(args: Record<string, unknown>, suspicious: { quote: string }[]): boolean {
+export function touchesSuspicious(args: Record<string, unknown>, suspicious: { quote: string }[]): boolean {
   const blob = normalizeForMatch(Object.values(args).filter((v) => typeof v === "string").join(" "));
   return suspicious.some((s) => { const k = normalizeForMatch(s.quote); return k.length > 8 && blob.includes(k); });
 }
 
 /** All numeric dates written in a text, as ISO (d/m/yyyy and yyyy/m/d orders). */
-function datesIn(text: string): Set<string> {
+export function datesIn(text: string): Set<string> {
   const t = normalizeDigits(text);
   const out = new Set<string>();
   for (const m of t.matchAll(/(\d{1,4})\s*[/\-.]\s*(\d{1,2})\s*[/\-.]\s*(\d{1,4})/g)) {
