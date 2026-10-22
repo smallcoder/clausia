@@ -727,6 +727,146 @@ export type Database = {
           },
         ]
       }
+      doc_column_cells: {
+        Row: {
+          answer: string | null
+          column_id: string
+          created_at: string
+          created_by: string | null
+          created_by_kind: Database["public"]["Enums"]["actor_kind"]
+          document_id: string
+          id: string
+          note: string | null
+          office_id: string
+          review_status: Database["public"]["Enums"]["item_status"]
+          source_char_end: number | null
+          source_char_start: number | null
+          source_document_id: string | null
+          source_kind: Database["public"]["Enums"]["source_kind"]
+          source_page: number | null
+          source_quote: string | null
+        }
+        Insert: {
+          answer?: string | null
+          column_id: string
+          created_at?: string
+          created_by?: string | null
+          created_by_kind?: Database["public"]["Enums"]["actor_kind"]
+          document_id: string
+          id?: string
+          note?: string | null
+          office_id?: string
+          review_status?: Database["public"]["Enums"]["item_status"]
+          source_char_end?: number | null
+          source_char_start?: number | null
+          source_document_id?: string | null
+          source_kind?: Database["public"]["Enums"]["source_kind"]
+          source_page?: number | null
+          source_quote?: string | null
+        }
+        Update: {
+          answer?: string | null
+          column_id?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_kind?: Database["public"]["Enums"]["actor_kind"]
+          document_id?: string
+          id?: string
+          note?: string | null
+          office_id?: string
+          review_status?: Database["public"]["Enums"]["item_status"]
+          source_char_end?: number | null
+          source_char_start?: number | null
+          source_document_id?: string | null
+          source_kind?: Database["public"]["Enums"]["source_kind"]
+          source_page?: number | null
+          source_quote?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doc_column_cells_column_id_fkey"
+            columns: ["column_id"]
+            isOneToOne: false
+            referencedRelation: "doc_columns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doc_column_cells_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doc_column_cells_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doc_column_cells_source_document_id_fkey"
+            columns: ["source_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      doc_columns: {
+        Row: {
+          case_id: string
+          created_at: string
+          created_by: string | null
+          created_by_kind: Database["public"]["Enums"]["actor_kind"]
+          id: string
+          office_id: string
+          question: string
+          review_status: Database["public"]["Enums"]["item_status"]
+          source_kind: Database["public"]["Enums"]["source_kind"]
+          title: string
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          created_by?: string | null
+          created_by_kind?: Database["public"]["Enums"]["actor_kind"]
+          id?: string
+          office_id?: string
+          question: string
+          review_status?: Database["public"]["Enums"]["item_status"]
+          source_kind?: Database["public"]["Enums"]["source_kind"]
+          title: string
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_kind?: Database["public"]["Enums"]["actor_kind"]
+          id?: string
+          office_id?: string
+          question?: string
+          review_status?: Database["public"]["Enums"]["item_status"]
+          source_kind?: Database["public"]["Enums"]["source_kind"]
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "doc_columns_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "doc_columns_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_pages: {
         Row: {
           created_at: string

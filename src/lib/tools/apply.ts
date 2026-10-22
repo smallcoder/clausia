@@ -83,7 +83,7 @@ function must<R extends { data: unknown; error: { message: string } | null }>(r:
 /** Puts the database back as it was before one applied op (a card is saved all or nothing). */
 export type Undo = () => Promise<void>;
 
-type Table = "clients" | "cases" | "case_parties" | "case_facts" | "case_requests" | "case_arguments" | "hearings" | "judgments";
+type Table = "clients" | "cases" | "case_parties" | "case_facts" | "case_requests" | "case_arguments" | "hearings" | "judgments" | "doc_columns" | "doc_column_cells";
 const del = (db: Db, table: Table, id: string): Undo => async () => { must(await db.from(table).delete().eq("id", id).select("id")); };
 
 /** Validate + execute. Returns the id of the created/updated row (for @ref resolution) and how to undo it. */
@@ -217,6 +217,36 @@ export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Prov
       const before = must(await db.from("documents").select("case_id, doc_type, title").eq("id", id).single());
       must(await db.from("documents").update({ case_id: resolveRef(x.case, refs)!, doc_type: x.doc_type, ...(x.title ? { title: x.title } : {}) }).eq("id", id).select("id").single());
       return { id, undo: async () => { must(await db.from("documents").update(before).eq("id", id).select("id").single()); } };
+    }
+    case "add_doc_column": {
+      const x = a as WriteArgs<"add_doc_column">;
+      const row = must(await db.from("doc_columns").insert({
+        case_id: resolveRef(x.case, refs)!, question: x.question.trim(), title: x.title.trim(),
+        review_status: p.review_status, created_by_kind: p.created_by_kind, source_kind: "manual", // the question is typed on the documents page
+      }).select("id").single());
+      return { id: row.id, undo: del(db, "doc_columns", row.id) };
+    }
+    case "add_doc_cell": {
+      const x = a as WriteArgs<"add_doc_cell">;
+      const columnId = resolveRef(x.column, refs)!;
+      const documentId = resolveRef(x.document, refs)!;
+      // a cell belongs to a paper of the SAME case as its column
+      const [col, doc] = await Promise.all([
+        db.from("doc_columns").select("case_id").eq("id", columnId).maybeSingle(),
+        db.from("documents").select("case_id").eq("id", documentId).maybeSingle(),
+      ]);
+      if (!col.data || !doc.data || doc.data.case_id !== col.data.case_id) throw new Error("المستند ده مش من نفس دعوى العمود");
+      // an answer is saved only with the page and the verbatim quote that prove it («مش مذكور» has neither)
+      const answer = x.answer?.trim() || null;
+      if (answer && (!p.source_page || !p.source_quote)) throw new Error("الإجابة لازم يكون ليها صفحة واقتباس من الورقة");
+      const row = must(await db.from("doc_column_cells").insert({
+        column_id: columnId, document_id: documentId, answer, note: x.note?.trim() || null,
+        review_status: p.review_status, created_by_kind: p.created_by_kind, source_kind: "document", source_document_id: documentId,
+        source_page: answer ? p.source_page ?? null : null,
+        source_quote: answer ? p.source_quote ?? null : null,
+        ...(answer ? span({ ...p, source_kind: "document", source_document_id: documentId }) : { source_char_start: null, source_char_end: null }),
+      }).select("id").single());
+      return { id: row.id, undo: del(db, "doc_column_cells", row.id) };
     }
   }
 }

@@ -2,7 +2,7 @@ PASS  offices A and B differ
 PASS  DEMO sees its own cases  (15 cases)
 PASS  OTHER reads 0 rows of office A: cases  (A has 15; B got 0)
 PASS  OTHER reads 0 rows of office A: clients  (A has 12; B got 0)
-PASS  OTHER reads 0 rows of office A: case_parties  (A has 31; B got 0)
+PASS  OTHER reads 0 rows of office A: case_parties  (A has 32; B got 0)
 PASS  OTHER reads 0 rows of office A: case_facts  (A has 25; B got 0)
 PASS  OTHER reads 0 rows of office A: case_requests  (A has 19; B got 0)
 PASS  OTHER reads 0 rows of office A: case_arguments  (A has 11; B got 0)
@@ -11,9 +11,11 @@ PASS  OTHER reads 0 rows of office A: judgments  (A has 3; B got 0)
 PASS  OTHER reads 0 rows of office A: documents  (A has 3; B got 0)
 PASS  OTHER reads 0 rows of office A: document_pages  (A has 6; B got 0)
 PASS  OTHER reads 0 rows of office A: proposals  (A has 14; B got 0)
-PASS  OTHER reads 0 rows of office A: chat_threads  (A has 21; B got 0)
-PASS  OTHER reads 0 rows of office A: chat_messages  (A has 73; B got 0)
-PASS  OTHER reads 0 rows of office A: llm_calls  (A has 386; B got 0)
+PASS  OTHER reads 0 rows of office A: chat_threads  (A has 22; B got 0)
+PASS  OTHER reads 0 rows of office A: chat_messages  (A has 81; B got 0)
+PASS  OTHER reads 0 rows of office A: llm_calls  (A has 697; B got 0)
+PASS  OTHER reads 0 rows of office A: doc_columns  (A has 0; B got 0)
+PASS  OTHER reads 0 rows of office A: doc_column_cells  (A has 0; B got 0)
 PASS  OTHER cannot read an office-A case by id
 PASS  OTHER cannot read office A row
 PASS  OTHER update of office-A case affects 0 rows  (0 rows)
@@ -21,6 +23,13 @@ PASS  OTHER delete of office-A case affects 0 rows  (0 rows)
 PASS  office-A case still exists after OTHER attempts
 PASS  OTHER insert with office A's office_id fails  (new row violates row-level security policy for table "cases")
 PASS  OTHER insert of a client into office A fails  (new row violates row-level security policy for table "clients")
+PASS  DEMO writes a column and a cell into its own office
+PASS  OTHER cannot read an office-A column or cell by id
+PASS  OTHER update of an office-A column / cell affects 0 rows
+PASS  OTHER delete of an office-A column / cell affects 0 rows
+PASS  the office-A column still exists after OTHER attempts
+PASS  OTHER insert of a column into office A fails  (new row violates row-level security policy for table "doc_columns")
+PASS  OTHER insert of a cell into office A fails  (new row violates row-level security policy for table "doc_column_cells")
 PASS  OTHER record_hearing_decision on office-A hearing fails  (hearing not found)
 PASS  OTHER lists nothing under office A's storage prefix  (0 objects)
 PASS  OTHER cannot download an office-A object  (real object)

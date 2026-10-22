@@ -129,13 +129,15 @@ export function CaseHeader({ cf, caseId, chatHref, stats }: { cf: CaseFile; case
  * `action` (documents: «ارفع مستند») at the far end, with the hairline under it. Mobile (unchanged): back, the
  * who-line as eyebrow, the view name as title.
  */
-export function CaseSubHeader({ cf, caseId, crumb, title, stats = [], action }: {
+export function CaseSubHeader({ cf, caseId, crumb, title, stats = [], action, eyebrow = false }: {
   cf: CaseFile; caseId: string;
   /** the view's short name, last in the breadcrumb */
   crumb: string;
   title: string;
   stats?: TitleStatData[];
   action?: ReactNode;
+  /** desktop: the who-line «عادل النموذجي ضد وليد التجريبي» above the title, as the documents table mockup draws it (the phone always has it) */
+  eyebrow?: boolean;
 }) {
   const who = whoLine(cf);
   const number = specSheet(cf)[0].value;
@@ -160,6 +162,11 @@ export function CaseSubHeader({ cf, caseId, crumb, title, stats = [], action }: 
           <span aria-hidden className="mx-1.5 text-text-4">/</span><span aria-current="page" className="font-semibold text-text">{crumb}</span>
         </nav>
       </div>
+      {eyebrow ? (
+        <p className="hidden px-2 text-sm font-semibold text-gold sm:-mb-4 sm:mt-3 sm:block">
+          {who.client ?? who.fallback}{who.client && who.opponent ? <span> ضد </span> : null}{who.client && who.opponent ? who.opponent : null}
+        </p>
+      ) : null}
       {/* desktop row 2: the title row */}
       <TitleRow as="div" top="sub" className="hidden">
         <PageTitle>{title}</PageTitle>

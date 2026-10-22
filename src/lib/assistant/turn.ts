@@ -17,7 +17,7 @@ import { findSpan } from "@/lib/quote-match";
 import { cairoDateOf, resolveRelativeDays, type RelativeDay } from "@/lib/relative-days";
 import type { Db } from "@/lib/supabase/server";
 import { isReadTool, READ_TOOL_SPECS, runReadTool } from "@/lib/tools/read";
-import { isWriteTool, OP_TITLE, WRITE_TOOL_ARGS, writeToolSpecs } from "@/lib/tools/registry";
+import { isInternalTool, isWriteTool, OP_TITLE, WRITE_TOOL_ARGS, writeToolSpecs } from "@/lib/tools/registry";
 import { buildSystemPrompt, type CaseContext } from "./prompt";
 
 const MAX_ROUNDS = 6;
@@ -186,7 +186,7 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }, clock: 
         }
         continue;
       }
-      if (!isWriteTool(call.name)) {
+      if (!isWriteTool(call.name) || isInternalTool(call.name)) { // the document-column tools are made by code only
         results.set(call.id, { error: `أداة غير معروفة: ${call.name}` });
         continue;
       }

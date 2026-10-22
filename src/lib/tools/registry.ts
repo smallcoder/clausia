@@ -140,12 +140,32 @@ export const WRITE_TOOL_ARGS = {
     title: z.string().optional(),
     quote: quote.optional(),
   }),
+  // The two tools below are made ONLY by the document-column runner (src/lib/doc-columns/run.ts), never by the chat
+  // model: every cell there is built from a quote that code checked against the paper's page. They are kept out of
+  // the model's tool list (writeToolSpecs) and refused if the model names them (turn.ts).
+  add_doc_column: z.object({
+    ref: selfRef,
+    case: ref("الدعوى"),
+    question: z.string().min(2).max(300).describe("سؤال المحامي كما كتبه"),
+    title: z.string().min(2).max(80).describe("عنوان العمود في الجدول"),
+    quote: quote.optional(),
+  }),
+  add_doc_cell: z.object({
+    column: ref("العمود"),
+    document: ref("المستند"),
+    answer: z.string().min(1).max(600).optional().describe("الإجابة القصيرة؛ تُترك فارغة إذا لم يذكر المستند ذلك («مش مذكور»)"),
+    note: z.string().max(300).optional(),
+    quote: quote.optional(),
+  }).refine((a) => !a.answer || !!a.quote, { message: "الإجابة بدون اقتباس من الورقة", path: ["quote"] }),
 } as const;
 
 export type WriteTool = keyof typeof WRITE_TOOL_ARGS;
 export type WriteArgs<T extends WriteTool> = z.infer<(typeof WRITE_TOOL_ARGS)[T]>;
 export const WRITE_TOOLS = Object.keys(WRITE_TOOL_ARGS) as WriteTool[];
 export const isWriteTool = (n: string): n is WriteTool => n in WRITE_TOOL_ARGS;
+/** Tools only code may propose (see above): not offered to the model, refused if it calls them. */
+export const INTERNAL_TOOLS = ["add_doc_column", "add_doc_cell"] as const satisfies readonly WriteTool[];
+export const isInternalTool = (n: string): boolean => (INTERNAL_TOOLS as readonly string[]).includes(n);
 
 export const WRITE_TOOL_DESCRIPTIONS: Record<WriteTool, string> = {
   create_client: "اقتراح إنشاء موكل جديد. يُعرض على المحامي للتأكيد قبل الحفظ.",
@@ -160,10 +180,12 @@ export const WRITE_TOOL_DESCRIPTIONS: Record<WriteTool, string> = {
   record_decision: "اقتراح تسجيل قرار جلسة. عند التأجيل يجب ذكر تاريخ الجلسة القادمة، وتُنشأ تلقائيًا.",
   add_judgment: "اقتراح تسجيل حكم أو قرار صادر. ميعاد الطعن فقط إن ذكره المحامي.",
   attach_document: "اقتراح ربط مستند مرفوع بدعوى وتحديد نوعه.",
+  add_doc_column: "عمود جديد في جدول مستندات الدعوى (من سؤال المحامي). يصنعه الكود فقط.",
+  add_doc_cell: "خانة في عمود مستندات: إجابة السؤال من مستند واحد. يصنعها الكود فقط.",
 };
 
 /** Field list for rendering/editing a confirmation card generically. */
-export type FieldType = "text" | "longtext" | "date" | "number" | "bool" | "ref" | { enum: Record<string, string> };
+export type FieldType = "text" | "longtext" | "date" | "number" | "bool" | "ref" | "readonly" | { enum: Record<string, string> };
 export interface FieldSpec { key: string; label: string; type: FieldType }
 
 import { ARG_SIDE, CASE_STATUS, CLIENT_KIND, DECISION, DOC_TYPE, JUDGMENT_KIND, PARTY_ROLE, STAGE } from "@/lib/labels";
@@ -181,6 +203,8 @@ export const OP_TITLE: Record<WriteTool, string> = {
   record_decision: "قرار جلسة",
   add_judgment: "حكم",
   attach_document: "ربط مستند",
+  add_doc_column: "عمود جديد",
+  add_doc_cell: "خانة في العمود",
 };
 
 export const OP_FIELDS: Record<WriteTool, FieldSpec[]> = {
@@ -277,11 +301,21 @@ export const OP_FIELDS: Record<WriteTool, FieldSpec[]> = {
     { key: "doc_type", label: "نوع المستند", type: { enum: DOC_TYPE } },
     { key: "title", label: "العنوان", type: "text" },
   ],
+  add_doc_column: [
+    { key: "question", label: "السؤال", type: "readonly" },
+    { key: "title", label: "عنوان العمود", type: "text" },
+  ],
+  add_doc_cell: [
+    { key: "column", label: "العمود", type: "ref" },
+    { key: "document", label: "المستند", type: "ref" },
+    { key: "answer", label: "الإجابة", type: "longtext" },
+    { key: "note", label: "ملاحظة", type: "readonly" },
+  ],
 };
 
 /** Tool specs for the provider (JSON Schema from zod). */
 export function writeToolSpecs() {
-  return WRITE_TOOLS.map((name) => ({
+  return WRITE_TOOLS.filter((name) => !isInternalTool(name)).map((name) => ({
     name,
     description: WRITE_TOOL_DESCRIPTIONS[name],
     parameters: z.toJSONSchema(WRITE_TOOL_ARGS[name], { io: "input" }) as Record<string, unknown>,

@@ -72,6 +72,8 @@ export interface DraftOp {
   args: Record<string, unknown>;
   source: OpSource;
   resolved_from?: Record<string, ResolvedFrom>;
+  /** the texts THIS op's quote must come from (default: the card's `sourceTexts`): a column cell is checked against its own paper */
+  sourceTexts?: string[];
 }
 
 /**
@@ -88,7 +90,7 @@ export async function createProposal(
     const parsed = WRITE_TOOL_ARGS[o.tool].safeParse(o.args);
     if (!parsed.success) throw new Error(`${o.tool}: ${parsed.error.issues.map((x) => `${x.path.join(".")}: ${x.message}`).join("; ")}`);
     const quote = (o.args.quote as string | undefined) ?? o.source.quote ?? null;
-    const verified = verifyQuote(quote, input.sourceTexts);
+    const verified = verifyQuote(quote, o.sourceTexts ?? input.sourceTexts);
     // a verified paper quote should carry its span (the callers map it with code); if one does not, no span is stored
     // and the panel finds the sentence with the same matcher when it opens
     if (verified && o.source.kind === "document" && (o.source.char_start == null || o.source.char_end == null)) {

@@ -44,6 +44,9 @@ function opName(o: ProposalOp): string {
   return OP_TITLE[o.tool];
 }
 
+/** A «مش مذكور» cell has no quote and no paper sentence: nothing to verify and nothing to open. (Only this tool: every other op needs its quote.) */
+const noQuoteByDesign = (o: ProposalOp) => o.tool === "add_doc_cell" && !o.args.answer;
+
 /** The short label in the row's first column (the mockup's «الموكلة / الدعوى / الخصم / واقعة / الطلبات»). */
 function kindOf(o: ProposalOp): string {
   const a = o.args as Record<string, unknown>;
@@ -62,10 +65,12 @@ function kindOf(o: ProposalOp): string {
     case "record_decision": return "قرار";
     case "add_judgment": return "حكم";
     case "attach_document": return "ورقة";
+    case "add_doc_column": return "عمود";
+    case "add_doc_cell": return "خانة";
   }
 }
 
-function summaryOf(o: ProposalOp): string {
+function summaryOf(o: ProposalOp, lookup: Record<string, string> = {}): string {
   const a = o.args as Record<string, string | number | boolean | undefined>;
   const cut = (s: unknown, n = 70) => { const t = String(s ?? ""); return t.length > n ? `${t.slice(0, n)}…` : t; };
   switch (o.tool) {
@@ -79,6 +84,8 @@ function summaryOf(o: ProposalOp): string {
     case "record_decision": return [a.decision && DECISION[a.decision as keyof typeof DECISION], a.next_date && `الجلسة القادمة ${a.next_date}`].filter(Boolean).join(" · ");
     case "add_judgment": return [a.date, cut(a.operative_text)].filter(Boolean).join(" · ");
     case "attach_document": return a.doc_type ? DOC_TYPE[a.doc_type as keyof typeof DOC_TYPE] : "";
+    case "add_doc_column": return String(a.title ?? "");
+    case "add_doc_cell": return [lookup[String(a.document)], a.answer ? cut(a.answer, 90) : "مش مذكور"].filter(Boolean).join(" · ");
   }
 }
 
@@ -97,6 +104,7 @@ function titleOf(p: Proposal): string {
   if (has("create_case")) return "ملف قضية جديد";
   if (has("create_client")) return "موكل جديد";
   if (has("record_decision")) return "قرار الجلسة";
+  if (has("add_doc_column")) return "عمود جديد في جدول المستندات";
   if (p.case_id) return "إضافات لملف القضية";
   return "بطاقة تأكيد";
 }
@@ -234,19 +242,22 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
   /** The chip of a paper source: where the panel opens (page, stored span, the quote for an older item without one). */
   function citeOf(o: ProposalOp, values: Record<string, unknown>): CiteSource | null {
     if (o.source.kind !== "document" || !o.source.document_id) return null;
+    if (noQuoteByDesign(o)) return null; // «مش مذكور»: there is no sentence to open, the row names the paper only
     return {
       id: `card:${p.id}:${o.op_id}`, documentId: o.source.document_id, page: o.source.page ?? 1,
       start: o.source.char_start ?? null, end: o.source.char_end ?? null, quote: o.source.quote ?? null,
-      label: sourceShort(o), about: [kindOf(o), summaryOf({ ...o, args: values })].filter(Boolean).join(" · "),
+      label: sourceShort(o), about: [kindOf(o), summaryOf({ ...o, args: values }, lookup)].filter(Boolean).join(" · "),
     };
   }
   /** The source column: «من رسالتك» / «صحيفة دعوى ص 2» */
   function sourceShort(o: ProposalOp): string {
+    if (o.tool === "add_doc_column") return "سؤالك";
     if (o.source.kind !== "document") return "من رسالتك";
     const name = (o.source.document_id && lookup[o.source.document_id]) || "الورقة";
     return `${name}${o.source.page ? ` · ص ${o.source.page}` : ""}`;
   }
   function sourceLong(o: ProposalOp): string {
+    if (o.tool === "add_doc_column") return "من سؤالك على صفحة المستندات";
     if (o.source.kind !== "document") return "من رسالتك في المحادثة";
     const name = (o.source.document_id && lookup[o.source.document_id]) || "مستند";
     return `من الورقة: ${name}${o.source.page ? ` — صفحة ${o.source.page}` : ""}`;
@@ -295,7 +306,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
             const factQuote = o.tool === "add_fact" && o.source.kind === "document" ? o.source.quote : null;
             const tagList = [
               edits[o.op_id] || o.edited ? <Tag key="e" tone="neutral">معدّل</Tag> : null,
-              !o.quote_verified && live ? <Tag key="q" tone="warn">راجع المصدر</Tag> : null,
+              !o.quote_verified && !noQuoteByDesign(o) && live ? <Tag key="q" tone="warn">راجع المصدر</Tag> : null,
               o.status === "suggested" ? <Tag key="s" tone="warn">مقترح</Tag> : null,
               o.status === "failed" ? <Tag key="f" tone="bad">ما اتحفظش</Tag> : null,
             ].filter(Boolean);
@@ -309,7 +320,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
                   <div className="min-w-0 flex-1">
                     <button type="button" onClick={() => toggle(o.op_id)} aria-expanded={isOpen} title={isOpen ? "اقفل التفاصيل" : "اعرض التفاصيل"} className="block w-full text-start">
                       <span className={cx("block text-base font-semibold leading-[1.5] text-text", !isOpen && "line-clamp-2")}>
-                        {summaryOf({ ...o, args: merged }) || OP_TITLE[o.tool]}
+                        {summaryOf({ ...o, args: merged }, lookup) || OP_TITLE[o.tool]}
                       </span>
                       {factQuote && !isOpen ? <span className="text-doc mt-0.75 line-clamp-2 block text-sm leading-[1.8]! text-text-3">«{factQuote}»</span> : null}
                       {!isOpen ? Object.entries(notes).map(([k, n]) => <span key={k} className="mt-0.75 block text-sm font-semibold leading-[normal] text-text-2">{n}</span>) : null}
@@ -359,8 +370,8 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
 
                     <div className="rounded-md border border-border-2 bg-card-2 px-3.5 py-2.5">
                       <p className="text-xs text-text-3">{sourceLong(o)}</p>
-                      {o.source.quote ? <p className="text-doc mt-1 text-md text-text">«{o.source.quote}»</p> : <p className="mt-1 text-sm leading-4 text-text-4">بدون اقتباس</p>}
-                      {!o.quote_verified ? <p className="mt-1.5 text-sm leading-4 font-medium text-gold">ما لقيتش النص ده في المصدر، راجعه</p> : null}
+                      {o.source.quote ? <p className="text-doc mt-1 text-md text-text">«{o.source.quote}»</p> : <p className="mt-1 text-sm leading-4 text-text-4">{o.tool === "add_doc_cell" ? "الورقة مش بتذكر ده" : "بدون اقتباس"}</p>}
+                      {!o.quote_verified && !noQuoteByDesign(o) ? <p className="mt-1.5 text-sm leading-4 font-medium text-gold">ما لقيتش النص ده في المصدر، راجعه</p> : null}
                     </div>
 
                     {o.status === "failed" && o.error ? <p className="rounded-md bg-bad-bg px-3 py-2 text-sm text-bad">{o.error}</p> : null}
@@ -490,11 +501,13 @@ function EditFields({ op, values, notes, onChange, display }: {
   const input = "min-h-11 w-full rounded-md border border-border bg-field px-3 py-2 text-md text-text focus:border-text-4 focus:outline-none";
   return (
     <div className="space-y-2.5">
-      {OP_FIELDS[op.tool].map((f) => {
+      {OP_FIELDS[op.tool].map((field) => {
+        // the answer of a «مش مذكور» cell is not editable: an answer needs a quote, and the cell has none
+        const f: FieldSpec = op.tool === "add_doc_cell" && field.key === "answer" && !op.args.answer ? { ...field, type: "readonly" } : field;
         const v = values[f.key];
         const id = `${op.op_id}-${f.key}`;
         let control;
-        if (f.type === "ref") control = <p className="py-1 text-base leading-5 text-text-2">{display(f, v) ?? "—"}</p>;
+        if (f.type === "ref" || f.type === "readonly") control = <p className="py-1 text-base leading-5 text-text-2">{display(f, v) ?? "—"}</p>;
         else if (f.type === "bool") control = <input id={id} type="checkbox" checked={!!v} onChange={(e) => onChange(f.key, e.target.checked)} className="h-4 w-4 accent-primary" />;
         else if (typeof f.type === "object") {
           control = (
