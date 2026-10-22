@@ -1,0 +1,67 @@
+— the table's cells
+PASS  one row per paper, in the papers' order
+PASS  parties: «name (role)», two in one cell  (عادل النموذجي (مدعٍ) | وليد التجريبي (مدعى عليه))
+PASS  saved items are not suggested and keep their page
+PASS  an item with no paper source is in no row
+PASS  a dated fact reads «date · text»  (1/9/2022 · تحرير عقد إيجار الشقة)
+PASS  an undated fact shows the date as written  (أوائل 2026 · امتناع عن السداد)
+PASS  requests: text + page
+PASS  defenses: the opponent's only (not «ours»)
+PASS  a saved item with review_status 'suggested' is suggested
+PASS  a pending op of an open card is suggested  (موجّه للمدعى عليه (أخرى))
+PASS  a pending «ours» argument, a chat op and an attach op are not cells
+PASS  a custom cell keeps its answer, page and span
+PASS  a cell with no answer is «مش مذكور» with its note
+PASS  a paper with no cell was not asked (shown «—»)
+PASS  a cell of a suggested column is suggested
+— the model's answer is checked by code
+PASS  a good answer is kept with its page
+PASS  its span reads as the quote on the page
+PASS  a wrong page number is corrected to the page the quote is on
+PASS  a quote that is not on the paper → «مش مذكور» + a note  (النموذج قال إنه لقى الإجابة، بس اقتباسه مش موجود في الورقة، فما اعتمدتش الإجابة.)
+PASS  found = false → «مش مذكور» (no note: the paper simply does not say it)
+PASS  the sentinel itself → «مش مذكور»
+PASS  an empty answer → «مش مذكور»
+PASS  a number that is not in the quote (700) → «مش مذكور»
+PASS  a date that is only part of another date (5/3/2024 in 15/3/2024) → «مش مذكور»
+PASS  the same date written in full is kept
+PASS  «2,500» in the quote and «2500» in the answer are the same number
+PASS  an impossible page number is fixed from where the quote is
+PASS  an answer built on a line that talks to the AI → «مش مذكور» + a note  (الإجابة مبنية على سطر شكله تعليمات موجهة لـ Clausia، فتجاهلتها.)
+PASS  no / broken answer → «مش مذكور»
+PASS  a very long answer is refused
+PASS  the title is the question (cut when long)
+PASS  an empty question is refused with a plain reason  (اكتب السؤال الأول)
+PASS  the pages go in as data: the wrapper sentence, tags neutralised, empty pages left out
+— the ops
+PASS  a cell answer with no quote is refused
+PASS  a cell with no answer («مش مذكور») needs no quote
+PASS  a column needs a real question and title
+PASS  the two column tools are internal
+PASS  the chat model's tool list does not offer them
+— the card, the tap, the undo
+PASS  the card is stored: no thread, pending, one column + one cell per paper
+PASS  the answer cell keeps its verified quote and span; the «مش مذكور» cell has none
+PASS  nothing is saved before the tap
+PASS  confirm saves every op
+PASS  the column is saved as confirmed, drafted by the model
+PASS  the answer cell has the answer, the page and the paper
+PASS  its saved span reads as its saved quote on the page
+PASS  the «مش مذكور» cell has no answer and no source
+PASS  one cell per paper per column (a duplicate is refused)
+PASS  an answer with no page and quote is refused by the table
+[proposals] save of 456c3a1c-ec2b-455b-aed6-2fdb6ea18f28 undone: خانة في العمود: المستند ده مش من نفس دعوى العمود
+PASS  a cell of another case's paper fails the whole card  (ماتحفظش حاجة من البطاقة: «خانة في العمود» ما اتحفظش. البطاقة زي ما هي،)
+PASS  …and the column and the cells already applied were undone
+PASS  …the card stays as it was, the failing op marked  (pending,pending,pending,failed)
+PASS  «save as suggestions» saves the column and the cells as suggested
+PASS  …and the table shows that cell suggested
+PASS  reject saves nothing
+PASS  the lawyer's edit of the title is saved; the question stays
+PASS  the lawyer's edit of an answer is saved as the lawyer's, still with its quote
+PASS  undo of a cell removes it
+PASS  undo of a column removes it
+PASS  applyOp refuses a cell for a paper of another case  (المستند ده مش من نفس دعوى العمود)
+cleanup: 2 cases, 3 papers removed (left: 0)
+
+all checks passed
