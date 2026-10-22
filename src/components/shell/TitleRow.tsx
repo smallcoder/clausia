@@ -44,7 +44,7 @@ const isZero = (v: number | string) => v === 0 || v === "0" || v === "00";
 
 /**
  * One stat. Desktop (mockup): a baseline row, the number 7px before its label, 16px each side, a hairline on the start
- * side (so also between the title and the first stat). Gold only when it needs action and its count is above 0.
+ * side (so also between the title and the first stat). The mockup's 24px number / 13px label snap to the scale: 18px / 12.5px. Gold only when it needs action and its count is above 0.
  * Phone: the number over its label, a hairline before the 2nd and 3rd, equal thirds (as Cases drew it before).
  */
 function Stat({ s }: { s: TitleStatData }) {
