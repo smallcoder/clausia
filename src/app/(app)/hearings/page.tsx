@@ -110,7 +110,7 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
             </div>
           </>
         ) : (
-          <RollDay today={today} from={from} to={to} rows={rows} pill={pill} undecided={undecidedCount}
+          <RollDay today={today} from={from} to={to} rows={rows} pill={<>{pill}<Link href="/brief" className="tap inline-flex h-chip shrink-0 items-center rounded-full border border-border px-3.75 text-sm font-semibold text-text-2 transition hover:bg-card-2">تحضير بكرة</Link></>} undecided={undecidedCount}
             side={undecidedCount > 0 ? <SideCard count={undecidedCount} rows={undecidedRows} /> : null} />
         )}
       </RollSheet>

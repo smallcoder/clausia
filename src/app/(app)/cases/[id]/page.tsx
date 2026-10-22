@@ -26,13 +26,14 @@ const VIEWS = { hearings: "الجلسات", documents: "المستندات", det
 const VIEW_TITLE = { hearings: "جلسات القضية", documents: "مستندات القضية", details: "بيانات الدعوى" } as const;
 type View = keyof typeof VIEWS;
 
-export default async function CasePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string }> }) {
+export default async function CasePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string; q?: string }> }) {
   const { id } = await params;
-  const { tab } = await searchParams;
+  const { tab, q } = await searchParams;
   if (!UUID.test(id)) notFound();
   const db = await createClient();
 
-  if (tab === "chat") redirect(`/chat/${await getOrCreateCaseThread(db, id)}`);
+  // `q` = a starter sentence for the composer (the brief's «اكتبلي مذكرة…» chip); it only fills the box, nothing is sent
+  if (tab === "chat") redirect(`/chat/${await getOrCreateCaseThread(db, id)}${q ? `?q=${encodeURIComponent(q.slice(0, 300))}` : ""}`);
 
   let cf: CaseFile;
   try {
