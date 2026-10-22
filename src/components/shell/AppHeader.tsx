@@ -3,7 +3,7 @@
  * v2 top bar (docs/design): brand + office name · centered glass tab capsule (Home / Hearings / Cases) ·
  * glass circles for alerts and account. Mobile: logo, capsule (active tab labeled, others icon-only), account.
  */
-import { Bell, CalendarDays, FolderClosed, House, LogOut } from "lucide-react";
+import { Bell, CalendarDays, CalendarOff, FolderClosed, House, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -31,7 +31,7 @@ function activeTab(path: string) {
   return "/"; // Home and the chat threads opened from it
 }
 
-export function AppHeader({ initials, officeName, email, alerts }: { initials: string; officeName: string; email: string; alerts: number }) {
+export function AppHeader({ initials, officeName, email, alerts, holidays = false }: { initials: string; officeName: string; email: string; alerts: number; holidays?: boolean }) {
   const path = usePathname();
   const on = activeTab(path);
   /** the top bar takes the page's column: Home and Chat are the narrow one, every other page the wide one */
@@ -88,6 +88,11 @@ export function AppHeader({ initials, officeName, email, alerts }: { initials: s
                 <div className="truncate text-sm leading-4 text-text-4" dir="ltr">{email}</div>
               </div>
               <div className="flex items-center justify-between px-3 py-1.5 text-base leading-5 text-text-2">المظهر <ThemeToggle /></div>
+              {holidays ? (
+                <Link href="/settings/holidays" onClick={() => setOpen(false)} className="flex min-h-11 w-full items-center gap-2 rounded-md px-3 text-base leading-5 text-text-2 hover:bg-card-2">
+                  <CalendarOff size={16} strokeWidth={1.9} aria-hidden /> إجازات المحاكم
+                </Link>
+              ) : null}
               <form action="/auth/signout" method="post">
                 <button className="flex min-h-11 w-full items-center gap-2 rounded-md px-3 text-base leading-5 text-text-2 hover:bg-card-2">
                   <LogOut size={16} strokeWidth={1.9} aria-hidden /> تسجيل الخروج
