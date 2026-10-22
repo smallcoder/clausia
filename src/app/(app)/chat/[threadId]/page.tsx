@@ -66,7 +66,7 @@ export default async function ThreadPage({ params }: { params: Promise<{ threadI
       </MaybeLink>
 
       <div className="flex flex-1 flex-col">
-        <ChatThread threadId={t.id} caseId={t.case_id} items={data.items} lookup={data.lookup} docs={data.docs} />
+        <ChatThread threadId={t.id} caseId={t.case_id} items={data.items} lookup={data.lookup} deadlines={data.deadlines} docs={data.docs} />
       </div>
     </div>
   );

@@ -7,7 +7,9 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useOptimistic, useRef, useState, useTransition, type ReactNode } from "react";
 import { cx } from "@/components/ui";
+import { DeadlineCard } from "@/components/proposal/DeadlineCard";
 import { ProposalCard } from "@/components/proposal/ProposalCard";
+import type { DeadlineCardEntry } from "@/lib/deadlines/cards";
 import { useReadProgress } from "@/components/documents/useReadProgress";
 import { ChatComposer } from "./ChatComposer";
 import { sendMessageAction } from "@/lib/assistant/actions";
@@ -46,8 +48,8 @@ const EXAMPLES_CASE = [
 /** The upload posts «أرفقتُ مستندًا: X» for the lawyer; the chip says it already, so no bubble for it. */
 const AUTO_ATTACH = /^أرفقتُ مستندًا: /;
 
-export function ChatThread({ threadId, caseId, items, lookup, docs = {} }: {
-  threadId: string; caseId: string | null; items: ChatItem[]; lookup: Record<string, string>; docs?: Record<string, ThreadDoc>;
+export function ChatThread({ threadId, caseId, items, lookup, deadlines = {}, docs = {} }: {
+  threadId: string; caseId: string | null; items: ChatItem[]; lookup: Record<string, string>; deadlines?: Record<string, DeadlineCardEntry>; docs?: Record<string, ThreadDoc>;
 }) {
   const router = useRouter();
   const [text, setText] = useState("");
@@ -153,7 +155,11 @@ export function ChatThread({ threadId, caseId, items, lookup, docs = {} }: {
                   </div>
                 ) : null}
                 {m.proposals.map((p, i) => (
-                  <div key={p.id} className={cx((m.content.trim() || i > 0) && "mt-3.5")}><ProposalCard proposal={p} lookup={lookup} /></div>
+                  <div key={p.id} className={cx((m.content.trim() || i > 0) && "mt-3.5")}>
+                    {p.ops.some((o) => o.tool === "add_deadline")
+                      ? (deadlines[p.id] ? <DeadlineCard proposal={p} entry={deadlines[p.id]} /> : null) // flag off: no card
+                      : <ProposalCard proposal={p} lookup={lookup} />}
+                  </div>
                 ))}
               </ClausiaLine>
             )}
