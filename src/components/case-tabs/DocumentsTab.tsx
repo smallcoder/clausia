@@ -41,7 +41,7 @@ export async function DocumentsTab({ caseId, cf }: { caseId: string; cf: CaseFil
     db.from("doc_columns").select("id, title, review_status").eq("case_id", caseId).neq("review_status", "rejected").order("created_at"),
   ]);
   const { data: cellRows } = cols?.length
-    ? await db.from("doc_column_cells").select("id, column_id, document_id, answer, note, review_status, source_page, source_quote, source_char_start, source_char_end").in("column_id", cols.map((c) => c.id))
+    ? await db.from("doc_column_cells").select("id, column_id, document_id, answer, note, review_status, created_by_kind, source_page, source_quote, source_char_start, source_char_end").in("column_id", cols.map((c) => c.id))
     : { data: [] };
   const hasPending = new Set((pending ?? []).map((p) => p.document_id));
   const name = (d: { title: string | null; doc_type: string; file_name: string }) => d.title || DOC_TYPE[d.doc_type as keyof typeof DOC_TYPE] || d.file_name;

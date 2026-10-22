@@ -13,7 +13,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** `failed`: how many papers could not be asked (they get no cell). The card itself is read from the page. */
 export async function askColumnAction(caseId: string, question: string): Promise<{ ok: boolean; error?: string; failed?: number }> {
-  if (!docsTableEnabled()) return { ok: false, error: "الميزة دي لسه مش متاحة" }; // behind the flag until issue #61 is merged
+  if (!docsTableEnabled()) return { ok: false, error: "الميزة دي لسه مش متاحة" }; // behind the flag (src/lib/flags.ts)
   if (!UUID.test(caseId)) return { ok: false, error: "الدعوى مش موجودة" };
   const db = await createClient();
   const s = await getSession(db);
