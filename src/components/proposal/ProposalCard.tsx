@@ -15,6 +15,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { Check, ChevronDown, FolderClosed, X } from "lucide-react";
+import { useCite, type CiteSource } from "@/components/cite/context";
+import { SourceChip, SourceLabel } from "@/components/cite/SourceChip";
 import { cx } from "@/components/ui";
 import { decideProposalAction } from "@/lib/assistant/actions";
 import { CASE_STATUS, DECISION, DOC_TYPE, PARTY_ROLE, STAGE } from "@/lib/labels";
@@ -112,6 +114,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
   const [showDecided, setShowDecided] = useState(false);
   /** «عدّل» was tapped: every open row is open and the footer's second line (the other decisions) shows */
   const [more, setMore] = useState(false);
+  const { active } = useCite();
 
   // resync with a fresh prop after router.refresh() (card decided in another tab or by another feature);
   // keyed on the statuses so a local decision that the server already reflects is not thrown away
@@ -228,6 +231,15 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
     return String(v);
   }
 
+  /** The chip of a paper source: where the panel opens (page, stored span, the quote for an older item without one). */
+  function citeOf(o: ProposalOp, values: Record<string, unknown>): CiteSource | null {
+    if (o.source.kind !== "document" || !o.source.document_id) return null;
+    return {
+      id: `card:${p.id}:${o.op_id}`, documentId: o.source.document_id, page: o.source.page ?? 1,
+      start: o.source.char_start ?? null, end: o.source.char_end ?? null, quote: o.source.quote ?? null,
+      label: sourceShort(o), about: [kindOf(o), summaryOf({ ...o, args: values })].filter(Boolean).join(" · "),
+    };
+  }
   /** The source column: «من رسالتك» / «صحيفة دعوى ص 2» */
   function sourceShort(o: ProposalOp): string {
     if (o.source.kind !== "document") return "من رسالتك";
@@ -288,22 +300,26 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
               o.status === "failed" ? <Tag key="f" tone="bad">ما اتحفظش</Tag> : null,
             ].filter(Boolean);
             const tags = tagList.length ? tagList : null;
+            const cite = citeOf(o, merged);
             return (
-              <li key={o.op_id} className={cx("not-first:border-t not-first:border-border-2", o.status === "rejected" && "opacity-55", limit && i >= MOBILE_ROWS && "lg:block hidden")}>
+              <li key={o.op_id} className={cx("not-first:border-t not-first:border-border-2", o.status === "rejected" && "opacity-55", limit && i >= MOBILE_ROWS && "lg:block hidden", cite && active?.id === cite.id && "bg-gold-bg")}>
                 {/* kind · value (+ fact quote) · source · check — the mockup's hairline row */}
                 <div className="flex items-start gap-3.5 px-4 py-3.25 sm:px-5.5">
                   <span className="w-14.5 shrink-0 pt-0.5 text-xs leading-[normal] text-text-4 sm:w-18">{kindOf(o)}</span>
-                  <button type="button" onClick={() => toggle(o.op_id)} aria-expanded={isOpen} title={isOpen ? "اقفل التفاصيل" : "اعرض التفاصيل"} className="min-w-0 flex-1 text-start">
-                    <span className={cx("block text-base font-semibold leading-[1.5] text-text", !isOpen && "line-clamp-2")}>
-                      {summaryOf({ ...o, args: merged }) || OP_TITLE[o.tool]}
-                    </span>
-                    {factQuote && !isOpen ? <span className="text-doc mt-0.75 line-clamp-2 text-sm leading-[1.8]! text-text-3">«{factQuote}»</span> : null}
-                    {!isOpen ? Object.entries(notes).map(([k, n]) => <span key={k} className="mt-0.75 block text-sm font-semibold leading-[normal] text-text-2">{n}</span>) : null}
-                    <span className="mt-0.75 flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                      <span className="text-xs leading-[normal] text-text-4">{sourceShort(o)}</span>
+                  <div className="min-w-0 flex-1">
+                    <button type="button" onClick={() => toggle(o.op_id)} aria-expanded={isOpen} title={isOpen ? "اقفل التفاصيل" : "اعرض التفاصيل"} className="block w-full text-start">
+                      <span className={cx("block text-base font-semibold leading-[1.5] text-text", !isOpen && "line-clamp-2")}>
+                        {summaryOf({ ...o, args: merged }) || OP_TITLE[o.tool]}
+                      </span>
+                      {factQuote && !isOpen ? <span className="text-doc mt-0.75 line-clamp-2 block text-sm leading-[1.8]! text-text-3">«{factQuote}»</span> : null}
+                      {!isOpen ? Object.entries(notes).map(([k, n]) => <span key={k} className="mt-0.75 block text-sm font-semibold leading-[normal] text-text-2">{n}</span>) : null}
+                    </button>
+                    {/* the source chip is its own button (never inside the row's expand button): a paper source opens the panel */}
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                      {cite ? <SourceChip cite={cite} /> : <SourceLabel>{sourceShort(o)}</SourceLabel>}
                       {tags}
-                    </span>
-                  </button>
+                    </div>
+                  </div>
                   {live ? (
                     <button type="button" role="checkbox" aria-checked={sel} aria-label={sel ? `شيل ${kindOf(o)} من الحفظ` : `ضيف ${kindOf(o)} للحفظ`}
                       onClick={() => toggleSelect(o)} disabled={pending || (!sel && !!lone && lone.includes("مرفوض"))}

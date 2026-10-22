@@ -6,8 +6,12 @@
  * never sits under the composer. (The shell's FixedDock has other paddings; this is the Chat-only variant.)
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCite } from "@/components/cite/context";
+import { cx } from "@/components/ui";
 
 export function ChatDock({ children }: { children: ReactNode }) {
+  // with the paper panel open the thread is the right column (docs/design/next/Cite*): the dock stays under it, not under the paper
+  const { split } = useCite();
   const box = useRef<HTMLDivElement>(null);
   const [h, setH] = useState(0);
   useEffect(() => {
@@ -20,7 +24,7 @@ export function ChatDock({ children }: { children: ReactNode }) {
     <>
       <div aria-hidden style={{ height: h }} className="shrink-0" />
       <div ref={box}
-        className="fixed inset-x-0 bottom-0 z-30 flex justify-center bg-[linear-gradient(to_top,color-mix(in_srgb,var(--bg)_92%,transparent)_45%,transparent)] px-3 pb-[calc(18px+env(safe-area-inset-bottom))] pt-10 sm:px-10 sm:pb-6" /* ds-allow: safe-area inset needs calc() */>
+        className={cx("fixed inset-x-0 bottom-0 z-30 flex justify-center bg-[linear-gradient(to_top,color-mix(in_srgb,var(--bg)_92%,transparent)_45%,transparent)] px-3 pb-[calc(18px+env(safe-area-inset-bottom))] pt-10 sm:px-10 sm:pb-6", split && "lg:left-1/2 lg:right-[max(2.5rem,calc((100vw-1600px)/2))] lg:px-2")} /* ds-allow: safe-area inset needs calc(); the dock ends where the 1600px split box ends */>
         <div className="w-full max-w-95 sm:max-w-composer">{children}</div>
       </div>
     </>
