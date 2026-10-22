@@ -193,7 +193,7 @@ async function main() {
     const sug = await decideProposal(db, p3.id, { mode: "suggest" });
     const { data: col3 } = await db.from("doc_columns").select("id, review_status").eq("case_id", caseA).single();
     const { data: cells3 } = await db.from("doc_column_cells").select("review_status").eq("column_id", col3!.id);
-    check(sug.ops.every((o) => o.status === "suggested") && col3?.review_status === "suggested" && cells3?.every((x) => x.review_status === "suggested"), "«save as suggestions» saves the column and the cells as suggested");
+    check(sug.ops.every((o) => o.status === "suggested") && col3?.review_status === "suggested" && !!cells3?.length && cells3.every((x) => x.review_status === "suggested"), "«save as suggestions» saves the column and the cells as suggested");
     // a suggested column shows with the gold dot
     const rows3 = buildDocsTable({ docs: [{ id: docA1, name: "a1", page_count: 2, doc_date: null }], cf: { parties: [], facts: [], requests: [], arguments: [], pending_suggestions: [] }, pending: [], columns: [{ id: col3!.id, title: "t", suggested: true }], cells: ((await db.from("doc_column_cells").select("id, column_id, document_id, answer, note, review_status, source_page, source_quote, source_char_start, source_char_end").eq("column_id", col3!.id)).data ?? []) });
     check((rows3[0].custom[col3!.id] as { item: { suggested: boolean } }).item.suggested, "…and the table shows that cell suggested");

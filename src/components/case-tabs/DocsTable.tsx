@@ -73,7 +73,8 @@ export function DocsTable({ rows, columns }: { rows: DocRow[]; columns: TableCol
   const small = "text-xs font-semibold text-text-3 sm:hidden";
   return (
     <div className="sm:overflow-x-auto sm:rounded-xl sm:border sm:border-border-2 sm:bg-card sm:shadow-card" role="table" aria-label="جدول مستندات القضية">
-      <div className="space-y-3 sm:min-w-max sm:space-y-0">
+      {/* wide enough for every column at its least width; with the four sections it is the page's own width */}
+      <div className="space-y-3 sm:min-w-(--table-w) sm:space-y-0" style={{ "--table-w": `calc(15rem + ${SECTIONS.length + columns.length} * 12rem)` } as React.CSSProperties}>
         <div role="row" className="hidden bg-card-2 sm:grid" style={{ gridTemplateColumns: template }}>
           <div role="columnheader" className={HEAD}>المستند</div>
           {SECTIONS.map((s) => <div key={s.key} role="columnheader" className={HEAD}>{s.title}</div>)}
