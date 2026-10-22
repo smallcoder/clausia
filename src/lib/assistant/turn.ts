@@ -13,6 +13,7 @@ import { caseLabel } from "@/lib/labels";
 import { getLlm, LlmUnavailableError, SpendCapError, type ChatRequest, type LlmMessage, type LlmToolCall } from "@/lib/llm";
 import { UNAVAILABLE_TEXT } from "@/lib/llm/unavailable";
 import { createProposal, normalizeForMatch, type DraftOp, type Proposal, type ResolvedFrom } from "@/lib/proposals";
+import { findSpan } from "@/lib/quote-match";
 import { cairoDateOf, resolveRelativeDays, type RelativeDay } from "@/lib/relative-days";
 import type { Db } from "@/lib/supabase/server";
 import { isReadTool, READ_TOOL_SPECS, runReadTool } from "@/lib/tools/read";
@@ -281,7 +282,10 @@ function sourceOf(quote: string | null, lawyerText: string, messageId: string, p
   const q = quote ? normalizeForMatch(quote) : "";
   if (q.length >= 6 && !normalizeForMatch(lawyerText).includes(q)) {
     const hit = pages.find((p) => p.norm.includes(q));
-    if (hit) return { kind: "document", document_id: hit.document_id, page: hit.page_no, quote };
+    if (hit) {
+      const s = findSpan(hit.text, quote); // by code, on the page that matched; the model is not asked
+      return { kind: "document", document_id: hit.document_id, page: hit.page_no, quote, char_start: s?.start ?? null, char_end: s?.end ?? null };
+    }
   }
   return { kind: "chat", message_id: messageId, quote };
 }

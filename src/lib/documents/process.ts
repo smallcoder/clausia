@@ -11,6 +11,7 @@ import { normalizeDigits, parseDmy } from "@/lib/dates";
 import { getLlm, LlmUnavailableError, type JsonSchema, type LlmImage } from "@/lib/llm";
 import { UNAVAILABLE_TEXT } from "@/lib/llm/unavailable";
 import { createProposal, normalizeForMatch, verifyQuote, type DraftOp } from "@/lib/proposals";
+import { findSpanInPages } from "@/lib/quote-match";
 import type { Db } from "@/lib/supabase/server";
 import { DECISIONS, DOC_TYPES, PARTY_ROLES, WRITE_TOOL_ARGS, isWriteTool } from "@/lib/tools/registry";
 import { DOC_TYPE } from "@/lib/labels";
@@ -236,7 +237,11 @@ export function extractionToOps({ ex, documentId, caseId, pages, existing }: Ops
     if (!isWriteTool(tool)) return void dropped.push({ tool, reason: "أداة غير معروفة" });
     const parsed = WRITE_TOOL_ARGS[tool].safeParse(full);
     if (!parsed.success) return void dropped.push({ tool, reason: parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ") });
-    ops.push({ tool, args: full, source: { kind: "document", document_id: documentId, page, quote } });
+    // where the quote sits in the page: worked out here by code (the model only said which page); the page the
+    // quote is really on wins when the model's page number was off
+    const hit = findSpanInPages(pages, quote, page);
+    if (hit && hit.page !== page) console.warn(`[documents] ${tool}: quote is on page ${hit.page}, the model said ${page}`);
+    ops.push({ tool, args: full, source: { kind: "document", document_id: documentId, page: hit?.page ?? page, quote, char_start: hit?.start ?? null, char_end: hit?.end ?? null } });
   };
 
   // the case this document belongs to: existing, or a new one built ONLY from values written in the document

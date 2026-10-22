@@ -10,7 +10,7 @@ import { caseLabel } from "@/lib/labels";
 export interface Provenance {
   review_status: "suggested" | "confirmed" | "rejected";
   created_by: "lawyer" | "model";
-  source: { kind: "chat" | "document" | "manual"; message_id: string | null; document_id: string | null; page: number | null; quote: string | null };
+  source: { kind: "chat" | "document" | "manual"; message_id: string | null; document_id: string | null; page: number | null; quote: string | null; char_start: number | null; char_end: number | null };
 }
 
 type Party = { id: string; name: string; role: string; is_our_client: boolean; representative: string | null; notes: string | null } & Provenance;
@@ -19,7 +19,7 @@ type Req = { id: string; text: string; kind: string | null } & Provenance;
 type Arg = { id: string; side: "opponent" | "ours"; kind: string | null; text: string } & Provenance;
 type Hearing = { id: string; date: string; purpose: string | null; location: string | null; decision_type: string | null; decision_text: string | null; next_requirements: string | null; next_hearing_id: string | null;
   /** where the DECISION came from (the hearing row's own provenance is in the shared fields) */
-  decision_source: { created_by: string | null; kind: string | null; message_id: string | null; document_id: string | null; page: number | null; quote: string | null } | null } & Provenance;
+  decision_source: { created_by: string | null; kind: string | null; message_id: string | null; document_id: string | null; page: number | null; quote: string | null; char_start: number | null; char_end: number | null } | null } & Provenance;
 type Judgment = { id: string; date: string | null; kind: string; operative_text: string; outcome: string | null; appeal_deadline: string | null; appeal_deadline_note: string | null; hearing_id: string | null } & Provenance;
 
 export interface CaseFile {
@@ -54,14 +54,15 @@ export interface CaseFile {
 type ProvRow = {
   review_status: Provenance["review_status"]; created_by_kind: Provenance["created_by"]; source_kind: Provenance["source"]["kind"];
   source_message_id: string | null; source_document_id?: string | null; source_page?: number | null; source_quote: string | null;
+  source_char_start?: number | null; source_char_end?: number | null;
 };
-const PROV = "review_status, created_by_kind, source_kind, source_message_id, source_document_id, source_page, source_quote";
+const PROV = "review_status, created_by_kind, source_kind, source_message_id, source_document_id, source_page, source_quote, source_char_start, source_char_end";
 
 function prov(r: ProvRow): Provenance {
   return {
     review_status: r.review_status,
     created_by: r.created_by_kind,
-    source: { kind: r.source_kind, message_id: r.source_message_id, document_id: r.source_document_id ?? null, page: r.source_page ?? null, quote: r.source_quote },
+    source: { kind: r.source_kind, message_id: r.source_message_id, document_id: r.source_document_id ?? null, page: r.source_page ?? null, quote: r.source_quote, char_start: r.source_char_start ?? null, char_end: r.source_char_end ?? null },
   };
 }
 
@@ -95,7 +96,7 @@ export async function getCaseFile(db: Db, caseId: string): Promise<CaseFile> {
     db.from("case_facts").select(`id, fact_date, date_precision, date_text, text, sort_order, created_at, ${PROV}`).eq("case_id", caseId).neq("review_status", "rejected"),
     db.from("case_requests").select(`id, text, kind, created_at, ${PROV}`).eq("case_id", caseId).neq("review_status", "rejected").order("created_at"),
     db.from("case_arguments").select(`id, side, kind, text, created_at, ${PROV}`).eq("case_id", caseId).neq("review_status", "rejected").order("created_at"),
-    db.from("hearings").select(`id, hearing_date, purpose, location, decision_type, decision_text, next_requirements, next_hearing_id, decision_created_by_kind, decision_source_kind, decision_source_message_id, decision_source_document_id, decision_source_page, decision_source_quote, ${PROV}`).eq("case_id", caseId).neq("review_status", "rejected").order("hearing_date"),
+    db.from("hearings").select(`id, hearing_date, purpose, location, decision_type, decision_text, next_requirements, next_hearing_id, decision_created_by_kind, decision_source_kind, decision_source_message_id, decision_source_document_id, decision_source_page, decision_source_quote, decision_source_char_start, decision_source_char_end, ${PROV}`).eq("case_id", caseId).neq("review_status", "rejected").order("hearing_date"),
     db.from("judgments").select(`id, judgment_date, kind, operative_text, outcome, appeal_deadline, appeal_deadline_note, hearing_id, ${PROV}`).eq("case_id", caseId).neq("review_status", "rejected").order("judgment_date"),
     db.from("documents").select("id, file_name, doc_type, title, page_count, read_status, created_at, review_status").eq("case_id", caseId).neq("review_status", "rejected").order("created_at"),
   ]);
@@ -145,7 +146,7 @@ export async function getCaseFile(db: Db, caseId: string): Promise<CaseFile> {
     arguments: split("case_arguments", ok(args, "arguments") ?? [], (r) => ({ id: r.id, side: r.side, kind: r.kind, text: r.text, ...prov(r) }), (o) => o.text),
     hearings: split("hearings", ok(hearings, "hearings") ?? [],
       (r) => ({ id: r.id, date: r.hearing_date, purpose: r.purpose, location: r.location, decision_type: r.decision_type, decision_text: r.decision_text, next_requirements: r.next_requirements, next_hearing_id: r.next_hearing_id,
-        decision_source: r.decision_type ? { created_by: r.decision_created_by_kind, kind: r.decision_source_kind, message_id: r.decision_source_message_id, document_id: r.decision_source_document_id, page: r.decision_source_page, quote: r.decision_source_quote } : null,
+        decision_source: r.decision_type ? { created_by: r.decision_created_by_kind, kind: r.decision_source_kind, message_id: r.decision_source_message_id, document_id: r.decision_source_document_id, page: r.decision_source_page, quote: r.decision_source_quote, char_start: r.decision_source_char_start, char_end: r.decision_source_char_end } : null,
         ...prov(r) }),
       (o) => `${o.date}${o.purpose ? ` — ${o.purpose}` : ""}`),
     judgments: split("judgments", ok(judgments, "judgments") ?? [],
