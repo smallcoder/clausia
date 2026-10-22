@@ -5,8 +5,11 @@ import { caseLabel } from "@/lib/labels";
 import { decideProposal, type Proposal } from "@/lib/proposals";
 import { createClient, getSession } from "@/lib/supabase/server";
 import { listSessions, moveThreadToCase, type Session } from "@/lib/threads";
+import { undoConfirms } from "@/lib/undo";
 import { parseMode } from "./modes";
 import { runAssistantTurn, TurnError } from "./turn";
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** `saved`: the lawyer's message is in the thread (so the UI must not put it back in the composer). */
 export async function sendMessageAction(threadId: string, text: string, mode?: string): Promise<{ ok: boolean; error?: string; saved?: boolean }> {
@@ -31,16 +34,32 @@ export async function sendMessageAction(threadId: string, text: string, mode?: s
 export async function decideProposalAction(
   proposalId: string,
   decision: { mode: "confirm" | "suggest" | "reject"; opIds?: string[]; edits?: Record<string, Record<string, unknown>> },
-): Promise<{ ok: boolean; proposal?: Proposal; error?: string }> {
+): Promise<{ ok: boolean; proposal?: Proposal; error?: string; undoEventId?: string }> {
   const db = await createClient();
   const s = await getSession(db);
   if (!s) return { ok: false, error: "انتهت الجلسة، سجّل الدخول من جديد" };
   try {
-    const proposal = await decideProposal(db, proposalId, decision);
+    const { undo_event_id, ...proposal } = await decideProposal(db, proposalId, decision);
     revalidatePath("/", "layout"); // case pages, hearings, chat all show the saved items
-    return { ok: true, proposal };
+    // `undoEventId`: a confirm that «تراجع» can revert (the toast shows for 10 seconds)
+    return { ok: true, proposal, ...(undo_event_id ? { undoEventId: undo_event_id } : {}) };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "تعذّر الحفظ" };
+  }
+}
+
+/** «تراجع» on the toast after a confirm: reverts exactly what those confirms saved (src/lib/undo.ts). Within 10 seconds, once. */
+export async function undoDecisionAction(eventIds: string[]): Promise<{ ok: boolean; error?: string }> {
+  const db = await createClient();
+  const s = await getSession(db);
+  if (!s) return { ok: false, error: "انتهت الجلسة، سجّل الدخول من جديد" };
+  if (!eventIds.length || eventIds.length > 20 || !eventIds.every((x) => typeof x === "string" && UUID.test(x))) return { ok: false, error: "مفيش تعديل يتراجع عنه" };
+  try {
+    const r = await undoConfirms(db, eventIds);
+    revalidatePath("/", "layout");
+    return r.ok ? { ok: true } : { ok: false, error: r.error };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "تعذّر التراجع" };
   }
 }
 

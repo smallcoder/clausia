@@ -8,7 +8,8 @@ import { deadlinesEnabled } from "@/lib/flags";
 import { normalizeForMatch } from "@/lib/quote-match";
 import type { Db } from "@/lib/supabase/server";
 import type { Json } from "@/lib/db/types";
-import { applyOp, type Provenance, type RefMap, type Undo } from "@/lib/tools/apply";
+import { applyOp, type Provenance, type RefMap, type Undo, type UndoStep } from "@/lib/tools/apply";
+import { logConfirm } from "@/lib/undo";
 import { OP_TITLE, WRITE_TOOL_ARGS, isWriteTool, type WriteTool } from "@/lib/tools/registry";
 
 export interface OpSource {
@@ -124,6 +125,15 @@ export function withoutEdited(
   return kept.length ? Object.fromEntries(kept) : undefined;
 }
 
+/** The card's status from its ops. */
+export function statusOfOps(ops: Pick<ProposalOp, "status">[]): Proposal["status"] {
+  const all = ops.map((o) => o.status);
+  return all.every((s) => s === "rejected")
+    ? "rejected"
+    : all.every((s) => s === "confirmed" || s === "suggested" || s === "rejected") ? "confirmed"
+    : all.some((s) => s === "confirmed" || s === "suggested") ? "partially_confirmed" : "pending";
+}
+
 export async function getProposal(db: Db, id: string): Promise<Proposal | null> {
   const { data } = await db.from("proposals").select("*").eq("id", id).maybeSingle();
   return (data as unknown as Proposal) ?? null;
@@ -138,9 +148,11 @@ export async function decideProposal(
   db: Db,
   proposalId: string,
   decision: { mode: "confirm" | "suggest" | "reject"; opIds?: string[]; edits?: Record<string, Record<string, unknown>> },
-): Promise<Proposal> {
+): Promise<Proposal & { undo_event_id?: string | null }> {
   const p = await getProposal(db, proposalId);
   if (!p) throw new Error("البطاقة غير موجودة");
+  const row = p as Proposal & { decided_at?: string | null; decided_by?: string | null };
+  const proposalBefore = { status: p.status, case_id: p.case_id, decided_at: row.decided_at ?? null, decided_by: row.decided_by ?? null };
   const { data: { user } } = await db.auth.getUser();
   const chosen = new Set(decision.opIds ?? p.ops.filter((o) => o.status === "pending").map((o) => o.op_id));
 
@@ -154,6 +166,8 @@ export async function decideProposal(
   // undone and the card stays as it was, so a failure never leaves a half-saved card
   const before = p.ops.map((o) => ({ status: o.status, result_id: o.result_id, error: o.error, args: o.args, edited: o.edited, resolved_from: o.resolved_from }));
   const undos: Undo[] = [];
+  /** what «تراجع» needs, per op saved by this tap */
+  const applied: { op_id: string; before: (typeof before)[number]; steps: UndoStep[] | null }[] = [];
   const newJudgments: string[] = [];
   let failure: { index: number; title: string; error: string } | null = null;
 
@@ -177,6 +191,7 @@ export async function decideProposal(
     try {
       const res = await applyOp(db, o.tool, args, provenance, refs);
       undos.push(res.undo);
+      applied.push({ op_id: o.op_id, before: before[p.ops.indexOf(o)], steps: res.steps });
       if (o.tool === "add_judgment" && decision.mode === "confirm") newJudgments.push(res.id);
       o.status =decision.mode === "suggest" ? "suggested" : "confirmed";
       o.result_id = res.id;
@@ -210,11 +225,7 @@ export async function decideProposal(
     throw new Error(`ماتحفظش حاجة من البطاقة: «${failure.title}» ما اتحفظش. البطاقة زي ما هي، جرّب تاني.`);
   }
 
-  const all = p.ops.map((o) => o.status);
-  const status: Proposal["status"] = all.every((s) => s === "rejected")
-    ? "rejected"
-    : all.every((s) => s === "confirmed" || s === "suggested" || s === "rejected") ? "confirmed"
-    : all.some((s) => s === "confirmed" || s === "suggested") ? "partially_confirmed" : "pending";
+  const status = statusOfOps(p.ops);
 
   // a card that created the case is from then on «this case's» card
   const createdCase = p.ops.find((o) => o.tool === "create_case" && o.result_id && (o.status === "confirmed" || o.status === "suggested"));
@@ -224,6 +235,12 @@ export async function decideProposal(
     ops: p.ops as unknown as Json, status, case_id: caseId, decided_at: new Date().toISOString(), decided_by: user?.id ?? null,
   }).eq("id", p.id).select("*").single();
   if (error) throw new Error(error.message);
+
+  // the confirm goes in the log (and, when it can be reverted, «تراجع» can find it): only a tap on «أكّد», not «as suggestions»
+  let undoEventId: string | null = null;
+  if (decision.mode === "confirm" && applied.length) {
+    undoEventId = await logConfirm(db, { proposalId: p.id, userId: user?.id ?? null, at: Date.now(), applied, proposalBefore });
+  }
 
   // a judgment was just saved (confirmed, not «as a suggestion»): propose the appeal-deadlines card, made by code. A failure here
   // (LawMill down, no thread) never undoes the judgment the lawyer confirmed.
@@ -237,5 +254,5 @@ export async function decideProposal(
       }
     }
   }
-  return data as unknown as Proposal;
+  return { ...(data as unknown as Proposal), undo_event_id: undoEventId };
 }
