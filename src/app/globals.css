@@ -216,9 +216,10 @@
 }
 
 /*
- * Type scale (docs/design/DESIGN.md «Type»): 7 steps, 3 display sizes for big numerals only, and the one page-title step.
+ * Type scale (docs/design/DESIGN.md «Type»): 7 steps, 3 display sizes for big numerals only, and the title-row pair (page-title, page-stat).
  * Tailwind's own text-xs…9xl are switched off, so a size off this scale does not compile.
- * No step carries a line-height: text inherits it (body 1.6) or sets leading-* next to the size.
+ * No step of the scale carries a line-height: text inherits it (body 1.6) or sets leading-* next to the size
+ * (only the title-row pair has one, below).
  */
 @theme {
   --text-*: initial;
@@ -232,9 +233,11 @@
   --text-display: 54px;
   --text-display-lg: 76px;
   --text-display-xl: 92px;
-  /* the one owner-specified step outside the scale (2026-10-22): the title of a list page (Cases, Roll, a case's documents view) on desktop */
-  --text-page-title: 34px;
+  /* the title-row pair: the only two owner-specified sizes outside the scale (2026-10-22), on desktop of a list page (Cases, Roll, a case's sub-views) */
+  --text-page-title: 34px;          /* the page title */
   --text-page-title--line-height: 1.1;
+  --text-page-stat: 24px;           /* the inline stat numbers after the title */
+  --text-page-stat--line-height: 1;
 }
 
 /*

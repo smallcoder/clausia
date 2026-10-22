@@ -44,15 +44,17 @@ const isZero = (v: number | string) => v === 0 || v === "0" || v === "00";
 
 /**
  * One stat. Desktop (mockup): a baseline row, the number 7px before its label, 16px each side, a hairline on the start
- * side (so also between the title and the first stat). The mockup's 24px number / 13px label snap to the scale: 18px / 12.5px. Gold only when it needs action and its count is above 0.
+ * side (so also between the title and the first stat). The number is 24px as drawn (`text-page-stat`, the second owner-specified size
+ beside the 34px title); the 13px label snaps to 12.5px (`text-sm`). Gold only when it needs action and its count is above 0.
  * Phone: the number over its label, a hairline before the 2nd and 3rd, equal thirds (as Cases drew it before).
  */
 function Stat({ s }: { s: TitleStatData }) {
   const gold = s.highlight && !isZero(s.value);
-  const cls = "block min-w-0 flex-1 border-border-2 px-3.5 not-first:border-s transition hover:opacity-80 sm:flex sm:flex-none sm:items-baseline sm:gap-1.75 sm:border-s sm:border-border sm:px-4";
+  // `tap`: the stat is a link drawn ~19px tall on desktop; its tap area stays 44px
+  const cls = "tap block min-w-0 flex-1 border-border-2 px-3.5 not-first:border-s transition hover:opacity-80 sm:flex sm:flex-none sm:items-baseline sm:gap-1.75 sm:border-s sm:border-border sm:px-4";
   const body = (
     <>
-      <div className={`stat-num text-xl sm:text-lg sm:font-normal sm:tracking-normal ${gold ? "text-gold" : "text-title"}`}>{typeof s.value === "number" ? two(s.value) : s.value}</div>
+      <div className={`stat-num text-xl sm:text-page-stat sm:font-normal sm:tracking-normal ${gold ? "text-gold" : "text-title"}`}>{typeof s.value === "number" ? two(s.value) : s.value}</div>
       <div className={`mt-1.5 flex items-center gap-1.25 text-xs leading-[15px] sm:mt-0 sm:text-sm sm:leading-[17px] ${gold ? "text-gold" : "text-text-3"} ${s.current ? "font-semibold text-title underline decoration-2 underline-offset-4" : ""}`}>
         {gold ? <span aria-hidden className="size-dot rounded-full bg-gold sm:size-1.5" /> : null}
         {s.mobileLabel ? <><span className="sm:hidden">{s.mobileLabel}</span><span className="hidden sm:inline">{s.label}</span></> : s.label}
