@@ -1,6 +1,7 @@
 "use server";
 /** «+ عمود جديد»: the lawyer's question, asked of every paper of the case. RLS-bound client (the lawyer's own session). */
 import { revalidatePath } from "next/cache";
+import { docsTableEnabled } from "@/lib/flags";
 import { LlmUnavailableError, SpendCapError } from "@/lib/llm";
 import { UNAVAILABLE_TEXT } from "@/lib/llm/unavailable";
 import { createClient, getSession } from "@/lib/supabase/server";
@@ -10,6 +11,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** `failed`: how many papers could not be asked (they get no cell). The card itself is read from the page. */
 export async function askColumnAction(caseId: string, question: string): Promise<{ ok: boolean; error?: string; failed?: number }> {
+  if (!docsTableEnabled()) return { ok: false, error: "الميزة دي لسه مش متاحة" }; // behind the flag until issue #61 is merged
   if (!UUID.test(caseId)) return { ok: false, error: "الدعوى مش موجودة" };
   const db = await createClient();
   const s = await getSession(db);

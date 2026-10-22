@@ -3,6 +3,7 @@
 // goes to the case thread). The views and the JSON download are reached from the header's «…» menu.
 // The Clausia composer is fixed at the bottom; its chips come from the case's real state.
 import { notFound, redirect } from "next/navigation";
+import { DocumentsLegacy } from "@/components/case-tabs/DocumentsLegacy";
 import { DocumentsTab } from "@/components/case-tabs/DocumentsTab";
 import { HearingsTab } from "@/components/case-tabs/HearingsTab";
 import { JudgmentsTab } from "@/components/case-tabs/JudgmentsTab";
@@ -14,6 +15,7 @@ import { UploadDocument } from "@/components/documents/UploadDocument";
 import { hearingState, pendingHref, shortDmy } from "@/components/cases/case-view";
 import { Composer, type ComposerChip } from "@/components/shell/Composer";
 import { getCaseFile, type CaseFile } from "@/lib/case-file";
+import { docsTableEnabled } from "@/lib/flags";
 import { todayIso } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
 import { getOrCreateCaseThread } from "@/lib/threads";
@@ -39,6 +41,7 @@ export default async function CasePage({ params, searchParams }: { params: Promi
     if (e instanceof Error && e.message === "case not found") notFound();
     throw e;
   }
+  const table = docsTableEnabled(); // the documents table + «+ عمود جديد»: off until issue #61 is merged (src/lib/flags.ts)
   const view: View | null = tab && tab in VIEWS ? (tab as View) : null;
   const today = todayIso();
   const hs = hearingState(cf.hearings, today);
@@ -70,9 +73,9 @@ export default async function CasePage({ params, searchParams }: { params: Promi
         <>
           <CaseSubHeader cf={cf} caseId={id} crumb={VIEWS[view]} title={VIEW_TITLE[view]}
             stats={view === "documents" ? [{ value: cf.documents.length, label: "مستند" }] : view === "hearings" ? [{ value: cf.hearings.length, label: "جلسة" }] : []}
-            action={view === "documents" ? <div className="flex items-center gap-2"><UploadDocument caseId={id} row compact /><AddColumn caseId={id} disabled={!cf.documents.length} /></div> : null} />
+            action={view === "documents" ? (table ? <div className="flex items-center gap-2"><UploadDocument caseId={id} row compact /><AddColumn caseId={id} disabled={!cf.documents.length} /></div> : <UploadDocument caseId={id} row />) : null} />
           <div className="mt-5 sm:mt-4.5">
-            {view === "hearings" ? <><HearingsTab caseId={id} /><JudgmentsTab cf={cf} caseId={id} /></> : view === "documents" ? <DocumentsTab caseId={id} cf={cf} /> : <CaseDetails cf={cf} />}
+            {view === "hearings" ? <><HearingsTab caseId={id} /><JudgmentsTab cf={cf} caseId={id} /></> : view === "documents" ? (table ? <DocumentsTab caseId={id} cf={cf} /> : <DocumentsLegacy caseId={id} />) : <CaseDetails cf={cf} />}
           </div>
         </>
       ) : (
@@ -88,8 +91,8 @@ export default async function CasePage({ params, searchParams }: { params: Promi
 
       <div className="min-h-6 flex-1" />
       <Composer target={{ kind: "case", caseId: id }} chips={chips}
-        placeholder={view === "documents" ? "اسأل عن المستندات… مثلاً: إمتى بالظبط بطّل يدفع؟" : "اكتب لـ Clausia عن القضية دي… قرار جلسة، واقعة جديدة، أو أي سؤال"}
-        placeholderShort={view === "documents" ? "اسأل عن المستندات…" : "اكتب لـ Clausia عن القضية دي…"} />
+        placeholder={view === "documents" && table ? "اسأل عن المستندات… مثلاً: إمتى بالظبط بطّل يدفع؟" : "اكتب لـ Clausia عن القضية دي… قرار جلسة، واقعة جديدة، أو أي سؤال"}
+        placeholderShort={view === "documents" && table ? "اسأل عن المستندات…" : "اكتب لـ Clausia عن القضية دي…"} />
     </div>
   );
 }
