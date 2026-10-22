@@ -1,4 +1,5 @@
 /** What the server hands the chat panel (see panel-data.ts) and the small URL rules both sides share. No server-only import. */
+import type { DeadlineCardEntry } from "@/lib/deadlines/cards";
 import type { Session } from "@/lib/threads";
 import type { ChatItem, ThreadDoc } from "./ChatThread";
 
@@ -25,7 +26,7 @@ export interface PanelData {
   threadId: string | null;
   /** «جلسة 22/10»: the open session (or the one about to be made) is about this hearing */
   hearing: { id: string; date: string } | null;
-  thread: { items: ChatItem[]; lookup: Record<string, string>; docs: Record<string, ThreadDoc> } | null;
+  thread: { items: ChatItem[]; lookup: Record<string, string>; deadlines: Record<string, DeadlineCardEntry>; docs: Record<string, ThreadDoc> } | null;
   /** a general session that is about a case: «انقل المحادثة دي لقضية X» */
   moveOffer: { caseId: string; label: string } | null;
   /** starter chips above the composer (they fill the box; nothing is sent) */

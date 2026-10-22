@@ -67,6 +67,7 @@ function kindOf(o: ProposalOp): string {
     case "attach_document": return "ورقة";
     case "add_doc_column": return "عمود";
     case "add_doc_cell": return "خانة";
+    case "add_deadline": return "ميعاد طعن"; // drawn by DeadlineCard
   }
 }
 
@@ -86,6 +87,7 @@ function summaryOf(o: ProposalOp, lookup: Record<string, string> = {}): string {
     case "attach_document": return a.doc_type ? DOC_TYPE[a.doc_type as keyof typeof DOC_TYPE] : "";
     case "add_doc_column": return String(a.title ?? "");
     case "add_doc_cell": return [lookup[String(a.document)], a.answer ? cut(a.answer, 90) : "مش مذكور"].filter(Boolean).join(" · ");
+    case "add_deadline": return "ميعاد طعن";
   }
 }
 

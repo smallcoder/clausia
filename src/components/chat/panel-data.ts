@@ -90,7 +90,7 @@ export async function loadPanel(db: Db, path: string[] | undefined, sp: { s?: st
 
   return {
     context, sessions, threadId, hearing,
-    thread: data ? { items: data.items, lookup: data.lookup, docs: data.docs } : null,
+    thread: data ? { items: data.items, lookup: data.lookup, deadlines: data.deadlines, docs: data.docs } : null,
     moveOffer, chips, starter: (sp.q ?? "").slice(0, 300),
   };
 }

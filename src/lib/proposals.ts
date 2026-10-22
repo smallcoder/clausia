@@ -4,6 +4,7 @@ import "server-only";
  * the card UI calls `decideProposal` (wrapped as a server action by the chat feature).
  * Nothing reaches the content tables until `decideProposal` runs for that op.
  */
+import { deadlinesEnabled } from "@/lib/flags";
 import { normalizeForMatch } from "@/lib/quote-match";
 import type { Db } from "@/lib/supabase/server";
 import type { Json } from "@/lib/db/types";
@@ -153,6 +154,7 @@ export async function decideProposal(
   // undone and the card stays as it was, so a failure never leaves a half-saved card
   const before = p.ops.map((o) => ({ status: o.status, result_id: o.result_id, error: o.error, args: o.args, edited: o.edited, resolved_from: o.resolved_from }));
   const undos: Undo[] = [];
+  const newJudgments: string[] = [];
   let failure: { index: number; title: string; error: string } | null = null;
 
   for (const o of p.ops) {
@@ -175,7 +177,8 @@ export async function decideProposal(
     try {
       const res = await applyOp(db, o.tool, args, provenance, refs);
       undos.push(res.undo);
-      o.status = decision.mode === "suggest" ? "suggested" : "confirmed";
+      if (o.tool === "add_judgment" && decision.mode === "confirm") newJudgments.push(res.id);
+      o.status =decision.mode === "suggest" ? "suggested" : "confirmed";
       o.result_id = res.id;
       o.error = null;
       if (edit) {
@@ -221,5 +224,18 @@ export async function decideProposal(
     ops: p.ops as unknown as Json, status, case_id: caseId, decided_at: new Date().toISOString(), decided_by: user?.id ?? null,
   }).eq("id", p.id).select("*").single();
   if (error) throw new Error(error.message);
+
+  // a judgment was just saved (confirmed, not «as a suggestion»): propose the appeal-deadlines card, made by code. A failure here
+  // (LawMill down, no thread) never undoes the judgment the lawyer confirmed.
+  if (decision.mode === "confirm" && deadlinesEnabled()) {
+    for (const j of newJudgments) {
+      try {
+        const { proposeDeadlinesForJudgment } = await import("@/lib/deadlines/propose"); // lazy: propose.ts imports this file
+        await proposeDeadlinesForJudgment(db, { judgmentId: j, threadId: p.thread_id });
+      } catch (e) {
+        console.error(`[deadlines] card for judgment ${j} not proposed: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }
+  }
   return data as unknown as Proposal;
 }

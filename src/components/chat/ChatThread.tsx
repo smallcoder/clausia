@@ -8,7 +8,9 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useOptimistic, useRef, useState, useTransition, type ReactNode } from "react";
 import { cx } from "@/components/ui";
+import { DeadlineCard } from "@/components/proposal/DeadlineCard";
 import { ProposalCard } from "@/components/proposal/ProposalCard";
+import type { DeadlineCardEntry } from "@/lib/deadlines/cards";
 import { useReadProgress } from "@/components/documents/useReadProgress";
 import { ChatComposer } from "./ChatComposer";
 import { useDraft } from "./draft";
@@ -40,7 +42,7 @@ export interface ThreadDoc {
 /** The upload posts «أرفقتُ مستندًا: X» for the lawyer; the chip says it already, so no bubble for it. */
 const AUTO_ATTACH = /^أرفقتُ مستندًا: /;
 
-export function ChatThread({ threadId, caseId, hearing, items, lookup, docs = {}, chips = [], starter = "" }: {
+export function ChatThread({ threadId, caseId, hearing, items, lookup, deadlines = {}, docs = {}, chips = [], starter = "" }: {
   /** null = a new session (the first message makes it) */
   threadId: string | null;
   caseId: string | null;
@@ -48,6 +50,8 @@ export function ChatThread({ threadId, caseId, hearing, items, lookup, docs = {}
   hearing: { id: string; date: string } | null;
   items: ChatItem[];
   lookup: Record<string, string>;
+  /** the deadlines cards' data by proposal id (empty with the flag off) */
+  deadlines?: Record<string, DeadlineCardEntry>;
   docs?: Record<string, ThreadDoc>;
   chips?: { label: string; text: string }[];
   /** a starter sentence already in the box (from a brief chip's link); it is not sent */
@@ -181,7 +185,11 @@ export function ChatThread({ threadId, caseId, hearing, items, lookup, docs = {}
                       </div>
                     ) : null}
                     {m.proposals.map((p, i) => (
-                      <div key={p.id} className={cx((m.content.trim() || i > 0) && "mt-3.5")}><ProposalCard proposal={p} lookup={lookup} /></div>
+                      <div key={p.id} className={cx((m.content.trim() || i > 0) && "mt-3.5")}>
+                        {p.ops.some((o) => o.tool === "add_deadline")
+                          ? (deadlines[p.id] ? <DeadlineCard proposal={p} entry={deadlines[p.id]} /> : null) // flag off: no card
+                          : <ProposalCard proposal={p} lookup={lookup} />}
+                      </div>
                     ))}
                   </ClausiaLine>
                 )}

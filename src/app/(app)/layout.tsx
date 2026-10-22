@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { CiteProvider } from "@/components/cite/CiteProvider";
 import { AppHeader } from "@/components/shell/AppHeader";
 import { SplitShell } from "@/components/shell/SplitShell";
+import { deadlinesEnabled } from "@/lib/flags";
 import { undecidedPastCount } from "@/lib/hearings";
 import { createClient, getSession } from "@/lib/supabase/server";
 
@@ -26,7 +27,7 @@ export default async function AppLayout({ children, chat }: { children: React.Re
   return (
     <CiteProvider>
       <SplitShell chat={chat} account={{ officeName: office?.name ?? "", email }}
-        header={<AppHeader initials={initialsOf(session.displayName || "أ ت")} officeName={office?.name ?? ""} email={email} alerts={alerts} userId={session.user.id} />}>
+        header={<AppHeader initials={initialsOf(session.displayName || "أ ت")} officeName={office?.name ?? ""} email={email} alerts={alerts} userId={session.user.id} holidays={deadlinesEnabled()} />}>
         {children}
       </SplitShell>
     </CiteProvider>

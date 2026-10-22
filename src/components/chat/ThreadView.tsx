@@ -1,6 +1,7 @@
 import "server-only";
 /** Server part of a session: loads the visible messages, their cards, the thread's papers and the names the cards need. */
 import { buildProposalLookup } from "@/lib/assistant/lookup";
+import { loadDeadlineCards, type DeadlineCardEntry } from "@/lib/deadlines/cards";
 import { DOC_TYPE } from "@/lib/labels";
 import type { Proposal } from "@/lib/proposals";
 import type { Db } from "@/lib/supabase/server";
@@ -10,6 +11,8 @@ export interface ThreadData {
   items: ChatItem[];
   proposals: Proposal[];
   lookup: Record<string, string>;
+  /** the deadlines cards' data by proposal id (empty with the flag off) */
+  deadlines: Record<string, DeadlineCardEntry>;
   docs: Record<string, ThreadDoc>;
   stats: {
     /** papers uploaded in this thread whose pages were read (documents.read_status = 'done') */
@@ -40,6 +43,7 @@ export async function loadThread(db: Db, threadId: string): Promise<ThreadData> 
     else orphans.push(p);
   }
   const lookup = await buildProposalLookup(db, proposals);
+  const deadlines = await loadDeadlineCards(db, proposals);
 
   const docs: Record<string, ThreadDoc> = {};
   for (const d of docRows ?? []) {
@@ -87,6 +91,7 @@ export async function loadThread(db: Db, threadId: string): Promise<ThreadData> 
     items: visible,
     proposals,
     lookup,
+    deadlines,
     docs,
     stats: {
       docsRead: (docRows ?? []).filter((d) => d.read_status === "done").length,
