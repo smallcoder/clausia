@@ -5,7 +5,7 @@
  */
 import { TitleRow } from "@/components/shell/TitleRow";
 
-type Kind = "home" | "chat" | "case" | "roll" | "cases";
+type Kind = "home" | "case" | "roll" | "cases";
 
 const Bar = ({ w, h = 12, className = "" }: { w: string; h?: number; className?: string }) => (
   <span aria-hidden className={`skel block ${className}`} style={{ width: w, height: h }} />
@@ -59,70 +59,16 @@ function TitleRowSkeleton({ stats, caps = 0 }: { stats: number; caps?: number })
   );
 }
 
-/** Home on desktop: the composer is part of the stack, as in the real page (44px under the cards, the column wide: chips, the box, the note). */
-function HomeStackComposer() {
-  return (
-    <>
-      <div aria-hidden className="hidden pb-6 sm:mt-11 sm:block">
-        <div className="flex justify-center gap-2 pb-3.5">{[130, 118, 160, 96].map((w) => <span key={w} className="skel h-control rounded-full" style={{ width: w }} />)}</div>
-        <div className="glass flex h-34 flex-col justify-between rounded-xl p-4">
-          <Bar w="55%" h={12} />
-          <div className="flex items-center justify-between"><span className="size-10 rounded-full border border-border" /><span className="size-10 rounded-full bg-primary-fill opacity-30" /></div>
-        </div>
-        <div className="mt-2.5 flex h-4 justify-center"><Bar w="260px" h={10} /></div>
-      </div>
-      <div aria-hidden className="hidden h-16 shrink-0 sm:block" />
-    </>
-  );
-}
-
-function ComposerShell({ tall = false, mobileOnly = false }: { tall?: boolean; mobileOnly?: boolean }) {
-  const only = mobileOnly ? "sm:hidden " : "";
-  if (tall)
-    return (
-      <>
-        <div aria-hidden className={`${only}h-44 shrink-0`} />
-        <div className={`${only}bg-fade pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3 pb-[calc(18px+env(safe-area-inset-bottom))] pt-10 sm:px-6 sm:pb-6 sm:pt-15`} /* ds-allow: safe-area inset needs calc() */>
-          <div className="glass mx-auto flex max-w-composer h-29 flex-col justify-between rounded-xl p-3.5 sm:h-34 sm:p-4">
-            <Bar w="55%" h={12} />
-            <div className="flex items-center justify-between"><span className="size-control rounded-full border border-border sm:size-10" /><span className="size-control rounded-full bg-primary-fill opacity-30 sm:size-10" /></div>
-          </div>
-        </div>
-      </>
-    );
-  return (
-    <>
-      <div aria-hidden className="h-28 shrink-0" />
-      <div className="bg-fade pointer-events-none fixed inset-x-0 bottom-0 z-30 px-3.5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-10 sm:px-10 sm:pb-7.5 sm:pt-15" /* ds-allow: safe-area inset needs calc() */>
-        <div className="glass mx-auto flex max-w-composer h-13 items-center gap-2 rounded-xl p-1.5 sm:h-14 sm:p-1.75">
-          <span className="size-control rounded-full border border-border sm:size-10" />
-          <Bar w="45%" h={12} />
-          <span className="ms-auto size-control rounded-full bg-primary-fill opacity-30 sm:size-10" />
-        </div>
-      </div>
-    </>
-  );
-}
-
 export function PageSkeleton({ kind }: { kind: Kind }) {
-  const narrow = kind === "home" || kind === "chat";
   return (
     <div role="status" aria-busy="true" aria-label="جارٍ التحميل"
-      className={`skel-shimmer mx-auto flex w-full flex-1 flex-col px-4 sm:px-10 ${kind === "home" ? "sm:justify-center " : ""}${narrow ? "max-w-narrow sm:px-6" : "max-w-page"}`}>
+      className="skel-shimmer mx-auto flex w-full max-w-page flex-1 flex-col px-4 sm:px-10">
       {kind === "home" ? (
         <>
           <div className="space-y-3 pt-4 sm:pt-10"><Bar w="110px" h={11} /><Bar w="min(380px, 80vw)" h={40} className="rounded-md" /></div>
           <div className="mt-6 flex gap-3"><Bar w="30px" h={30} className="rounded-sm" /><div className="flex-1 space-y-2"><Bar w="80%" h={14} /><Bar w="55%" h={14} /></div></div>
           <div className="mt-8 grid gap-4 sm:grid-cols-[1fr_minmax(0,0.55fr)]"><Card className="order-2 sm:order-none"><Rows n={3} /></Card><Card className="order-1 sm:order-none"><Bar w="90px" h={11} /><Bar w="110px" h={72} className="mt-6 rounded-md" /><Bar w="60%" h={10} className="mt-6" /></Card></div>
         </>
-      ) : null}
-      {kind === "chat" ? (
-        <div className="space-y-6 pt-4 sm:pt-6">
-          <div className="flex justify-center"><Bar w="220px" h={30} className="rounded-full" /></div>
-          <div className="ms-auto w-7/10 rounded-lg border border-border-2 bg-card p-4"><Bar w="90%" h={12} /><Bar w="60%" h={12} className="mt-2" /></div>
-          <div className="flex gap-3"><Bar w="28px" h={28} className="rounded-sm" /><div className="flex-1 space-y-2"><Bar w="75%" h={13} /><Bar w="40%" h={13} /></div></div>
-          <Card><Bar w="140px" h={14} /><Rows n={4} /><Bar w="100%" h={44} className="mt-3 rounded-full" /></Card>
-        </div>
       ) : null}
       {kind === "case" ? (
         <>
@@ -172,7 +118,6 @@ export function PageSkeleton({ kind }: { kind: Kind }) {
           <Card className="mt-4 sm:mt-4.5 !p-0"><div className="border-b border-border-2 px-6 py-3"><Bar w="40%" h={10} /></div><div className="px-6"><Rows n={7} /></div></Card>
         </>
       ) : null}
-      {kind === "home" ? <><ComposerShell tall mobileOnly /><HomeStackComposer /></> : <ComposerShell tall={kind === "chat"} />}
     </div>
   );
 }

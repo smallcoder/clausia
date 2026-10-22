@@ -714,6 +714,7 @@ export type Database = {
           case_id: string | null
           created_at: string
           created_by: string | null
+          hearing_id: string | null
           id: string
           office_id: string
           title: string | null
@@ -723,6 +724,7 @@ export type Database = {
           case_id?: string | null
           created_at?: string
           created_by?: string | null
+          hearing_id?: string | null
           id?: string
           office_id?: string
           title?: string | null
@@ -732,6 +734,7 @@ export type Database = {
           case_id?: string | null
           created_at?: string
           created_by?: string | null
+          hearing_id?: string | null
           id?: string
           office_id?: string
           title?: string | null
@@ -743,6 +746,13 @@ export type Database = {
             columns: ["case_id"]
             isOneToOne: false
             referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_threads_hearing_id_fkey"
+            columns: ["hearing_id"]
+            isOneToOne: false
+            referencedRelation: "hearings"
             referencedColumns: ["id"]
           },
           {

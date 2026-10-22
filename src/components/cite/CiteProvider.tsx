@@ -3,19 +3,13 @@
  * «Source to the sentence» (docs/design/next/Cite{Light,Dark}.dc.html): one paper panel for the whole app, opened by any
  * paper source chip (SourceChip). The provider holds which chip is open; CiteMain lays the page out around the panel.
  *
- * Desktop (≥1024): on a chat thread the page becomes the mockup's two columns — the thread on the right, the paper on
- * the left (RTL) — and the top bar takes the same wide box; on every other page the panel floats over the left side
- * (those pages are not built for half a screen). Mobile: a bottom sheet.
+ * Desktop (≥1280): the panel floats over the page column (the chat panel stays in view); below 1280: a bottom sheet.
+ * The chips live in the chat panel and in the page, so the panel is rendered once, at the root of the split shell.
  * Esc closes it; focus goes into the panel on open and back to the chip on close.
  */
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { cx } from "@/components/ui";
-import { CitePanel } from "./CitePanel";
-import { CiteCtx, useCite, type CiteSource } from "./context";
-
-/** the thread pages are the only narrow pages that hold paper chips: they get the two-column layout */
-const SPLIT_PATH = /^\/chat\/[^/]+/;
+import { CiteCtx, type CiteSource } from "./context";
 
 export function CiteProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -47,23 +41,6 @@ export function CiteProvider({ children }: { children: ReactNode }) {
     return () => document.removeEventListener("keydown", onKey, true);
   }, [active, close]);
 
-  const split = !!active && SPLIT_PATH.test(pathname);
-  const value = useMemo(() => ({ active, split, open, close }), [active, split, open, close]);
+  const value = useMemo(() => ({ active, open, close }), [active, open, close]);
   return <CiteCtx.Provider value={value}>{children}</CiteCtx.Provider>;
-}
-
-/**
- * The page body: `<main>` and the panel. The wrapper and `<main>` keep their place in the tree whether the panel is
- * open or not, so opening it never remounts the page (a half-written message, a scroll position).
- * Split: the mockup's 1600px box (two equal columns, 24px apart) under the top bar. `<main>` reaches 16px into the
- * gutter so the thread keeps the mockup's 8px column padding inside its own 24px one.
- */
-export function CiteMain({ children }: { children: ReactNode }) {
-  const { split } = useCite();
-  return (
-    <div className={split ? "contents lg:mx-auto lg:grid lg:w-full lg:max-w-split lg:flex-1 lg:grid-cols-2 lg:items-start lg:gap-6 lg:px-10 lg:pb-6 lg:pt-3" : "contents"}>
-      <main className={cx("flex w-full flex-1 flex-col", split && "lg:-mx-4 lg:w-auto lg:min-w-0")}>{children}</main>
-      <CitePanel />
-    </div>
-  );
 }

@@ -5,9 +5,8 @@
  */
 import { Bell, CalendarDays, CalendarOff, FolderClosed, House, LogOut } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { useCite } from "@/components/cite/context";
 import { askPermission } from "@/lib/brief/notify";
 import { useBriefBell } from "./useBriefBell";
 import { ThemeToggle } from "./ThemeToggle";
@@ -39,10 +38,9 @@ export function AppHeader({ initials, officeName, email, alerts, userId, holiday
   const { items: briefItems, opened } = useBriefBell(userId, path);
   const brief = briefItems[0];
   const on = activeTab(path);
-  /** the top bar takes the page's column: Home and Chat are the narrow one, every other page the wide one */
-  const narrow = path === "/" || path.startsWith("/chat") || path.startsWith("/settings");
-  /** a thread with the paper panel open is two columns (docs/design/next/Cite*): the top bar takes that wide box on desktop */
-  const { split } = useCite();
+  /** a general chat (Home, Roll, Cases …) keeps its open session when the lawyer moves between the tabs (a case's sessions are its own) */
+  const sp = useSearchParams();
+  const session = !/^\/cases\/[^/]+/.test(path) ? sp.get("s") : null;
   const [open, setOpen] = useState(false);
   const menu = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -51,8 +49,9 @@ export function AppHeader({ initials, officeName, email, alerts, userId, holiday
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, [open]);
+  // the top bar sits above the page only (the chat panel has its own header); below 1280 the phone's chat header replaces it
   return (
-    <header className={`sticky top-0 z-40 mx-auto ${path.startsWith("/chat/") || /^\/cases\/[^/]+/.test(path) ? "hidden sm:grid" : "grid"} h-18 w-full grid-cols-[1fr_auto_1fr] items-center gap-2 px-3.5 sm:h-22 ${split ? "max-w-narrow sm:px-6 lg:max-w-split lg:px-10" : narrow ? "max-w-narrow sm:px-6" : "max-w-page sm:px-10"}`}>
+    <header className="sticky top-0 z-40 mx-auto hidden h-22 w-full max-w-page grid-cols-[1fr_auto_1fr] items-center gap-2 px-10 xl:grid">
       <Link href="/" className="flex items-center gap-2.5 justify-self-start" aria-label="Clausia — الرئيسية">
         <span className="sm:hidden"><ClausiaMark size={40} /></span>
         <span className="hidden sm:inline-flex"><ClausiaMark size={36} /></span>
@@ -66,7 +65,7 @@ export function AppHeader({ initials, officeName, email, alerts, userId, holiday
         {TABS.map(({ href, label, Icon }) => {
           const active = on === href;
           return (
-            <Link key={href} href={href} aria-label={label} aria-current={active ? "page" : undefined}
+            <Link key={href} href={session ? `${href}?s=${session}` : href} aria-label={label} aria-current={active ? "page" : undefined}
               className={`tap inline-flex h-9 items-center gap-2 rounded-lg text-sm transition sm:h-10 sm:px-4.5 sm:text-base ${active ? "bg-selected px-3 font-semibold text-on-selected shadow-[var(--tab-shadow)]" : "glass-icon px-2.5 font-medium hover:text-text"}`}>
               <Icon size={16} strokeWidth={1.9} aria-hidden className="size-glyph-sm sm:size-4" />
               <span className={active ? "" : "hidden sm:inline"}>{label}</span>
@@ -78,7 +77,7 @@ export function AppHeader({ initials, officeName, email, alerts, userId, holiday
       <div className="flex items-center gap-2.5 justify-self-end">
         {brief ? (
           <Link href={brief.href} onClick={() => { void askPermission(); opened(brief); }}
-            className="tap glass hidden h-9 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold text-gold transition hover:opacity-80 xl:inline-flex">
+            className="tap glass hidden h-9 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold text-gold transition hover:opacity-80 3xl:inline-flex">
             <span aria-hidden className="size-1.5 rounded-full bg-gold" />{brief.label}
           </Link>
         ) : null}

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
-import { CiteMain, CiteProvider } from "@/components/cite/CiteProvider";
+import { CiteProvider } from "@/components/cite/CiteProvider";
 import { AppHeader } from "@/components/shell/AppHeader";
+import { SplitShell } from "@/components/shell/SplitShell";
 import { deadlinesEnabled } from "@/lib/flags";
 import { undecidedPastCount } from "@/lib/hearings";
 import { createClient, getSession } from "@/lib/supabase/server";
@@ -10,8 +11,11 @@ function initialsOf(name: string) {
   return (w.length > 1 ? w[0][0] + w[1][0] : (w[0] ?? "C").slice(0, 2)) || "C";
 }
 
-/** Shell: the v2 top bar; each page owns its width (pages 1280px of content, Home/Chat 960px, docked composer 780px); the top bar takes the same column as the page. */
-export default async function AppLayout({ children }: { children: React.ReactNode }) {
+/**
+ * Shell: the chat-first split layout (docs/design/split). The top bar sits above the page only; each page owns its width
+ * (1280px of content, up to its column); the chat panel is the @chat slot, always open on desktop (SplitShell).
+ */
+export default async function AppLayout({ children, chat }: { children: React.ReactNode; chat: React.ReactNode }) {
   const db = await createClient();
   const session = await getSession(db);
   if (!session) redirect("/login");
@@ -19,12 +23,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     db.from("offices").select("name").eq("id", session.officeId).single(),
     undecidedPastCount(db).catch(() => 0),
   ]);
+  const email = session.user.email ?? "";
   return (
     <CiteProvider>
-      <div className="flex min-h-dvh flex-col">
-        <AppHeader initials={initialsOf(session.displayName || "أ ت")} officeName={office?.name ?? ""} email={session.user.email ?? ""} alerts={alerts} userId={session.user.id} holidays={deadlinesEnabled()} />
-        <CiteMain>{children}</CiteMain>
-      </div>
+      <SplitShell chat={chat} account={{ officeName: office?.name ?? "", email }}
+        header={<AppHeader initials={initialsOf(session.displayName || "أ ت")} officeName={office?.name ?? ""} email={email} alerts={alerts} userId={session.user.id} holidays={deadlinesEnabled()} />}>
+        {children}
+      </SplitShell>
     </CiteProvider>
   );
 }

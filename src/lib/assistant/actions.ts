@@ -1,28 +1,29 @@
 "use server";
 /** Server actions for the chat UI and the confirmation card (RLS-bound client; the lawyer's own session). */
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { caseLabel } from "@/lib/labels";
 import { decideProposal, type Proposal } from "@/lib/proposals";
 import { createClient, getSession } from "@/lib/supabase/server";
-import { createGeneralThread, dropIfEmpty } from "@/lib/threads";
+import { listSessions, moveThreadToCase, type Session } from "@/lib/threads";
+import { parseMode } from "./modes";
 import { runAssistantTurn, TurnError } from "./turn";
 
 /** `saved`: the lawyer's message is in the thread (so the UI must not put it back in the composer). */
-export async function sendMessageAction(threadId: string, text: string): Promise<{ ok: boolean; error?: string; saved?: boolean }> {
+export async function sendMessageAction(threadId: string, text: string, mode?: string): Promise<{ ok: boolean; error?: string; saved?: boolean }> {
   const db = await createClient();
   const s = await getSession(db);
   if (!s) return { ok: false, error: "انتهت الجلسة، سجّل الدخول من جديد" };
   if (!text.trim()) return { ok: false, error: "الرسالة فارغة" };
   if (text.length > 8000) return { ok: false, error: "الرسالة طويلة جدًا" };
   try {
-    const r = await runAssistantTurn(db, { threadId, userText: text, userId: s.user.id, officeId: s.officeId });
-    revalidatePath(`/chat/${threadId}`);
+    const r = await runAssistantTurn(db, { threadId, userText: text, userId: s.user.id, officeId: s.officeId, mode: parseMode(mode) });
+    revalidatePath("/", "layout");
     // an LLM failure already left a friendly assistant message in the thread: no second error in the composer
     if (r.error && !r.assistantMessageIds.length) return { ok: false, error: "تعذّر رد Clausia", saved: true };
     return { ok: true, saved: true };
   } catch (e) {
     const saved = e instanceof TurnError && e.userMessageSaved;
-    if (saved) revalidatePath(`/chat/${threadId}`);
+    if (saved) revalidatePath("/", "layout");
     return { ok: false, error: e instanceof Error ? e.message : "تعذّر الإرسال", saved };
   }
 }
@@ -43,40 +44,29 @@ export async function decideProposalAction(
   }
 }
 
-export async function newThreadAction() {
-  const db = await createClient();
-  const id = await createGeneralThread(db);
-  redirect(`/chat/${id}`);
-}
-
-/** Chat home: the first message starts a new general thread (new client / case), then opens it. */
-export async function startChatAction(_: { error?: string } | null, form: FormData): Promise<{ error?: string } | null> {
-  const text = String(form.get("text") ?? "").trim();
-  if (!text) return { error: "اكتب رسالتك أولًا" };
+/** «انقل المحادثة دي لقضية X»: the lawyer moves a general session to a case (RLS client; the case must be one of theirs). */
+export async function moveThreadAction(threadId: string, caseId: string): Promise<{ ok: boolean; error?: string }> {
   const db = await createClient();
   const s = await getSession(db);
-  if (!s) return { error: "انتهت الجلسة، سجّل الدخول من جديد" };
-  const id = await createGeneralThread(db, text.replace(/\s+/g, " ").slice(0, 60));
+  if (!s) return { ok: false, error: "انتهت الجلسة، سجّل الدخول من جديد" };
   try {
-    await runAssistantTurn(db, { threadId: id, userText: text.slice(0, 8000), userId: s.user.id, officeId: s.officeId });
+    await moveThreadToCase(db, threadId, caseId);
+    revalidatePath("/", "layout");
+    return { ok: true };
   } catch (e) {
-    // the message never got in: no empty thread; the text stays in the composer
-    if (await dropIfEmpty(db, id)) return { error: e instanceof Error ? e.message : "تعذّر الإرسال" };
-    // otherwise the thread page shows the saved message and lets the lawyer retry
+    return { ok: false, error: e instanceof Error ? e.message : "تعذّر النقل" };
   }
-  redirect(`/chat/${id}`);
 }
 
-/** Home composer «ارفع ورقة»: a new general thread, then the upload reads the paper and posts its card there. */
-export async function startWithFileAction(form: FormData): Promise<{ threadId?: string; error?: string }> {
+/** The phone's context picker, step 1: the cases to choose from (recent first). */
+export async function pickerCasesAction(): Promise<{ id: string; label: string; client: string | null }[]> {
   const db = await createClient();
-  const s = await getSession(db);
-  if (!s) return { error: "انتهت الجلسة، سجّل الدخول من جديد" };
-  const file = form.get("file");
-  const id = await createGeneralThread(db, file instanceof File ? file.name.slice(0, 60) : "مستند جديد");
-  form.set("threadId", id);
-  const { uploadDocumentAction } = await import("@/lib/documents/actions");
-  const r = await uploadDocumentAction(form);
-  if (r.ok || r.warning) return { threadId: id };
-  return (await dropIfEmpty(db, id)) ? { error: r.error } : { threadId: id, error: r.error };
+  const { data } = await db.from("cases").select("id, case_number, case_year, title, clients(name)").order("updated_at", { ascending: false }).limit(60);
+  return (data ?? []).map((c) => ({ id: c.id, label: caseLabel(c), client: c.clients?.name ?? null }));
+}
+
+/** Step 2: the sessions of the chosen context (null = the general one). */
+export async function pickerSessionsAction(caseId: string | null): Promise<Session[]> {
+  const db = await createClient();
+  return listSessions(db, caseId);
 }

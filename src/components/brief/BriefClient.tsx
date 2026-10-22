@@ -3,14 +3,15 @@
  * The brief page's two client pieces:
  *  - BriefSettings: the «الإعدادات» pill (title row, desktop). Tapping it asks the browser for permission to show
  *    notifications (the only place besides the bell that asks) and says in a small panel what the state is.
- *  - BriefComposer: the three chips above the Clausia composer.
+ *  - BriefComposer: the three chips at the bottom of the page.
  *      «اكتبلي مذكرة …»   a link: opens that case's chat with the sentence in the box (nothing is sent)
  *      «ابعت الملخص ده واتساب»  a link to WhatsApp's share page (wa.me) with the summary typed in, in a new tab. DRAFT ONLY:
  *                         the lawyer picks who gets it and taps send in WhatsApp; Clausia sends nothing
  *      «ذكّرني الصبح 7»   saves a reminder for 07:00 Cairo of the hearings day; a toast with «تراجع» (undo), then «اتلغى»
  */
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Composer, type ComposerChip } from "@/components/shell/Composer";
+import { Bell, FileText } from "lucide-react";
+import Link from "next/link";
 import { briefSeenAction, setReminderAction, undoReminderAction } from "@/lib/brief/actions";
 import { askPermission, type NotifyState } from "@/lib/brief/notify";
 
@@ -100,11 +101,7 @@ export function BriefComposer({ date, dayWord, memo, whatsapp }: {
     });
   }
 
-  const chips: ComposerChip[] = [
-    ...(memo ? [{ label: memo.label, short: memo.short, href: memo.href, icon: "file" as const }] : []),
-    ...(whatsapp ? [{ label: "ابعت الملخص ده واتساب", short: "ابعته واتساب", href: whatsapp, external: true }] : []),
-    ...(whatsapp ? [{ label: "ذكّرني الصبح 7", icon: "bell" as const, onClick: remind, phoneHidden: true }] : []),
-  ];
+  const chip = "tap glass inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm font-medium text-text-2 transition hover:text-text disabled:opacity-60";
   return (
     <>
       {toast ? (
@@ -120,7 +117,12 @@ export function BriefComposer({ date, dayWord, memo, whatsapp }: {
           </div>
         </div>
       ) : null}
-      <Composer target={{ kind: "new" }} chips={chips} placeholder={`اسأل عن جلسات ${dayWord}…`} />
+      {/* the three chips (they were above the composer; the chat panel is the composer now) */}
+      <div className="mt-5 flex flex-wrap justify-center gap-2">
+        {memo ? <Link href={memo.href} className={chip}><FileText aria-hidden size={15} strokeWidth={1.9} /><span className="sm:hidden">{memo.short}</span><span className="hidden sm:inline">{memo.label}</span></Link> : null}
+        {whatsapp ? <a href={whatsapp} target="_blank" rel="noopener noreferrer" className={chip}><span className="sm:hidden">ابعته واتساب</span><span className="hidden sm:inline">ابعت الملخص ده واتساب</span></a> : null}
+        {whatsapp ? <button type="button" onClick={remind} disabled={pending} className={`${chip} max-sm:hidden`}><Bell aria-hidden size={15} strokeWidth={1.9} />ذكّرني الصبح 7</button> : null}
+      </div>
     </>
   );
 }

@@ -13,7 +13,7 @@ function Row({ h }: { h: HearingWithCase }) {
   const place = placeLine(h);
   const need = h.purpose?.trim() || null;
   return (
-    <Link href={`/cases/${h.case_id}`} className="group flex items-center gap-3.5 border-t border-border-2 py-3 md:gap-4.5 md:py-4">
+    <Link href={`/cases/${h.case_id}?hearing=${h.id}`} className="group flex items-center gap-3.5 border-t border-border-2 py-3 md:gap-4.5 md:py-4">
       <span title={h.case.circuit ?? undefined}
         className="font-num w-5.5 shrink-0 text-center text-lg font-light text-gold md:w-7.5 md:text-xl">
         {circuitNo(h.case.circuit)}

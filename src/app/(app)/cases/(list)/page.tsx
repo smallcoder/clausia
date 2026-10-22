@@ -1,12 +1,10 @@
 // Cases list, laid out exactly as docs/design/next/Head*Cases.dc.html: one title row — the title, real stats (the third,
 // «محتاجة قرار», links to ?decision=1) and the status capsules at the far end (?status=; ?decision=1, ?review=1, ?stage= and ?q= keep working as links and show
-// as clearable pills), one solid table of cases, and the
-// shared Composer at the bottom with no chips (the mockup draws none): it searches, asks and adds a case.
+// as clearable pills) and one solid table of cases. There is no composer here: the chat panel beside the page searches, asks and adds a case.
 import Link from "next/link";
 import { CaseListHeader, CaseListRow } from "@/components/caselist/CaseListRow";
 import { CasesHero } from "@/components/caselist/CasesHero";
 import { FilterChips, type ListParams } from "@/components/caselist/FilterChips";
-import { Composer } from "@/components/shell/Composer";
 import { casesNeedingDecision, casesNeedingReview, isKey, judgedAgainstUs, listCases, officeCaseCounts, weekHearingsCount, type CaseRow } from "@/lib/cases";
 import { todayIso } from "@/lib/dates";
 import { CASE_STATUS, STAGE } from "@/lib/labels";
@@ -83,24 +81,17 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
           {filtered ? (
             <>
               <h2 className="text-lg font-bold text-title">مفيش قضايا مطابقة</h2>
-              <p className="mx-auto mt-1.5 max-w-md text-base leading-7 text-text-3">جرّب رقم الدعوى لوحده، أو جزء من اسم الموكل أو الخصم، أو شيل التصفية. أو اسأل Clausia تحت.</p>
+              <p className="mx-auto mt-1.5 max-w-md text-base leading-7 text-text-3">جرّب رقم الدعوى لوحده، أو جزء من اسم الموكل أو الخصم، أو شيل التصفية. أو اسأل Clausia في الشات.</p>
               <Link href="/cases" className="mt-4 inline-flex h-11 items-center rounded-full border border-border px-5 text-base font-semibold text-text hover:bg-card-2">كل القضايا</Link>
             </>
           ) : (
             <>
               <h2 className="text-lg font-bold text-title">لسه مفيش قضايا</h2>
-              <p className="mx-auto mt-1.5 max-w-md text-base leading-7 text-text-3">احكي لـ Clausia تحت عن الموكل والدعوى، أو ارفع الصحيفة، وهي تجهّز الملف وتستنى تأكيدك.</p>
+              <p className="mx-auto mt-1.5 max-w-md text-base leading-7 text-text-3">احكي لـ Clausia في الشات عن الموكل والدعوى، أو ارفع الصحيفة، وهي تجهّز الملف وتستنى تأكيدك.</p>
             </>
           )}
         </section>
       )}
-
-      <div className="min-h-6 flex-1" />
-      <Composer
-        target={{ kind: "new" }}
-        placeholder="دوّر على قضية، اسأل Clausia، أو احكيلها عن قضية جديدة…"
-        placeholderShort="دوّر، اسأل، أو احكي قضية جديدة…"
-      />
     </div>
   );
 }

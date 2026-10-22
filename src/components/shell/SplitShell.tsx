@@ -1,0 +1,63 @@
+"use client";
+/**
+ * The chat-first split layout (docs/design/split/*). One centered frame (max 1760, 20px margins):
+ *   desktop (≥1280): the page column on the start side (right in RTL) — the top bar above the page only — and the chat
+ *   panel on the end side (left), always open (760px; the page shrinks first, then the chat goes down to 560).
+ *   below 1280 (phone / tablet): the chat is the whole screen; the page opens as a bottom sheet over it.
+ * The chat panel arrives as the @chat slot (it knows the context and the session from the URL); the composer's draft
+ * lives here, so it survives moving between pages.
+ *
+ * When the sheet is open (below 1280): any page except Home and a case's own page (they ARE the chat's context); a case's
+ * page opens with «افتح» (?sheet=1) or one of its views (?tab=…).
+ */
+import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
+import type { ReactNode } from "react";
+import { CitePanel } from "@/components/cite/CitePanel";
+import { DraftProvider, type Account } from "@/components/chat/draft";
+import { cx } from "@/components/ui";
+
+function sheetOpen(path: string, sp: URLSearchParams): boolean {
+  if (sp.get("sheet") === "1") return true;
+  if (path === "/") return false;
+  return !(/^\/cases\/[^/]+\/?$/.test(path) && !sp.get("tab"));
+}
+
+/** Where «رجوع للشات» goes: the case's own page (its chat) or Home, keeping the open session. */
+function closeHref(path: string, sp: URLSearchParams): string {
+  const m = path.match(/^\/cases\/([^/]+)/);
+  const keep = new URLSearchParams();
+  for (const k of m ? ["s", "hearing"] : ["s"]) { const v = sp.get(k); if (v) keep.set(k, v); }
+  const q = keep.toString();
+  return `${m ? `/cases/${m[1]}` : "/"}${q ? `?${q}` : ""}`;
+}
+
+export function SplitShell({ header, chat, account, children }: { header: ReactNode; chat: ReactNode; account: Account; children: ReactNode }) {
+  const path = usePathname();
+  const sp = useSearchParams();
+  const open = sheetOpen(path, sp);
+  return (
+    <DraftProvider account={account}>
+      <div className="xl:px-5">
+      <div className="xl:mx-auto xl:flex xl:w-full xl:max-w-frame xl:items-start xl:gap-6">
+        {/* the page: a column on desktop, a bottom sheet below 1280 (only when it is open) */}
+        {open ? <Link href={closeHref(path, sp)} aria-label="رجوع للشات" className="fade-enter fixed inset-0 z-30 bg-backdrop xl:hidden" /> : null}
+        <div className={cx(
+          "min-w-0 flex-1 flex-col xl:flex xl:min-h-dvh",
+          "max-xl:fixed max-xl:inset-x-0 max-xl:bottom-0 max-xl:top-48 max-xl:z-40 max-xl:overflow-y-auto max-xl:overscroll-contain max-xl:rounded-t-xl max-xl:bg-bg max-xl:shadow-pop",
+          open ? "sheet-enter flex" : "max-xl:hidden",
+        )}>
+          <div aria-hidden className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-border-strong xl:hidden" />
+          {header}
+          <main className="flex w-full flex-1 flex-col pt-3 xl:pt-0">{children}</main>
+          <div className="sticky bottom-0 mt-4 bg-bg px-4 pb-[calc(14px+env(safe-area-inset-bottom))] pt-3 xl:hidden" /* ds-allow: safe-area inset needs calc() */>
+            <Link href={closeHref(path, sp)} className="tap glass glass-icon flex h-control-xl w-full items-center justify-center rounded-full text-base font-semibold">رجوع للشات</Link>
+          </div>
+        </div>
+        {chat}
+      </div>
+      </div>
+      <CitePanel />
+    </DraftProvider>
+  );
+}

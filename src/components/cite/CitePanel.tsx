@@ -2,7 +2,7 @@
 /**
  * The paper panel (docs/design/next/Cite{Light,Dark}.dc.html): header (paper thumb, file name, «صفحة 2 من 4 · الجملة
  * المستخدمة متعلّمة», the page control, «اقفل»), the page text on a white sheet with the sentence marked, and a footer line
- * naming the item taken from it. Desktop: an aside (beside the thread, or floating over the left of other pages).
+ * naming the item taken from it. Desktop: an aside (floating over the page column, beside the chat panel).
  * Mobile: a bottom sheet.
  *
  * The page text is read with the lawyer's own session (loadCitePaper). The sentence is the span stored when the item was
@@ -40,16 +40,14 @@ function resolveTarget(pages: string[], a: CiteSource): { page: number; span: Sp
 }
 
 export function CitePanel() {
-  const { active, split, close } = useCite();
+  const { active, close } = useCite();
   const desktop = useDesktop();
   if (!active) return null;
   const label = `الورقة · ${active.label}`;
   if (desktop) {
     return (
       <PanelShell label={label} close={close} modal={false}
-        className={cx("flex flex-col overflow-hidden rounded-xl border border-border-2 bg-card shadow-card",
-          split ? "sticky top-25 h-[calc(100dvh-7.75rem)]" /* ds-allow: the panel is as tall as the screen under the top bar (mockup: 100px top, 24px bottom) */
-            : "fixed bottom-6 end-10 top-25 z-50 w-160")}>
+        className="fixed bottom-6 start-10 top-25 z-50 flex w-160 flex-col overflow-hidden rounded-xl border border-border-2 bg-card shadow-card">
         <Paper key={active.id} source={active} close={close} />
       </PanelShell>
     );

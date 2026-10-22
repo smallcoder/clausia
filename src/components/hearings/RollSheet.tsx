@@ -159,7 +159,7 @@ function Sheet({ h, today, onClose }: { h: HearingWithCase; today: string; onClo
   const num = caseNumber(h);
   const canDecide = !h.decision_type && h.hearing_date <= today;
   const label = `${hearingTitle(h)}، جلسة ${formatDmy(h.hearing_date)}`;
-  const caseHref = `/cases/${c.id}?tab=hearings`;
+  const caseHref = `/cases/${c.id}?tab=hearings&hearing=${h.id}`; // the case page, and the chat opens on this hearing's session
   const s = hearingStatus(h, today);
 
   return (

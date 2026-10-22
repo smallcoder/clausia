@@ -261,9 +261,20 @@
   --container-narrow: 960px;       /* the Home and Chat column: 912 of content plus 24px side gutters; the top bar uses the same box */
   --container-split: 1680px;       /* a chat thread with the paper panel open: two 1fr columns in 1600 plus 40px gutters; the top bar uses the same box */
   --container-composer: 780px;     /* the docked composer on inner pages and over a chat */
+  /* chat-first split layout (docs/design/split): one centered frame, the chat panel on the end side (the left in RTL), the page beside it */
+  --container-frame: 1760px;       /* the whole frame: chat + page, with 20px margins on a smaller screen */
+  --container-chat: 760px;         /* the chat panel at its widest */
+  --container-chat-min: 560px;     /* the chat panel at its narrowest (at 1440 it is this) */
+  --container-messages: 720px;     /* the messages column, centered in the panel */
   --container-bubble: 88%;         /* a chat bubble's widest share of the column, on mobile */
   --container-bubble-sm: 72%;      /* the same on desktop */
 }
+
+/* the chat panel's width: the page shrinks first (it keeps 816px), then the chat goes from 760 down to 560 (at 1440 it is 560).
+   880 = the frame's two 20px margins + the 24px gap + the page's 816px. Below 1280 the chat is full screen and this is not used. */
+@utility chat-width { width: clamp(var(--container-chat-min), calc(100vw - 880px), var(--container-chat)); }
+/* the top bar's brief label shows only when the page column has room for it (a 1920 screen and wider) */
+@theme { --breakpoint-3xl: 120rem; }
 
 /*
  * Sizes (DESIGN.md «Spacing»): the --spacing-* names read as size-/h-/w-/min-h-/p-/gap-/inset-… utilities (size-control, h-chip …).
@@ -310,6 +321,8 @@ body {
 /* Glass: floating controls only (top bar, tab capsule, composer, round buttons, chips) */
 .glass { background: var(--glass-bg); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); border: var(--glass-border); box-shadow: var(--glass-shadow); }
 .glass-icon { color: var(--glass-icon); }
+/* glass only below 1280 (the phone's composer floats over the chat; on desktop the same box is a solid white panel part) */
+@media (max-width: 79.99rem) { .glass-below-xl { background: var(--glass-bg); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); border: var(--glass-border); box-shadow: var(--glass-shadow); } }
 /* invisible 44px tap area around a control drawn smaller (owner decision: draw as the mockup, tap at 44px) */
 @layer components {
   /* layered, so utilities like sr-only / absolute still win over position: relative */

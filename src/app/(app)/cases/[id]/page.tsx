@@ -1,7 +1,7 @@
 // Case page (docs/design/*Case.dc.html, v2): who-first header with the spec sheet and stats, then the case overview
 // (default) or one of the reachable views (?tab=hearings — hearings then judgments | documents | details; ?tab=chat
-// goes to the case thread). The views and the JSON download are reached from the header's «…» menu.
-// The Clausia composer is fixed at the bottom; its chips come from the case's real state.
+// is an old link: it opens the case page). The views and the JSON download are reached from the header's «…» menu.
+// The chat is the panel beside the page (the @chat slot): the case's latest session, or ?s= / ?hearing=.
 import { notFound, redirect } from "next/navigation";
 import { DocumentsLegacy } from "@/components/case-tabs/DocumentsLegacy";
 import { DocumentsTab } from "@/components/case-tabs/DocumentsTab";
@@ -12,13 +12,11 @@ import { CaseHeader, CaseSubHeader } from "@/components/cases/CaseHeader";
 import { CaseOverview } from "@/components/cases/CaseOverview";
 import { AddColumn } from "@/components/documents/AddColumn";
 import { UploadDocument } from "@/components/documents/UploadDocument";
-import { hearingState, pendingHref, shortDmy } from "@/components/cases/case-view";
-import { Composer, type ComposerChip } from "@/components/shell/Composer";
+import { hearingState, pendingHref } from "@/components/cases/case-view";
 import { getCaseFile, type CaseFile } from "@/lib/case-file";
 import { docsTableEnabled } from "@/lib/flags";
 import { todayIso } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
-import { getOrCreateCaseThread } from "@/lib/threads";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const VIEWS = { hearings: "الجلسات", documents: "المستندات", details: "بيانات الدعوى" } as const;
@@ -32,8 +30,9 @@ export default async function CasePage({ params, searchParams }: { params: Promi
   if (!UUID.test(id)) notFound();
   const db = await createClient();
 
-  // `q` = a starter sentence for the composer (the brief's «اكتبلي مذكرة…» chip); it only fills the box, nothing is sent
-  if (tab === "chat") redirect(`/chat/${await getOrCreateCaseThread(db, id)}${q ? `?q=${encodeURIComponent(q.slice(0, 300))}` : ""}`);
+  // `q` = a starter sentence for the composer (the brief's «اكتبلي مذكرة…» chip); it only fills the box, nothing is sent.
+  // ?tab=chat is an old link (the chat is always beside the page now)
+  if (tab === "chat") redirect(`/cases/${id}${q ? `?q=${encodeURIComponent(q.slice(0, 300))}` : ""}`);
 
   let cf: CaseFile;
   try {
@@ -52,22 +51,6 @@ export default async function CasePage({ params, searchParams }: { params: Promi
   const review = pending.length + undecidedPast;
   const reviewHref = pending.length ? `/cases/${id}${pendingHref(cf)}` : undecidedPast ? `/cases/${id}?tab=hearings` : undefined;
 
-  const { data: thread } = await db.from("chat_threads").select("id").eq("case_id", id).order("created_at").limit(1).maybeSingle();
-  const chatHref = thread ? `/chat/${thread.id}` : `/cases/${id}?tab=chat`;
-
-  // a hearing whose decision is due: the latest past one without a decision, or today's
-  const due = hs.undecided ?? (hs.next && hs.next.date === today && !hs.next.decision_type ? hs.next : null);
-  const onlyFacts = pending.length > 0 && pending.every((p) => p.table === "case_facts");
-  const chips: ComposerChip[] = view ? [] : [
-    ...(due ? [{ label: `سجّل قرار جلسة ${shortDmy(due.date)}`, short: `سجّل قرار ${shortDmy(due.date)}`, text: `قرار جلسة ${shortDmy(due.date)}: `, icon: "gavel" as const }] : []),
-    ...(pending.length ? [{
-      label: onlyFacts ? (pending.length === 1 ? "راجع الواقعة المقترحة" : "راجع الوقائع المقترحة") : "راجع المقترحات",
-      short: pending.length === 1 ? "راجع المقترحة" : "راجع المقترحات",
-      text: "راجع معايا الحاجات المقترحة في القضية دي", accent: true, dot: true,
-    }] : []),
-    { label: "أضف مستند", attach: true, icon: "file" },
-  ];
-
   return (
     <div className="mx-auto flex w-full max-w-page flex-1 flex-col px-4 sm:px-10">
       {view ? (
@@ -81,7 +64,7 @@ export default async function CasePage({ params, searchParams }: { params: Promi
         </>
       ) : (
         <>
-          <CaseHeader cf={cf} caseId={id} chatHref={chatHref} stats={[
+          <CaseHeader cf={cf} caseId={id} stats={[
             { value: cf.facts.length + pending.filter((p) => p.table === "case_facts").length, label: "وقائع", href: `/cases/${id}#facts` },
             { value: cf.documents.length, label: "مستندات", href: `/cases/${id}?tab=documents` },
             { value: review, label: "محتاجة مراجعة", highlight: true, href: reviewHref },
@@ -89,11 +72,6 @@ export default async function CasePage({ params, searchParams }: { params: Promi
           <CaseOverview cf={cf} hs={hs} today={today} caseId={id} />
         </>
       )}
-
-      <div className="min-h-6 flex-1" />
-      <Composer target={{ kind: "case", caseId: id }} chips={chips}
-        placeholder={view === "documents" && table ? "اسأل عن المستندات… مثلاً: إمتى بالظبط بطّل يدفع؟" : "اكتب لـ Clausia عن القضية دي… قرار جلسة، واقعة جديدة، أو أي سؤال"}
-        placeholderShort={view === "documents" && table ? "اسأل عن المستندات…" : "اكتب لـ Clausia عن القضية دي…"} />
     </div>
   );
 }
