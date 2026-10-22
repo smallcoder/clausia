@@ -66,13 +66,13 @@ const DATE_LIKE = /\d{1,2}\/\d{1,2}\/\d{4}/g;
 
 // ---------- dates verbatim ----------
 {
-  const h = [hearing({ hearing_date: "2026-10-25", purpose: "للاطلاع والمذكرات" }), hearing({ hearing_date: "2026-11-03" })]; // the second is out of the week
+  const h = [hearing({ hearing_date: "2026-10-25" }), hearing({ hearing_date: "2026-11-03" })]; // the second is out of the week
   const b = input(h);
   const text = b.sentences.map(sentenceText).join(" ");
   check("the date is the row's, written d/m/yyyy (25/10/2026)", text.includes("25/10/2026"));
   check("no other date-like text appears", (text.match(DATE_LIKE) ?? []).join() === "25/10/2026", (text.match(DATE_LIKE) ?? []).join());
   check("a hearing past the 7-day window is not said", !text.includes("3/11/2026") && b.sentences.length === 1);
-  check("the purpose is the row's own words", text.includes("المطلوب: للاطلاع والمذكرات"));
+  check("the case is named «client — subject»", text.includes("موكل") && text.includes("إخلاء"));
   const edge = input([hearing({ hearing_date: addDaysIso(TODAY, 6) }), hearing({ hearing_date: addDaysIso(TODAY, 7) }), hearing({ hearing_date: "2026-10-22" })]);
   check("the window is today … today+6 (yesterday and +7 are out)", edge.sentences.length === 1 && sentenceText(edge.sentences[0]).includes(formatDmy(addDaysIso(TODAY, 6))));
   const sugg = input([hearing({ hearing_date: "2026-10-24", review_status: "suggested" })]);
@@ -101,7 +101,7 @@ const DATE_LIKE = /\d{1,2}\/\d{1,2}\/\d{4}/g;
   })());
   check("no new papers → no «ورق جديد» part", builtLine({ ...b, newDocs: 0 }) === "اتعمل من 3 قضايا · 07:40");
   check("counting words: 1 / 2 / 5 / 12", nCases(1) === "قضية واحدة" && nCases(2) === "قضيتين" && nCases(5) === "5 قضايا" && nCases(12) === "12 قضية" && nNewDocs(1) === "ورقة جديدة" && nNewDocs(2) === "ورقتين جديدتين" && nNewDocs(12) === "12 ورقة جديدة");
-  check("the stamp: 7:40 ص, and 19:05 → 7:05 م", clockStamp(NOW.toISOString()) === "7:40 ص" && clockStamp(cairoInstant(TODAY, 19, 5).toISOString()) === "7:05 م" && clockHm(cairoInstant(TODAY, 0, 5).toISOString()) === "00:05");
+  check("the stamp: 7:40 ص, and 19:05 → 7:05 م", clockStamp(NOW.toISOString()).time === "7:40" && clockStamp(NOW.toISOString()).period === "الصبح" && clockStamp(cairoInstant(TODAY, 19, 5).toISOString()).time === "7:05" && clockStamp(cairoInstant(TODAY, 19, 5).toISOString()).period === "بالليل" && clockHm(cairoInstant(TODAY, 0, 5).toISOString()) === "00:05");
 }
 
 // ---------- the conflict rule ----------
@@ -146,11 +146,11 @@ function dateKeyEq(x: string, y: string) { return dateFreeKey(x) === dateFreeKey
   const forA = pickNotices([], hs, aDismissed);
   const forB = pickNotices([], hs, new Set());
   check("a dismissed card is gone for the lawyer who dismissed it", !forA.some((x) => x.key === hs[0].key) && forA.length === 2);
-  check("another lawyer (their own empty set) still sees it", forB.some((x) => x.key === hs[0].key) && forB.length === 3);
-  check("a dismissal of the same key under another kind does not hide it", pickNotices([], hs, new Set([dismissalId("date_conflict", hs[0].key)])).length === 3);
+  check("another lawyer (their own empty set) still sees it", forB.some((x) => x.key === hs[0].key) && forB.length === MAX_NOTICES);
+  check("a dismissal of the same key under another kind does not hide it", pickNotices([], hs, new Set([dismissalId("date_conflict", hs[0].key)])).some((x) => x.key === hs[0].key));
   const many = Array.from({ length: 6 }, (_, i) => hearingNotice(hearing({ hearing_date: `2026-10-0${i + 1}` }), new Map()));
   check(`at most ${MAX_NOTICES} cards at once`, pickNotices([], many, new Set()).length === MAX_NOTICES);
-  check("a dismissed one lets the next one in", pickNotices([], many, new Set([dismissalId("hearing_decision", many[0].key)])).map((x) => x.key).join() === [many[1], many[2], many[3]].map((x) => x.key).join());
+  check("a dismissed one lets the next one in", pickNotices([], many, new Set([dismissalId("hearing_decision", many[0].key)])).map((x) => x.key).join() === many.slice(1, 1 + MAX_NOTICES).map((x) => x.key).join());
   const c = conflictNotice({ key: "x:y", caseId: "case-A", a: fact({ id: "x" }), b: fact({ id: "y", fact_date: "2026-04-15", source_document_id: "doc-B" }) }, "t", new Map());
   check("conflicts come before undecided hearings", pickNotices([c], many, new Set())[0].kind === "date_conflict");
   check("the hearing card says which hearing, with its date verbatim", hs[0].text === "جلسة 10/10/2026 فاتت من غير قرار.");

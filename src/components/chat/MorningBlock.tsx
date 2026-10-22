@@ -91,10 +91,11 @@ function Greeting({ text }: { text: string }) {
 export function MorningBlock({ data }: { data: MorningData }) {
   const { brief, notices, moreUndecided, today, greeting } = data;
   const line = builtLine(brief);
+  const stamp = clockStamp(brief.builtAt);
   return (
     <RollSheet today={today}>
       <div className="flex flex-col gap-4">
-        <p className="text-center text-xs leading-[normal] text-text-4">النهارده · <span className="num font-num">{clockStamp(brief.builtAt)}</span></p>
+        <p className="text-center text-xs leading-[normal] text-text-4">النهارده · <span className="num font-num">{stamp.time}</span> {stamp.period}</p>
         {/* the phone has no page beside the chat, so the greeting is on top of it (the desktop page carries it) */}
         <h1 className="text-xl font-bold leading-[1.2] text-title xl:hidden"><Greeting text={greeting} /></h1>
 

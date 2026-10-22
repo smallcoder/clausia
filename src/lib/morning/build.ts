@@ -3,7 +3,7 @@
  *
  * What it says (1–3 sentences, in this order):
  *   1–2. the next hearings this week (today and the 6 days after): the day, the date as d/m/yyyy straight from the row, the
- *        court, the case, and what the hearing is for (the row's `purpose`, if it has one);
+ *        court and the case («client — subject»);
  *   3.   the papers that are new since yesterday (the first two, by name and case).
  *   Not yet: the nearest deadlines. They come with the deadlines flag (src/lib/flags.ts), which is off.
  *
@@ -17,8 +17,7 @@ import { dayWord, whoOf } from "@/lib/brief/build";
 import { cairoClock } from "@/lib/brief/time";
 import { addDaysIso, formatDmy } from "@/lib/dates";
 import type { HearingWithCase } from "@/lib/hearings";
-import { hearingTitle } from "@/components/hearings/roll-text";
-import { shortCourt } from "@/components/home/text";
+import { rowTitle, shortCourt } from "@/components/home/text";
 import { BRIEF_VERSION, type BriefPayload, type BriefSentence, type Seg, type SourceRef } from "./types";
 
 /** the words the lawyer sees on a source that has no paper */
@@ -78,11 +77,10 @@ export function hearingSource(h: HearingWithCase, docNames: Map<string, string>)
 
 function hearingSentence(h: HearingWithCase, source: SourceRef, today: string): BriefSentence {
   const day = dayWord(h.hearing_date, today);
-  const purpose = h.purpose?.trim();
   return {
     parts: [
       { text: day, gold: true },
-      { text: ` (${formatDmy(h.hearing_date)}) عندك جلسة في ${shortCourt(h.case.court)}: ${hearingTitle(h)}${purpose ? `، المطلوب: ${purpose}` : ""}.` },
+      { text: ` (${formatDmy(h.hearing_date)}) عندك جلسة في ${shortCourt(h.case.court)}: ${rowTitle(h)}.` },
     ],
     sources: [source],
   };
@@ -109,11 +107,11 @@ export function clockHm(iso: string): string {
   return `${String(c.hour).padStart(2, "0")}:${String(c.minute).padStart(2, "0")}`;
 }
 
-/** «7:40 ص» (the stamp on top of the brief). */
-export function clockStamp(iso: string): string {
+/** «7:40» and «الصبح» (the stamp on top of the brief, as the mockup writes it: «النهارده · 7:40 الصبح»). */
+export function clockStamp(iso: string): { time: string; period: string } {
   const c = cairoClock(new Date(iso));
   const h12 = c.hour % 12 === 0 ? 12 : c.hour % 12;
-  return `${h12}:${String(c.minute).padStart(2, "0")} ${c.hour < 12 ? "ص" : "م"}`;
+  return { time: `${h12}:${String(c.minute).padStart(2, "0")}`, period: c.hour < 12 ? "الصبح" : c.hour < 18 ? "بعد الضهر" : "بالليل" };
 }
 
 export function buildMorning(i: MorningInput): BriefPayload {

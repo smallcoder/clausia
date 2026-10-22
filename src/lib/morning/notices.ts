@@ -18,7 +18,7 @@
  */
 import { formatDmy, normalizeDigits } from "@/lib/dates";
 import type { HearingWithCase } from "@/lib/hearings";
-import { hearingTitle } from "@/components/hearings/roll-text";
+import { rowTitle } from "@/components/home/text";
 import { normalizeForMatch } from "@/lib/quote-match";
 import { hearingSource } from "./build";
 import type { ConflictNotice, HearingNotice, Notice, SourceRef } from "./types";
@@ -26,7 +26,7 @@ import type { ConflictNotice, HearingNotice, Notice, SourceRef } from "./types";
 /** the shortest normalised text (letters and digits) that may match: below this a match is a coincidence */
 export const MIN_KEY = 12;
 /** cards in the chat at once (the rest wait behind them) */
-export const MAX_NOTICES = 3;
+export const MAX_NOTICES = 2;
 
 export interface NoticeFact {
   id: string;
@@ -108,7 +108,7 @@ export function conflictNotice(c: { key: string; caseId: string; a: NoticeFact; 
 
 export function hearingNotice(h: HearingWithCase, names: Map<string, string>): HearingNotice {
   return {
-    kind: "hearing_decision", key: h.id, hearing: h, title: hearingTitle(h),
+    kind: "hearing_decision", key: h.id, hearing: h, title: rowTitle(h),
     text: `جلسة ${formatDmy(h.hearing_date)} فاتت من غير قرار.`,
     source: hearingSource(h, names),
   };

@@ -37,7 +37,7 @@ async function caseTitles(db: Db, ids: string[]): Promise<Map<string, string>> {
   const m = new Map<string, string>();
   if (!ids.length) return m;
   for (const c of must(await db.from("cases").select("id, case_number, title, clients(name)").in("id", ids))) {
-    const subject = c.title?.trim() || null;
+    const subject = (c.title ?? "").split(" — ")[0].replace(/^دعوى\s+/u, "").trim() || null; // as the Home rows write it: «client — subject»
     const client = c.clients?.name?.trim() || null;
     m.set(c.id, client && subject ? `${client} — ${subject}` : client ?? subject ?? (c.case_number ? `الدعوى ${c.case_number}` : "دعوى بلا عنوان"));
   }

@@ -9,6 +9,7 @@ import { getCaseFile } from "../src/lib/case-file";
 import { confirmCell, editCell, removeColumn, renameColumn } from "../src/lib/doc-columns/edit";
 import { dismissReminder, dueReminders, setBriefReminder, undoReminder } from "../src/lib/brief/reminders";
 import { remindInstant } from "../src/lib/brief/time";
+import { todayIso } from "../src/lib/dates";
 import { moveThreadToCase } from "../src/lib/threads";
 import { createProposal, decideProposal } from "../src/lib/proposals";
 import { loadCardRows, loadPendingEdits } from "../src/lib/pending-edits";
@@ -29,6 +30,8 @@ function check(name: string, ok: boolean, detail = "") {
   console.log(`${ok ? "PASS" : "FAIL"}  ${name}${detail ? `  (${detail})` : ""}`);
 }
 
+// the service key only cleans up the test's own rows (a dismissal cannot be taken back through the API on purpose)
+const admin = createClient<Database>(URL, process.env.SUPABASE_SECRET_KEY!, { auth: { persistSession: false } });
 const A = await signIn("DEMO");
 const B = await signIn("OTHER");
 
@@ -46,7 +49,7 @@ const { data: aDoc } = await A.from("documents").select("id, storage_path").limi
 
 // ---------- OTHER reads nothing of office A ----------
 const TABLES = ["cases", "clients", "case_parties", "case_facts", "case_requests", "case_arguments", "hearings", "judgments", "documents",
-  "document_pages", "proposals", "chat_threads", "chat_messages", "llm_calls", "doc_columns", "doc_column_cells", "case_deadlines", "holiday_reports", "reminders"] as const;
+  "document_pages", "proposals", "chat_threads", "chat_messages", "llm_calls", "doc_columns", "doc_column_cells", "case_deadlines", "holiday_reports", "reminders", "daily_briefs", "dismissed_notices"] as const;
 for (const t of TABLES) {
   const { count: aCount } = await (A as SupabaseClient<Database>).from(t).select("id", { count: "exact", head: true }).eq("office_id", officeA);
   const { data, error } = await (B as SupabaseClient<Database>).from(t).select("id").eq("office_id", officeA).limit(5);
@@ -244,6 +247,71 @@ if (caseId) {
       check("DEMO undoes (deletes) it", undone.ok && ((await A.from("reminders").select("id").eq("id", r.id)).data?.length ?? 0) === 0);
     }
   }
+}
+
+// ---------- Home's morning brief (cached once per day) and «تجاهل» (per lawyer) ----------
+{
+  const aId = (await A.auth.getUser()).data.user!.id;
+  const bId = (await B.auth.getUser()).data.user!.id;
+  const day = "2099-02-01";
+  const payload = { v: 1, forDate: day, builtAt: new Date().toISOString(), sentences: [], empty: true, cases: 0, newDocs: 0 };
+  await A.from("daily_briefs").delete().eq("for_date", day);
+  await A.from("daily_briefs").upsert({ user_id: aId, for_date: day, payload }, { onConflict: "user_id,for_date", ignoreDuplicates: true });
+  const { data: mine } = await A.from("daily_briefs").select("id, office_id, user_id").eq("for_date", day).maybeSingle();
+  check("DEMO saves its brief of a day (its office, its user)", mine?.office_id === officeA && mine?.user_id === aId);
+  await A.from("daily_briefs").upsert({ user_id: aId, for_date: day, payload: { ...payload, cases: 99 } }, { onConflict: "user_id,for_date", ignoreDuplicates: true });
+  const { data: rows } = await A.from("daily_briefs").select("payload").eq("for_date", day);
+  check("one brief per lawyer per day: a second save keeps the first", rows?.length === 1 && (rows[0].payload as { cases: number }).cases === 0);
+  const { data: b1 } = await B.from("daily_briefs").select("id").eq("for_date", day);
+  check("OTHER cannot read DEMO's brief", (b1?.length ?? 0) === 0);
+  const { data: b2 } = await B.from("daily_briefs").delete().eq("for_date", day).select("id");
+  check("OTHER cannot delete it", (b2?.length ?? 0) === 0);
+  const { error: b3 } = await B.from("daily_briefs").insert({ office_id: officeA, user_id: bId, for_date: "2099-02-02", payload });
+  check("OTHER cannot save a brief into office A", !!b3, b3 ? b3.message : "inserted!");
+  const { error: b4 } = await B.from("daily_briefs").insert({ user_id: aId, for_date: "2099-02-03", payload });
+  check("OTHER cannot save a brief in DEMO's name", !!b4, b4 ? b4.message : "inserted!");
+  const { error: b5 } = await A.from("daily_briefs").insert({ user_id: bId, for_date: "2099-02-04", payload });
+  check("DEMO cannot save a brief in OTHER's name", !!b5, b5 ? b5.message : "inserted!");
+  await A.from("daily_briefs").delete().eq("for_date", day);
+
+  // the real loader: built once, then read; another lawyer's day is their own
+  const todayCairo = () => todayIso();
+  const { loadMorning } = await import("../src/lib/morning/load");
+  const keep = (await A.from("daily_briefs").select("payload").eq("user_id", aId).eq("for_date", todayCairo())).data?.[0];
+  await A.from("daily_briefs").delete().eq("user_id", aId).eq("for_date", todayCairo());
+  const m1 = await loadMorning(A as unknown as Db, aId, "أ. تجريبي");
+  const m2 = await loadMorning(A as unknown as Db, aId, "أ. تجريبي");
+  const { data: todays } = await A.from("daily_briefs").select("id").eq("user_id", aId).eq("for_date", todayCairo());
+  check("loadMorning: built on the first load, read on the next (one row, the same time)", todays?.length === 1 && m1.brief.builtAt === m2.brief.builtAt);
+  const mb = await loadMorning(B as unknown as Db, bId, "أ. آخر");
+  const { data: bRows } = await B.from("daily_briefs").select("user_id").eq("for_date", todayCairo());
+  check("OTHER's brief is its own (one row, its user) and DEMO's is untouched", bRows?.length === 1 && bRows[0].user_id === bId && ((await A.from("daily_briefs").select("user_id").eq("for_date", todayCairo())).data ?? []).every((r) => r.user_id === aId));
+  check("OTHER's cards and brief name nothing of office A", !JSON.stringify([mb.notices, mb.brief]).includes(officeA) && mb.notices.every((n) => n.kind !== "hearing_decision" || n.hearing.case.id !== caseId));
+  await B.from("daily_briefs").delete().eq("user_id", bId).eq("for_date", todayCairo());
+  await A.from("daily_briefs").delete().eq("user_id", aId).eq("for_date", todayCairo());
+  if (keep) await A.from("daily_briefs").insert({ user_id: aId, for_date: todayCairo(), payload: keep.payload });
+
+  // «تجاهل»: saved per lawyer
+  const key = "00000000-0000-4000-8000-0000000000aa";
+  await admin.from("dismissed_notices").delete().eq("key", key);
+  const { error: d0 } = await A.from("dismissed_notices").insert({ user_id: aId, kind: "hearing_decision", key });
+  check("DEMO dismisses a card (saved)", !d0, d0?.message);
+  const { error: dDup } = await A.from("dismissed_notices").insert({ user_id: aId, kind: "hearing_decision", key });
+  check("dismissing it twice is one row (unique per lawyer, kind and key)", !!dDup);
+  const { data: dA } = await A.from("dismissed_notices").select("key").eq("key", key);
+  const { data: dB } = await B.from("dismissed_notices").select("key").eq("key", key);
+  check("DEMO sees its dismissal, OTHER sees none", dA?.length === 1 && (dB?.length ?? 0) === 0);
+  const { error: dB2 } = await B.from("dismissed_notices").insert({ user_id: bId, kind: "hearing_decision", key });
+  const { data: dB3 } = await B.from("dismissed_notices").select("key").eq("key", key);
+  check("OTHER dismissing the same key is its own row: it does not touch DEMO's", !dB2 && dB3?.length === 1 && ((await A.from("dismissed_notices").select("user_id").eq("key", key)).data ?? []).length === 1);
+  const { error: dX1 } = await B.from("dismissed_notices").insert({ office_id: officeA, user_id: bId, kind: "date_conflict", key: "x:y" });
+  const { error: dX2 } = await B.from("dismissed_notices").insert({ user_id: aId, kind: "date_conflict", key: "x:z" });
+  const { error: dX3 } = await A.from("dismissed_notices").insert({ user_id: bId, kind: "date_conflict", key: "x:w" });
+  check("nobody can dismiss into another office or in another lawyer's name", !!dX1 && !!dX2 && !!dX3);
+  const { data: dU } = await A.from("dismissed_notices").update({ kind: "date_conflict" }).eq("key", key).select("id");
+  const { data: dD } = await A.from("dismissed_notices").delete().eq("key", key).select("id");
+  check("a dismissal cannot be changed or taken back through the API (it never comes back)", (dU?.length ?? 0) === 0 && (dD?.length ?? 0) === 0);
+  await admin.from("dismissed_notices").delete().eq("key", key);
 }
 
 // ---------- RPC ----------
