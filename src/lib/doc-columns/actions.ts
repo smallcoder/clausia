@@ -5,6 +5,8 @@ import { docsTableEnabled } from "@/lib/flags";
 import { LlmUnavailableError, SpendCapError } from "@/lib/llm";
 import { UNAVAILABLE_TEXT } from "@/lib/llm/unavailable";
 import { createClient, getSession } from "@/lib/supabase/server";
+import type { EditState } from "@/app/(app)/cases/actions";
+import { confirmCell, editCell, removeColumn, renameColumn, type EditResult } from "./edit";
 import { ColumnError, proposeDocColumn } from "./run";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -29,4 +31,46 @@ export async function askColumnAction(caseId: string, question: string): Promise
     console.error(`[doc-columns] ${e instanceof Error ? e.message : String(e)}`);
     return { ok: false, error: "حصلت مشكلة وأنا بجهّز العمود. جرّب تاني." };
   }
+}
+
+// ---------- the lawyer's own edits of a saved column (issue #61): direct taps, RLS client, never the model ----------
+
+function str(f: FormData, k: string) {
+  const v = f.get(k);
+  return typeof v === "string" ? v.trim() : "";
+}
+
+/** run one edit with the lawyer's own session, then refresh the case page */
+async function run(id: string, edit: (db: Awaited<ReturnType<typeof createClient>>) => Promise<EditResult>): Promise<EditState> {
+  if (!UUID.test(id)) return { error: "طلب غير صالح" };
+  const db = await createClient();
+  if (!(await getSession(db))) return { error: "انتهت الجلسة، سجّل الدخول من جديد" };
+  const r = await edit(db);
+  if (!r.ok) return { error: r.error };
+  revalidatePath(`/cases/${r.caseId}`);
+  return { ok: true };
+}
+
+/** the column's title (form: column_id, value) */
+export async function renameColumnAction(_prev: EditState, form: FormData): Promise<EditState> {
+  const id = str(form, "column_id");
+  return run(id, (db) => renameColumn(db, id, str(form, "value")));
+}
+
+/** a cell's answer wording (form: cell_id, value); the cell becomes the lawyer's */
+export async function editCellAction(_prev: EditState, form: FormData): Promise<EditState> {
+  const id = str(form, "cell_id");
+  return run(id, (db) => editCell(db, id, str(form, "value")));
+}
+
+/** one tap on a suggested cell (form: cell_id) */
+export async function confirmCellAction(form: FormData): Promise<void> {
+  const id = str(form, "cell_id");
+  await run(id, (db) => confirmCell(db, id));
+}
+
+/** the confirm step's button (form: column_id, confirm = "yes"): without the «yes» nothing is deleted */
+export async function removeColumnAction(_prev: EditState, form: FormData): Promise<EditState> {
+  const id = str(form, "column_id");
+  return run(id, (db) => removeColumn(db, id, str(form, "confirm") === "yes"));
 }
