@@ -3,7 +3,7 @@
  * The Clausia composer (on every screen). `size="hero"` is the big Home composer; `size="dock"` sits at the
  * bottom of inner pages. Chips fill the box with a starter sentence. No mic until voice notes ship (owner decision).
  */
-import { ArrowUp, CalendarDays, Camera, Check, Clock, File, Gavel, List, Plus, Search, User } from "lucide-react";
+import { ArrowUp, Bell, CalendarDays, Camera, Check, Clock, File, Gavel, List, Plus, Search, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useReadProgress } from "@/components/documents/useReadProgress";
@@ -11,9 +11,12 @@ import { composerSendAction, composerUploadAction, type ComposerTarget } from "@
 
 /** A starter chip: fills the box (text), opens the file picker (attach), or is a link (href). `disabled` = shown, not usable. */
 /** Chip icons by name (server pages can't pass components to this client component). */
-const CHIP_ICONS = { user: User, gavel: Gavel, list: List, file: File, calendar: CalendarDays, search: Search, plus: Plus, camera: Camera, clock: Clock, check: Check } as const;
+const CHIP_ICONS = { user: User, gavel: Gavel, list: List, file: File, calendar: CalendarDays, search: Search, plus: Plus, camera: Camera, clock: Clock, check: Check, bell: Bell } as const;
 export type ChipIcon = keyof typeof CHIP_ICONS;
-export interface ComposerChip { label: string; short?: string; text?: string; ghost?: boolean; accent?: boolean; disabled?: boolean; attach?: boolean; href?: string; icon?: ChipIcon; /** a small gold dot instead of an icon (needs action) */ dot?: boolean }
+export interface ComposerChip { label: string; short?: string; text?: string; ghost?: boolean; accent?: boolean; disabled?: boolean; attach?: boolean; href?: string; icon?: ChipIcon; /** a small gold dot instead of an icon (needs action) */ dot?: boolean;
+  /** a client handler (only from a client component): the chip is then a plain button that runs it */ onClick?: () => void;
+  /** not drawn on a phone (the phone mockups show fewer chips) */ phoneHidden?: boolean;
+  /** with `href`: open in a new tab (an outside link, e.g. WhatsApp's share link) */ external?: boolean }
 
 export function Composer({ target, placeholder = "اكتب لـ Clausia… ما حدث في الجلسة، موكل جديد، أو أي سؤال عن قضاياك", placeholderShort, chips = [], size = "dock", sticky = true }: {
   target: ComposerTarget;
@@ -87,14 +90,14 @@ export function Composer({ target, placeholder = "اكتب لـ Clausia… ما 
       {chips.length ? (
         <div className="no-scrollbar -mx-1 mb-3 flex gap-2 overflow-x-auto px-1 sm:flex-wrap sm:justify-center">
           {chips.map((c) => {
-            const cls = `tap glass inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm font-medium transition disabled:cursor-not-allowed ${c.accent ? "font-bold text-gold" : c.ghost ? "text-text-3" : "text-text-2 hover:text-text"} ${c.disabled ? "opacity-60" : ""}`;
+            const cls = `${c.phoneHidden ? "max-sm:hidden " : ""}tap glass inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm font-medium transition disabled:cursor-not-allowed ${c.accent ? "font-bold text-gold" : c.ghost ? "text-text-3" : "text-text-2 hover:text-text"} ${c.disabled ? "opacity-60" : ""}`;
             const Icon = c.icon ? CHIP_ICONS[c.icon] : null;
             const text = c.short ? <><span className="sm:hidden">{c.short}</span><span className="hidden sm:inline">{c.label}</span></> : c.label;
             const label = <>{c.dot ? <span aria-hidden className="size-1.5 rounded-full bg-gold" /> : Icon ? <Icon size={15} strokeWidth={1.9} aria-hidden /> : null}{text}</>;
-            if (c.href && !c.disabled) return <a key={c.label} href={c.href} className={cls}>{label}</a>;
+            if (c.href && !c.disabled) return <a key={c.label} href={c.href} className={cls} {...(c.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}>{label}</a>;
             return (
               <button key={c.label} type="button" disabled={pending || c.disabled} aria-disabled={c.disabled}
-                onClick={() => { if (c.attach) fileRef.current?.click(); else if (c.text) { setText(c.text); area.current?.focus(); } }}
+                onClick={() => { if (c.onClick) c.onClick(); else if (c.attach) fileRef.current?.click(); else if (c.text) { setText(c.text); area.current?.focus(); } }}
                 className={cls}>
                 {label}
               </button>

@@ -46,11 +46,13 @@ const EXAMPLES_CASE = [
 /** The upload posts «أرفقتُ مستندًا: X» for the lawyer; the chip says it already, so no bubble for it. */
 const AUTO_ATTACH = /^أرفقتُ مستندًا: /;
 
-export function ChatThread({ threadId, caseId, items, lookup, docs = {} }: {
+export function ChatThread({ threadId, caseId, items, lookup, docs = {}, initialText = "" }: {
   threadId: string; caseId: string | null; items: ChatItem[]; lookup: Record<string, string>; docs?: Record<string, ThreadDoc>;
+  /** a starter sentence already in the box (from the brief's chip); it is not sent */
+  initialText?: string;
 }) {
   const router = useRouter();
-  const [text, setText] = useState("");
+  const [text, setText] = useState(initialText);
   const [error, setError] = useState<string | null>(null);
   const [sending, startSend] = useTransition();
   const [uploading, startUpload] = useTransition();

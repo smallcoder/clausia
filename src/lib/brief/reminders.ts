@@ -40,6 +40,11 @@ export async function dismissReminder(db: Db, id: string, now = new Date()): Pro
   return { ok: !!data?.length };
 }
 
+/** The lawyer is looking at the brief of `forDate`: a reminder for it whose time has come stops showing in the bell. A future one is left alone. */
+export async function dismissDueFor(db: Db, forDate: string, now = new Date()): Promise<void> {
+  await db.from("reminders").update({ dismissed_at: now.toISOString() }).eq("kind", BRIEF_KIND).eq("for_date", forDate).is("dismissed_at", null).lte("remind_at", now.toISOString());
+}
+
 export interface DueReminder { id: string; forDate: string; remindAt: string }
 
 /** Reminders whose time has come (and is under a day old) that the lawyer has not opened, oldest first. */

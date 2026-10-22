@@ -10,7 +10,8 @@
  */
 import { circuitNumber, type HearingWithCase } from "@/lib/hearings";
 import { DECISION } from "@/lib/labels";
-import { nCourts, nHearings, shortDm } from "@/components/hearings/roll-text";
+import { nCourts, nHearings, shortDm, weekdayOf, WEEKDAY_LONG } from "@/components/hearings/roll-text";
+import { addDaysIso } from "@/lib/dates";
 import type { Database } from "@/lib/db/types";
 
 type E = Database["public"]["Enums"];
@@ -76,10 +77,14 @@ const DOC_WORDS: { re: RegExp; type: E["doc_type"]; name: string }[] = [
   { re: /صحيفه/, type: "claim_sheet", name: "صحيفة الدعوى" },
 ];
 
-/** First name of the client, else «قضية 772» style number, else null. */
+/** a company's first word is not a name: «شركة المثال» keeps its second word */
+const ORG_WORD = /^(شركة|مؤسسة|مصنع|بنك|هيئة|جمعية|مكتب)$/;
+
+/** First name of the client (two words for a company), else the case number, else null. */
 export function whoOf(h: HearingWithCase): string | null {
-  const first = h.case.client_name?.trim().split(/\s+/)[0];
-  return first || h.case.case_number?.trim() || null;
+  const w = h.case.client_name?.trim().split(/\s+/).filter(Boolean) ?? [];
+  const name = w.length ? (ORG_WORD.test(w[0]) && w[1] ? `${w[0]} ${w[1]}` : w[0]) : null;
+  return name || h.case.case_number?.trim() || null;
 }
 
 /**
@@ -145,6 +150,13 @@ export function buildCard(i: BriefInput): BriefCard {
     lastDecision: lastDecision(i.prev), required, keyFact: keyFact(i.facts),
     missing: missingFor(i, required), who: whoOf(h),
   };
+}
+
+/** How the sentences name the hearings day: «بكرة» / «النهارده» / «يوم الأحد» (`today` = Cairo's today, yyyy-mm-dd). */
+export function dayWord(date: string, today: string): string {
+  if (date === today) return "النهارده";
+  if (date === addDaysIso(today, 1)) return "بكرة";
+  return `يوم ${WEEKDAY_LONG[weekdayOf(date)]}`;
 }
 
 /** «حاجة ناقصة / حاجتين ناقصين / 3 حاجات ناقصة / 12 حاجة ناقصة» */
