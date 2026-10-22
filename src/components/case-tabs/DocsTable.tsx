@@ -2,11 +2,15 @@
 // (thumb, name, pages · date), parties, facts and dates, requests, defenses, then the lawyer's own columns. Every value shows
 // its page («ص 4») and opens the paper panel on the sentence; a suggested value has a gold dot and «ص 1 · مقترحة، راجعها».
 // Phone (not drawn): the same DOM re-flows as one card per paper with the sections stacked, each under its own small title.
+import { Check } from "lucide-react";
+import { InlineEdit } from "@/components/cases/InlineEdit";
 import { CellCite } from "@/components/cite/SourceChip";
+import { ColumnHead } from "@/components/documents/ColumnHead";
 import { DocMenu } from "@/components/documents/DocMenu";
 import { DocThumb, pagesLabel } from "@/components/documents/DocThumb";
 import { cx } from "@/components/ui";
 import { formatDmy } from "@/lib/dates";
+import { confirmCellAction, editCellAction } from "@/lib/doc-columns/actions";
 import { READ_STATUS } from "@/lib/labels";
 import { SECTIONS, cellCite, sectionKind, type CellItem, type CustomCell, type DocRow, type SectionKey, type TableColumn } from "./docs-table";
 
@@ -57,6 +61,18 @@ function Items({ row, items, kind }: { row: DocRow; items: CellItem[]; kind: str
   );
 }
 
+/** one tap: a suggested cell becomes confirmed */
+function ConfirmCell({ cellId }: { cellId: string }) {
+  return (
+    <form action={confirmCellAction} className="mt-1.5">
+      <input type="hidden" name="cell_id" value={cellId} />
+      <button className="tap inline-flex h-chip items-center gap-1.5 rounded-full border border-gold-edge px-3 text-xs font-semibold text-gold transition hover:bg-gold-bg">
+        <Check aria-hidden size={13} strokeWidth={2.2} />أكّد
+      </button>
+    </form>
+  );
+}
+
 function Custom({ row, cell, column }: { row: DocRow; cell: CustomCell | undefined; column: TableColumn }) {
   if (!cell || cell.state === "empty") return <span className="text-base text-text-4">—</span>;
   if (cell.state === "not_mentioned") {
@@ -64,10 +80,20 @@ function Custom({ row, cell, column }: { row: DocRow; cell: CustomCell | undefin
       <div>
         <p className="text-base text-text-4">{NOT_MENTIONED}</p>
         {cell.note ? <p className="mt-1 text-xs leading-4 text-text-4">{cell.note}</p> : null}
+        {cell.suggested ? <ConfirmCell cellId={cell.cellId} /> : null}
       </div>
     );
   }
-  return <Value row={row} text={cell.item.text} item={cell.item} suggested={cell.item.suggested} kind={column.title} />;
+  // the lawyer can change the wording; the page and the sentence stay the paper's. A «مش مذكور» cell has no sentence, so no edit.
+  return (
+    <div>
+      <InlineEdit action={editCellAction} hidden={{ cell_id: cell.cellId }} initial={cell.item.text} multiline
+        hint="الصياغة دي بتاعتك. الصفحة والجملة من الورقة بيفضلوا زي ما هما."
+        display={<Value row={row} text={cell.item.text} item={cell.item} suggested={cell.item.suggested} kind={column.title} />} />
+      {cell.byLawyer ? <p className="mt-1 text-xs text-text-4">الصياغة بتاعتك</p> : null}
+      {cell.item.suggested ? <ConfirmCell cellId={cell.cellId} /> : null}
+    </div>
+  );
 }
 
 export function DocsTable({ rows, columns }: { rows: DocRow[]; columns: TableColumn[] }) {
@@ -82,8 +108,7 @@ export function DocsTable({ rows, columns }: { rows: DocRow[]; columns: TableCol
           {SECTIONS.map((s) => <div key={s.key} role="columnheader" className={HEAD}>{s.title}</div>)}
           {columns.map((c) => (
             <div key={c.id} role="columnheader" className={cx(HEAD, "flex items-center gap-1.5")}>
-              {c.title}
-              {c.suggested ? <span className="inline-flex items-center gap-1 text-xs text-gold"><span aria-hidden className="size-dot rounded-full bg-gold" />مقترح</span> : null}
+              <ColumnHead id={c.id} title={c.title} suggested={c.suggested} />
             </div>
           ))}
         </div>
@@ -114,7 +139,7 @@ export function DocsTable({ rows, columns }: { rows: DocRow[]; columns: TableCol
               ))}
               {columns.map((c) => (
                 <div key={c.id} role="cell" className={cx(CELL, "max-sm:space-y-1")}>
-                  <p className={small}>{c.title}</p>
+                  <div className={cx(small, "flex items-center gap-1.5")}><ColumnHead id={c.id} title={c.title} suggested={c.suggested} /></div>
                   <Custom row={r} cell={r.custom[c.id]} column={c} />
                 </div>
               ))}

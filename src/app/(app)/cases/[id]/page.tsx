@@ -41,7 +41,7 @@ export default async function CasePage({ params, searchParams }: { params: Promi
     if (e instanceof Error && e.message === "case not found") notFound();
     throw e;
   }
-  const table = docsTableEnabled(); // the documents table + «+ عمود جديد»: off until issue #61 is merged (src/lib/flags.ts)
+  const table = docsTableEnabled(); // the documents table + «+ عمود جديد»: off by default (src/lib/flags.ts)
   const view: View | null = tab && tab in VIEWS ? (tab as View) : null;
   const today = todayIso();
   const hs = hearingState(cf.hearings, today);

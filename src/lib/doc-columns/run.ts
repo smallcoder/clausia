@@ -69,6 +69,7 @@ export interface JudgedCell {
 const NOTE = {
   shortQuote: "الاقتباس أقل من 4 كلمات، فما اعتمدتش الإجابة.",
   month: "في الإجابة شهر مش هو اللي في الاقتباس، فما اعتمدتش الإجابة.",
+  negation: "النفي (مفيش / مش / لا) في الإجابة مش زي اللي في الاقتباس، فما اعتمدتش الإجابة.",
   words: "في الإجابة كلمة أو اسم مش مكتوب في الاقتباس، فما اعتمدتش الإجابة.",
   unread: "الورقة دي لسه ما اتقرتش، فمقدرتش أسألها.",
   noQuote: "النموذج قال إنه لقى الإجابة، بس اقتباسه مش موجود في الورقة، فما اعتمدتش الإجابة.",
@@ -88,21 +89,40 @@ export function normWords(text: string): string[] {
 }
 
 /**
- * Month names, Gregorian-Arabic (Egyptian) and Levant spellings, by month number. «آب» (August in the Levant) is left out on
- * purpose: normalised it is «اب», the word for «father», and a real August is written «أغسطس» in Egyptian papers.
+ * Month names, Gregorian-Arabic (Egyptian) and Levant spellings, by month number. «آب» (August in the Levant) is not here:
+ * normalised it is «اب», the word for «father», so `monthsIn` counts it only when a 4-digit year follows it (AUGUST_AB).
+ * The two-word names («كانون الثاني», «تشرين الأول») are phrases: «الأول» / «الثاني» alone are ordinary words («الطرف الثاني»).
  */
 const MONTHS: string[][] = [
   ["يناير", "كانون الثاني", "جانفي"], ["فبراير", "شباط", "فيفري"], ["مارس", "اذار"], ["أبريل", "ابريل", "نيسان", "افريل"],
   ["مايو", "ماي", "ايار"], ["يونيو", "يونية", "حزيران", "جوان"], ["يوليو", "يولية", "يوليوز", "تموز", "جويلية"],
   ["أغسطس", "اغسطس"], ["سبتمبر", "ايلول"], ["أكتوبر", "اكتوبر", "تشرين الاول"], ["نوفمبر", "تشرين الثاني"], ["ديسمبر", "كانون الاول"],
 ];
-const MONTH_PHRASES: [number, string][] = MONTHS.flatMap((names, m) => names.map((n) => [m + 1, ` ${normWords(n).join(" ")} `] as [number, string]));
-/** the words of the month names: the month check covers them, so they are not «content words» (آذار is not a name to look for) */
-const MONTH_WORDS = new Set(MONTHS.flat().flatMap(normWords));
+/** every month name as its normalised words, with the month number */
+const MONTH_NAMES: [number, string[]][] = MONTHS.flatMap((names, m) => names.map((n) => [m + 1, normWords(n)] as [number, string[]]));
+/** «آب» + a 4-digit year («15 آب 2024») is August; «آب» alone is not a month */
+const AUGUST_AB = /(?:^| )اب \d{4}(?: |$)/;
 /** the months named in a text (a month is one number whatever its spelling) */
 export function monthsIn(text: string): Set<number> {
-  const t = ` ${normWords(text).join(" ")} `;
-  return new Set(MONTH_PHRASES.filter(([, p]) => t.includes(p)).map(([m]) => m));
+  const joined = normWords(text).join(" ");
+  const out = new Set(MONTH_NAMES.filter(([, w]) => ` ${joined} `.includes(` ${w.join(" ")} `)).map(([m]) => m));
+  if (AUGUST_AB.test(joined)) out.add(8);
+  return out;
+}
+/** «آب» next to a day number and with no year after it: a date whose month cannot be read, so it proves nothing */
+function hasAmbiguousAb(text: string): boolean {
+  const w = normWords(text);
+  return w.some((x, i) => x === "اب" && /^\d{1,2}$/.test(w[i - 1] ?? "") && !/^\d{4}$/.test(w[i + 1] ?? ""));
+}
+/** the words with every full month name taken out (the month check covers those; «آذار» is not a name to look for) */
+function withoutMonthNames(words: string[]): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < words.length;) {
+    const hit = MONTH_NAMES.find(([, w]) => w.every((x, k) => words[i + k] === x));
+    if (hit) { i += hit[1].length; continue; }
+    out.push(words[i++]);
+  }
+  return out;
 }
 
 /**
@@ -111,20 +131,48 @@ export function monthsIn(text: string): Set<number> {
  */
 const STOP = new Set(["ايوه", "ايوا", "مفيش", "موجود", "موجوده", "مذكور", "المدعي", "المدعى", "عليه", "الطرف", "الورقه", "المستند", "حسب", "وفقا", "طبقا", "بحسب"]);
 
-/** a word without its «ال» / «وال» / «بال» / «لل» article and one-letter prefix, for comparing «الغرامة» with «بغرامة» */
+/**
+ * A word without its article («ال» «وال» «بال» «كال» «فال» «لل»), or else without one of the one-letter prefixes و ب ل ف, for
+ * comparing «الغرامة» with «بغرامة». Strips only those, and only when at least 3 letters stay (4 after a one-letter prefix).
+ * «ك» is not one of them: it is the first letter of names («كريمة» is not «ريمة»).
+ */
 function stem(w: string): string {
-  let r = w.replace(/^(وال|بال|كال|فال|لل|ال)(?=.{3})/, "");
-  if (r === w) r = w.replace(/^[وبلفك](?=.{4})/, "");
-  return r;
+  const r = w.replace(/^(وال|بال|كال|فال|لل|ال)(?=.{3})/, "");
+  return r !== w ? r : w.replace(/^[وبلف](?=.{4})/, "");
+}
+
+/** Endings of a plural or a feminine / relative form («ة» is «ه» once normalised). */
+const SUFFIXES = ["ه", "ات", "ين", "ون", "ان", "ي"];
+
+/**
+ * The answer's word `a` stands for the quote's word `q`: the same word, the same word after the prefixes, or the quote's word
+ * with ONE listed ending that the answer leaves off («المستأجرين» → «مستأجر», «غرامات» → «غرامة»; at least 4 letters stay).
+ * Never the other way: an answer word that GROWS an ending («السعيدي» for «السعيد», «عادلة» for «عادل») is another word, maybe another person.
+ */
+function sameWord(a: string, q: string): boolean {
+  if (a === q) return true;
+  const sa = stem(a), sq = stem(q);
+  if (sa === sq) return true;
+  return SUFFIXES.some((s) => {
+    if (!sq.endsWith(s) || sq.length - s.length < 4) return false;
+    const base = sq.slice(0, -s.length);
+    return sa === base || (s === "ات" && sa === `${base}ه`);
+  });
 }
 
 /** the content words of the answer that the quote does not have (names are content words) */
 export function wordsNotInQuote(answer: string, quote: string): string[] {
-  const q = normWords(quote).map((w) => [w, stem(w)] as const);
-  return normWords(answer).filter((w) => w.length > 3 && !/\d/.test(w) && !STOP.has(w) && !MONTH_WORDS.has(w)).filter((w) => {
-    const sw = stem(w);
-    return !q.some(([qw, qs]) => qw === w || qs === sw || (sw.length >= 4 && qs.length >= 4 && (qs.startsWith(sw) || sw.startsWith(qs))));
-  });
+  const q = normWords(quote);
+  return withoutMonthNames(normWords(answer))
+    .filter((w) => w.length > 3 && !/\d/.test(w) && !STOP.has(w))
+    .filter((w) => !q.some((qw) => sameWord(w, qw)));
+}
+
+/** Words that deny («مفيش» «مش» «لا يوجد» «لأ» «لم» «ليس» «غير» «بدون» «عدم»…); a leading «و» is allowed («ولا»). */
+const NEGATIONS = new Set(["مفيش", "مش", "لا", "لم", "لن", "ليس", "ليست", "ليسوا", "غير", "بدون", "دون", "بلا", "عدم"]);
+/** the text denies something */
+export function hasNegation(text: string): boolean {
+  return normWords(text).some((w) => NEGATIONS.has(w) || (w.startsWith("و") && NEGATIONS.has(w.slice(1))));
 }
 
 /** numbers written in a text, as plain digit strings («2,500» → «2500», «١٢» → «12») */
@@ -163,7 +211,9 @@ export function judgeAnswer(raw: ColumnAnswer | null | undefined, pages: string[
   if (numbersIn(answer).some((n) => !inQuote.has(n)) || [...datesIn(answer)].some((d) => !datesInQuote.has(d))) return none(NOTE.numbers);
   // a month named in the answer is the month named in the quote («15 أبريل» is not «15 مارس»)
   const monthsInQuote = monthsIn(quote);
-  if ([...monthsIn(answer)].some((m) => !monthsInQuote.has(m))) return none(NOTE.month);
+  if ([...monthsIn(answer)].some((m) => !monthsInQuote.has(m)) || hasAmbiguousAb(answer)) return none(NOTE.month);
+  // «مفيش غرامة» is not the quote that proves a fine, and a quote that denies does not prove a plain yes: both deny, or neither
+  if (hasNegation(answer) !== hasNegation(quote)) return none(NOTE.negation);
   // names and content words come from the quote too: the answer is a short restatement of it, not new information
   if (wordsNotInQuote(answer, quote).length) return none(NOTE.words);
   return { answer, page, quote, start: hit?.start ?? null, end: hit?.end ?? null, note: null };

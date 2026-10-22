@@ -34,8 +34,9 @@ export interface CellItem {
 
 export type CustomCell =
   | { state: "empty" } // this paper was not asked (it came after the column)
-  | { state: "not_mentioned"; note: string | null; suggested: boolean }
-  | { state: "answer"; item: CellItem };
+  | { state: "not_mentioned"; cellId: string; note: string | null; suggested: boolean }
+  /** `byLawyer`: the wording is the lawyer's own (they edited it, or edited it before the tap); the quote is still the paper's */
+  | { state: "answer"; cellId: string; item: CellItem; byLawyer: boolean };
 
 /** what the row's status line and «…» menu need about the paper (the old per-paper panel's content) */
 export interface DocInfo {
@@ -67,6 +68,8 @@ export interface TableDoc { id: string; name: string; page_count: number | null;
 export interface TableColumn { id: string; title: string; suggested: boolean }
 export interface TableCell {
   id: string; column_id: string; document_id: string; answer: string | null; note: string | null; review_status: string;
+  /** 'lawyer' | 'model' (optional so that older callers and fixtures still build) */
+  created_by_kind?: string;
   source_page: number | null; source_quote: string | null; source_char_start: number | null; source_char_end: number | null;
 }
 /** an op of an open card that still waits for the lawyer */
@@ -134,10 +137,11 @@ export function buildDocsTable(input: {
     const row = rows.get(c.document_id);
     const column = col.get(c.column_id);
     if (!row || !column) continue;
-    const suggested = c.review_status === "suggested" || column.suggested;
+    // a cell is suggested when ITS status says so (a column saved as suggestions has suggested cells; confirming a cell is its own tap)
+    const suggested = c.review_status === "suggested";
     row.custom[c.column_id] = c.answer
-      ? { state: "answer", item: { id: `cell:c:${c.id}`, text: c.answer, page: c.source_page, start: c.source_char_start, end: c.source_char_end, quote: c.source_quote, suggested } }
-      : { state: "not_mentioned", note: c.note, suggested };
+      ? { state: "answer", cellId: c.id, byLawyer: c.created_by_kind === "lawyer", item: { id: `cell:c:${c.id}`, text: c.answer, page: c.source_page, start: c.source_char_start, end: c.source_char_end, quote: c.source_quote, suggested } }
+      : { state: "not_mentioned", cellId: c.id, note: c.note, suggested };
   }
   return input.docs.map((d) => rows.get(d.id)!);
 }

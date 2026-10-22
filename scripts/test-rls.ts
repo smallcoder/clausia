@@ -6,6 +6,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "../src/lib/db/types";
 import type { Db } from "../src/lib/supabase/server";
 import { getCaseFile } from "../src/lib/case-file";
+import { confirmCell, editCell, removeColumn, renameColumn } from "../src/lib/doc-columns/edit";
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
@@ -79,7 +80,7 @@ if (caseId) {
   if (tc && aDoc) {
     try {
       const { data: col } = await A.from("doc_columns").insert({ case_id: tc.id, question: "اختبار", title: "اختبار" }).select("id, office_id").single();
-      const { data: cell } = col ? await A.from("doc_column_cells").insert({ column_id: col.id, document_id: aDoc.id, answer: null }).select("id").single() : { data: null };
+      const { data: cell } = col ? await A.from("doc_column_cells").insert({ column_id: col.id, document_id: aDoc.id, answer: "إجابة", source_page: 1, source_quote: "اقتباس من الورقة", review_status: "suggested" }).select("id").single() : { data: null };
       check("DEMO writes a column and a cell into its own office", !!col && col.office_id === officeA && !!cell);
       if (col && cell) {
         const { data: r1 } = await B.from("doc_columns").select("id").eq("id", col.id);
@@ -93,6 +94,15 @@ if (caseId) {
         check("OTHER delete of an office-A column / cell affects 0 rows", (d1?.length ?? 0) === 0 && (d2?.length ?? 0) === 0);
         const { data: still } = await A.from("doc_columns").select("id").eq("id", col.id);
         check("the office-A column still exists after OTHER attempts", (still?.length ?? 0) === 1);
+        // the lawyer's own edits (issue #61) go through the same RLS: for the other office the column and the cell are not there
+        const bDb = B as unknown as Db;
+        const rBoth = [await renameColumn(bDb, col.id, "اختراق"), await editCell(bDb, cell.id, "اختراق"), await confirmCell(bDb, cell.id), await removeColumn(bDb, col.id, true)];
+        check("OTHER cannot rename, edit, confirm or remove an office-A column or cell (the edit actions)", rBoth.every((r) => !r.ok));
+        const { data: mine } = await A.from("doc_columns").select("title").eq("id", col.id).single();
+        const { data: mineCell } = await A.from("doc_column_cells").select("answer, review_status, created_by_kind").eq("id", cell.id).single();
+        check("…and nothing of office A changed", mine?.title === "اختبار" && mineCell?.answer === "إجابة" && mineCell.review_status === "suggested" && mineCell.created_by_kind === "lawyer");
+        check("DEMO can rename, edit and confirm its own (the same actions)", (await renameColumn(A as unknown as Db, col.id, "عنوان جديد")).ok && (await editCell(A as unknown as Db, cell.id, "إجابة معدلة")).ok && (await confirmCell(A as unknown as Db, cell.id)).ok);
+
         const { data: i1, error: e1 } = await B.from("doc_columns").insert({ office_id: officeA, case_id: tc.id, question: "اختراق", title: "اختراق" }).select("id");
         check("OTHER insert of a column into office A fails", !!e1 && !i1, e1 ? e1.message : "inserted!");
         const { data: i2, error: e2 } = await B.from("doc_column_cells").insert({ office_id: officeA, column_id: col.id, document_id: aDoc.id, answer: null }).select("id");
