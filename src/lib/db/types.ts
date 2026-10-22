@@ -39,6 +39,21 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_admins: {
+        Row: {
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       case_arguments: {
         Row: {
           case_id: string
@@ -124,6 +139,106 @@ export type Database = {
             columns: ["source_message_id"]
             isOneToOne: false
             referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      case_deadlines: {
+        Row: {
+          article_number: string
+          article_sha256: string
+          article_text: string
+          case_id: string
+          created_at: string
+          created_by: string | null
+          created_by_kind: Database["public"]["Enums"]["actor_kind"]
+          days: number
+          holidays_reviewed: boolean
+          id: string
+          judgment_id: string
+          kind: string
+          last_day: string
+          law_source_id: string
+          office_id: string
+          raw_last_day: string
+          reminders: number[]
+          review_status: Database["public"]["Enums"]["item_status"]
+          source_kind: Database["public"]["Enums"]["source_kind"]
+          start_basis: string
+          start_date: string
+          urgent: boolean
+          version_id: string
+        }
+        Insert: {
+          article_number: string
+          article_sha256: string
+          article_text: string
+          case_id: string
+          created_at?: string
+          created_by?: string | null
+          created_by_kind?: Database["public"]["Enums"]["actor_kind"]
+          days: number
+          holidays_reviewed?: boolean
+          id?: string
+          judgment_id: string
+          kind: string
+          last_day: string
+          law_source_id: string
+          office_id?: string
+          raw_last_day: string
+          reminders?: number[]
+          review_status?: Database["public"]["Enums"]["item_status"]
+          source_kind?: Database["public"]["Enums"]["source_kind"]
+          start_basis: string
+          start_date: string
+          urgent?: boolean
+          version_id: string
+        }
+        Update: {
+          article_number?: string
+          article_sha256?: string
+          article_text?: string
+          case_id?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_kind?: Database["public"]["Enums"]["actor_kind"]
+          days?: number
+          holidays_reviewed?: boolean
+          id?: string
+          judgment_id?: string
+          kind?: string
+          last_day?: string
+          law_source_id?: string
+          office_id?: string
+          raw_last_day?: string
+          reminders?: number[]
+          review_status?: Database["public"]["Enums"]["item_status"]
+          source_kind?: Database["public"]["Enums"]["source_kind"]
+          start_basis?: string
+          start_date?: string
+          urgent?: boolean
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_deadlines_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_deadlines_judgment_id_fkey"
+            columns: ["judgment_id"]
+            isOneToOne: false
+            referencedRelation: "judgments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_deadlines_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
             referencedColumns: ["id"]
           },
         ]
@@ -599,6 +714,7 @@ export type Database = {
           case_id: string | null
           created_at: string
           created_by: string | null
+          hearing_id: string | null
           id: string
           office_id: string
           title: string | null
@@ -608,6 +724,7 @@ export type Database = {
           case_id?: string | null
           created_at?: string
           created_by?: string | null
+          hearing_id?: string | null
           id?: string
           office_id?: string
           title?: string | null
@@ -617,6 +734,7 @@ export type Database = {
           case_id?: string | null
           created_at?: string
           created_by?: string | null
+          hearing_id?: string | null
           id?: string
           office_id?: string
           title?: string | null
@@ -628,6 +746,13 @@ export type Database = {
             columns: ["case_id"]
             isOneToOne: false
             referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_threads_hearing_id_fkey"
+            columns: ["hearing_id"]
+            isOneToOne: false
+            referencedRelation: "hearings"
             referencedColumns: ["id"]
           },
           {
@@ -1191,6 +1316,86 @@ export type Database = {
           },
         ]
       }
+      holiday_reports: {
+        Row: {
+          created_at: string
+          created_by: string
+          decided_at: string | null
+          decided_by: string | null
+          holiday_date: string
+          id: string
+          name: string
+          note: string | null
+          office_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          holiday_date: string
+          id?: string
+          name: string
+          note?: string | null
+          office_id?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          holiday_date?: string
+          id?: string
+          name?: string
+          note?: string | null
+          office_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "holiday_reports_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      holidays: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          holiday_date: string
+          id: string
+          name: string
+          note: string | null
+          status: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          holiday_date: string
+          id?: string
+          name: string
+          note?: string | null
+          status?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          holiday_date?: string
+          id?: string
+          name?: string
+          note?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       judgments: {
         Row: {
           appeal_deadline: string | null
@@ -1533,6 +1738,7 @@ export type Database = {
     }
     Functions: {
       current_office_id: { Args: never; Returns: string }
+      is_admin: { Args: never; Returns: boolean }
       record_hearing_decision: {
         Args: {
           p_created_by_kind?: Database["public"]["Enums"]["actor_kind"]
