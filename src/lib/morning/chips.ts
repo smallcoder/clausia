@@ -34,7 +34,7 @@ export function buildChips(i: ChipInput): Chip[] {
   if (i.undecided) {
     const who = whoOf(i.undecided);
     const d = shortDm(i.undecided.hearing_date);
-    if (who) out.push({ label: `سجّل قرار جلسة ${who} ${d}`, text: `قرار جلسة ${d} في قضية ${who}: `, icon: "gavel" });
+    if (who) out.push({ label: `سجّل قرار جلسة ${/^\d/.test(who) ? `قضية ${who}` : who} ${d}`, text: `قرار جلسة ${d} في قضية ${who}: `, icon: "gavel" });
   }
   if (i.next) {
     const who = whoOf(i.next);

@@ -121,7 +121,8 @@ try {
     await go(page, `/cases/${caseId}?s=new`);
     check("?s=new is an empty session", (await page.getByText("اختبار-تقسيم").count()) === 0 && (await page.getByText("هجهّز لك اللي هيتحفظ").count()) > 0);
     await go(page, "/");
-    check("Home's chat starts empty (a greeting line)", (await page.getByText("هجهّز لك اللي هيتحفظ").count()) > 0 && (await page.getByText("اختبار-تقسيم").count()) === 0);
+    // Home's chat starts with the day's brief (not a saved message: the message list is empty) and no session of the tests
+    check("Home's chat starts with the brief and no saved message", (await page.locator('aside[aria-label="محادثة Clausia"] ol > li').count()) === 0 && (await page.getByText("النهارده ·").count()) > 0 && (await page.getByText("اختبار-تقسيم").count()) === 0);
     await page.getByRole("button", { name: "محادثات" }).click();
     const gtext = await page.locator("ul").filter({ hasText: "محادثة جديدة" }).first().innerText();
     check("Home's sessions list is the general context only", gtext.includes("محادثة عامة") && !gtext.includes("جلسة قضية"), gtext.slice(0, 120));

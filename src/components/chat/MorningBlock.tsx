@@ -33,19 +33,7 @@ function Source({ s, className }: { s: SourceRef; className?: string }) {
 const BTN = "tap inline-flex h-8 items-center rounded-full px-3.5 text-sm font-semibold transition";
 const GHOST = `${BTN} border border-border-2 text-text-2 hover:text-text`;
 
-function Card({ n, kicker, gold, children }: { n: Notice; kicker: string; gold?: boolean; children: React.ReactNode }) {
-  const router = useRouter();
-  const [gone, setGone] = useState(false);
-  const [, start] = useTransition();
-  if (gone) return null;
-  function ignore() {
-    setGone(true);
-    start(async () => {
-      const r = await dismissNoticeAction(n.kind, n.key);
-      if (!r.ok) setGone(false);
-      router.refresh();
-    });
-  }
+function Card({ n, kicker, gold, onIgnore, children }: { n: Notice; kicker: string; gold?: boolean; onIgnore: () => void; children: React.ReactNode }) {
   return (
     <article className="rounded-lg border border-border-2 bg-card px-3.5 py-3 shadow-card dark:bg-card-2">
       <p className={cx("text-xs font-semibold leading-[normal]", gold ? "text-gold" : "text-text-3")}>{kicker}</p>
@@ -54,24 +42,24 @@ function Card({ n, kicker, gold, children }: { n: Notice; kicker: string; gold?:
         {n.kind === "hearing_decision" ? (
           <OpenHearing h={n.hearing} label={`سجّل قرار جلسة ${n.title} يوم ${formatDmy(n.hearing.hearing_date)}`} className={`${BTN} bg-primary-fill hover:opacity-90`}>سجّل القرار</OpenHearing>
         ) : null}
-        <button type="button" onClick={ignore} className={GHOST}>تجاهل</button>
+        <button type="button" onClick={onIgnore} className={GHOST}>تجاهل</button>
       </div>
     </article>
   );
 }
 
-function HearingCard({ n }: { n: HearingNotice }) {
+function HearingCard({ n, onIgnore }: { n: HearingNotice; onIgnore: () => void }) {
   return (
-    <Card n={n} kicker={n.title} gold>
+    <Card n={n} kicker={n.title} gold onIgnore={onIgnore}>
       <p className="mt-0.75 text-base leading-[1.65] text-text">{n.text}</p>
       {n.source ? <p className="mt-1.5"><Source s={n.source} /></p> : null}
     </Card>
   );
 }
 
-function ConflictCard({ n }: { n: ConflictNotice }) {
+function ConflictCard({ n, onIgnore }: { n: ConflictNotice; onIgnore: () => void }) {
   return (
-    <Card n={n} kicker={n.title}>
+    <Card n={n} kicker={n.title} onIgnore={onIgnore}>
       <p className="mt-0.75 text-base leading-[1.65] text-text">{n.text}</p>
       {n.quote ? <p className="mt-1 line-clamp-2 text-sm leading-[1.6] text-text-3" dir="auto">«{n.quote}»</p> : null}
       <p className="mt-1.5 flex flex-wrap items-center gap-1.5">
@@ -89,7 +77,21 @@ function Greeting({ text }: { text: string }) {
 }
 
 export function MorningBlock({ data }: { data: MorningData }) {
-  const { brief, notices, moreUndecided, today, greeting } = data;
+  const { brief, moreUndecided, today, greeting } = data;
+  const router = useRouter();
+  const [, start] = useTransition();
+  // a dismissed card goes at once (and stays gone if the save worked); the refresh then brings the next one in
+  const [hidden, setHidden] = useState<Set<string>>(() => new Set());
+  const id = (n: Notice) => `${n.kind}:${n.key}`;
+  const notices = data.notices.filter((n) => !hidden.has(id(n)));
+  function ignore(n: Notice) {
+    setHidden((s) => new Set(s).add(id(n)));
+    start(async () => {
+      const r = await dismissNoticeAction(n.kind, n.key);
+      if (!r.ok) setHidden((s) => { const x = new Set(s); x.delete(id(n)); return x; });
+      router.refresh();
+    });
+  }
   const line = builtLine(brief);
   const stamp = clockStamp(brief.builtAt);
   return (
@@ -112,7 +114,7 @@ export function MorningBlock({ data }: { data: MorningData }) {
         {notices.length ? (
           <section aria-label="لاحظت" className="flex flex-col gap-2.5">
             <h2 className="text-sm font-bold leading-[normal] text-title">{noticedHeading(notices.length)}</h2>
-            {notices.map((n) => (n.kind === "hearing_decision" ? <HearingCard key={`${n.kind}:${n.key}`} n={n} /> : <ConflictCard key={`${n.kind}:${n.key}`} n={n} />))}
+            {notices.map((n) => (n.kind === "hearing_decision" ? <HearingCard key={id(n)} n={n} onIgnore={() => ignore(n)} /> : <ConflictCard key={id(n)} n={n} onIgnore={() => ignore(n)} />))}
             {moreUndecided > 0 ? (
               <Link href="/hearings?filter=undecided" className="tap inline-flex w-fit items-center text-sm font-semibold text-text-2 hover:text-text">
                 وفيه {nHearings(moreUndecided)} كمان فاتت من غير قرار ←
