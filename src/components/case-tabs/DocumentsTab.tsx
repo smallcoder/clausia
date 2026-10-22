@@ -43,13 +43,14 @@ export async function DocumentsTab({ caseId }: { caseId: string }) {
   return (
     <div className="space-y-4 pb-4">
       <section className="rounded-xl border border-border-2 bg-card shadow-card">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-2 px-6 py-4">
+        {/* phone: the count and the upload live here; desktop: they are the title row's stat and far-end button (CaseSubHeader) */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-2 px-6 py-4 sm:hidden">
           <h2 className="text-lg font-bold text-title">
             {docs?.length ? pagesWord(docs.length) : "ارفع أول ورقة"}
           </h2>
           <UploadDocument caseId={caseId} />
         </div>
-        <p className="max-w-160 px-5 pt-3.5 text-sm leading-6 text-text-3">
+        <p className="max-w-160 px-5 pt-3.5 text-sm leading-6 text-text-3 sm:pt-5">
           صحيفة، مذكرة، محضر جلسة أو صورة بالموبايل (PDF أو صورة لحد 25 م.ب). Clausia بيقرا كل صفحة ويقترح اللي لقاه في محادثة القضية، ومش بيتحفظ حاجة قبل ما تأكد.
         </p>
         {docs?.length ? (

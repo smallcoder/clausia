@@ -9,6 +9,7 @@ import { JudgmentsTab } from "@/components/case-tabs/JudgmentsTab";
 import { CaseDetails } from "@/components/cases/CaseDetails";
 import { CaseHeader, CaseSubHeader } from "@/components/cases/CaseHeader";
 import { CaseOverview } from "@/components/cases/CaseOverview";
+import { UploadDocument } from "@/components/documents/UploadDocument";
 import { hearingState, pendingHref, shortDmy } from "@/components/cases/case-view";
 import { Composer, type ComposerChip } from "@/components/shell/Composer";
 import { getCaseFile, type CaseFile } from "@/lib/case-file";
@@ -18,6 +19,8 @@ import { getOrCreateCaseThread } from "@/lib/threads";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const VIEWS = { hearings: "الجلسات", documents: "المستندات", details: "بيانات الدعوى" } as const;
+/** the title of each view on desktop (the 34px title row); the short name above is the breadcrumb's last item and the phone's title */
+const VIEW_TITLE = { hearings: "جلسات القضية", documents: "مستندات القضية", details: "بيانات الدعوى" } as const;
 type View = keyof typeof VIEWS;
 
 export default async function CasePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string }> }) {
@@ -64,8 +67,10 @@ export default async function CasePage({ params, searchParams }: { params: Promi
     <div className="mx-auto flex w-full max-w-page flex-1 flex-col px-4 sm:px-10">
       {view ? (
         <>
-          <CaseSubHeader cf={cf} caseId={id} title={VIEWS[view]} />
-          <div className="mt-5 sm:mt-8">
+          <CaseSubHeader cf={cf} caseId={id} crumb={VIEWS[view]} title={VIEW_TITLE[view]}
+            stats={view === "documents" ? [{ value: cf.documents.length, label: "مستند" }] : view === "hearings" ? [{ value: cf.hearings.length, label: "جلسة" }] : []}
+            action={view === "documents" ? <UploadDocument caseId={id} row /> : null} />
+          <div className="mt-5 sm:mt-4.5">
             {view === "hearings" ? <><HearingsTab caseId={id} /><JudgmentsTab cf={cf} caseId={id} /></> : view === "documents" ? <DocumentsTab caseId={id} /> : <CaseDetails cf={cf} />}
           </div>
         </>

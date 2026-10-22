@@ -12,12 +12,16 @@ import type { MouseEventHandler, ReactNode } from "react";
 import { cx } from "@/components/ui";
 import { two, type HeroStat } from "@/components/shell/PageHero";
 
-/** the row: 20px between the parts, 8px side padding, 18px above the hairline (mockup) */
-export function TitleRow({ children, className }: { children: ReactNode; className?: string }) {
+/**
+ * The row: 20px between the parts, 8px side padding, 18px above the hairline (mockup). `top` is the space above it on
+ * desktop: "page" = 52px under the top bar (the first thing on a list page), "sub" = 22px under a breadcrumb row.
+ * `as` is "div" when the row sits inside another header.
+ */
+export function TitleRow({ children, className, top = "page", as: Tag = "header" }: { children: ReactNode; className?: string; top?: "page" | "sub"; as?: "header" | "div" }) {
   return (
-    <header className={cx("sm:flex sm:flex-wrap sm:items-center sm:gap-x-5 sm:gap-y-3 sm:border-b sm:border-border sm:px-2 sm:pb-4.5 sm:pt-13", className)}>
+    <Tag className={cx("sm:flex sm:flex-wrap sm:items-center sm:gap-x-5 sm:gap-y-3 sm:border-b sm:border-border sm:px-2 sm:pb-4.5", top === "page" ? "sm:pt-13" : "sm:mt-5.5", className)}>
       {children}
-    </header>
+    </Tag>
   );
 }
 

@@ -6,7 +6,7 @@ import { cx } from "@/components/ui";
 import { uploadDocumentAction } from "@/lib/documents/actions";
 import { ACCEPT, ALLOWED_MIME, MAX_BYTES } from "@/lib/documents/files";
 
-export function UploadDocument({ caseId, threadId, compact = false }: { caseId?: string; threadId?: string; compact?: boolean }) {
+export function UploadDocument({ caseId, threadId, compact = false, row = false }: { caseId?: string; threadId?: string; compact?: boolean; row?: boolean }) {
   const input = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -35,14 +35,10 @@ export function UploadDocument({ caseId, threadId, compact = false }: { caseId?:
     });
   }
 
-  return (
-    <div className="flex max-w-88 flex-col gap-2">
-      <input ref={input} type="file" accept={ACCEPT} className="sr-only" aria-label="اختر مستندًا" onChange={(e) => onFile(e.target.files?.[0])} disabled={pending} />
-      <button type="button" onClick={() => input.current?.click()} disabled={pending}
-        className={cx("inline-flex h-11 items-center justify-center gap-1.5 self-start rounded-full px-5 text-base font-bold transition disabled:opacity-60",
-          compact ? "border border-border bg-chip text-text-2 shadow-soft hover:text-text" : "bg-primary-fill")}>
-        {pending ? "بيقرا…" : "ارفع مستند"}
-      </button>
+  // row: the far end of a title row (the documents view): a 34px capsule like the filter capsules, with a 44px tap area; its
+  // messages float under it (a card, so they never push the row or its hairline down)
+  const messages = (
+    <>
       {pending && name ? (
         <p className="text-sm text-text-3" role="status">
           جارٍ رفع «{name}» وقراءة صفحاته. قد يستغرق ذلك دقيقة للمستندات الطويلة.
@@ -55,6 +51,20 @@ export function UploadDocument({ caseId, threadId, compact = false }: { caseId?:
           {done.proposal ? "تمت القراءة. المقترحات بانتظار مراجعتك في محادثة الدعوى." : "تمت القراءة وحُفظ النص."}
         </p>
       ) : null}
+    </>
+  );
+  const hasMessage = Boolean((pending && name) || error || (warning && !pending) || (done && !pending));
+
+  return (
+    <div className={cx(row ? "relative" : "flex max-w-88 flex-col gap-2")}>
+      <input ref={input} type="file" accept={ACCEPT} className="sr-only" aria-label="اختر مستندًا" onChange={(e) => onFile(e.target.files?.[0])} disabled={pending} />
+      <button type="button" onClick={() => input.current?.click()} disabled={pending}
+        className={cx("inline-flex items-center justify-center gap-1.5 self-start rounded-full font-bold transition disabled:opacity-60",
+          row ? "tap h-chip px-4.5 text-sm" : "h-11 px-5 text-base",
+          compact ? "border border-border bg-chip text-text-2 shadow-soft hover:text-text" : "bg-primary-fill")}>
+        {pending ? "بيقرا…" : "ارفع مستند"}
+      </button>
+      {row ? (hasMessage ? <div className="absolute end-0 top-full z-10 mt-3 w-max max-w-88 space-y-1.5 rounded-md border border-border-2 bg-card px-4 py-3 shadow-pop">{messages}</div> : null) : messages}
     </div>
   );
 }

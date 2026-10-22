@@ -6,10 +6,13 @@
 // Mobile: back + «…» floating, eyebrow + status, the name, «ضد» below, then a 2×2 solid spec card, no stats (the tabs
 // and the banner carry them). Sizes follow the mockups to the pixel. Text the mockups leave at `line-height: normal`
 // gets 1.35 (SF Arabic's normal in the mockup render).
-// Sub-views (?tab=…) get a short header: the case's who-line as eyebrow and the view name as title.
+// Sub-views (?tab=…) get a short header: on desktop the breadcrumb and the shared title row (CaseSubHeader); on mobile
+// the case's who-line as eyebrow and the view name as title.
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { BackBtn, two, type HeroStat } from "@/components/shell/PageHero";
+import { PageTitle, TitleRow, TitleStats, type TitleStatData } from "@/components/shell/TitleRow";
 import type { CaseFile } from "@/lib/case-file";
 import { CASE_STATUS } from "@/lib/labels";
 import { CaseMenu } from "./CaseMenu";
@@ -120,18 +123,49 @@ export function CaseHeader({ cf, caseId, chatHref, stats }: { cf: CaseFile; case
   );
 }
 
-/** The sub-views' header: back to the case, the who-line as eyebrow, the view name as title. */
-export function CaseSubHeader({ cf, caseId, title }: { cf: CaseFile; caseId: string; title: string }) {
+/**
+ * The sub-views' header (documents, hearings, details). Desktop: the breadcrumb row on top (back · «القضايا / <number>
+ * / <view>»), then the title row of the list pages (shell/TitleRow): the title (34px), the view's count inline, and
+ * `action` (documents: «ارفع مستند») at the far end, with the hairline under it. Mobile (unchanged): back, the
+ * who-line as eyebrow, the view name as title.
+ */
+export function CaseSubHeader({ cf, caseId, crumb, title, stats = [], action }: {
+  cf: CaseFile; caseId: string;
+  /** the view's short name, last in the breadcrumb */
+  crumb: string;
+  title: string;
+  stats?: TitleStatData[];
+  action?: ReactNode;
+}) {
   const who = whoLine(cf);
+  const number = specSheet(cf)[0].value;
   return (
-    <header className="flex items-start gap-3 pt-2 sm:gap-4.5 sm:px-2 sm:pt-6">
-      <span className="sm:mt-4.5"><BackBtn href={`/cases/${caseId}`} /></span>
-      <div className="min-w-0 pt-0.5 sm:pt-0">
-        <Link href={`/cases/${caseId}`} className="text-sm font-semibold text-text-3 hover:text-text">
-          {who.client ?? who.fallback}{who.client && who.opponent ? <span className="text-text-4"> ضد </span> : null}{who.client && who.opponent ? who.opponent : null}
-        </Link>
-        <h1 className="mt-1 text-xl font-bold leading-[1.2] text-title sm:text-2xl sm:leading-[1.15]">{title}</h1>
+    <header>
+      <div className="flex items-start gap-3 pt-2 sm:hidden">
+        <BackBtn href={`/cases/${caseId}`} />
+        <div className="min-w-0 pt-0.5">
+          <Link href={`/cases/${caseId}`} className="text-sm font-semibold text-text-3 hover:text-text">
+            {who.client ?? who.fallback}{who.client && who.opponent ? <span className="text-text-4"> ضد </span> : null}{who.client && who.opponent ? who.opponent : null}
+          </Link>
+          <h1 className="mt-1 text-xl font-bold leading-[1.2] text-title">{crumb}</h1>
+        </div>
       </div>
+
+      {/* desktop row 1: as the case page's own (40px back · breadcrumb), the view's name last */}
+      <div className="hidden items-center gap-3 px-2 pt-6 sm:flex">
+        <Link href={`/cases/${caseId}`} aria-label="رجوع" className={`${ROUND} sm:size-10`}><ChevronRight size={20} strokeWidth={2.2} aria-hidden /></Link>
+        <nav aria-label="المسار" className="min-w-0 flex-1 truncate text-sm text-text-3">
+          <Link href="/cases" className="tap hover:text-text hover:underline">القضايا</Link>
+          {number ? <><span aria-hidden className="mx-1.5 text-text-4">/</span><Link href={`/cases/${caseId}`} className="tap hover:text-text hover:underline">{number}</Link></> : null}
+          <span aria-hidden className="mx-1.5 text-text-4">/</span><span aria-current="page" className="font-semibold text-text">{crumb}</span>
+        </nav>
+      </div>
+      {/* desktop row 2: the title row */}
+      <TitleRow as="div" top="sub" className="hidden">
+        <PageTitle>{title}</PageTitle>
+        <TitleStats stats={stats} mobile={false} />
+        {action ? <div className="sm:ms-auto">{action}</div> : null}
+      </TitleRow>
     </header>
   );
 }
