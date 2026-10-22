@@ -37,8 +37,24 @@ export type CustomCell =
   | { state: "not_mentioned"; note: string | null; suggested: boolean }
   | { state: "answer"; item: CellItem };
 
+/** what the row's status line and «…» menu need about the paper (the old per-paper panel's content) */
+export interface DocInfo {
+  caseId: string;
+  readStatus: "pending" | "reading" | "done" | "failed";
+  readError: string | null;
+  docType: string;
+  fileName: string;
+  /** «117 ك.ب · اترفع 22/10/2026» */
+  meta: string;
+  /** the paper has extracted text to open in the panel */
+  hasText: boolean;
+  /** an open card of this paper still waits in the chat */
+  hasPending: boolean;
+}
+
 export interface DocRow {
   id: string;
+  info: DocInfo | null;
   name: string;
   pages: number | null;
   /** the date written on the paper (documents.doc_date), ISO, when known */
@@ -47,7 +63,7 @@ export interface DocRow {
   custom: Record<string, CustomCell>;
 }
 
-export interface TableDoc { id: string; name: string; page_count: number | null; doc_date: string | null }
+export interface TableDoc { id: string; name: string; page_count: number | null; doc_date: string | null; info?: DocInfo }
 export interface TableColumn { id: string; title: string; suggested: boolean }
 export interface TableCell {
   id: string; column_id: string; document_id: string; answer: string | null; note: string | null; review_status: string;
@@ -79,7 +95,7 @@ export function buildDocsTable(input: {
 }): DocRow[] {
   const rows = new Map<string, DocRow>();
   for (const d of input.docs) {
-    rows.set(d.id, { id: d.id, name: d.name, pages: d.page_count, docDate: d.doc_date, sections: { parties: [], facts: [], requests: [], defenses: [] }, custom: {} });
+    rows.set(d.id, { id: d.id, info: d.info ?? null, name: d.name, pages: d.page_count, docDate: d.doc_date, sections: { parties: [], facts: [], requests: [], defenses: [] }, custom: {} });
   }
   const add = (section: SectionKey, id: string, src: Src, text: string, suggested: boolean) => {
     const row = src.document_id ? rows.get(src.document_id) : undefined;

@@ -4,7 +4,9 @@
 // tests cannot: a cell chip opens the paper panel on its sentence, the suggested cell has the gold dot, no sideways scroll on a phone.
 // Fixture (free, no model): a temporary case «772 لسنة 2025» with the mockup's four papers (invented text), their items with
 // spans (one suggested), and a column card made from `judgeAnswer`; all removed at the end.
-// Needs the app running. Run: npx tsx --conditions=react-server --env-file=.env.local scripts/docs-table-shots.ts [baseUrl]
+// Flag ON (the app started with NEXT_PUBLIC_FEATURE_DOCS_TABLE=1): all of the above, plus the row's «…» menu and status line.
+// Flag OFF (the app started without it): `--off` takes ReviewFlagOff.png and checks the released view (grid + panels, no table, no «عمود جديد»).
+// Needs the app running. Run: npx tsx --conditions=react-server --env-file=.env.local scripts/docs-table-shots.ts [baseUrl] [--off]
 import { chromium, type Browser, type Page } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 import { mkdirSync, readFileSync } from "node:fs";
@@ -15,7 +17,8 @@ import { createProposal, decideProposal, type DraftOp } from "@/lib/proposals";
 import { findSpanInPages } from "@/lib/quote-match";
 import type { Db } from "@/lib/supabase/server";
 
-const BASE = process.argv[2] ?? "http://localhost:4100";
+const OFF = process.argv.includes("--off");
+const BASE = process.argv.find((a, i) => i >= 2 && a.startsWith("http")) ?? "http://localhost:4100";
 mkdirSync("screenshots/compare/next", { recursive: true });
 mkdirSync("screenshots/tmp", { recursive: true });
 const failures: string[] = [];
@@ -115,7 +118,7 @@ async function open(browser: Browser, caseId: string, mobile: boolean, dark: boo
   const page = await ctx.newPage();
   const url = `${BASE}/cases/${caseId}?tab=documents`;
   try { await page.goto(url, { waitUntil: "domcontentloaded", timeout: 90_000 }); } catch { await page.goto(url, { waitUntil: "domcontentloaded", timeout: 120_000 }); }
-  await page.waitForSelector('[role="table"]', { timeout: 60_000 });
+  await page.waitForSelector(OFF ? "h1" : '[role="table"]', { timeout: 60_000 });
   await page.waitForTimeout(900);
   return { ctx, page };
 }
@@ -142,6 +145,19 @@ async function main() {
   const browser = await chromium.launch();
   let cardId: string | null = null;
   try {
+    if (OFF) {
+      console.log("\n=== flag off: the released documents view ===");
+      const { ctx, page } = await open(browser, fx.caseId, false, false);
+      check(await page.locator('[role="table"]').count() === 0, "flag off: no documents table");
+      check(await page.locator('button:has-text("عمود جديد")').count() === 0, "flag off: no «+ عمود جديد»");
+      check(await page.locator('button:has-text("ارفع مستند")').count() >= 1, "flag off: «ارفع مستند» is there");
+      check(await page.locator("text=النص المستخرج").count() >= 4, "flag off: the per-paper panels are there (extracted text)");
+      check(await page.locator("text=مستندات القضية").count() >= 1, "flag off: the title row's title");
+      await page.mouse.move(5, 5);
+      await page.screenshot({ path: resolve("screenshots/compare/next/ReviewFlagOff.png") });
+      await ctx.close();
+      return;
+    }
     // 1) the table with the four sections (the mockup's state), light and dark
     for (const dark of [false, true]) {
       const name = dark ? "ReviewDark" : "ReviewLight";
@@ -174,6 +190,52 @@ async function main() {
       await page.screenshot({ path: resolve(`screenshots/tmp/app-${name}.png`) });
       await sideBySide(browser, name, resolve(`screenshots/tmp/app-${name}.png`), resolve(`screenshots/compare/next/${name}.png`), dark);
       await ctx.close();
+    }
+
+    // 1b) the row's «…» menu (what the old per-paper panels did) and the read-status line
+    {
+      const { ctx, page } = await open(browser, fx.caseId, false, false);
+      check(await page.locator("text=النص المستخرج").count() === 0 && await page.locator("text=تنزيل").count() === 0, "no per-paper panels under the table");
+      const menus = page.locator('[role="table"] button[aria-haspopup="menu"]');
+      check(await menus.count() === 4, "a «…» menu on every row");
+      await menus.first().click();
+      const m = page.locator('[role="menu"]');
+      check(await m.isVisible(), "the menu opens");
+      const items = await m.locator('[role="menuitem"], select').allTextContents();
+      check(items.some((t) => t.includes("فتح الملف")) && items.some((t) => t.includes("تنزيل")) && items.some((t) => t.includes("شوف النص المستخرج")) && (await m.locator("select").count()) === 1, "the menu has type, open, download and the extracted text");
+      const box = await m.boundingBox();
+      check(!!box && box.x >= 0 && box.x + box.width <= 1920 && box.y >= 0 && box.y + box.height <= 1080, "the menu is inside the screen");
+      await page.mouse.move(5, 5);
+      await page.screenshot({ path: resolve("screenshots/compare/next/ReviewMenuLight.png") });
+      await m.locator("text=شوف النص المستخرج").click();
+      await page.waitForSelector("aside >> text=/صفحة 1 من 4/", { timeout: 15_000 }).catch(() => {});
+      const sub = await page.locator("aside").first().textContent();
+      check(!!sub && sub.includes("صفحة 1 من 4") && (await m.count()) === 0, "«شوف النص المستخرج» opens the paper panel at page 1 and closes the menu");
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(400);
+      check(await page.evaluate(() => document.activeElement?.getAttribute("aria-haspopup") === "menu"), "Esc closes the panel and focus returns to the «…» button");
+      await menus.nth(1).click();
+      await page.keyboard.press("Escape");
+      check((await page.locator('[role="menu"]').count()) === 0, "Esc closes the menu");
+      await ctx.close();
+      // a paper that failed to read shows it in its row
+      await db.from("documents").update({ read_status: "failed", read_error: "تعذر تنزيل الملف" }).eq("id", fx.docs[2].id);
+      const r2 = await open(browser, fx.caseId, false, false);
+      check(await r2.page.locator('[role="status"]:has-text("ما اتقرتش")').count() === 1, "a failed read shows «ما اتقرتش» under the name");
+      check(await r2.page.locator("text=تعذر تنزيل الملف").count() === 1, "…with the reason");
+      await r2.page.mouse.move(5, 5);
+      await r2.page.screenshot({ path: resolve("screenshots/compare/next/ReviewFailedLight.png") });
+      await r2.ctx.close();
+      await db.from("documents").update({ read_status: "done", read_error: null }).eq("id", fx.docs[2].id);
+      // phone: the same menu on each card
+      const mob = await open(browser, fx.caseId, true, false);
+      const mm = mob.page.locator('[role="table"] button[aria-haspopup="menu"]');
+      check(await mm.count() === 4, "phone: a «…» menu on every card");
+      await mm.first().click();
+      const mb = await mob.page.locator('[role="menu"]').boundingBox();
+      check(!!mb && mb.x >= 0 && mb.x + mb.width <= 390, "phone: the menu is inside the screen");
+      await mob.page.screenshot({ path: resolve("screenshots/compare/next/ReviewMobileMenuLight.png") });
+      await mob.ctx.close();
     }
 
     // 2) the column card (a question asked; nothing saved yet)

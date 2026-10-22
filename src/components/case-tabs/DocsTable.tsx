@@ -3,9 +3,11 @@
 // its page («ص 4») and opens the paper panel on the sentence; a suggested value has a gold dot and «ص 1 · مقترحة، راجعها».
 // Phone (not drawn): the same DOM re-flows as one card per paper with the sections stacked, each under its own small title.
 import { CellCite } from "@/components/cite/SourceChip";
+import { DocMenu } from "@/components/documents/DocMenu";
 import { DocThumb, pagesLabel } from "@/components/documents/DocThumb";
 import { cx } from "@/components/ui";
 import { formatDmy } from "@/lib/dates";
+import { READ_STATUS } from "@/lib/labels";
 import { SECTIONS, cellCite, sectionKind, type CellItem, type CustomCell, type DocRow, type SectionKey, type TableColumn } from "./docs-table";
 
 const NOT_MENTIONED = "مش مذكور";
@@ -91,11 +93,18 @@ export function DocsTable({ rows, columns }: { rows: DocRow[]; columns: TableCol
             <div key={r.id} role="row" style={{ gridTemplateColumns: template }}
               className="rounded-xl border border-border-2 bg-card shadow-card sm:grid sm:rounded-none sm:border-0 sm:border-t sm:bg-transparent sm:shadow-none">
               <div role="cell" className="flex items-start gap-2.5 border-b border-border-2 px-4 py-3.5 sm:border-b-0">
-                <a href={`/api/documents/${r.id}`} target="_blank" rel="noopener" aria-hidden tabIndex={-1} className="group shrink-0"><DocThumb className="w-6.5" /></a>
+                <DocThumb className="w-6.5 shrink-0" />
                 <div className="min-w-0">
-                  <a href={`#doc-${r.id}`} className="block text-base font-bold leading-6 text-text hover:underline">{r.name}</a>
+                  <p className="text-base font-bold leading-6 text-text">{r.name}</p>
                   {meta ? <p className="mt-0.5 text-xs text-text-3">{meta}</p> : null}
+                  {r.info && r.info.readStatus !== "done" ? (
+                    <p role="status" className={cx("mt-0.5 text-xs font-semibold", r.info.readStatus === "failed" ? "text-bad" : "text-text-3")}>
+                      {r.info.readStatus === "failed" ? "ما اتقرتش" : READ_STATUS[r.info.readStatus]}
+                    </p>
+                  ) : null}
+                  {r.info?.readStatus === "failed" && r.info.readError ? <p className="mt-0.5 text-xs leading-4 text-bad">{r.info.readError.slice(0, 120)}</p> : null}
                 </div>
+                {r.info ? <DocMenu documentId={r.id} caseId={r.info.caseId} name={r.name} fileName={r.info.fileName} docType={r.info.docType} meta={r.info.meta} hasText={r.info.hasText} hasPending={r.info.hasPending} /> : null}
               </div>
               {SECTIONS.map((s: { key: SectionKey; title: string }) => (
                 <div key={s.key} role="cell" className={cx(CELL, "max-sm:space-y-1")}>
