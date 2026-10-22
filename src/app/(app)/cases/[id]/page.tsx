@@ -10,11 +10,13 @@ import { JudgmentsTab } from "@/components/case-tabs/JudgmentsTab";
 import { CaseDetails } from "@/components/cases/CaseDetails";
 import { CaseHeader, CaseSubHeader } from "@/components/cases/CaseHeader";
 import { CaseOverview } from "@/components/cases/CaseOverview";
+import { ConfirmBar } from "@/components/cases/ConfirmBar";
 import { AddColumn } from "@/components/documents/AddColumn";
 import { UploadDocument } from "@/components/documents/UploadDocument";
 import { hearingState, pendingHref } from "@/components/cases/case-view";
 import { getCaseFile, type CaseFile } from "@/lib/case-file";
 import { docsTableEnabled } from "@/lib/flags";
+import { loadPendingEdits } from "@/lib/pending-edits";
 import { todayIso } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
 
@@ -23,6 +25,8 @@ const VIEWS = { hearings: "الجلسات", documents: "المستندات", det
 /** the title of each view on desktop (the 34px title row); the short name above is the breadcrumb's last item and the phone's title */
 const VIEW_TITLE = { hearings: "جلسات القضية", documents: "مستندات القضية", details: "بيانات الدعوى" } as const;
 type View = keyof typeof VIEWS;
+/** the overview is the page with the highlights (the other views have their own lists) */
+const isOverview = (tab?: string) => !(tab && tab in VIEWS);
 
 export default async function CasePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string; q?: string }> }) {
   const { id } = await params;
@@ -41,6 +45,8 @@ export default async function CasePage({ params, searchParams }: { params: Promi
     if (e instanceof Error && e.message === "case not found") notFound();
     throw e;
   }
+  // edits the chat proposed and the lawyer has not confirmed: highlighted on the overview (read through RLS, this case only)
+  const edits = isOverview(tab) ? await loadPendingEdits(db, id, cf) : undefined;
   const table = docsTableEnabled(); // the documents table + «+ عمود جديد»: off by default (src/lib/flags.ts)
   const view: View | null = tab && tab in VIEWS ? (tab as View) : null;
   const today = todayIso();
@@ -68,8 +74,9 @@ export default async function CasePage({ params, searchParams }: { params: Promi
             { value: cf.facts.length + pending.filter((p) => p.table === "case_facts").length, label: "وقائع", href: `/cases/${id}#facts` },
             { value: cf.documents.length, label: "مستندات", href: `/cases/${id}?tab=documents` },
             { value: review, label: "محتاجة مراجعة", highlight: true, href: reviewHref },
-          ]} />
-          <CaseOverview cf={cf} hs={hs} today={today} caseId={id} />
+          ]} edits={edits} />
+          <CaseOverview cf={cf} hs={hs} today={today} caseId={id} edits={edits} />
+          {edits?.groups.length ? <ConfirmBar groups={edits.groups} count={edits.count} /> : null}
         </>
       )}
     </div>

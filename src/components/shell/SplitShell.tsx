@@ -14,6 +14,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import type { ReactNode } from "react";
 import { CitePanel } from "@/components/cite/CitePanel";
+import { CONFIRM_SLOT } from "@/components/cases/ConfirmBar";
 import { DraftProvider, type Account } from "@/components/chat/draft";
 import { cx } from "@/components/ui";
 
@@ -50,8 +51,10 @@ export function SplitShell({ header, chat, account, children }: { header: ReactN
           <div aria-hidden className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-border-strong xl:hidden" />
           {header}
           <main className="flex w-full flex-1 flex-col pt-3 xl:pt-0">{children}</main>
-          <div className="sticky bottom-0 mt-4 bg-bg px-4 pb-[calc(14px+env(safe-area-inset-bottom))] pt-3 xl:hidden" /* ds-allow: safe-area inset needs calc() */>
-            <Link href={closeHref(path, sp)} className="tap glass glass-icon flex h-control-xl w-full items-center justify-center rounded-full text-base font-semibold">رجوع للشات</Link>
+          <div className="sticky bottom-0 mt-4 flex items-center gap-2 bg-bg px-4 pb-[calc(14px+env(safe-area-inset-bottom))] pt-3 xl:hidden" /* ds-allow: safe-area inset needs calc() */>
+            {/* a page with edits waiting puts «أكّد · N» here (ConfirmBar): one bar with «رجوع للشات» */}
+            <div id={CONFIRM_SLOT} className="min-w-0 flex-2 empty:hidden" />
+            <Link href={closeHref(path, sp)} className="tap glass glass-icon flex h-control-xl min-w-0 flex-1 items-center justify-center rounded-full text-base font-semibold">رجوع للشات</Link>
           </div>
         </div>
         {chat}
