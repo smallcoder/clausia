@@ -216,7 +216,7 @@
 }
 
 /*
- * Type scale (docs/design/DESIGN.md «Type»): 7 steps, and 3 display sizes for big numerals only.
+ * Type scale (docs/design/DESIGN.md «Type»): 7 steps, 3 display sizes for big numerals only, and the one page-title step.
  * Tailwind's own text-xs…9xl are switched off, so a size off this scale does not compile.
  * No step carries a line-height: text inherits it (body 1.6) or sets leading-* next to the size.
  */
@@ -232,6 +232,9 @@
   --text-display: 54px;
   --text-display-lg: 76px;
   --text-display-xl: 92px;
+  /* the one owner-specified step outside the scale (2026-10-22): the title of a list page (Cases, Roll, a case's documents view) on desktop */
+  --text-page-title: 34px;
+  --text-page-title--line-height: 1.1;
 }
 
 /*
