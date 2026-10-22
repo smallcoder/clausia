@@ -3,7 +3,7 @@
  * v2 top bar (docs/design): brand + office name · centered glass tab capsule (Home / Hearings / Cases) ·
  * glass circles for alerts and account. Mobile: logo, capsule (active tab labeled, others icon-only), account.
  */
-import { Bell, CalendarDays, FolderClosed, House, LogOut } from "lucide-react";
+import { Bell, CalendarDays, CalendarOff, FolderClosed, House, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -33,14 +33,14 @@ function activeTab(path: string) {
   return "/"; // Home and the chat threads opened from it
 }
 
-export function AppHeader({ initials, officeName, email, alerts, userId }: { initials: string; officeName: string; email: string; alerts: number; userId: string }) {
+export function AppHeader({ initials, officeName, email, alerts, userId, holidays = false }: { initials: string; officeName: string; email: string; alerts: number; userId: string; holidays?: boolean }) {
   const path = usePathname();
   /** the evening brief (from 20:00 Cairo) and the 07:00 reminder: a dot on the bell and a label that opens /brief */
   const { items: briefItems, opened } = useBriefBell(userId, path);
   const brief = briefItems[0];
   const on = activeTab(path);
   /** the top bar takes the page's column: Home and Chat are the narrow one, every other page the wide one */
-  const narrow = path === "/" || path.startsWith("/chat");
+  const narrow = path === "/" || path.startsWith("/chat") || path.startsWith("/settings");
   /** a thread with the paper panel open is two columns (docs/design/next/Cite*): the top bar takes that wide box on desktop */
   const { split } = useCite();
   const [open, setOpen] = useState(false);
@@ -101,6 +101,11 @@ export function AppHeader({ initials, officeName, email, alerts, userId }: { ini
                 <div className="truncate text-sm leading-4 text-text-4" dir="ltr">{email}</div>
               </div>
               <div className="flex items-center justify-between px-3 py-1.5 text-base leading-5 text-text-2">المظهر <ThemeToggle /></div>
+              {holidays ? (
+                <Link href="/settings/holidays" onClick={() => setOpen(false)} className="flex min-h-11 w-full items-center gap-2 rounded-md px-3 text-base leading-5 text-text-2 hover:bg-card-2">
+                  <CalendarOff size={16} strokeWidth={1.9} aria-hidden /> إجازات المحاكم
+                </Link>
+              ) : null}
               <form action="/auth/signout" method="post">
                 <button className="flex min-h-11 w-full items-center gap-2 rounded-md px-3 text-base leading-5 text-text-2 hover:bg-card-2">
                   <LogOut size={16} strokeWidth={1.9} aria-hidden /> تسجيل الخروج

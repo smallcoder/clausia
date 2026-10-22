@@ -67,7 +67,7 @@ export default async function ThreadPage({ params, searchParams }: { params: Pro
       </MaybeLink>
 
       <div className="flex flex-1 flex-col">
-        <ChatThread threadId={t.id} caseId={t.case_id} items={data.items} lookup={data.lookup} docs={data.docs} initialText={q?.slice(0, 300)} />
+        <ChatThread threadId={t.id} caseId={t.case_id} items={data.items} lookup={data.lookup} deadlines={data.deadlines} docs={data.docs} initialText={q?.slice(0, 300)} />
       </div>
     </div>
   );
