@@ -1,12 +1,14 @@
 /**
- * Home's page side of the split layout (docs/design/split/Split*Home): date eyebrow + big greeting, today's roll next to
- * «محتاجة قرار». The chat is the panel beside it (its greeting and the brief are PR 3), so there is no composer here.
+ * Home's page side of the split layout (docs/design/split/Split*Home): date eyebrow + big greeting, «الجلسات الجاية» next to
+ * a column of «محتاجة قرار» and the two counts (open cases, hearings this week). The chat is the panel beside it (the morning
+ * brief, the «noticed» cards and the chips are its top), so there is no composer here.
  * Text line heights are set to the px the mockups render with `line-height: normal`, so block heights match whichever Arabic font loads.
  */
 import type { HomeData } from "./data";
+import { StatsCard } from "./StatsCard";
 import { formatLongDay, greeting } from "./text";
-import { TodayCard } from "./TodayCard";
 import { UndecidedCard } from "./UndecidedCard";
+import { UpcomingCard } from "./UpcomingCard";
 
 /** «مساء الخير، أستاذ تجريبي» → breaks after the comma on mobile, one line on desktop */
 function Greeting({ text }: { text: string }) {
@@ -23,9 +25,12 @@ export function HomeView({ data, displayName }: { data: HomeData; displayName: s
         <Greeting text={greeting(displayName)} />
       </h1>
 
-      <div className="mt-6 flex flex-col gap-3 md:mt-7 md:grid md:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)] md:gap-4">
-        <TodayCard todays={data.todays} tomorrows={data.tomorrows} tomorrow={data.tomorrow} nextDate={data.nextDate} />
-        <UndecidedCard count={data.undecided} className="order-first md:order-none" />
+      <div className="mt-6 flex flex-col gap-3 md:mt-7 md:grid md:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)] md:gap-4">
+        <UpcomingCard rows={data.upcoming} today={data.today} />
+        <div className="flex flex-col gap-3 md:gap-4">
+          <UndecidedCard count={data.undecided} className="md:flex-1" />
+          <StatsCard openCases={data.openCases} weekHearings={data.weekHearings} />
+        </div>
       </div>
     </div>
   );
