@@ -37,3 +37,23 @@ export function SourceChip({ cite, className }: { cite: CiteSource; className?: 
     </button>
   );
 }
+
+/**
+ * The quiet «ص 4» under a value of the documents table (docs/design/next/Review*.dc.html): faint text with a paper icon,
+ * and for a suggested value a gold dot and «ص 1 · مقترحة، راجعها». Opens the paper panel exactly as the pill does
+ * (same context, same focus return); the open one is filled like the pill.
+ */
+export function CellCite({ cite, suggested = false, className }: { cite: CiteSource; suggested?: boolean; className?: string }) {
+  const { active, open } = useCite();
+  const on = active?.id === cite.id;
+  return (
+    <button type="button" data-cite-id={cite.id} aria-current={on ? "true" : undefined}
+      aria-label={`افتح ${cite.label} في الورقة${suggested ? " (مقترحة، راجعها)" : ""}`}
+      onClick={() => open(cite)}
+      className={cx("tap inline-flex items-center gap-1.5 whitespace-nowrap rounded-full text-xs leading-[normal] transition-colors",
+        on ? "bg-selected px-2 py-0.5 text-on-selected" : suggested ? "text-gold hover:underline" : "text-text-4 hover:text-text-2", className)}>
+      {suggested ? <span aria-hidden className="size-dot shrink-0 rounded-full bg-gold" /> : <File aria-hidden className="size-3 shrink-0" strokeWidth={1.8} />}
+      ص <span className="font-num">{cite.page}</span>{suggested ? " · مقترحة، راجعها" : ""}
+    </button>
+  );
+}

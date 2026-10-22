@@ -1,14 +1,22 @@
-// «المستندات» (?tab=documents): the case's papers as the mockup's 3-up paper grid (name, type, pages), the upload,
-// then one panel per document — its type (inline select), read state, open / download, pending proposals,
-// and the extracted text page by page (in Naskh).
+// «المستندات» (?tab=documents): the case documents table (docs/design/next/Review*.dc.html) — one row per paper, a cell per
+// section (parties, facts and dates, requests, defenses) and the lawyer's own columns, each value with its page — then, below,
+// one panel per document: its type (inline select), read state, open / download, pending proposals, and the extracted text
+// page by page (in Naskh). A question asked of every paper («+ عمود جديد») waits as ONE confirmation card above the table.
 import { ChevronDown } from "lucide-react";
 import Link from "next/link";
-import { DocThumb, pagesLabel } from "@/components/documents/DocThumb";
+import { DocsTable } from "@/components/case-tabs/DocsTable";
+import { buildDocsTable, type PendingOp, type TableCell, type TableColumn } from "@/components/case-tabs/docs-table";
+import { pagesLabel } from "@/components/documents/DocThumb";
+import { AddColumn } from "@/components/documents/AddColumn";
 import { DocTypeSelect } from "@/components/documents/DocTypeSelect";
 import { UploadDocument } from "@/components/documents/UploadDocument";
-import { Panel, StatusChip } from "@/components/shell/PageHero";
+import { ProposalCard } from "@/components/proposal/ProposalCard";
+import { ClausiaSays, Panel, StatusChip } from "@/components/shell/PageHero";
+import { buildProposalLookup } from "@/lib/assistant/lookup";
+import type { CaseFile } from "@/lib/case-file";
 import { formatDmy } from "@/lib/dates";
 import { DOC_TYPE, READ_STATUS } from "@/lib/labels";
+import type { Proposal } from "@/lib/proposals";
 import { createClient } from "@/lib/supabase/server";
 
 const STATUS_TONE = { pending: "neutral", reading: "neutral", done: "good", failed: "bad" } as const;
@@ -23,54 +31,86 @@ const pagesWord = (n: number) => (n === 1 ? "مستند واحد" : n === 2 ? "�
 
 const firstWords = (t: string, n = 9) => t.trim().split(/\s+/).slice(0, n).join(" ");
 
-export async function DocumentsTab({ caseId }: { caseId: string }) {
+/** a card of this page: its column or its cells wait for the lawyer */
+const COLUMN_TOOLS = ["add_doc_column", "add_doc_cell"];
+const isOpen = (s: string) => s === "pending" || s === "failed";
+const TABLE_TOOLS = ["add_party", "add_fact", "add_request", "add_argument"];
+
+export async function DocumentsTab({ caseId, cf }: { caseId: string; cf: CaseFile }) {
   const db = await createClient();
   const { data: docs } = await db.from("documents")
     .select("id, file_name, title, doc_type, page_count, read_status, read_error, created_at, doc_date, mime_type, size_bytes")
-    .eq("case_id", caseId).order("created_at", { ascending: false });
+    .eq("case_id", caseId).neq("review_status", "rejected").order("created_at");
   const ids = (docs ?? []).map((d) => d.id);
-  const [{ data: pages }, { data: pending }] = ids.length
-    ? await Promise.all([
-        db.from("document_pages").select("document_id, page_no, text").in("document_id", ids).order("page_no"),
-        db.from("proposals").select("document_id").in("document_id", ids).in("status", ["pending", "partially_confirmed"]),
-      ])
-    : [{ data: [] }, { data: [] }];
+  const [{ data: pages }, { data: pending }, { data: open }, { data: cols }] = await Promise.all([
+    ids.length ? db.from("document_pages").select("document_id, page_no, text").in("document_id", ids).order("page_no") : { data: [] },
+    ids.length ? db.from("proposals").select("document_id").in("document_id", ids).in("status", ["pending", "partially_confirmed"]) : { data: [] },
+    db.from("proposals").select("*").eq("case_id", caseId).in("status", ["pending", "partially_confirmed"]).order("created_at"),
+    db.from("doc_columns").select("id, title, review_status").eq("case_id", caseId).neq("review_status", "rejected").order("created_at"),
+  ]);
+  const { data: cellRows } = cols?.length
+    ? await db.from("doc_column_cells").select("id, column_id, document_id, answer, note, review_status, source_page, source_quote, source_char_start, source_char_end").in("column_id", cols.map((c) => c.id))
+    : { data: [] };
   const pagesOf = new Map<string, { page_no: number; text: string }[]>();
   for (const p of pages ?? []) pagesOf.set(p.document_id, [...(pagesOf.get(p.document_id) ?? []), p]);
   const hasPending = new Set((pending ?? []).map((p) => p.document_id));
   const name = (d: { title: string | null; doc_type: string; file_name: string }) => d.title || DOC_TYPE[d.doc_type as keyof typeof DOC_TYPE] || d.file_name;
 
+  // the open cards: a question's card (column + cells) is shown here; every other open card feeds the table as «مقترحة»
+  const cards = (open ?? []) as unknown as Proposal[];
+  const columnCards = cards.filter((p) => p.ops.some((o) => COLUMN_TOOLS.includes(o.tool) && isOpen(o.status)));
+  const lookup = columnCards.length ? await buildProposalLookup(db, columnCards) : {};
+  const pendingOps: PendingOp[] = cards.filter((p) => !columnCards.includes(p)).flatMap((p) =>
+    p.ops.filter((o) => o.status === "pending" && TABLE_TOOLS.includes(o.tool)).map((o) => ({ proposalId: p.id, opId: o.op_id, tool: o.tool, args: o.args, source: o.source })));
+  const columns: TableColumn[] = (cols ?? []).map((c) => ({ id: c.id, title: c.title, suggested: c.review_status === "suggested" }));
+  const rows = buildDocsTable({
+    docs: (docs ?? []).map((d) => ({ id: d.id, name: name(d), page_count: d.page_count, doc_date: d.doc_date })),
+    cf, pending: pendingOps, columns, cells: (cellRows ?? []) as TableCell[],
+  });
+
+  // the Clausia line: what was read, and how many cells wait for the lawyer (a cell = one paper's value in one column)
+  const read = (docs ?? []).filter((d) => d.read_status === "done").length;
+  const total = docs?.length ?? 0;
+  const suggestedCells = rows.reduce((n, r) => n
+    + Object.values(r.sections).filter((items) => items.some((i) => i.suggested)).length
+    + Object.values(r.custom).filter((c) => (c.state === "answer" ? c.item.suggested : c.state === "not_mentioned" && c.suggested)).length, 0);
+  const readWord = read === total ? (total === 1 ? "المستند الوحيد" : total === 2 ? "المستندين" : `الـ ${total} ${total <= 10 ? "مستندات" : "مستند"}`) : `${read} من ${total} مستندات`;
+  const cellsWord = suggestedCells === 1 ? "خانة واحدة" : suggestedCells === 2 ? "خانتين" : `${suggestedCells} ${suggestedCells <= 10 ? "خانات" : "خانة"}`;
+
   return (
     <div className="space-y-4 pb-4">
-      <section className="rounded-xl border border-border-2 bg-card shadow-card">
-        {/* phone: the count and the upload live here; desktop: they are the title row's stat and far-end button (CaseSubHeader) */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border-2 px-6 py-4 sm:hidden">
-          <h2 className="text-lg font-bold text-title">
-            {docs?.length ? pagesWord(docs.length) : "ارفع أول ورقة"}
-          </h2>
-          <UploadDocument caseId={caseId} />
-        </div>
-        <p className="max-w-160 px-5 pt-3.5 text-sm leading-6 text-text-3 sm:pt-5">
-          صحيفة، مذكرة، محضر جلسة أو صورة بالموبايل (PDF أو صورة لحد 25 م.ب). Clausia بيقرا كل صفحة ويقترح اللي لقاه في محادثة القضية، ومش بيتحفظ حاجة قبل ما تأكد.
-        </p>
-        {docs?.length ? (
-          <ul className="grid grid-cols-3 gap-3 px-5 pb-5 pt-4 sm:grid-cols-[repeat(3,minmax(0,132px))] sm:gap-5">
-            {docs.map((d) => (
-              <li key={d.id} className="min-w-0">
-                <a href={`/api/documents/${d.id}`} target="_blank" rel="noopener" className="group block" title={d.file_name}>
-                  <DocThumb note={d.read_status !== "done" ? READ_STATUS[d.read_status] : null} />
-                  <span className="mt-2 line-clamp-2 block text-center text-sm font-semibold leading-5 text-text">{name(d)}</span>
-                </a>
-                <span className="mt-0.5 block truncate text-center text-xs text-text-3 sm:text-sm">
-                  {[d.title ? DOC_TYPE[d.doc_type as keyof typeof DOC_TYPE] : null, pagesLabel(d.page_count)].filter(Boolean).join(" · ") || " "}
-                </span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="px-5 pb-5 pt-2 text-base leading-7 text-text-3">لسه مفيش مستندات في القضية دي، وأي ورقة ترفعها Clausia هيقراها صفحة صفحة.</p>
-        )}
-      </section>
+      {/* phone: the count, the upload and the new column live here; desktop: they are the title row's stat and far-end buttons (CaseSubHeader) */}
+      <div className="flex flex-wrap items-center justify-between gap-3 px-1 sm:hidden">
+        <h2 className="text-lg font-bold text-title">{total ? pagesWord(total) : "ارفع أول ورقة"}</h2>
+        <div className="flex items-center gap-2"><UploadDocument caseId={caseId} compact /><AddColumn caseId={caseId} disabled={!total} /></div>
+      </div>
+
+      {total ? (
+        <>
+          <ClausiaSays size="md">
+            <span className="text-text">
+              {read ? <>قريت {readWord} وطلّعت من كل واحد اللي يخص القضية. كل خانة عليها رقم الصفحة، دوس عليها تفتحلك الجملة.</> : <>لسه ما قريتش مستندات القضية. أول ما أخلص هتلاقي كل حاجة هنا.</>}
+              {suggestedCells ? <> فيه {cellsWord} <span className="font-semibold text-gold">مقترحة</span> محتاجة مراجعتك.</> : null}
+            </span>
+          </ClausiaSays>
+
+          {columnCards.map((p) => <ProposalCard key={p.id} proposal={p} lookup={lookup} />)}
+
+          <DocsTable rows={rows} columns={columns} />
+
+          <p className="flex items-center gap-2 px-2 text-sm text-text-3">
+            <span aria-hidden className="size-dot shrink-0 rounded-full bg-text-4" />
+            اسأل سؤال على كل المستندات مرة واحدة، وهيبقى عمود جديد في الجدول: مثلاً «فيه شرط جزائي؟»
+          </p>
+        </>
+      ) : (
+        <section className="rounded-xl border border-border-2 bg-card px-5 py-5 shadow-card">
+          <p className="max-w-160 text-sm leading-6 text-text-3">
+            صحيفة، مذكرة، محضر جلسة أو صورة بالموبايل (PDF أو صورة لحد 25 م.ب). Clausia بيقرا كل صفحة ويقترح اللي لقاه في محادثة القضية، ومش بيتحفظ حاجة قبل ما تأكد.
+          </p>
+          <p className="pt-2 text-base leading-7 text-text-3">لسه مفيش مستندات في القضية دي، وأي ورقة ترفعها Clausia هيقراها صفحة صفحة.</p>
+        </section>
+      )}
 
       {(docs ?? []).map((d) => {
         const ps = pagesOf.get(d.id) ?? [];

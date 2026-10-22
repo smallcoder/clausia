@@ -9,6 +9,7 @@ import { JudgmentsTab } from "@/components/case-tabs/JudgmentsTab";
 import { CaseDetails } from "@/components/cases/CaseDetails";
 import { CaseHeader, CaseSubHeader } from "@/components/cases/CaseHeader";
 import { CaseOverview } from "@/components/cases/CaseOverview";
+import { AddColumn } from "@/components/documents/AddColumn";
 import { UploadDocument } from "@/components/documents/UploadDocument";
 import { hearingState, pendingHref, shortDmy } from "@/components/cases/case-view";
 import { Composer, type ComposerChip } from "@/components/shell/Composer";
@@ -69,9 +70,9 @@ export default async function CasePage({ params, searchParams }: { params: Promi
         <>
           <CaseSubHeader cf={cf} caseId={id} crumb={VIEWS[view]} title={VIEW_TITLE[view]}
             stats={view === "documents" ? [{ value: cf.documents.length, label: "مستند" }] : view === "hearings" ? [{ value: cf.hearings.length, label: "جلسة" }] : []}
-            action={view === "documents" ? <UploadDocument caseId={id} row /> : null} />
+            action={view === "documents" ? <div className="flex items-center gap-2"><UploadDocument caseId={id} row compact /><AddColumn caseId={id} disabled={!cf.documents.length} /></div> : null} />
           <div className="mt-5 sm:mt-4.5">
-            {view === "hearings" ? <><HearingsTab caseId={id} /><JudgmentsTab cf={cf} caseId={id} /></> : view === "documents" ? <DocumentsTab caseId={id} /> : <CaseDetails cf={cf} />}
+            {view === "hearings" ? <><HearingsTab caseId={id} /><JudgmentsTab cf={cf} caseId={id} /></> : view === "documents" ? <DocumentsTab caseId={id} cf={cf} /> : <CaseDetails cf={cf} />}
           </div>
         </>
       ) : (
@@ -87,7 +88,8 @@ export default async function CasePage({ params, searchParams }: { params: Promi
 
       <div className="min-h-6 flex-1" />
       <Composer target={{ kind: "case", caseId: id }} chips={chips}
-        placeholder="اكتب لـ Clausia عن القضية دي… قرار جلسة، واقعة جديدة، أو أي سؤال" placeholderShort="اكتب لـ Clausia عن القضية دي…" />
+        placeholder={view === "documents" ? "اسأل عن المستندات… مثلاً: إمتى بالظبط بطّل يدفع؟" : "اكتب لـ Clausia عن القضية دي… قرار جلسة، واقعة جديدة، أو أي سؤال"}
+        placeholderShort={view === "documents" ? "اسأل عن المستندات…" : "اكتب لـ Clausia عن القضية دي…"} />
     </div>
   );
 }
