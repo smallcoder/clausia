@@ -1,6 +1,6 @@
 // The chat-first split layout, against a running server (default http://localhost:4500), logged in as the demo user. NO model call:
 // the sessions it needs are made with the demo login (RLS client) and removed again at the end.
-// Checks: one composer on every page; the chat panel's width at 1440 / 1920 and full screen below 1280; the context (case vs general)
+// Checks: one composer on every page; the frame (1600) and the chat panel's width at 1440 (480) / 1920 and 2560 (560), the top bar across the frame above both, and full screen below 1280; the context (case vs general)
 // and its sessions only; ?hearing= opens that hearing's session; the old URLs (/chat, /chat/<id>, ?tab=chat) still land; the phone's sheet
 // (closed on Home and a case, open on the Roll, «افتح» opens, «رجوع للشات» closes) and the two-step context picker; the draft survives a page change.
 // Run: npx tsx --env-file=.env.local scripts/test-split-layout.ts [baseUrl]
@@ -73,25 +73,28 @@ try {
     }
     await go(page, `/cases/${caseId}`);
     const aside = await box(page, 'aside[aria-label="محادثة Clausia"]');
-    check("1920: the chat panel is 760 wide", !!aside && Math.abs(aside.width - 760) <= 1, `${aside?.width}`);
-    check("1920: the frame is 1760 centered (panel starts at 80)", !!aside && Math.abs(aside.x - 80) <= 1, `${aside?.x}`);
+    check("1920: the chat panel is 560 wide", !!aside && Math.abs(aside.width - 560) <= 1, `${aside?.width}`);
+    check("1920: the frame is 1600 centered (panel starts at 160)", !!aside && Math.abs(aside.x - 160) <= 1, `${aside?.x}`);
     check("the panel is on the left (the end side in RTL)", !!aside && aside.x < 960);
     const hdr = await box(page, "header");
-    check("the top bar is above the page only (it starts right of the chat)", !!hdr && !!aside && hdr.x >= aside.x + aside.width, `${hdr?.x}`);
+    check("the top bar spans the whole frame (1600 wide, its start edge on the chat's)", !!hdr && !!aside && Math.abs(hdr.width - 1600) <= 1 && Math.abs(hdr.x - aside.x) <= 1, `${hdr?.x} / ${hdr?.width}`);
+    check("the chat panel sits below the top bar", !!hdr && !!aside && aside.y >= hdr.y + hdr.height, `${aside?.y} vs ${hdr ? hdr.y + hdr.height : "?"}`);
+    const pg = await box(page, "main");
+    check("the page is right of the chat with a 24px gap and ends on the top bar's far edge", !!pg && !!aside && !!hdr && Math.abs(pg.x - (aside.x + aside.width + 24)) <= 1 && Math.abs(pg.x + pg.width - (hdr.x + hdr.width)) <= 1, `${pg?.x} / ${pg?.width}`);
     await ctx.close();
   }
   {
     const { ctx, page } = await open(1440, 900);
     await go(page, "/");
     const aside = await box(page, 'aside[aria-label="محادثة Clausia"]');
-    check("1440: the chat panel is 560 wide", !!aside && Math.abs(aside.width - 560) <= 1, `${aside?.width}`);
+    check("1440: the chat panel is 480 wide", !!aside && Math.abs(aside.width - 480) <= 1, `${aside?.width}`);
     await ctx.close();
   }
   {
     const { ctx, page } = await open(2560, 1440);
     await go(page, "/");
     const aside = await box(page, 'aside[aria-label="محادثة Clausia"]');
-    check("2560: the chat panel is 760 and the frame stays 1760 (panel starts at 400)", !!aside && Math.abs(aside.width - 760) <= 1 && Math.abs(aside.x - 400) <= 1, `${aside?.width} @ ${aside?.x}`);
+    check("2560: the chat panel is 560 and the frame stays 1600 (panel starts at 480)", !!aside && Math.abs(aside.width - 560) <= 1 && Math.abs(aside.x - 480) <= 1, `${aside?.width} @ ${aside?.x}`);
     await ctx.close();
   }
 
