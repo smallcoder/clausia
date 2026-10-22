@@ -71,7 +71,7 @@ export default async function CasePage({ params, searchParams }: { params: Promi
     <div className="mx-auto flex w-full max-w-page flex-1 flex-col px-4 sm:px-10">
       {view ? (
         <>
-          <CaseSubHeader cf={cf} caseId={id} crumb={VIEWS[view]} title={VIEW_TITLE[view]}
+          <CaseSubHeader cf={cf} caseId={id} crumb={VIEWS[view]} title={VIEW_TITLE[view]} eyebrow={view === "documents" && table}
             stats={view === "documents" ? [{ value: cf.documents.length, label: "مستند" }] : view === "hearings" ? [{ value: cf.hearings.length, label: "جلسة" }] : []}
             action={view === "documents" ? (table ? <div className="flex items-center gap-2"><UploadDocument caseId={id} row compact /><AddColumn caseId={id} disabled={!cf.documents.length} /></div> : <UploadDocument caseId={id} row />) : null} />
           <div className="mt-5 sm:mt-4.5">

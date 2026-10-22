@@ -173,6 +173,7 @@ async function main() {
       }));
       check(info.rows === 5 && info.heads.join("|") === "المستند|الأطراف|الوقائع والتواريخ|الطلبات|الدفوع", `${name}: a header and four rows, the mockup's five columns (${info.heads.join("|")})`);
       check(info.title === "مستندات القضية", `${name}: the title row's title («${info.title}»)`);
+      check(await page.locator("p:visible", { hasText: "عادل النموذجي ضد وليد التجريبي" }).count() === 1, `${name}: the who-line eyebrow is above the title (as drawn)`);
       check(info.gold === 1, `${name}: one suggested cell with «مقترحة، راجعها» (${info.gold})`);
       check(!info.scrollX, `${name}: no sideways page scroll`);
       // a chip opens the paper at its page with the sentence marked
@@ -246,6 +247,7 @@ async function main() {
       const { ctx, page } = await open(browser, fx.caseId, false, dark);
       check(await page.locator("text=عمود جديد في جدول المستندات").count() === 1, `${name}: the card is on the page`);
       check(await page.locator('[role="columnheader"]:has-text("فيه شرط جزائي")').count() === 0, `${name}: no column in the table before the tap`);
+      check(await page.locator('[data-cite-id^="card:"]').count() === 1, `${name}: only the answer row has a paper chip; the «مش مذكور» rows and the question have none`);
       await page.locator("text=عمود جديد في جدول المستندات").scrollIntoViewIfNeeded();
       await page.mouse.move(5, 5);
       await page.screenshot({ path: resolve(`screenshots/compare/next/${name}.png`) });
