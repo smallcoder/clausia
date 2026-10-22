@@ -85,7 +85,11 @@ export async function approveReportAction(f: FormData): Promise<void> {
   const { data: r } = await c.db.from("holiday_reports").select("holiday_date, name, status").eq("id", id).maybeSingle();
   if (!r || r.status !== "pending") return;
   const now = new Date().toISOString();
-  const { error } = await c.db.from("holidays").upsert({ holiday_date: r.holiday_date, name: r.name, status: "approved", approved_at: now, approved_by: c.userId }, { onConflict: "holiday_date" });
+  // a date already in the list is only approved (its name and note stay the admin's); a new date is added, approved
+  const { data: have } = await c.db.from("holidays").select("id").eq("holiday_date", r.holiday_date).maybeSingle();
+  const { error } = have
+    ? await c.db.from("holidays").update({ status: "approved", approved_at: now, approved_by: c.userId }).eq("id", have.id)
+    : await c.db.from("holidays").insert({ holiday_date: r.holiday_date, name: r.name, status: "approved", approved_at: now, approved_by: c.userId });
   if (error) return;
   await c.db.from("holiday_reports").update({ status: "approved", decided_at: now, decided_by: c.userId }).eq("id", id);
   revalidatePath("/settings/holidays");

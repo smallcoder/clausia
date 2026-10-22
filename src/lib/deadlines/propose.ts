@@ -20,7 +20,7 @@ export async function proposeDeadlinesForJudgment(db: Db, input: { judgmentId: s
   if (!deadlinesEnabled()) return { proposed: false, why: "flag off" };
   const { data: j } = await db.from("judgments").select("id, case_id, judgment_date, kind, review_status").eq("id", input.judgmentId).maybeSingle();
   if (!j) return { proposed: false, why: "no judgment" };
-  // only a final judgment ends the case before the court (art. 212: a preliminary or interim ruling is appealed with the final one)
+  // v1: only a final judgment gets a card (preliminary / interim judgments are left out on purpose: a GitHub issue)
   if (j.kind !== "final" || j.review_status !== "confirmed") return { proposed: false, why: "not a confirmed final judgment" };
   if (!j.judgment_date) return { proposed: false, why: "no judgment date" }; // never guess a date
   const { data: c } = await db.from("cases").select("id, stage").eq("id", j.case_id).maybeSingle();
@@ -43,9 +43,16 @@ export async function proposeDeadlinesForJudgment(db: Db, input: { judgmentId: s
 
   const { data: m, error } = await db.from("chat_messages").insert({ thread_id: threadId, role: "assistant", content: intro(kind) }).select("id").single();
   if (error || !m) throw new Error(error?.message ?? "no message");
-  const proposal = await createProposal(db, {
-    threadId, messageId: m.id, caseId: c.id, sourceTexts: [],
-    ops: [{ tool: "add_deadline", args: { case: c.id, judgment: j.id, kind, start_basis: "judgment_date", urgent: false, reminders: [...DEFAULT_REMINDERS] }, source: { kind: "chat" } }],
-  });
+  // the line and the card go together: if the card cannot be stored, the line is removed again (no orphan sentence in the thread)
+  let proposal;
+  try {
+    proposal = await createProposal(db, {
+      threadId, messageId: m.id, caseId: c.id, sourceTexts: [],
+      ops: [{ tool: "add_deadline", args: { case: c.id, judgment: j.id, kind, start_basis: "judgment_date", urgent: false, reminders: [...DEFAULT_REMINDERS] }, source: { kind: "chat" } }],
+    });
+  } catch (e) {
+    await db.from("chat_messages").delete().eq("id", m.id);
+    throw e;
+  }
   return { proposed: true, proposalId: proposal.id };
 }

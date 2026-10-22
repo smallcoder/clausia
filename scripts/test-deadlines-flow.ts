@@ -133,7 +133,7 @@ try {
   const pre = await newCase();
   const jpre = await judgmentCard(pre.caseId, pre.threadId, "20/10/2026", "preliminary");
   await decideProposal(D, jpre.id, { mode: "confirm" });
-  check((await cardsOf(pre.threadId)).length === 0, "a preliminary judgment proposes no card (art. 212)");
+  check((await cardsOf(pre.threadId)).length === 0, "a preliminary judgment proposes no card (v1: final judgments only)");
   // no judgment date: never guessed
   const nd = await newCase();
   const jnd = await createProposal(D, { threadId: nd.threadId, caseId: nd.caseId, sourceTexts: ["حكم"], ops: [{ tool: "add_judgment", args: { case: nd.caseId, operative_text: "حكمت المحكمة برفض الدعوى", quote: "حكم" }, source: { kind: "chat", quote: "حكم" } }] });
