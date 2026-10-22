@@ -1,5 +1,5 @@
-// Cases list, laid out exactly as docs/design/*Cases.dc.html: header with real stats (the third, «محتاجة قرار», links
-// to ?decision=1), status capsules (?status=; ?decision=1, ?review=1, ?stage= and ?q= keep working as links and show
+// Cases list, laid out exactly as docs/design/next/Head*Cases.dc.html: one title row — the title, real stats (the third,
+// «محتاجة قرار», links to ?decision=1) and the status capsules at the far end (?status=; ?decision=1, ?review=1, ?stage= and ?q= keep working as links and show
 // as clearable pills), one solid table of cases, and the
 // shared Composer at the bottom with no chips (the mockup draws none): it searches, asks and adds a case.
 import Link from "next/link";
@@ -52,16 +52,16 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
         eyebrow="كل قضايا المكتب"
         title="القضايا"
         stats={[
-          { value: counts.total, label: "قضية عندك", href: "/cases" },
-          { value: week, label: "جلسات الأسبوع", href: "/hearings?view=week" },
+          { value: counts.total, label: "قضية", mobileLabel: "قضية عندك", href: "/cases" },
+          { value: week, label: "جلسة الأسبوع ده", mobileLabel: "جلسات الأسبوع", href: "/hearings?view=week" },
           { value: decision.size, label: "محتاجة قرار", highlight: true, href: "/cases?decision=1" },
         ]}
-      />
-
-      <FilterChips sp={sp} counts={counts} />
+      >
+        <FilterChips sp={sp} counts={counts} />
+      </CasesHero>
 
       {filtered ? (
-        <p className="mt-1 px-1 text-sm leading-4 text-text-3 sm:mt-2" aria-live="polite">
+        <p className="mt-1 px-1 text-sm leading-4 text-text-3 sm:mt-4.5 sm:px-2" aria-live="polite">
           <span className="font-num">{rows.length}</span> {rows.length === 1 ? "قضية" : "قضايا"}
           {sp.q ? <> تطابق «{sp.q}»</> : null}
           {" · "}<Link href="/cases" className="tap font-semibold text-text underline-offset-2 hover:underline">مسح التصفية</Link>
@@ -69,7 +69,7 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
       ) : null}
 
       {sorted.length ? (
-        <section aria-label="القضايا" className="mt-1 overflow-hidden rounded-xl border border-border-2 bg-card px-4.5 shadow-card sm:mt-3.5 md:px-0">
+        <section aria-label="القضايا" className={`mt-1 overflow-hidden rounded-xl border border-border-2 bg-card px-4.5 shadow-card md:px-0 ${filtered ? "sm:mt-3" : "sm:mt-4.5"}`}>
           <CaseListHeader />
           <ul>
             {sorted.map((r) => (
@@ -79,7 +79,7 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
           </ul>
         </section>
       ) : (
-        <section className="mt-1 rounded-xl border border-border-2 bg-card px-6 py-12 text-center shadow-card sm:mt-3.5">
+        <section className={`mt-1 rounded-xl border border-border-2 bg-card px-6 py-12 text-center shadow-card ${filtered ? "sm:mt-3" : "sm:mt-4.5"}`}>
           {filtered ? (
             <>
               <h2 className="text-lg font-bold text-title">مفيش قضايا مطابقة</h2>

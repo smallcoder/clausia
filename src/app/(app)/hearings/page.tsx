@@ -1,4 +1,4 @@
-// OWNER: roll agent — الرول (design v2, docs/design/*Roll.dc.html, laid out exactly): header with the date and «05 جلسات الأسبوع» (desktop) / the «محتاجة قرار» pill (mobile),
+// OWNER: roll agent — الرول (design v2, docs/design/*Roll.dc.html; desktop header = the shared title row of docs/design/next/Head*Cases.dc.html): the title with «05 جلسات الأسبوع» and the «محتاجة قرار» count inline, «النهارده» at the far end (desktop) / the date and the «محتاجة قرار» pill (mobile),
 // one continuous day strip (a dot per hearing; RollStrip), a timeline by court with the next hearing expanded, a desktop side card of past hearings that need a
 // decision, and the Clausia composer. ?view=week, ?filter=undecided, ?date=d/m/yyyy. The day/week view runs on the client (RollDay) from a per-day
 // cache; this page renders its first view with the chosen week ±3 weeks, and the whole ?filter=undecided list.
@@ -77,9 +77,9 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
     { label: "ارفع محضر الجلسة", short: "صوّر المحضر", attach: true, icon: "file" },
   ];
 
-  // the undecided count: the side card on desktop (lg+), this pill below it (the mockup draws it on mobile)
+  // the undecided count: the gold stat of the title row and the side card on desktop (sm+ / lg+), this pill on a phone (the mockup draws it there)
   const pill = undecidedCount > 0 && !undecidedMode ? (
-    <Link href="/hearings?filter=undecided" className="inline-flex h-11 shrink-0 items-center lg:hidden" aria-label={`${nHearings(undecidedCount)} محتاجة قرار`}>
+    <Link href="/hearings?filter=undecided" className="inline-flex h-11 shrink-0 items-center sm:hidden" aria-label={`${nHearings(undecidedCount)} محتاجة قرار`}>
       <span className="inline-flex h-9 items-center gap-1.5 rounded-full border border-gold-edge px-3 text-sm font-semibold text-gold transition hover:bg-gold-bg">
         <span aria-hidden className="size-1.5 rounded-full bg-gold" /><span className="font-num">{undecidedCount}</span> محتاجة قرار
       </span>
@@ -91,8 +91,8 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
       <RollSheet today={today}>
         {undecidedMode ? (
           <>
-            <RollHeader back="/hearings" eyebrow="جلسات فاتت من غير قرار" title="محتاجة قرار" />
-            <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-7 lg:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)]">
+            <RollHeader back="/hearings" eyebrow="جلسات فاتت من غير قرار" title="محتاجة قرار" stats={[{ value: undecidedCount, label: "جلسة فاتت من غير قرار" }]} />
+            <div className="mt-6 sm:mt-4.5 grid grid-cols-[minmax(0,1fr)] gap-7 lg:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)]">
               <div>
                 {undecidedRows.length ? (
                   <ul className="space-y-2.5 sm:space-y-3">
@@ -110,7 +110,7 @@ export default async function Roll({ searchParams }: { searchParams: Promise<{ v
             </div>
           </>
         ) : (
-          <RollDay today={today} from={from} to={to} rows={rows} pill={pill}
+          <RollDay today={today} from={from} to={to} rows={rows} pill={pill} undecided={undecidedCount}
             side={undecidedCount > 0 ? <SideCard count={undecidedCount} rows={undecidedRows} /> : null} />
         )}
       </RollSheet>

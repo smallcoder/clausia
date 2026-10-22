@@ -1,5 +1,5 @@
 /**
- * The cases list filter row (docs/design/*Cases.dc.html): «الكل · 12» and one capsule per status with office-wide
+ * The cases list filter row (docs/design/*Cases.dc.html; on desktop the far end of the title row, CasesHero's children):«الكل · 12» and one capsule per status with office-wide
  * counts (every status that has cases, not only the drawn three; on phones the row scrolls sideways).
  * Plain links (query params), so they work without JS. Not glass: the row sits on the page, not over content.
  * The selected capsule is the ink fill. `?decision=1` (the «محتاجة قرار» stat), `?review=1`, `?stage=` and `?q=`
@@ -45,8 +45,9 @@ export function FilterChips({ sp, counts }: { sp: ListParams; counts: Counts }) 
   const stage = sp.stage ? STAGE[sp.stage as keyof typeof STAGE] : null;
   return (
     // py-1.5 keeps the capsules' 44px tap areas inside the scroll box (it would clip them). Phones: 16px + 6px puts
-    // the visible capsule where it was drawn; desktop: 28px + 6px = the mockup's 34px, and -mb gives the 6px back.
-    <nav aria-label="تصفية القضايا" className="no-scrollbar mt-4 flex items-center gap-0.5 overflow-x-auto py-1.5 sm:-mb-1.5 sm:mt-7 sm:gap-1 sm:px-1">
+    // the visible capsule where it was drawn. Desktop: it is the far end of the title row (ms-auto); 28px + 6px =
+    // the mockup's 34px, and -my gives the 12px back so the row stays as tall as its title.
+    <nav aria-label="تصفية القضايا" className="no-scrollbar mt-4 flex items-center gap-0.5 overflow-x-auto py-1.5 sm:-mb-1.5 sm:-mt-1.5 sm:ms-auto sm:min-w-0 sm:gap-1">
       {/* owner decision: the active filter's clear pill comes first (at the right), so it is never scrolled out of view */}
       {sp.decision ? <ClearPill label="محتاجة قرار" to={casesHref(sp, { decision: undefined })} /> : null}
       {sp.review ? <ClearPill label="محتاجة مراجعة" to={casesHref(sp, { review: undefined })} /> : null}

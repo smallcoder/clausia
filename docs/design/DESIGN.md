@@ -12,7 +12,7 @@ The 20 `*.dc.html` files here are the approved screens: Home, Chat, Case, Roll a
 - UI: `-apple-system, BlinkMacSystemFont, 'SF Arabic', 'SF Pro Text', system-ui, 'Vazirmatn', sans-serif`
 - Numbers: `-apple-system, 'SF Pro Display', system-ui, 'Inter', sans-serif`. Stats are large and light (weight 200–300).
 - Quoted legal or court text: `'Noto Naskh Arabic', serif` (`.text-doc`, verbatim).
-- Page titles are 44px desktop and 30px mobile, weight 700. Eyebrows are 12.5px, muted.
+- Page titles are weight 700: Home's is 44px on desktop; a list page's (Cases, Roll, a case's documents view) is 34px on desktop (`text-page-title`, see the type scale); on mobile every title is 30px. Eyebrows are 12.5px, muted.
 
 ### Type scale (`--text-*` in `src/app/globals.css`)
 Seven steps. Tailwind's own `text-xs…9xl` are switched off (`--text-*: initial`), so any other size does not compile.
@@ -24,10 +24,19 @@ Seven steps. Tailwind's own `text-xs…9xl` are switched off (`--text-*: initial
 | `text-base` | 14px | secondary body, menus, buttons |
 | `text-md` | 15.5px | body (the `body` default), chat text |
 | `text-lg` | 18px | card titles, section heads, day numbers |
-| `text-xl` | 30px | mobile page titles, stat numbers |
-| `text-2xl` | 44px | desktop page titles, big stat numbers |
+| `text-xl` | 30px | mobile page titles, stat numbers (the case header, a phone's stats) |
+| `text-2xl` | 44px | Home's desktop title, big stat numbers |
 
-The only sizes outside the seven are three display sizes, for big light numerals only:
+One step is outside the scale because the owner specified it (2026-10-22): the title of a list page on desktop. It carries its own line-height, like no other step.
+
+| Class | Size | Use |
+|---|---|---|
+| `text-page-title` | 34px, line-height 1.1 | the title of the title row of Cases, Roll and a case's sub-views (documents, hearings, details), weight 700 |
+| `text-page-stat` | 24px, line-height 1 | the inline stat numbers after that title, weight 400 |
+
+These two are the title-row pair: the only owner-specified sizes outside the 7-step scale. Add no other.
+
+The only other sizes outside the seven are three display sizes, for big light numerals only:
 
 | Class | Size | Use |
 |---|---|---|
@@ -139,6 +148,7 @@ To see that a CSS refactor changed nothing, `scripts/compare-styles.ts` saves th
 - States the mockups don't draw (empty, a past hearing with no decision, tomorrow's hearings) stay as built.
 - Every screen has the same soft fade behind the floating composer and chips. On Home desktop the fade shows only while the composer is stuck to the bottom.
 - Layout grid (2026-10-22, desktop): Home's greeting, cards, chips and composer are one stack, centered in the screen; the composer sits right under the content (44px under the cards, the column wide) and sticks to the bottom only when the content is long. Tables use fixed column widths: Cases 460 / 400 / 150 / the rest (24px apart; the last column never goes under 120px). Mobile is unchanged.
+- Title row (2026-10-22, desktop; the list pages: Cases, Roll, a case's documents view; `src/components/shell/TitleRow.tsx`, drawn in `docs/design/next/Head*Cases.dc.html`): one row with the title (`text-page-title`, 34px, weight 700), the stats inline after it, and the filters or controls at the far end; then a hairline, then the content 18px below it. Stats: the number (`text-page-stat`, 24px, normal weight) 7px before its label (12.5px; the mockup's 13px snapped to the scale), 16px each side, a hairline on the start side of each; gold only when the item needs action and its count is above 0. The row starts 52px under the top bar (its top is 140px from the top of the screen), 20px between its parts, 8px side padding, 18px above the hairline. The big title stays only on Home (44px). The eyebrow above a title is phone-only. Mobile headers are unchanged. Not in the mockup, so decided here: Roll's first stat is also the week-view link and «النهارده» is the far-end control; a case's sub-views keep the breadcrumb (back · القضايا / number / view name) above the row.
 - Home mobile chips scroll sideways.
 - Case: judgments live in the hearings view; the links (case details, hearings, case chat, JSON) live in the «…» menu; long court / case-type names are one line with «…» on mobile.
 - Case desktop header: back · breadcrumb … status chip · «…» (the menu sits at the end of the row, next to the chip). The header card keeps the mockup's widths: 4 wider data cells and 3 narrower stat cells, aligned on one line and split by hairlines.

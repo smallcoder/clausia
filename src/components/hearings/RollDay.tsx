@@ -21,7 +21,8 @@ import { RollHeader, RollSays } from "@/components/hearings/RollHeader";
 import { reducedMotion, RollStrip, stripRange, type SelectHow } from "@/components/hearings/RollStrip";
 import { dayName, Empty, Timeline } from "@/components/hearings/RollTimeline";
 import { arDate, arDayMonth, nCourts, nHearings, WEEKDAY_LONG, weekdayOf } from "@/components/hearings/roll-text";
-import { StatusChip, two } from "@/components/shell/PageHero";
+import { StatusChip } from "@/components/shell/PageHero";
+import type { TitleStatData } from "@/components/shell/TitleRow";
 import { cx } from "@/components/ui";
 import { addDaysIso, formatDmy, parseDmy } from "@/lib/dates";
 import { courtOf, groupBy, nextUndecided, weekStart, type HearingWithCase } from "@/lib/hearings";
@@ -75,10 +76,12 @@ interface Props {
   rows: HearingWithCase[];
   /** the «محتاجة قرار» pill (mobile header) and the desktop side card — server-rendered */
   pill: ReactNode;
+  /** past hearings with no decision: the gold stat of the desktop title row */
+  undecided: number;
   side: ReactNode;
 }
 
-export function RollDay({ today, from, to, rows, pill, side }: Props) {
+export function RollDay({ today, from, to, rows, pill, undecided, side }: Props) {
   const sp = useSearchParams();
   const [cache] = useState(() => { const c = new Cache(); c.put(from, to, rows); return c; });
   const [ver, setVer] = useState(0);
@@ -203,16 +206,16 @@ export function RollDay({ today, from, to, rows, pill, side }: Props) {
   const weekRows = cache.week(wk);
   const isCurrent = view === "week" ? wk === weekStart(today) : date === today;
 
-  const weekLink = (
-    <a href={href({ date, view: view === "week" ? "day" : "week" })} onClick={select({ date, view: view === "week" ? "day" : "week" })}
-      aria-current={view === "week" ? "page" : undefined} title={view === "week" ? "رجوع ليوم واحد" : "الأسبوع كله"}
-      className={cx("hidden h-11 items-center rounded-full text-sm transition sm:inline-flex", view === "week" ? "bg-selected px-4 text-on-selected" : "-mb-2 text-text-3 hover:text-text")}>
-      <span className={cx("font-num me-1 font-semibold", view === "week" ? "text-on-selected" : "text-title")}>{weekLoaded ? two(weekRows.length) : "–"}</span> جلسات الأسبوع
-    </a>
-  );
+  // desktop title row: the week's count is the first stat and also the week-view link (marked while that view is on);
+  // «محتاجة قرار» is the second (gold, links to the undecided list); «النهارده» sits at the far end
+  const toggleWeek: Sel = { date, view: view === "week" ? "day" : "week" };
+  const stats: TitleStatData[] = [
+    { value: weekLoaded ? weekRows.length : "–", label: "جلسات الأسبوع", href: href(toggleWeek), onClick: select(toggleWeek), current: view === "week", title: view === "week" ? "رجوع ليوم واحد" : "الأسبوع كله" },
+    ...(undecided > 0 ? [{ value: undecided, label: "محتاجة قرار", highlight: true, href: "/hearings?filter=undecided" }] : []),
+  ];
   const todayLink = isCurrent ? null : (
     <a href={href({ date: today, view: "day" })} onClick={select({ date: today, view: "day" })}
-      className="-mb-2 hidden h-11 items-center text-sm font-semibold text-text hover:underline sm:inline-flex">النهارده</a>
+      className="tap hidden h-chip items-center rounded-full border border-border bg-chip px-3.75 text-sm font-semibold text-text shadow-soft transition hover:bg-card-2 sm:inline-flex">النهارده</a>
   );
   const eyebrow = view === "week"
     ? <>أسبوع {arDayMonth(wk)} – {arDayMonth(addDaysIso(wk, 6))}</>
@@ -223,7 +226,7 @@ export function RollDay({ today, from, to, rows, pill, side }: Props) {
 
   return (
     <>
-      <RollHeader eyebrow={eyebrow} title="الرول" action={<div className="flex items-end gap-3.5">{todayLink}{weekLink}{pill}</div>} />
+      <RollHeader eyebrow={eyebrow} title="الرول" stats={stats} action={todayLink || pill ? <div className="flex items-end gap-3.5 sm:items-center">{todayLink}{pill}</div> : null} />
 
       <RollStrip key={center} center={center} selected={view === "day" ? date : null} focusDay={view === "day" ? date : wk}
         today={today} counts={counts} pinned={pinned} onSelect={onSelect} onWeekStep={view === "week" ? onWeekStep : undefined} onVisible={onVisible} />

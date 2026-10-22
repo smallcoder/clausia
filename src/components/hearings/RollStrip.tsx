@@ -322,7 +322,7 @@ export function RollStrip({ center, selected, focusDay, today, counts, pinned, o
   const arrow = "glass glass-icon tap absolute top-1/2 z-10 hidden size-9 -translate-y-1/2 items-center justify-center rounded-full transition hover:text-text aria-disabled:cursor-default aria-disabled:text-text-4 aria-disabled:opacity-50 aria-disabled:hover:text-text-4 sm:inline-flex";
 
   return (
-    <div className="mt-4.5 leading-[normal] sm:mt-6.5">
+    <div className="mt-4.5 leading-[normal]">
       <div className="flex h-7 items-center justify-between gap-3 px-1 sm:px-2">
         <span className="text-sm text-text-3" data-roll-month>{arMonthYear(mid)}</span>
         {/* screen readers: the month in view and the selected day, announced politely when they change */}
