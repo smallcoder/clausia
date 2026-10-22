@@ -259,20 +259,23 @@
 @theme {
   --container-page: 1360px;        /* the 1280 page column (Cases, Case, Roll) plus its 40px side gutters; the top bar uses the same box */
   --container-narrow: 960px;       /* the Home and Chat column: 912 of content plus 24px side gutters; the top bar uses the same box */
-  --container-split: 1680px;       /* a chat thread with the paper panel open: two 1fr columns in 1600 plus 40px gutters; the top bar uses the same box */
   --container-composer: 780px;     /* the docked composer on inner pages and over a chat */
-  /* chat-first split layout (docs/design/split): one centered frame, the chat panel on the end side (the left in RTL), the page beside it */
-  --container-frame: 1760px;       /* the whole frame: chat + page, with 20px margins on a smaller screen */
-  --container-chat: 760px;         /* the chat panel at its widest */
-  --container-chat-min: 560px;     /* the chat panel at its narrowest (at 1440 it is this) */
+  /* chat-first split layout (docs/design/split): one centered frame; the top bar spans it; the chat panel on the end side (the left in RTL) and the page beside it, both under the bar */
+  --container-frame: 1600px;       /* the whole frame: top bar, chat and page, with 20px margins on a smaller screen */
+  --container-chat: 560px;         /* the chat panel at its widest */
+  --container-chat-min: 480px;     /* the chat panel at its narrowest (at 1440 it is this) */
   --container-messages: 720px;     /* the messages column, centered in the panel */
   --container-bubble: 88%;         /* a chat bubble's widest share of the column, on mobile */
   --container-bubble-sm: 72%;      /* the same on desktop */
 }
 
-/* the chat panel's width: the page shrinks first (it keeps 816px), then the chat goes from 760 down to 560 (at 1440 it is 560).
-   880 = the frame's two 20px margins + the 24px gap + the page's 816px. Below 1280 the chat is full screen and this is not used. */
-@utility chat-width { width: clamp(var(--container-chat-min), calc(100vw - 880px), var(--container-chat)); }
+/* the chat panel's width: the page shrinks first (it keeps 896px), then the chat goes from 560 down to 480 (at 1440 it is 480).
+   960 = the frame's two 20px margins + the 24px gap + the page's 896px. Below 1280 the chat is full screen and this is not used. */
+@utility chat-width { width: clamp(var(--container-chat-min), calc(100vw - 960px), var(--container-chat)); }
+/* under the 88px top bar: the chat panel starts 4px below it (top-23) and ends 20px above the screen's bottom (88 + 4 + 20 = 112px = 7rem);
+   the page column fills what is left under the bar (5.5rem = 88px) */
+@utility chat-height { height: calc(100dvh - 7rem); }
+@utility page-min-height { min-height: calc(100dvh - 5.5rem); }
 /* the top bar's brief label shows only when the page column has room for it (a 1920 screen and wider) */
 @theme { --breakpoint-3xl: 120rem; }
 
