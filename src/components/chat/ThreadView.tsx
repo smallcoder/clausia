@@ -1,6 +1,8 @@
 import "server-only";
 /** Server part of a session: loads the visible messages, their cards, the thread's papers and the names the cards need. */
 import { buildProposalLookup } from "@/lib/assistant/lookup";
+import { loadCardRows } from "@/lib/pending-edits";
+import type { EditRow } from "@/lib/edits";
 import { loadDeadlineCards, type DeadlineCardEntry } from "@/lib/deadlines/cards";
 import { DOC_TYPE } from "@/lib/labels";
 import type { Proposal } from "@/lib/proposals";
@@ -11,6 +13,8 @@ export interface ThreadData {
   items: ChatItem[];
   proposals: Proposal[];
   lookup: Record<string, string>;
+  /** «old ← new» lines of the change ops in the cards, by `proposalId:opId` (src/lib/edits.ts) */
+  rows: Record<string, EditRow[]>;
   /** the deadlines cards' data by proposal id (empty with the flag off) */
   deadlines: Record<string, DeadlineCardEntry>;
   docs: Record<string, ThreadDoc>;
@@ -44,6 +48,7 @@ export async function loadThread(db: Db, threadId: string): Promise<ThreadData> 
   }
   const lookup = await buildProposalLookup(db, proposals);
   const deadlines = await loadDeadlineCards(db, proposals);
+  const editRows = await loadCardRows(db, proposals);
 
   const docs: Record<string, ThreadDoc> = {};
   for (const d of docRows ?? []) {
@@ -91,6 +96,7 @@ export async function loadThread(db: Db, threadId: string): Promise<ThreadData> 
     items: visible,
     proposals,
     lookup,
+    rows: editRows,
     deadlines,
     docs,
     stats: {

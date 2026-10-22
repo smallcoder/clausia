@@ -17,9 +17,11 @@ import { useEffect, useState, useTransition } from "react";
 import { Check, ChevronDown, FolderClosed, X } from "lucide-react";
 import { useCite, type CiteSource } from "@/components/cite/context";
 import { SourceChip, SourceLabel } from "@/components/cite/SourceChip";
+import { Was } from "@/components/cases/Suggest";
 import { cx } from "@/components/ui";
 import { decideProposalAction } from "@/lib/assistant/actions";
 import { CASE_STATUS, DECISION, DOC_TYPE, PARTY_ROLE, STAGE } from "@/lib/labels";
+import { editsLabel, type EditRow } from "@/lib/edits";
 import type { Proposal, ProposalOp } from "@/lib/proposals";
 import { relativeDayText } from "@/lib/relative-days";
 import { OP_FIELDS, OP_TITLE, type FieldSpec } from "@/lib/tools/registry";
@@ -101,7 +103,11 @@ function relativeNotes(o: ProposalOp, values: Record<string, unknown>): Record<s
   return out;
 }
 
-function titleOf(p: Proposal): string {
+/** The new items the case page shows as a row waiting for the lawyer (the other ops of an «edit» card). */
+const PAGE_ADDS = ["add_fact", "add_hearing", "add_party", "add_request", "add_argument"];
+
+function titleOf(p: Proposal, edit = false): string {
+  if (edit) return "هعدّل في القضية دي";
   const has = (t: ProposalOp["tool"]) => p.ops.some((o) => o.tool === t);
   if (has("create_case")) return "ملف قضية جديد";
   if (has("create_client")) return "موكل جديد";
@@ -111,7 +117,11 @@ function titleOf(p: Proposal): string {
   return "بطاقة تأكيد";
 }
 
-export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Proposal; lookup?: Record<string, string> }) {
+export function ProposalCard({ proposal: initial, lookup = {}, rows = {} }: {
+  proposal: Proposal; lookup?: Record<string, string>;
+  /** «old ← new» lines of the change ops (src/lib/edits.ts), by `proposalId:opId`; worked out on the server from what is saved now */
+  rows?: Record<string, EditRow[]>;
+}) {
   const router = useRouter();
   const [p, setP] = useState(initial);
   const [edits, setEdits] = useState<Edits>({});
@@ -141,6 +151,11 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
   const createdCase = p.ops.find((o) => o.tool === "create_case" && o.result_id && (o.status === "confirmed" || o.status === "suggested"));
   const caseLink = createdCase?.result_id ?? (p.status !== "pending" ? p.case_id : null);
   const newCase = p.ops.some((o) => o.tool === "create_case");
+  // an «edit» card: changes to what is saved (old ← new) and new rows, all of which the case page shows too
+  const rowsOf = (o: ProposalOp) => rows[`${p.id}:${o.op_id}`] ?? [];
+  const editCard = !!p.case_id && openOps.some((o) => rowsOf(o).length > 0) && openOps.every((o) => rowsOf(o).length > 0 || PAGE_ADDS.includes(o.tool));
+  const editCount = chosen.reduce((n, o) => n + (rowsOf(o).length || 1), 0);
+  const pageHref = p.case_id ? `/cases/${p.case_id}?sheet=1${p.thread_id ? `&s=${p.thread_id}` : ""}` : null;
 
   function decide(mode: Mode, opIds: string[]) {
     if (!opIds.length) return;
@@ -282,7 +297,7 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
             <FolderClosed aria-hidden size={18} strokeWidth={2} />
           </span>
           <div className="min-w-0 flex-1">
-            <p id={inSheet ? `sheet-title-${p.id}` : undefined} className="text-md font-bold leading-[normal] text-title">{titleOf(p)}</p>
+            <p id={inSheet ? `sheet-title-${p.id}` : undefined} className="text-md font-bold leading-[normal] text-title">{titleOf(p, editCard)}</p>
             <p className="mt-0.5 text-xs leading-[normal] text-text-3">
               {openOps.length ? <><span className="font-num">{itemsLabel(p.ops.length)}</span> · مش هيتحفظ حاجة قبل ما تأكد</> : decisionSummary(p)}
             </p>
@@ -318,12 +333,25 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
               <li key={o.op_id} className={cx("not-first:border-t not-first:border-border-2", o.status === "rejected" && "opacity-55", limit && i >= MOBILE_ROWS && "lg:block hidden", cite && active?.id === cite.id && "bg-gold-bg")}>
                 {/* kind · value (+ fact quote) · source · check — the mockup's hairline row */}
                 <div className="flex items-start gap-3.5 px-4 py-3.25 sm:px-5.5">
-                  <span className="w-14.5 shrink-0 pt-0.5 text-xs leading-[normal] text-text-4 sm:w-18">{kindOf(o)}</span>
+                  {live && rowsOf(o).length ? null : <span className="w-14.5 shrink-0 pt-0.5 text-xs leading-[normal] text-text-4 sm:w-18">{kindOf(o)}</span>}
                   <div className="min-w-0 flex-1">
                     <button type="button" onClick={() => toggle(o.op_id)} aria-expanded={isOpen} title={isOpen ? "اقفل التفاصيل" : "اعرض التفاصيل"} className="block w-full text-start">
+                      {live && rowsOf(o).length ? (
+                        /* the mockup's lines: the field's name, then «old (struck) ← new (gold)»; a value with no old is plain */
+                        <span className="block space-y-1.5">
+                          {rowsOf(o).map((r) => (
+                            <span key={r.key} className="block">
+                              <span className="block text-sm leading-[1.5] text-text-3">{r.label}</span>
+                              <span className="block text-base font-semibold leading-[1.5] text-text">
+                                {r.old ? <><Was>{r.old}</Was> <span aria-hidden className="font-normal text-text-3">←</span> <b className="font-bold text-gold">{r.new}</b></> : r.new}
+                              </span>
+                            </span>
+                          ))}
+                        </span>
+                      ) : (
                       <span className={cx("block text-base font-semibold leading-[1.5] text-text", !isOpen && "line-clamp-2")}>
                         {summaryOf({ ...o, args: merged }, lookup) || OP_TITLE[o.tool]}
-                      </span>
+                      </span>)}
                       {factQuote && !isOpen ? <span className="text-doc mt-0.75 line-clamp-2 block text-sm leading-[1.8]! text-text-3">«{factQuote}»</span> : null}
                       {!isOpen ? Object.entries(notes).map(([k, n]) => <span key={k} className="mt-0.75 block text-sm font-semibold leading-[normal] text-text-2">{n}</span>) : null}
                     </button>
@@ -420,11 +448,13 @@ export function ProposalCard({ proposal: initial, lookup = {} }: { proposal: Pro
               <div className="flex gap-2">
                 <button type="button" disabled={pending || !chosen.length} onClick={() => decide("confirm", chosen.map((o) => o.op_id))}
                   className="bg-primary-fill h-11 min-w-0 flex-1 truncate rounded-full px-5 text-base font-bold transition disabled:opacity-50">
-                  {pending ? "بحفظ…" : <>{newCase ? "احفظ الملف" : "احفظ"} · <span className="font-num">{itemsLabel(chosen.length)}</span></>}
+                  {pending ? "بحفظ…" : editCard ? <>أكّد · <span className="font-num">{editsLabel(editCount)}</span></> : <>{newCase ? "احفظ الملف" : "احفظ"} · <span className="font-num">{itemsLabel(chosen.length)}</span></>}
                 </button>
                 {/* mobile: opens the sheet with every open row expanded; desktop (and inside the sheet): expands / collapses the rows */}
+                {/* an edit card on a phone / tablet (the page opens as a sheet, below 1280): «شوف في الصفحة» — the highlights */}
+                {editCard && !inSheet && pageHref ? <Link href={pageHref} className={cx(btn2, "xl:hidden")}>شوف في الصفحة</Link> : null}
                 <button type="button" disabled={pending}
-                  onClick={() => editSomething(!inSheet && !window.matchMedia("(min-width: 1024px)").matches)} className={btn2}>
+                  onClick={() => editSomething(!inSheet && !window.matchMedia("(min-width: 1024px)").matches)} className={cx(btn2, editCard && !inSheet && "max-xl:hidden")}>
                   {inSheet ? (more ? "اقفل" : "عدّل") : (
                     <><span className="lg:hidden">عدّل</span><span className="hidden lg:inline">{more ? "اقفل" : "عدّل"}</span></>
                   )}
