@@ -1,7 +1,8 @@
 // Side by side: mockup (left) next to the real screen (right) → screenshots/compare/<Mockup>.png
 // Also the next-batch pairs (docs/design/next, 1920x1080) → screenshots/compare/next/<Mockup>.png
 // Needs the app running. Run: npx tsx --env-file=.env.local scripts/compare-shots.ts [baseUrl]
-// ONLY=Roll,Case limits the screens; ONLY=next runs just the next-batch pairs; NEXT=0 skips them.
+// ONLY=Roll,Case limits the screens; ONLY=next runs just the next-batch pairs (and the case's documents view, app only);
+// ONLY=docs runs just that view; NEXT=0 skips them.
 // Mockups are rendered from docs/design/*.dc.html (support.js fills the templates).
 import { chromium, type Browser } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
@@ -110,6 +111,10 @@ async function main() {
   // desktop at 1440 and 1920 (mockups are 1440 wide), mobile at 390; ONLY=Roll,Case limits the screens
   const only = process.env.ONLY?.split(",");
   if (process.env.NEXT !== "0" && (!only || only.includes("next"))) await shootNext(browser);
+  // a case's documents view has no mockup yet: the app alone, at 1440 / 1920 / 390, light and dark → screenshots/compare/next/Docs*.png
+  if (process.env.NEXT !== "0" && (!only || only.includes("next") || only.includes("docs")))
+    for (const dark of [false, true]) for (const [width, mobile] of [[1440, false], [1920, false], [390, true]] as const)
+      await shootApp(browser, `/cases/${caseId}?tab=documents`, mobile, dark, resolve(`screenshots/compare/next/Docs${dark ? "Dark" : "Light"}-${width}.png`), width);
   const shots: { mobile: boolean; width: number }[] = [{ mobile: false, width: 1440 }, { mobile: false, width: 1920 }, { mobile: true, width: 390 }];
   for (const [screen, path] of Object.entries(routes)) {
     if (only && !only.includes(screen)) continue;
