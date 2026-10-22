@@ -7,13 +7,14 @@
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { SourceChip } from "@/components/cite/SourceChip";
 import { SegBar, Seg, TabScope } from "@/components/cases/CaseTabs";
 import { SheetEditText, SheetReview, TapItem } from "@/components/cases/ItemSheet";
 import { pagesLabel } from "@/components/documents/DocThumb";
 import type { CaseFile } from "@/lib/case-file";
 import { formatDayLabel, formatDmy } from "@/lib/dates";
 import {
-  MONTHS, READ_SHORT, agoLabel, daysBetween, docName, factDate, partyRows, pendingHref, pendingWords, shortDmy, sourceText,
+  MONTHS, READ_SHORT, aboutItem, agoLabel, citeOf, daysBetween, docName, factDate, partyRows, pendingHref, pendingWords, shortDmy, sourceText,
   summarySegments, untilLabel, type HearingState,
 } from "@/components/cases/case-view";
 
@@ -41,10 +42,15 @@ function pendingOf<T>(cf: CaseFile, table: string): T[] {
 }
 
 /** Source + quote block inside a sheet. Quoted court / document text is verbatim, in Naskh. */
-function SheetSource({ cf, item }: { cf: CaseFile; item: { review_status: string; created_by: string; source: CaseFile["facts"][number]["source"] } }) {
+function SheetSource({ cf, item, about }: { cf: CaseFile; item: { id: string; review_status: string; created_by: string; source: CaseFile["facts"][number]["source"] }; about: string }) {
+  // a paper source is a chip that opens the paper at the sentence (the sheet closes first); other sources stay a word
+  const cite = citeOf(`item:${item.id}`, item.source, cf.documents, about);
   return (
     <div className="space-y-1.5 rounded-md bg-card-2 px-4 py-3 text-sm text-text-3">
-      <p>{sourceText(item.source, cf.documents)} · {item.review_status === "suggested" ? "مقترحة، لسه ما اتأكدتش" : "مؤكدة"} · {item.created_by === "model" ? "صاغها Clausia" : "كتبها المحامي"}</p>
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        {cite ? <SourceChip cite={cite} /> : sourceText(item.source, cf.documents)}
+        <span>· {item.review_status === "suggested" ? "مقترحة، لسه ما اتأكدتش" : "مؤكدة"} · {item.created_by === "model" ? "صاغها Clausia" : "كتبها المحامي"}</span>
+      </p>
       {item.source.quote ? <p className="text-doc text-base text-text-2">«{item.source.quote}»</p> : null}
       {item.source.document_id ? <a href={`/api/documents/${item.source.document_id}`} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center font-semibold text-text-2 underline-offset-4 hover:underline">فتح المستند</a> : null}
     </div>
@@ -101,6 +107,7 @@ function ReviewBanner({ cf, hs, caseId, className }: { cf: CaseFile; hs: Hearing
 
 function FactRow({ f, last, cf }: { f: Fact; last: boolean; cf: CaseFile }) {
   const suggested = f.review_status === "suggested";
+  const cite = citeOf(`item:${f.id}`, f.source, cf.documents, aboutItem("واقعة", `${factDate(f.date, f.date_precision)} · ${f.text}`));
   const dated = f.date && f.date_precision !== "unknown";
   return (
     <span className="flex gap-3.5">
@@ -114,7 +121,8 @@ function FactRow({ f, last, cf }: { f: Fact; last: boolean; cf: CaseFile }) {
       <span className="min-w-0 flex-1 pb-4.5">
         <span className="text-doc block text-md text-text" style={{ lineHeight: 1.9 }}>{f.text}</span>
         <span className="mt-0.5 flex flex-wrap items-center gap-2">
-          <span className="text-xs text-text-4">{sourceText(f.source, cf.documents)}{suggested ? "" : " · مؤكدة"}</span>
+          {cite ? <SourceChip cite={cite} className="z-10" /> : <span className="text-xs text-text-4">{sourceText(f.source, cf.documents)}</span>}
+          {suggested ? null : <span className="text-xs text-text-4">{cite ? "· " : ""}{cite ? "مؤكدة" : "· مؤكدة"}</span>}
           {suggested ? <Suggested /> : null}
         </span>
       </span>
@@ -145,7 +153,7 @@ function Facts({ cf, caseId }: { cf: CaseFile; caseId: string }) {
             <TapItem key={f.id} id={f.id} title="واقعة" tight className="rounded-md px-1.5 lg:px-2" row={<FactRow f={f} last={i === all.length - 1} cf={cf} />}>
               <p className="font-num text-sm font-bold text-title">{factDate(f.date, f.date_precision)}{f.date_text && f.date_text !== factDate(f.date, f.date_precision) ? <span className="font-sans font-normal text-text-4"> · «{f.date_text}»</span> : null}</p>
               <p className="text-doc text-lg text-text">{f.text}</p>
-              <SheetSource cf={cf} item={f} />
+              <SheetSource cf={cf} item={f} about={aboutItem("واقعة", `${factDate(f.date, f.date_precision)} · ${f.text}`)} />
               {f.review_status === "suggested" ? <SheetReview table="case_facts" id={f.id} caseId={caseId} /> : null}
               <SheetEditText table="case_facts" id={f.id} caseId={caseId} initial={f.text} />
             </TapItem>
@@ -167,7 +175,7 @@ function TextItem({ cf, caseId, table, item, kindLabel }: { cf: CaseFile; caseId
       row={<span className="block text-base leading-[1.7] text-text">{item.text}{suggested ? <span className="ms-2 inline-block"><Suggested /></span> : null}</span>}>
       {kindLabel ? <p className="text-sm font-bold text-text-3">{kindLabel}</p> : null}
       <p className="text-doc text-lg text-text">{item.text}</p>
-      <SheetSource cf={cf} item={item} />
+      <SheetSource cf={cf} item={item} about={aboutItem(table === "case_requests" ? "طلب" : "دفع", item.text)} />
       {suggested ? <SheetReview table={table} id={item.id} caseId={caseId} /> : null}
       <SheetEditText table={table} id={item.id} caseId={caseId} initial={item.text} />
     </TapItem>
@@ -328,7 +336,7 @@ function Parties({ cf, caseId }: { cf: CaseFile; caseId: string }) {
               </div>
               {r.party.representative ? <p className="text-base text-text-2">يمثله: {r.party.representative}</p> : null}
               {r.party.notes ? <p className="text-base text-text-2">{r.party.notes}</p> : null}
-              <SheetSource cf={cf} item={r.party} />
+              <SheetSource cf={cf} item={r.party} about={aboutItem("طرف", r.name)} />
               {r.suggested ? <SheetReview table="case_parties" id={r.id} caseId={caseId} /> : null}
             </TapItem>
           ) : <div key={`rep-${i}`}>{line(r.name, r.role)}</div>)}

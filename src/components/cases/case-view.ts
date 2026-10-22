@@ -2,6 +2,7 @@
  * Pure helpers for the case page (docs/design/*Case.dc.html). Everything here is derived from real case data —
  * no guessing: a missing value gives a shorter sentence, never an invented one.
  */
+import type { CiteSource } from "@/components/cite/context";
 import type { CaseFile, Provenance } from "@/lib/case-file";
 import { formatDmy, type DatePrecision } from "@/lib/dates";
 import { DOC_TYPE, PARTY_ROLE, STAGE, caseLabel } from "@/lib/labels";
@@ -147,6 +148,21 @@ export function sourceText(src: Provenance["source"], docs: Doc[]): string {
   }
   if (src.kind === "chat") return "من رسالتك";
   return "إدخال يدوي";
+}
+
+/**
+ * What a paper source chip needs to open the panel on the sentence: null unless the item came from a paper.
+ * `id` is unique per item; `about` names the item (the panel's footer line).
+ */
+export function citeOf(id: string, src: Provenance["source"], docs: Doc[], about: string | null): CiteSource | null {
+  if (src.kind !== "document" || !src.document_id) return null;
+  return { id, documentId: src.document_id, page: src.page ?? 1, start: src.char_start, end: src.char_end, quote: src.quote, label: sourceText(src, docs), about };
+}
+
+/** a short «kind · text» for the panel's footer */
+export function aboutItem(kind: string, text: string, max = 60): string {
+  const t = text.replace(/\s+/g, " ").trim();
+  return `${kind} · ${t.length > max ? `${t.slice(0, max)}…` : t}`;
 }
 
 export function statusTone(s: string): "good" | "warn" | "neutral" {

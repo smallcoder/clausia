@@ -38,6 +38,18 @@ export interface HearingRow {
   created_by_kind: E["actor_kind"];
   source_kind: E["source_kind"];
   source_page: number | null;
+  /** the paper the hearing came from, the sentence and where it sits in the page (null for older rows) */
+  source_document_id: string | null;
+  source_quote: string | null;
+  source_char_start: number | null;
+  source_char_end: number | null;
+  /** the same for the DECISION, which has its own source (a hearing can be created by one paper and decided by another) */
+  decision_source_kind: E["source_kind"] | null;
+  decision_source_document_id: string | null;
+  decision_source_page: number | null;
+  decision_source_quote: string | null;
+  decision_source_char_start: number | null;
+  decision_source_char_end: number | null;
 }
 
 export interface HearingWithCase extends HearingRow {
@@ -47,7 +59,7 @@ export interface HearingWithCase extends HearingRow {
 }
 
 const HEARING_COLS =
-  "id, case_id, hearing_date, purpose, location, decision_type, decision_text, next_requirements, previous_hearing_id, next_hearing_id, review_status, created_by_kind, source_kind, source_page";
+  "id, case_id, hearing_date, purpose, location, decision_type, decision_text, next_requirements, previous_hearing_id, next_hearing_id, review_status, created_by_kind, source_kind, source_page, source_document_id, source_quote, source_char_start, source_char_end, decision_source_kind, decision_source_document_id, decision_source_page, decision_source_quote, decision_source_char_start, decision_source_char_end";
 const WITH_CASE = `${HEARING_COLS}, cases!inner(id, case_number, case_year, title, court, circuit, client_role, status, case_type, clients(name))`;
 
 type RawCase = Omit<HearingCase, "client_name"> & { clients: { name: string } | null };

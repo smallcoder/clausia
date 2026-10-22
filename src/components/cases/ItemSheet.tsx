@@ -5,10 +5,9 @@
  * `#item-<id>` in the URL opens it too (the hero's «محتاجة مراجعة» tile links there).
  */
 import { X } from "lucide-react";
-import { createContext, useActionState, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { useActionState, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { editItemText, reviewItem } from "@/app/(app)/cases/actions";
-
-const CloseCtx = createContext<() => void>(() => {});
+import { SheetCloseCtx } from "@/components/cite/context";
 
 /** `tight`: no 44px minimum, the row is exactly as tall as the mockup draws it (fact timeline, لنا / ضدنا lines). */
 export function TapItem({ id, title, row, children, className = "", tight = false }: { id: string; title: string; row: ReactNode; children: ReactNode; className?: string; tight?: boolean }) {
@@ -25,15 +24,18 @@ export function TapItem({ id, title, row, children, className = "", tight = fals
 
   return (
     <div id={`item-${id}`} className="scroll-mt-24">
-      <button type="button" onClick={() => ref.current?.showModal()} aria-haspopup="dialog"
-        className={`block ${tight ? "" : "min-h-11"} w-full cursor-pointer text-start transition-colors hover:bg-card-2/60 focus-visible:bg-card-2/60 ${className}`}>
-        {row}
-      </button>
+      {/* the whole row opens the sheet through a button stretched over it (named by the row's own text), so a row can
+          hold buttons of its own — the source chip — without nesting one button in another; the chip sits above it (z-10) */}
+      <div className={`relative ${tight ? "" : "min-h-11"} w-full text-start transition-colors hover:bg-card-2/60 has-focus-visible:bg-card-2/60 ${className}`}>
+        <div id={`row-${id}`}>{row}</div>
+        <button type="button" onClick={() => ref.current?.showModal()} aria-haspopup="dialog" aria-labelledby={`row-${id}`}
+          className="absolute inset-0 size-full cursor-pointer rounded-[inherit]" /* ds-allow: the stretched button takes its row's radius */ />
+      </div>
       <dialog ref={ref} aria-label={title}
         onClick={(e) => { if (e.target === e.currentTarget) close(); }}
         onClose={() => { if (window.location.hash === hash) history.replaceState(null, "", window.location.pathname + window.location.search); }}
         className="sheet-enter fixed inset-x-0 bottom-0 top-auto m-0 max-h-[85dvh] w-full max-w-none overflow-y-auto rounded-t-xl border border-border bg-card p-0 text-text shadow-pop backdrop:bg-backdrop sm:[animation:fade-in_180ms_ease-out] sm:inset-y-0 sm:start-auto sm:end-0 sm:h-dvh sm:max-h-none sm:w-105 sm:rounded-none sm:rounded-s-xl" /* ds-allow: dvh: the sheet is at most 85% of the visible screen */>
-        <CloseCtx.Provider value={close}>
+        <SheetCloseCtx.Provider value={close}>
           <div className="px-5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-4" /* ds-allow: safe-area inset needs calc() */>
             <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-border sm:hidden" aria-hidden />
             <div className="flex items-center justify-between gap-3">
@@ -45,7 +47,7 @@ export function TapItem({ id, title, row, children, className = "", tight = fals
             </div>
             <div className="mt-4 space-y-4">{children}</div>
           </div>
-        </CloseCtx.Provider>
+        </SheetCloseCtx.Provider>
       </dialog>
     </div>
   );
@@ -57,7 +59,7 @@ function Hidden({ v }: { v: Record<string, string> }) {
 
 /** Confirm / reject a suggested item; closes the sheet on tap. */
 export function SheetReview({ table, id, caseId }: { table: string; id: string; caseId: string }) {
-  const close = useContext(CloseCtx);
+  const close = useContext(SheetCloseCtx);
   const base = { table, id, case_id: caseId };
   return (
     <div className="flex gap-2">
@@ -75,7 +77,7 @@ export function SheetReview({ table, id, caseId }: { table: string; id: string; 
 
 /** Edit the item's text (facts / requests / arguments). Provenance stays as is (see editItemText). */
 export function SheetEditText({ table, id, caseId, initial }: { table: string; id: string; caseId: string; initial: string }) {
-  const close = useContext(CloseCtx);
+  const close = useContext(SheetCloseCtx);
   const [editing, setEditing] = useState(false);
   const [state, action, pending] = useActionState(editItemText, null);
   useEffect(() => { if (state?.ok) { setEditing(false); close(); } }, [state, close]);
