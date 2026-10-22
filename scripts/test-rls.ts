@@ -10,6 +10,8 @@ import { confirmCell, editCell, removeColumn, renameColumn } from "../src/lib/do
 import { dismissReminder, dueReminders, setBriefReminder, undoReminder } from "../src/lib/brief/reminders";
 import { remindInstant } from "../src/lib/brief/time";
 import { moveThreadToCase } from "../src/lib/threads";
+import { createProposal, decideProposal } from "../src/lib/proposals";
+import { loadCardRows, loadPendingEdits } from "../src/lib/pending-edits";
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
@@ -338,6 +340,38 @@ const rows = (r: { data: { id: string }[] | null }) => r.data ?? [];
     if (madeA.length) await A.from("chat_threads").delete().in("id", madeA);
     if (madeB.length) await B.from("chat_threads").delete().in("id", madeB);
   }
+}
+
+// ---------- the edit highlights (split layout PR 2): a case page reads only ITS OWN case's open proposals ----------
+{
+  const { data: cases2 } = await A.from("cases").select("id, court").limit(2);
+  const mine = cases2?.[0];
+  const mineOther = cases2?.[1];
+  const made: string[] = [];
+  if (mine && mineOther) {
+    try {
+      const NEW = "محكمة اختبار الظهور";
+      const p = await createProposal(A as unknown as Db, { caseId: mine.id, ops: [{ tool: "update_case", args: { case: mine.id, court: NEW, quote: NEW }, source: { kind: "chat" } }], sourceTexts: [NEW] });
+      made.push(p.id);
+      const cfA = await getCaseFile(A as unknown as Db, mine.id);
+      const own = await loadPendingEdits(A as unknown as Db, mine.id, cfA);
+      check("edits: the case page reads its own open proposal", own.groups.some((g) => g.proposalId === p.id) && own.casePatch?.court === NEW, JSON.stringify(own.groups));
+      const cfOther = await getCaseFile(A as unknown as Db, mineOther.id);
+      const other = await loadPendingEdits(A as unknown as Db, mineOther.id, cfOther);
+      check("edits: ANOTHER case of the same office does not show it", !other.groups.some((g) => g.proposalId === p.id) && other.casePatch?.court !== NEW);
+      // the outsider: sees no proposal, gets no old values, cannot decide it
+      const { data: bSees } = await B.from("proposals").select("id").eq("id", p.id);
+      check("edits: OTHER cannot read the proposal", (bSees?.length ?? 0) === 0);
+      const rowsB = await loadCardRows(B as unknown as Db, [p]);
+      check("edits: OTHER gets no old → new lines (the case row is invisible to it)", Object.values(rowsB).every((r) => r.length === 0), JSON.stringify(rowsB));
+      let decideErr = "";
+      try { await decideProposal(B as unknown as Db, p.id, { mode: "confirm" }); } catch (e) { decideErr = e instanceof Error ? e.message : String(e); }
+      const { data: still } = await A.from("cases").select("court").eq("id", mine.id).single();
+      check("edits: OTHER cannot confirm it, nothing saved", decideErr !== "" && still?.court === (cases2?.[0] as { court: string | null }).court, decideErr);
+    } finally {
+      if (made.length) await A.from("proposals").delete().in("id", made);
+    }
+  } else check("A has two cases to test the edit highlights", false);
 }
 
 console.log(failed ? `\n${failed} check(s) FAILED` : "\nall checks passed");
