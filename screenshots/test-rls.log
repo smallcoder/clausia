@@ -13,7 +13,7 @@ PASS  OTHER reads 0 rows of office A: document_pages  (A has 6; B got 0)
 PASS  OTHER reads 0 rows of office A: proposals  (A has 14; B got 0)
 PASS  OTHER reads 0 rows of office A: chat_threads  (A has 22; B got 0)
 PASS  OTHER reads 0 rows of office A: chat_messages  (A has 81; B got 0)
-PASS  OTHER reads 0 rows of office A: llm_calls  (A has 676; B got 0)
+PASS  OTHER reads 0 rows of office A: llm_calls  (A has 697; B got 0)
 PASS  OTHER reads 0 rows of office A: doc_columns  (A has 0; B got 0)
 PASS  OTHER reads 0 rows of office A: doc_column_cells  (A has 0; B got 0)
 PASS  OTHER cannot read an office-A case by id

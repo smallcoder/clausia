@@ -26,6 +26,15 @@ PASS  a number that is not in the quote (700) → «مش مذكور»
 PASS  a date that is only part of another date (5/3/2024 in 15/3/2024) → «مش مذكور»
 PASS  the same date written in full is kept
 PASS  «2,500» in the quote and «2500» in the answer are the same number
+PASS  a name that is not in the quote («وليد التجريبي يدفع …») → «مش مذكور»  (في الإجابة كلمة أو اسم مش مكتوب في الاقتباس، فما اعتمدتش الإجابة.)
+PASS  a swapped month («15 أبريل» for «15 مارس») → «مش مذكور»  (في الإجابة شهر مش هو اللي في الاقتباس، فما اعتمدتش الإجابة.)
+PASS  the same month, written in full, is kept
+PASS  the Levant spelling of the same month (آذار = مارس) is kept
+PASS  …and the Levant spelling of another month (نيسان = أبريل) is refused
+PASS  a one-word quote («غرامة») → «مش مذكور»  (الاقتباس أقل من 4 كلمات، فما اعتمدتش الإجابة.)
+PASS  4 words are enough, 3 are not
+PASS  a general phrase whose words are not in the quote («شرط جزائي») → «مش مذكور»
+PASS  «الغرامة» and «بغرامة» are the same word
 PASS  an impossible page number is fixed from where the quote is
 PASS  an answer built on a line that talks to the AI → «مش مذكور» + a note  (الإجابة مبنية على سطر شكله تعليمات موجهة لـ Clausia، فتجاهلتها.)
 PASS  no / broken answer → «مش مذكور»
@@ -43,6 +52,8 @@ PASS  the chat model's tool list does not offer them
 PASS  the card is stored: no thread, pending, one column + one cell per paper
 PASS  the answer cell keeps its verified quote and span; the «مش مذكور» cell has none
 PASS  nothing is saved before the tap
+[proposals] verified quote with no span (op 2 add_doc_cell, document f052f32e-4a79-4743-86e1-b9e661323e9d, page 2)
+PASS  a quote that is on another paper of the case, not on its own, is not verified
 PASS  confirm saves every op
 PASS  the column is saved as confirmed, drafted by the model
 PASS  the answer cell has the answer, the page and the paper
@@ -50,7 +61,7 @@ PASS  its saved span reads as its saved quote on the page
 PASS  the «مش مذكور» cell has no answer and no source
 PASS  one cell per paper per column (a duplicate is refused)
 PASS  an answer with no page and quote is refused by the table
-[proposals] save of be0182dc-9fbe-4b60-a1e6-7b5a53263e4f undone: خانة في العمود: المستند ده مش من نفس دعوى العمود
+[proposals] save of de1d418b-c60b-4231-9a9f-ef14324685ca undone: خانة في العمود: المستند ده مش من نفس دعوى العمود
 PASS  a cell of another case's paper fails the whole card  (ماتحفظش حاجة من البطاقة: «خانة في العمود» ما اتحفظش. البطاقة زي ما هي،)
 PASS  …and the column and the cells already applied were undone
 PASS  …the card stays as it was, the failing op marked  (pending,pending,pending,failed)
