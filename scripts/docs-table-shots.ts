@@ -118,7 +118,7 @@ async function open(browser: Browser, caseId: string, mobile: boolean, dark: boo
   const page = await ctx.newPage();
   const url = `${BASE}/cases/${caseId}?tab=documents`;
   try { await page.goto(url, { waitUntil: "domcontentloaded", timeout: 90_000 }); } catch { await page.goto(url, { waitUntil: "domcontentloaded", timeout: 120_000 }); }
-  await page.waitForSelector(OFF ? "h1" : '[role="table"]', { timeout: 60_000 });
+  await page.waitForSelector(OFF ? "h1:has-text(\"مستندات القضية\")" : '[role="table"]', { timeout: 60_000 });
   await page.waitForTimeout(900);
   return { ctx, page };
 }

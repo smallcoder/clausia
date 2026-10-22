@@ -9,3 +9,11 @@ npm run dev
 ```
 
 Docs: docs/data-model.md, docs/tools.md, docs/screens.md
+
+## Feature flags
+
+A flag is an env var, default OFF (only `1` turns it on), read on the server in `src/lib/flags.ts`.
+
+| Flag | What it shows | Before turning it on |
+|---|---|---|
+| `NEXT_PUBLIC_FEATURE_DOCS_TABLE=1` | The case documents table and «+ عمود جديد» (`?tab=documents`, PR #60) | **Issue #61 must be merged first**: a saved custom column has to be editable and removable (removing asks for a confirm). Off, the documents view is the paper grid with the per-paper panels. |

@@ -50,7 +50,7 @@ PASS  its saved span reads as its saved quote on the page
 PASS  the «مش مذكور» cell has no answer and no source
 PASS  one cell per paper per column (a duplicate is refused)
 PASS  an answer with no page and quote is refused by the table
-[proposals] save of 456c3a1c-ec2b-455b-aed6-2fdb6ea18f28 undone: خانة في العمود: المستند ده مش من نفس دعوى العمود
+[proposals] save of be0182dc-9fbe-4b60-a1e6-7b5a53263e4f undone: خانة في العمود: المستند ده مش من نفس دعوى العمود
 PASS  a cell of another case's paper fails the whole card  (ماتحفظش حاجة من البطاقة: «خانة في العمود» ما اتحفظش. البطاقة زي ما هي،)
 PASS  …and the column and the cells already applied were undone
 PASS  …the card stays as it was, the failing op marked  (pending,pending,pending,failed)
