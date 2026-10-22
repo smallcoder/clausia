@@ -185,6 +185,7 @@ if (caseId) {
   check("OTHER getCaseFile on office-A case fails", /not found/.test(otherErr), otherErr || "returned data!");
 }
 
+const rows = (r: { data: { id: string }[] | null }) => r.data ?? [];
 // ---------- chat sessions: hearing_id and «move to a case» (chat-first split layout) ----------
 {
   const { data: ownCases } = await A.from("cases").select("id").limit(2);
@@ -215,14 +216,14 @@ if (caseId) {
 
       // OTHER cannot point its own session at office A's case or hearing (a foreign key alone would accept the id)
       const e1 = await B.from("chat_threads").insert({ case_id: caseId, title: "اختراق" }).select("id");
-      if (e1.data?.length) madeB.push(...e1.data.map((r) => r.id));
-      check("OTHER cannot create a session on an office-A case", !!e1.error && !e1.data?.length, e1.error?.message ?? "inserted!");
+      madeB.push(...rows(e1).map((r) => r.id));
+      check("OTHER cannot create a session on an office-A case", !!e1.error && !rows(e1).length, e1.error?.message ?? "inserted!");
       const e2 = await B.from("chat_threads").insert({ hearing_id: hs!.id, title: "اختراق" }).select("id");
-      if (e2.data?.length) madeB.push(...e2.data.map((r) => r.id));
-      check("OTHER cannot create a session on an office-A hearing", !!e2.error && !e2.data?.length, e2.error?.message ?? "inserted!");
+      madeB.push(...rows(e2).map((r) => r.id));
+      check("OTHER cannot create a session on an office-A hearing", !!e2.error && !rows(e2).length, e2.error?.message ?? "inserted!");
       if (tB) {
         const e3 = await B.from("chat_threads").update({ case_id: caseId }).eq("id", tB.id).select("id");
-        check("OTHER cannot move its own session to an office-A case (the database refuses)", !!e3.error && !e3.data?.length, e3.error?.message ?? "moved!");
+        check("OTHER cannot move its own session to an office-A case (the database refuses)", !!e3.error && !rows(e3).length, e3.error?.message ?? "moved!");
         let moveErr = "";
         try { await moveThreadToCase(B as unknown as Db, tB.id, caseId); } catch (e) { moveErr = e instanceof Error ? e.message : String(e); }
         check("moveThreadToCase: OTHER cannot move its session to an office-A case", moveErr !== "", moveErr || "moved!");
@@ -233,8 +234,8 @@ if (caseId) {
       // a hearing of ANOTHER case of the same office does not fit this thread's case
       if (hOther) {
         const e4 = await A.from("chat_threads").insert({ case_id: hs!.case_id, hearing_id: hOther.id, title: "اختراق" }).select("id");
-        if (e4.data?.length) madeA.push(...e4.data.map((r) => r.id));
-        check("A cannot link a session to a hearing of another case", !!e4.error && !e4.data?.length, e4.error?.message ?? "inserted!");
+        madeA.push(...rows(e4).map((r) => r.id));
+        check("A cannot link a session to a hearing of another case", !!e4.error && !rows(e4).length, e4.error?.message ?? "inserted!");
       }
       // A moves a general session to its own case (the lawyer's action); only a general session can move
       await moveThreadToCase(A as unknown as Db, tA.id, caseId);
