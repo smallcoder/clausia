@@ -112,10 +112,13 @@ async function main() {
       await fact.press("Enter");
       await page.waitForSelector("aside mark", { timeout: 15_000 });
       await page.waitForTimeout(700);
+      page.on("console", (m) => { if (m.text().startsWith("OUTLINE")) console.log(m.text()); });
       const info = await page.evaluate(() => {
         const a = document.querySelector("aside")!;
         const m = a.querySelector("mark")!;
         const r = m.getBoundingClientRect(), box = a.getBoundingClientRect();
+        const cs = getComputedStyle(a);
+        console.log("OUTLINE", cs.outlineStyle, cs.outlineColor, a.matches(":focus-visible"), a.getAttribute("tabindex"));
         return { label: a.getAttribute("aria-label"), mark: m.textContent, markIn: r.top >= box.top && r.bottom <= box.bottom, focusInside: a.contains(document.activeElement) || a === document.activeElement, left: box.left, right: box.right, scrollY: window.scrollY };
       });
       check(!!info.mark && info.mark.startsWith("تعاقد الطالب"), `${name}: the sentence is marked («${info.mark?.slice(0, 30)}…»)`);
