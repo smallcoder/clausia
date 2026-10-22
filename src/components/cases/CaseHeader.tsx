@@ -53,7 +53,7 @@ function StatCell({ s, first }: { s: HeroStat; first: boolean }) {
     : <Link href={s.href} className={`${cls} transition hover:opacity-80`}>{body}</Link>;
 }
 
-export function CaseHeader({ cf, caseId, chatHref, stats }: { cf: CaseFile; caseId: string; chatHref: string; stats: HeroStat[] }) {
+export function CaseHeader({ cf, caseId, stats }: { cf: CaseFile; caseId: string; stats: HeroStat[] }) {
   const who = whoLine(cf);
   const spec = specSheet(cf);
   const number = spec[0].value;
@@ -63,7 +63,7 @@ export function CaseHeader({ cf, caseId, chatHref, stats }: { cf: CaseFile; case
       {/* mobile: back + more at 14px from the top and the sides */}
       <div className="-mx-0.5 flex items-center justify-between pt-3.5 sm:hidden">
         <Link href="/cases" aria-label="رجوع" className={ROUND}><ChevronRight size={20} strokeWidth={2} aria-hidden /></Link>
-        <CaseMenu caseId={caseId} chatHref={chatHref} align="end" className="size-control-lg" />
+        <CaseMenu caseId={caseId} align="end" className="size-control-lg" />
       </div>
 
       {/* desktop row 1: 40px back · breadcrumb … status chip · «…» (owner decision: «…» next to the chip) */}
@@ -74,7 +74,7 @@ export function CaseHeader({ cf, caseId, chatHref, stats }: { cf: CaseFile; case
           {number ? <><span aria-hidden className="mx-1.5 text-text-4">/</span><span className="font-semibold text-text">{number}</span></> : null}
         </nav>
         <StatusPill status={cf.case.status} />
-        <CaseMenu caseId={caseId} chatHref={chatHref} align="end" className="size-10" />
+        <CaseMenu caseId={caseId} align="end" className="size-10" />
       </div>
 
       {/* who: mobile = eyebrow + status, name, «ضد» below; desktop = eyebrow, then name + «ضد» on one line */}

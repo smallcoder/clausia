@@ -30,7 +30,7 @@ export function HearingItem({ h, today, showCourt = false, showCircuit = true, s
     <li className="px-5 py-3.5 print:break-inside-avoid print:px-0 print:py-2">
       <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
         <div className="min-w-0">
-          <Link href={`/cases/${c.id}?tab=hearings`} className="text-md font-bold text-text hover:underline">
+          <Link href={`/cases/${c.id}?tab=hearings&hearing=${h.id}`} className="text-md font-bold text-text hover:underline">
             {caseLabel(c)}
           </Link>
           {c.title && (c.case_number || c.case_year) ? <p className="mt-0.5 text-sm text-text-3">{c.title}</p> : null}
