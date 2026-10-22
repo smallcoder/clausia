@@ -13,8 +13,9 @@ import { createClient } from "@/lib/supabase/server";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export default async function ThreadPage({ params }: { params: Promise<{ threadId: string }> }) {
+export default async function ThreadPage({ params, searchParams }: { params: Promise<{ threadId: string }>; searchParams: Promise<{ q?: string }> }) {
   const { threadId } = await params;
+  const { q } = await searchParams; // a starter sentence for the composer (it fills the box, sends nothing)
   if (!UUID.test(threadId)) notFound();
   const db = await createClient();
   const { data: t } = await db.from("chat_threads").select("id, title, case_id").eq("id", threadId).maybeSingle();
@@ -66,7 +67,7 @@ export default async function ThreadPage({ params }: { params: Promise<{ threadI
       </MaybeLink>
 
       <div className="flex flex-1 flex-col">
-        <ChatThread threadId={t.id} caseId={t.case_id} items={data.items} lookup={data.lookup} deadlines={data.deadlines} docs={data.docs} />
+        <ChatThread threadId={t.id} caseId={t.case_id} items={data.items} lookup={data.lookup} deadlines={data.deadlines} docs={data.docs} initialText={q?.slice(0, 300)} />
       </div>
     </div>
   );

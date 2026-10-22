@@ -7,6 +7,8 @@ import type { Database } from "../src/lib/db/types";
 import type { Db } from "../src/lib/supabase/server";
 import { getCaseFile } from "../src/lib/case-file";
 import { confirmCell, editCell, removeColumn, renameColumn } from "../src/lib/doc-columns/edit";
+import { dismissReminder, dueReminders, setBriefReminder, undoReminder } from "../src/lib/brief/reminders";
+import { remindInstant } from "../src/lib/brief/time";
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
@@ -41,7 +43,7 @@ const { data: aDoc } = await A.from("documents").select("id, storage_path").limi
 
 // ---------- OTHER reads nothing of office A ----------
 const TABLES = ["cases", "clients", "case_parties", "case_facts", "case_requests", "case_arguments", "hearings", "judgments", "documents",
-  "document_pages", "proposals", "chat_threads", "chat_messages", "llm_calls", "doc_columns", "doc_column_cells", "case_deadlines", "holiday_reports"] as const;
+  "document_pages", "proposals", "chat_threads", "chat_messages", "llm_calls", "doc_columns", "doc_column_cells", "case_deadlines", "holiday_reports", "reminders"] as const;
 for (const t of TABLES) {
   const { count: aCount } = await (A as SupabaseClient<Database>).from(t).select("id", { count: "exact", head: true }).eq("office_id", officeA);
   const { data, error } = await (B as SupabaseClient<Database>).from(t).select("id").eq("office_id", officeA).limit(5);
@@ -199,6 +201,44 @@ if (caseId) {
       }
     } finally {
       await A.from("cases").delete().eq("id", tc2.id); // its judgments and deadlines go with it
+    }
+  }
+}
+
+// ---------- the brief's reminders («ذكّرني الصبح 7»): the lawyer's own rows ----------
+{
+  const aDb = A as unknown as Db;
+  const bDb = B as unknown as Db;
+  const day = "2099-01-02"; // far ahead: its 07:00 has not come
+  const when = remindInstant(day);
+  await A.from("reminders").delete().eq("for_date", day); // a leftover of a failed run
+  const r = await setBriefReminder(aDb, day);
+  check("DEMO saves a reminder for 07:00 Cairo of that day", r.ok && new Date(r.remindAt).getTime() === when.getTime(), r.ok ? r.remindAt : r.error);
+  if (r.ok) {
+    try {
+      const again = await setBriefReminder(aDb, day);
+      check("a second tap finds the same reminder (one per day)", again.ok && again.id === r.id);
+      check("a reminder whose 07:00 has passed is refused", !(await setBriefReminder(aDb, "2020-01-01")).ok);
+      const { data: row } = await A.from("reminders").select("office_id, created_by").eq("id", r.id).single();
+      check("the row carries DEMO's office and DEMO as its owner", row?.office_id === officeA && !!row?.created_by);
+      const { data: r1 } = await B.from("reminders").select("id").eq("id", r.id);
+      check("OTHER cannot read an office-A reminder by id", (r1?.length ?? 0) === 0);
+      const { data: u1 } = await B.from("reminders").update({ dismissed_at: new Date().toISOString() }).eq("id", r.id).select("id");
+      const { data: d1 } = await B.from("reminders").delete().eq("id", r.id).select("id");
+      check("OTHER update / delete of an office-A reminder affects 0 rows", (u1?.length ?? 0) === 0 && (d1?.length ?? 0) === 0);
+      check("OTHER cannot dismiss or undo it through the actions", !(await dismissReminder(bDb, r.id)).ok && !(await undoReminder(bDb, r.id)).ok);
+      const { data: i1, error: e1 } = await B.from("reminders").insert({ office_id: officeA, kind: "brief", for_date: "2099-01-03", remind_at: when.toISOString() }).select("id");
+      check("OTHER insert of a reminder into office A fails", !!e1 && !i1, e1 ? e1.message : "inserted!");
+      const { data: i2 } = await B.from("reminders").insert({ created_by: row?.created_by, kind: "brief", for_date: "2099-01-04", remind_at: when.toISOString() }).select("id");
+      check("OTHER cannot write a reminder in DEMO's name either", !i2?.length);
+      const before = await dueReminders(aDb, new Date(when.getTime() - 60_000));
+      const after = await dueReminders(aDb, new Date(when.getTime() + 60_000));
+      check("not due a minute before 07:00, due a minute after", !before.some((x) => x.id === r.id) && after.some((x) => x.id === r.id));
+      check("OTHER sees no due reminder of DEMO", !(await dueReminders(bDb, new Date(when.getTime() + 60_000))).some((x) => x.id === r.id));
+      check("DEMO dismisses it: it stops being due", (await dismissReminder(aDb, r.id)).ok && !(await dueReminders(aDb, new Date(when.getTime() + 60_000))).some((x) => x.id === r.id));
+    } finally {
+      const undone = await undoReminder(aDb, r.id);
+      check("DEMO undoes (deletes) it", undone.ok && ((await A.from("reminders").select("id").eq("id", r.id)).data?.length ?? 0) === 0);
     }
   }
 }
