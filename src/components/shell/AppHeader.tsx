@@ -8,6 +8,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useCite } from "@/components/cite/context";
+import { askPermission } from "@/lib/brief/notify";
+import { useBriefBell } from "./useBriefBell";
 import { ThemeToggle } from "./ThemeToggle";
 
 const TABS = [
@@ -26,13 +28,16 @@ export function ClausiaMark({ size = 30 }: { size?: number }) {
 }
 
 function activeTab(path: string) {
-  if (path.startsWith("/hearings")) return "/hearings";
+  if (path.startsWith("/hearings") || path.startsWith("/brief")) return "/hearings"; // the brief is a hearings page (the mockup lights «الجلسات»)
   if (path.startsWith("/cases")) return "/cases";
   return "/"; // Home and the chat threads opened from it
 }
 
-export function AppHeader({ initials, officeName, email, alerts }: { initials: string; officeName: string; email: string; alerts: number }) {
+export function AppHeader({ initials, officeName, email, alerts, userId }: { initials: string; officeName: string; email: string; alerts: number; userId: string }) {
   const path = usePathname();
+  /** the evening brief (from 20:00 Cairo) and the 07:00 reminder: a dot on the bell and a label that opens /brief */
+  const { items: briefItems, opened } = useBriefBell(userId, path);
+  const brief = briefItems[0];
   const on = activeTab(path);
   /** the top bar takes the page's column: Home and Chat are the narrow one, every other page the wide one */
   const narrow = path === "/" || path.startsWith("/chat");
@@ -71,10 +76,18 @@ export function AppHeader({ initials, officeName, email, alerts }: { initials: s
       </nav>
 
       <div className="flex items-center gap-2.5 justify-self-end">
-        <Link href="/hearings?filter=undecided" aria-label={alerts ? `${alerts} جلسات محتاجة قرار` : "التنبيهات"}
+        {brief ? (
+          <Link href={brief.href} onClick={() => { void askPermission(); opened(brief); }}
+            className="tap glass hidden h-9 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold text-gold transition hover:opacity-80 xl:inline-flex">
+            <span aria-hidden className="size-1.5 rounded-full bg-gold" />{brief.label}
+          </Link>
+        ) : null}
+        {/* the bell asks for notification permission when it is tapped (never on load); with a brief ready it opens it */}
+        <Link href={brief ? brief.href : "/hearings?filter=undecided"} onClick={() => { void askPermission(); if (brief) opened(brief); }}
+          aria-label={brief ? brief.label : alerts ? `${alerts} جلسات محتاجة قرار` : "التنبيهات"}
           className="glass glass-icon relative hidden size-control-xl items-center justify-center rounded-full sm:inline-flex">
           <Bell size={19} strokeWidth={1.9} aria-hidden />
-          {alerts ? <span aria-hidden className="absolute end-2.5 top-2.5 size-2 rounded-full bg-gold" /> : null}
+          {alerts || brief ? <span aria-hidden className="absolute end-2.5 top-2.5 size-2 rounded-full bg-gold" /> : null}
         </Link>
         <div ref={menu} className="relative">
           <button type="button" onClick={() => setOpen(!open)} aria-label="الحساب" aria-expanded={open}

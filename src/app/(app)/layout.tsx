@@ -21,7 +21,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <CiteProvider>
       <div className="flex min-h-dvh flex-col">
-        <AppHeader initials={initialsOf(session.displayName || "أ ت")} officeName={office?.name ?? ""} email={session.user.email ?? ""} alerts={alerts} />
+        <AppHeader initials={initialsOf(session.displayName || "أ ت")} officeName={office?.name ?? ""} email={session.user.email ?? ""} alerts={alerts} userId={session.user.id} />
         <CiteMain>{children}</CiteMain>
       </div>
     </CiteProvider>
