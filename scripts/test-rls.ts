@@ -40,7 +40,7 @@ const { data: aDoc } = await A.from("documents").select("id, storage_path").limi
 
 // ---------- OTHER reads nothing of office A ----------
 const TABLES = ["cases", "clients", "case_parties", "case_facts", "case_requests", "case_arguments", "hearings", "judgments", "documents",
-  "document_pages", "proposals", "chat_threads", "chat_messages", "llm_calls"] as const;
+  "document_pages", "proposals", "chat_threads", "chat_messages", "llm_calls", "doc_columns", "doc_column_cells"] as const;
 for (const t of TABLES) {
   const { count: aCount } = await (A as SupabaseClient<Database>).from(t).select("id", { count: "exact", head: true }).eq("office_id", officeA);
   const { data, error } = await (B as SupabaseClient<Database>).from(t).select("id").eq("office_id", officeA).limit(5);
@@ -71,6 +71,37 @@ if (caseId) {
   const { data, error } = await B.from("clients").insert({ office_id: officeA, name: "اختبار اختراق" }).select("id");
   check("OTHER insert of a client into office A fails", !!error && !data, error ? error.message : "inserted!");
   if (data?.length) await A.from("clients").delete().in("id", data.map((r) => r.id));
+}
+
+// ---------- the documents table's columns and cells (a temp case of office A; removed again) ----------
+{
+  const { data: tc } = await A.from("cases").insert({ title: "اختبار-RLS-أعمدة", source_kind: "manual" }).select("id").single();
+  if (tc && aDoc) {
+    try {
+      const { data: col } = await A.from("doc_columns").insert({ case_id: tc.id, question: "اختبار", title: "اختبار" }).select("id, office_id").single();
+      const { data: cell } = col ? await A.from("doc_column_cells").insert({ column_id: col.id, document_id: aDoc.id, answer: null }).select("id").single() : { data: null };
+      check("DEMO writes a column and a cell into its own office", !!col && col.office_id === officeA && !!cell);
+      if (col && cell) {
+        const { data: r1 } = await B.from("doc_columns").select("id").eq("id", col.id);
+        const { data: r2 } = await B.from("doc_column_cells").select("id").eq("id", cell.id);
+        check("OTHER cannot read an office-A column or cell by id", (r1?.length ?? 0) === 0 && (r2?.length ?? 0) === 0);
+        const { data: u1 } = await B.from("doc_columns").update({ title: "اختراق" }).eq("id", col.id).select("id");
+        const { data: u2 } = await B.from("doc_column_cells").update({ note: "اختراق" }).eq("id", cell.id).select("id");
+        check("OTHER update of an office-A column / cell affects 0 rows", (u1?.length ?? 0) === 0 && (u2?.length ?? 0) === 0);
+        const { data: d1 } = await B.from("doc_column_cells").delete().eq("id", cell.id).select("id");
+        const { data: d2 } = await B.from("doc_columns").delete().eq("id", col.id).select("id");
+        check("OTHER delete of an office-A column / cell affects 0 rows", (d1?.length ?? 0) === 0 && (d2?.length ?? 0) === 0);
+        const { data: still } = await A.from("doc_columns").select("id").eq("id", col.id);
+        check("the office-A column still exists after OTHER attempts", (still?.length ?? 0) === 1);
+        const { data: i1, error: e1 } = await B.from("doc_columns").insert({ office_id: officeA, case_id: tc.id, question: "اختراق", title: "اختراق" }).select("id");
+        check("OTHER insert of a column into office A fails", !!e1 && !i1, e1 ? e1.message : "inserted!");
+        const { data: i2, error: e2 } = await B.from("doc_column_cells").insert({ office_id: officeA, column_id: col.id, document_id: aDoc.id, answer: null }).select("id");
+        check("OTHER insert of a cell into office A fails", !!e2 && !i2, e2 ? e2.message : "inserted!");
+      }
+    } finally {
+      await A.from("cases").delete().eq("id", tc.id); // its columns and cells go with it
+    }
+  } else check("office A has a paper to test the documents-table columns with", false);
 }
 
 // ---------- RPC ----------

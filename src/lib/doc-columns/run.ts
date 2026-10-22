@@ -222,7 +222,7 @@ export async function proposeDocColumn(
     if (!c) continue;
     ops.push({
       tool: "add_doc_cell",
-      args: { column: "@col1", document: it.id, ...(c.answer ? { answer: c.answer } : {}), ...(c.note ? { note: c.note } : {}) },
+      args: { column: "@col1", document: it.id, ...(c.answer ? { answer: c.answer, quote: c.quote } : {}), ...(c.note ? { note: c.note } : {}) },
       source: c.answer
         ? { kind: "document", document_id: it.id, page: c.page, quote: c.quote, char_start: c.start, char_end: c.end }
         : { kind: "document", document_id: it.id },
