@@ -41,7 +41,7 @@ const { data: aDoc } = await A.from("documents").select("id, storage_path").limi
 
 // ---------- OTHER reads nothing of office A ----------
 const TABLES = ["cases", "clients", "case_parties", "case_facts", "case_requests", "case_arguments", "hearings", "judgments", "documents",
-  "document_pages", "proposals", "chat_threads", "chat_messages", "llm_calls", "doc_columns", "doc_column_cells"] as const;
+  "document_pages", "proposals", "chat_threads", "chat_messages", "llm_calls", "doc_columns", "doc_column_cells", "case_deadlines", "holiday_reports"] as const;
 for (const t of TABLES) {
   const { count: aCount } = await (A as SupabaseClient<Database>).from(t).select("id", { count: "exact", head: true }).eq("office_id", officeA);
   const { data, error } = await (B as SupabaseClient<Database>).from(t).select("id").eq("office_id", officeA).limit(5);
@@ -112,6 +112,95 @@ if (caseId) {
       await A.from("cases").delete().eq("id", tc.id); // its columns and cells go with it
     }
   } else check("office A has a paper to test the documents-table columns with", false);
+}
+
+// ---------- appeal deadlines: the admin, the shared holidays, the reports, and the office table ----------
+{
+  const uidA = (await A.auth.getUser()).data.user!.id;
+  const uidB = (await B.auth.getUser()).data.user!.id;
+  const { data: isA } = await A.rpc("is_admin");
+  const { data: isB } = await B.rpc("is_admin");
+  check("is_admin(): DEMO (the owner) is an admin, OTHER is not", isA === true && isB === false);
+
+  // app_admins: no one can read or write it from the app (not even an admin)
+  for (const [name, C, uid] of [["DEMO", A, uidA], ["OTHER", B, uidB]] as const) {
+    const ins = await C.from("app_admins").insert({ user_id: uid }).select("user_id");
+    check(`${name} cannot insert into app_admins`, !!ins.error && !ins.data?.length, ins.error?.message ?? "inserted!");
+    const rd = await C.from("app_admins").select("user_id");
+    check(`${name} cannot read app_admins`, !!rd.error || !rd.data?.length, rd.error?.message ?? `${rd.data?.length} rows`);
+    const up = await C.from("app_admins").update({ created_at: new Date().toISOString() }).eq("user_id", uidA).select("user_id");
+    const dl = await C.from("app_admins").delete().eq("user_id", uidA).select("user_id");
+    check(`${name} cannot update or delete app_admins`, !up.data?.length && !dl.data?.length, `${up.data?.length ?? up.error?.message} / ${dl.data?.length ?? dl.error?.message}`);
+  }
+  check("the owner is still an admin after those attempts", (await A.rpc("is_admin")).data === true);
+
+  // holidays: every user reads, only an admin writes
+  const { count: hCount } = await B.from("holidays").select("id", { count: "exact", head: true });
+  check("OTHER reads the shared holidays", (hCount ?? 0) > 0, `${hCount} rows`);
+  const hi = await B.from("holidays").insert({ holiday_date: "2099-01-01", name: "اختبار اختراق", status: "approved" }).select("id");
+  check("OTHER (not an admin) cannot insert a holiday", !!hi.error && !hi.data?.length, hi.error?.message ?? "inserted!");
+  const { data: someH } = await A.from("holidays").select("id, name, status").limit(1).single();
+  const hu = await B.from("holidays").update({ status: "approved", name: "اختبار اختراق" }).eq("id", someH!.id).select("id");
+  const hd = await B.from("holidays").delete().eq("id", someH!.id).select("id");
+  const { data: hAfter } = await A.from("holidays").select("id, name, status").eq("id", someH!.id).single();
+  check("OTHER cannot update or delete a holiday (0 rows) and it is unchanged", !hu.data?.length && !hd.data?.length && hAfter?.name === someH!.name && hAfter?.status === someH!.status);
+  const ha = await A.from("holidays").insert({ holiday_date: "2099-01-01", name: "اختبار", status: "draft" }).select("id").single();
+  check("DEMO (admin) can insert a holiday", !ha.error && !!ha.data, ha.error?.message ?? "");
+  if (ha.data) {
+    const hb = await B.from("holidays").update({ status: "approved" }).eq("id", ha.data.id).select("id");
+    check("OTHER cannot approve a draft holiday", !hb.data?.length);
+    const ap = await A.from("holidays").update({ status: "approved" }).eq("id", ha.data.id).select("id");
+    check("DEMO (admin) can approve it", !!ap.data?.length);
+    await A.from("holidays").delete().eq("id", ha.data.id);
+  }
+
+  // holiday_reports: an office inserts its own pending report and reads its own; only an admin decides
+  const rb = await B.from("holiday_reports").insert({ holiday_date: "2099-02-02", name: "اختبار بلاغ B", note: "x" }).select("id, office_id, status").single();
+  check("OTHER can report a missing holiday (pending, its own office)", !rb.error && rb.data?.status === "pending" && rb.data.office_id === memB!.office_id, rb.error?.message ?? "");
+  const bad1 = await B.from("holiday_reports").insert({ office_id: officeA, holiday_date: "2099-02-02", name: "اختراق" }).select("id");
+  const bad2 = await B.from("holiday_reports").insert({ holiday_date: "2099-02-02", name: "اختراق", status: "approved" }).select("id");
+  check("OTHER cannot report into office A, nor insert an already-approved report", !!bad1.error && !bad1.data && !!bad2.error && !bad2.data, `${bad1.error?.message} / ${bad2.error?.message}`);
+  const ra = await A.from("holiday_reports").insert({ holiday_date: "2099-03-03", name: "اختبار بلاغ A" }).select("id").single();
+  if (rb.data && ra.data) {
+    const seen = await B.from("holiday_reports").select("id").in("id", [rb.data.id, ra.data.id]);
+    check("OTHER reads only its own report, not office A's", seen.data?.length === 1 && seen.data[0].id === rb.data.id);
+    const self = await B.from("holiday_reports").update({ status: "approved" }).eq("id", rb.data.id).select("id");
+    const { data: still } = await B.from("holiday_reports").select("status").eq("id", rb.data.id).single();
+    check("OTHER cannot approve its own report", !self.data?.length && still?.status === "pending");
+    const adminSees = await A.from("holiday_reports").select("id").in("id", [rb.data.id, ra.data.id]);
+    check("DEMO (admin) reads every office's reports", adminSees.data?.length === 2);
+    const adminOk = await A.from("holiday_reports").update({ status: "rejected" }).eq("id", rb.data.id).select("id");
+    check("DEMO (admin) can decide a report", !!adminOk.data?.length);
+    const w = await B.from("holiday_reports").delete().eq("id", rb.data.id).select("id");
+    check("a decided report can no longer be withdrawn", !w.data?.length);
+    await A.from("holiday_reports").delete().eq("id", ra.data.id); // office A's own pending one
+    await A.from("holiday_reports").update({ status: "pending" }).eq("id", rb.data.id); // admin puts it back so it can be removed by its office
+    await B.from("holiday_reports").delete().eq("id", rb.data.id);
+  }
+
+  // case_deadlines: office-A rows are invisible and untouchable for OTHER
+  const { data: tc2 } = await A.from("cases").insert({ title: "اختبار-RLS-مواعيد", source_kind: "manual" }).select("id").single();
+  if (tc2) {
+    try {
+      const { data: jd } = await A.from("judgments").insert({ case_id: tc2.id, judgment_date: "2026-10-20", operative_text: "اختبار", source_kind: "manual" }).select("id").single();
+      const row = { case_id: tc2.id, judgment_id: jd!.id, kind: "appeal", start_date: "2026-10-20", start_basis: "judgment_date", days: 40, raw_last_day: "2026-11-29", last_day: "2026-11-29", law_source_id: "0c84df2b-9239-41b2-a801-8eb176c90985", article_number: "227", version_id: "8a0e094d-18c8-4636-9e9f-0b80187f0826", article_sha256: "x", article_text: "x", reminders: [7, 1] };
+      const { data: dd, error: de } = await A.from("case_deadlines").insert(row).select("id").single();
+      check("DEMO can save a deadline in its own office", !de && !!dd, de?.message ?? "");
+      if (dd) {
+        const rd = await B.from("case_deadlines").select("id").eq("id", dd.id);
+        const up = await B.from("case_deadlines").update({ last_day: "2030-01-01" }).eq("id", dd.id).select("id");
+        const dl = await B.from("case_deadlines").delete().eq("id", dd.id).select("id");
+        const { data: kept } = await A.from("case_deadlines").select("last_day").eq("id", dd.id).single();
+        check("OTHER cannot read, update or delete an office-A deadline", !rd.data?.length && !up.data?.length && !dl.data?.length && kept?.last_day === "2026-11-29");
+        const bi = await B.from("case_deadlines").insert({ ...row, office_id: officeA }).select("id");
+        check("OTHER insert of a deadline into office A fails", !!bi.error && !bi.data, bi.error?.message ?? "inserted!");
+        const bad = await A.from("case_deadlines").insert({ ...row, kind: "cassation", reminders: [0] }).select("id");
+        check("a reminder of 0 days is refused by the table", !!bad.error && !bad.data);
+      }
+    } finally {
+      await A.from("cases").delete().eq("id", tc2.id); // its judgments and deadlines go with it
+    }
+  }
 }
 
 // ---------- RPC ----------

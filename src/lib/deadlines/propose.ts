@@ -28,12 +28,13 @@ export async function proposeDeadlinesForJudgment(db: Db, input: { judgmentId: s
   const kind: DeadlineKind = c.stage === "appeal" ? "cassation" : "appeal";
 
   // not twice: already saved, or a card for this judgment is still waiting
-  const [{ data: saved }, { data: open }] = await Promise.all([
+  const [{ data: saved }, { data: open, error: openError }] = await Promise.all([
     db.from("case_deadlines").select("id").eq("judgment_id", j.id).eq("kind", kind).limit(1),
-    db.from("proposals").select("ops").eq("case_id", c.id).in("status", ["pending", "partially_confirmed"]).contains("ops", [{ tool: "add_deadline" }]),
+    db.from("proposals").select("ops").eq("case_id", c.id).in("status", ["pending", "partially_confirmed"]).contains("ops", JSON.stringify([{ tool: "add_deadline" }])), // a JSON string: an array here is sent as a Postgres array and fails
   ]);
+  if (openError) throw new Error(openError.message);
   if (saved?.length) return { proposed: false, why: "already saved" };
-  const waiting = (open ?? []).some((p) => (p.ops as unknown as { tool: string; status: string; args: { judgment?: string } }[]).some((o) => o.tool === "add_deadline" && o.status === "pending" && o.args.judgment === j.id));
+  const waiting = (open ?? []).some((p) => (p.ops as unknown as { tool: string; status: string; args: { judgment?: string } }[]).some((o) => o.tool === "add_deadline" && (o.status === "pending" || o.status === "failed") && o.args.judgment === j.id));
   if (waiting) return { proposed: false, why: "a card is waiting" };
 
   let threadId = input.threadId ?? null;

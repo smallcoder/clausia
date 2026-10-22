@@ -156,7 +156,7 @@ export function DeadlineCard({ proposal, entry }: { proposal: Proposal; entry: D
   };
   const save = () => {
     start(async () => {
-      const r = await decideProposalAction(p.id, { mode: "confirm", edits: { [op.op_id]: { start_basis: basis, service_date: basis === "service_date" ? service : undefined, urgent: hasAppeal ? urgent : false, reminders } } });
+      const r = await decideProposalAction(p.id, { mode: "confirm", opIds: [op.op_id], edits: { [op.op_id]: { start_basis: basis, service_date: basis === "service_date" ? service : undefined, urgent: hasAppeal ? urgent : false, reminders } } });
       if (r.ok && r.proposal) { setP(r.proposal); setError(null); router.refresh(); } else setError(r.error ?? "تعذّر الحفظ");
     });
   };
