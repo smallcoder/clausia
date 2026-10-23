@@ -16,7 +16,11 @@ export interface Provenance {
 type Party = { id: string; name: string; role: string; is_our_client: boolean; representative: string | null; notes: string | null } & Provenance;
 type Fact = { id: string; date: string | null; date_precision: string; date_text: string | null; text: string } & Provenance;
 type Req = { id: string; text: string; kind: string | null } & Provenance;
-type Arg = { id: string; side: "opponent" | "ours"; kind: string | null; text: string } & Provenance;
+type Arg = {
+  id: string; side: "opponent" | "ours"; kind: string | null; text: string;
+  /** a defense of the opponent: OUR argument that answers it (null = not answered yet). Set only by a confirmed reply card; never inferred from text. */
+  reply_argument_id: string | null;
+} & Provenance;
 type Hearing = { id: string; date: string; purpose: string | null; location: string | null; decision_type: string | null; decision_text: string | null; next_requirements: string | null; next_hearing_id: string | null;
   /** where the DECISION came from (the hearing row's own provenance is in the shared fields) */
   decision_source: { created_by: string | null; kind: string | null; message_id: string | null; document_id: string | null; page: number | null; quote: string | null; char_start: number | null; char_end: number | null } | null } & Provenance;
@@ -46,7 +50,7 @@ export interface CaseFile {
    * Exception to "sections hold confirmed items only": documents are files the lawyer uploaded, so every
    * non-rejected document is listed here (with its own review_status), none go to pending_suggestions.
    */
-  documents: { id: string; file_name: string; doc_type: string; title: string | null; page_count: number | null; read_status: string; review_status: string; pages: { page_no: number; text: string }[] }[];
+  documents: { id: string; file_name: string; doc_type: string; title: string | null; doc_date: string | null; page_count: number | null; read_status: string; review_status: string; pages: { page_no: number; text: string }[] }[];
   /** Items with review_status 'suggested': not yet confirmed by the lawyer. `item` has the same shape as in its section. */
   pending_suggestions: { table: string; id: string; text: string; item: Party | Fact | Req | Arg | Hearing | Judgment }[];
 }
@@ -95,10 +99,10 @@ export async function getCaseFile(db: Db, caseId: string): Promise<CaseFile> {
     db.from("case_parties").select(`id, name, role, is_our_client, representative, notes, created_at, ${PROV}`).eq("case_id", caseId).neq("review_status", "rejected").order("created_at"),
     db.from("case_facts").select(`id, fact_date, date_precision, date_text, text, sort_order, created_at, ${PROV}`).eq("case_id", caseId).neq("review_status", "rejected"),
     db.from("case_requests").select(`id, text, kind, created_at, ${PROV}`).eq("case_id", caseId).neq("review_status", "rejected").order("created_at"),
-    db.from("case_arguments").select(`id, side, kind, text, created_at, ${PROV}`).eq("case_id", caseId).neq("review_status", "rejected").order("created_at"),
+    db.from("case_arguments").select(`id, side, kind, text, reply_argument_id, created_at, ${PROV}`).eq("case_id", caseId).neq("review_status", "rejected").order("created_at"),
     db.from("hearings").select(`id, hearing_date, purpose, location, decision_type, decision_text, next_requirements, next_hearing_id, decision_created_by_kind, decision_source_kind, decision_source_message_id, decision_source_document_id, decision_source_page, decision_source_quote, decision_source_char_start, decision_source_char_end, ${PROV}`).eq("case_id", caseId).neq("review_status", "rejected").order("hearing_date"),
     db.from("judgments").select(`id, judgment_date, kind, operative_text, outcome, appeal_deadline, appeal_deadline_note, hearing_id, ${PROV}`).eq("case_id", caseId).neq("review_status", "rejected").order("judgment_date"),
-    db.from("documents").select("id, file_name, doc_type, title, page_count, read_status, created_at, review_status").eq("case_id", caseId).neq("review_status", "rejected").order("created_at"),
+    db.from("documents").select("id, file_name, doc_type, title, doc_date, page_count, read_status, created_at, review_status").eq("case_id", caseId).neq("review_status", "rejected").order("created_at"),
   ]);
 
   const docs = ok(documents, "documents") ?? [];
@@ -143,7 +147,7 @@ export async function getCaseFile(db: Db, caseId: string): Promise<CaseFile> {
       (r) => ({ id: r.id, date: r.fact_date, date_precision: r.date_precision, date_text: r.date_text, text: r.text, ...prov(r) }),
       (o) => o.text),
     requests: split("case_requests", ok(requests, "requests") ?? [], (r) => ({ id: r.id, text: r.text, kind: r.kind, ...prov(r) }), (o) => o.text),
-    arguments: split("case_arguments", ok(args, "arguments") ?? [], (r) => ({ id: r.id, side: r.side, kind: r.kind, text: r.text, ...prov(r) }), (o) => o.text),
+    arguments: split("case_arguments", ok(args, "arguments") ?? [], (r) => ({ id: r.id, side: r.side, kind: r.kind, text: r.text, reply_argument_id: r.reply_argument_id, ...prov(r) }), (o) => o.text),
     hearings: split("hearings", ok(hearings, "hearings") ?? [],
       (r) => ({ id: r.id, date: r.hearing_date, purpose: r.purpose, location: r.location, decision_type: r.decision_type, decision_text: r.decision_text, next_requirements: r.next_requirements, next_hearing_id: r.next_hearing_id,
         decision_source: r.decision_type ? { created_by: r.decision_created_by_kind, kind: r.decision_source_kind, message_id: r.decision_source_message_id, document_id: r.decision_source_document_id, page: r.decision_source_page, quote: r.decision_source_quote, char_start: r.decision_source_char_start, char_end: r.decision_source_char_end } : null,
@@ -153,7 +157,7 @@ export async function getCaseFile(db: Db, caseId: string): Promise<CaseFile> {
       (r) => ({ id: r.id, date: r.judgment_date, kind: r.kind, operative_text: r.operative_text, outcome: r.outcome, appeal_deadline: r.appeal_deadline, appeal_deadline_note: r.appeal_deadline_note, hearing_id: r.hearing_id, ...prov(r) }),
       (o) => o.operative_text),
     documents: docs.map((d) => ({
-      id: d.id, file_name: d.file_name, doc_type: d.doc_type, title: d.title, page_count: d.page_count, read_status: d.read_status, review_status: d.review_status,
+      id: d.id, file_name: d.file_name, doc_type: d.doc_type, title: d.title, doc_date: d.doc_date, page_count: d.page_count, read_status: d.read_status, review_status: d.review_status,
       pages: pages.filter((p) => p.document_id === d.id).map((p) => ({ page_no: p.page_no, text: p.text })),
     })),
     pending_suggestions: pending,
