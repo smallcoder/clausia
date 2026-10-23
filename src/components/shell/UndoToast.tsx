@@ -49,8 +49,8 @@ export function UndoToastProvider({ children }: { children: ReactNode }) {
     <Ctx.Provider value={api}>
       {children}
       {toast ? (
-        <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-32 z-50 flex justify-center px-3.5 xl:bottom-8">
-          <div className="glass pointer-events-auto flex max-w-full items-center gap-3 rounded-full py-1.5 ps-4.5 pe-1.5 text-sm text-text">
+        <div role="status" aria-live="polite" className="pointer-events-none fixed inset-x-0 bottom-32 z-50 flex justify-center px-3.5 xl:bottom-28">
+          <div className="pointer-events-auto flex max-w-full items-center gap-3 rounded-full border border-border-2 bg-card py-1.5 ps-4.5 pe-1.5 text-sm text-text shadow-pop">
             {toast.kind === "saved" ? (
               <>
                 <span>اتحفظ {editsLabel(toast.count)}</span>
