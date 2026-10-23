@@ -180,6 +180,7 @@ export async function decideProposal(
     const provenance: Provenance = {
       review_status: decision.mode === "suggest" ? "suggested" : "confirmed",
       created_by_kind: edit ? "lawyer" : "model",
+      client_by_lawyer: !!edit && "client" in edit && edit.client !== o.args.client,
       source_kind: o.source.kind,
       source_message_id: o.source.message_id ?? null,
       source_document_id: o.source.document_id ?? null,
