@@ -1,27 +1,20 @@
-// The case page's default view (docs/design/{Light,Dark}{,Mobile}Case.dc.html, v2), built from getCaseFile.
-// Desktop: لنا/ضدنا as a full-width first row, then the main column (Clausia summary, facts timeline) + side column
-// (next hearing, parties, documents), all solid cards. Judgments live in the hearings view and the case links in the «…» menu (owner
-// decisions). Mobile: one column in the mobile mockup's order — the two columns become
-// `display: contents` and `order-*` sorts them — with Facts / Docs / Parties as tabs (CaseTabs).
+// The things a dossier tab lists, built from getCaseFile (docs/design/split/Sides*.dc.html, the facts timeline, the parties):
+//   Facts + Parties → «الوقائع» (the timeline with the facts date, then the case's people)
+//   Sides           → «الطلبات والدفوع» (لنا · طلباتنا / ضدنا · دفوع الخصم, two solid cards)
 // Rows show no edit links: tapping an item opens its actions (confirm / reject / edit) in the sheet (ItemSheet).
-import { Check, ChevronLeft, Shield, Target } from "lucide-react";
-import Link from "next/link";
+// Items the chat proposed show in a gold wash with «مستني تأكيدك» (PendingEdits).
+import { Check, Shield, Target } from "lucide-react";
 import type { ReactNode } from "react";
 import { SourceChip } from "@/components/cite/SourceChip";
 import { AskTarget } from "@/components/cases/AskTarget";
 import { WriteReply } from "@/components/cases/ReplyButton";
 import { memoLine, ourSideLabel, replyCount, replyStatus } from "@/components/cases/sides";
-import { SegBar, Seg, TabScope } from "@/components/cases/CaseTabs";
 import { SheetEditText, SheetReview, TapItem } from "@/components/cases/ItemSheet";
-import { pagesLabel } from "@/components/documents/DocThumb";
 import type { CaseFile } from "@/lib/case-file";
-import { formatDayLabel, formatDmy } from "@/lib/dates";
+import { formatDmy } from "@/lib/dates";
 import type { PendingEdits, PendingRow } from "@/lib/edits";
 import { Change, SuggestedTag, WaitingLine } from "@/components/cases/Suggest";
-import {
-  MONTHS, READ_SHORT, aboutItem, agoLabel, citeOf, daysBetween, docName, factDate, partyRows, pendingHref, pendingWords, shortDmy, sourceText,
-  summarySegments, untilLabel, type HearingState,
-} from "@/components/cases/case-view";
+import { aboutItem, citeOf, factDate, partyRows, sourceText } from "@/components/cases/case-view";
 import { DateText } from "@/components/ui";
 
 type Fact = CaseFile["facts"][number];
@@ -40,8 +33,6 @@ export const Suggested = ({ label = "مقترحة · راجعها" }: { label?: 
   <span className="inline-flex items-center gap-1.25 text-xs font-semibold text-gold-text-small"><span aria-hidden className="size-dot rounded-full bg-gold" />{label}</span>
 );
 
-/** The Clausia «C» mark (mockup: 32px / 11px radius / 15px on desktop, 26px / 9px / 12px on mobile; a hairline + inner light in dark). */
-const MARK = "mark font-num inline-flex shrink-0 items-center justify-center font-extrabold size-mark rounded-sm text-sm lg:size-8 lg:rounded-md lg:text-md dark:border dark:border-white/8 dark:shadow-[var(--mark-shadow)]";
 
 function pendingOf<T>(cf: CaseFile, table: string): T[] {
   return cf.pending_suggestions.filter((p) => p.table === table).map((p) => p.item as T);
@@ -59,63 +50,6 @@ function SheetSource({ cf, item, about }: { cf: CaseFile; item: { id: string; re
       </p>
       {item.source.quote ? <p className="text-doc text-base text-text-2">«{item.source.quote}»</p> : null}
       {item.source.document_id ? <a href={`/api/documents/${item.source.document_id}`} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center font-semibold text-text-2 underline-offset-4 hover:underline">فتح المستند</a> : null}
-    </div>
-  );
-}
-
-// ---------- Summary + review banner ----------
-
-/**
- * Desktop: «ملخص Clausia» + the full templated summary (hearing, review in gold). Mobile: no label and only the case's
- * own summary sentence (the hearing card and the review banner carry the rest); without one, the full summary.
- */
-function Summary({ cf, hs, today, className, edits }: { cf: CaseFile; hs: HearingState; today: string; className: string; edits?: PendingEdits }) {
-  // a summary the chat proposed: the old one struck, the new one in the text, all in a gold wash
-  const next = edits?.casePatch?.summary;
-  const proposed = typeof next === "string" && next.trim() !== (cf.case.summary ?? "").trim() ? next : null;
-  const was = cf.case.summary?.trim() || null;
-  if (proposed) cf = { ...cf, case: { ...cf.case, summary: proposed } };
-  const segs = summarySegments(cf, hs, today).map((s, i) => s.gold ? <span key={i} className="font-semibold text-gold-on-ambient">{s.text}</span> : <span key={i}>{s.text}</span>);
-  const own = cf.case.summary?.trim();
-  return (
-    <AskTarget item={{ kind: "summary", id: cf.case.id, label: own || "ملخص القضية" }} className={`flex items-start gap-2.5 px-1 lg:gap-3.5 lg:px-2 ${className}`}>
-      <span aria-hidden className={MARK}>C</span>
-      <div className={`min-w-0 flex-1 ${proposed ? "gold-wash rounded-lg px-3.5 py-2.5" : ""}`}>
-        {proposed ? (
-          <div>
-            <div className="flex items-center gap-1.5 text-sm font-semibold text-gold-text-small">ملخص مقترح<SuggestedTag /></div>
-            {was ? <p className="mt-1 text-base leading-[1.8] text-text-4 line-through">{was}</p> : null}
-          </div>
-        ) : null}
-        <div className={`hidden text-sm font-semibold text-gold-on-ambient lg:block ${proposed ? "lg:hidden" : ""}`}>ملخص Clausia</div>
-        <p className="mt-0.5 text-base leading-[1.8] text-text lg:hidden">{own ? (/[.!؟]$/u.test(own) ? own : `${own}.`) : segs}</p>
-        <p className="mt-1 hidden text-lg leading-[1.85] text-text lg:block">{segs}</p>
-      </div>
-    </AskTarget>
-  );
-}
-
-/** Mobile only (the desktop mockup carries the review in the summary's gold words and the gold stat). */
-function ReviewBanner({ cf, hs, caseId, className }: { cf: CaseFile; hs: HearingState; caseId: string; className: string }) {
-  // `hash`: a same-page #item-… link is a plain <a> so the browser fires hashchange (opens the sheet, switches the tab)
-  const rows: { key: string; href: string; gold: string; rest: string; hash?: boolean }[] = [];
-  const words = pendingWords(cf);
-  if (words) rows.push({ key: "p", href: `/cases/${caseId}${pendingHref(cf) ?? ""}`, gold: words, rest: cf.pending_suggestions.length === 1 ? "محتاجة مراجعتك" : "محتاجين مراجعتك", hash: pendingHref(cf)?.startsWith("#") });
-  if (hs.undecided) rows.push({ key: "h", href: `/cases/${caseId}?tab=hearings#h-${hs.undecided.id}`, gold: `جلسة ${shortDmy(hs.undecided.date)}`, rest: "محتاجة قرار" });
-  if (!rows.length) return null;
-  return (
-    <div className={`space-y-2 lg:hidden ${className}`}>
-      {rows.map((r) => {
-        const cls = "flex min-h-11 items-center gap-2.5 rounded-lg border border-gold-edge px-3.5 py-3 text-base text-text";
-        const body = (
-          <>
-            <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-gold" />
-            <span className="min-w-0 flex-1"><DateText value={r.gold} className="font-semibold text-gold-text-small" /> {r.rest}</span>
-            <ChevronLeft aria-hidden size={18} strokeWidth={2} className="shrink-0 text-gold" />
-          </>
-        );
-        return r.hash ? <a key={r.key} href={r.href} className={cls}>{body}</a> : <Link key={r.key} href={r.href} className={cls}>{body}</Link>;
-      })}
     </div>
   );
 }
@@ -168,10 +102,10 @@ function NewFactRow({ r, last }: { r: PendingRow; last: boolean }) {
 
 type TimelineEntry = { sort: string | null; fact?: Fact; row?: PendingRow };
 
-function Facts({ cf, caseId, edits }: { cf: CaseFile; caseId: string; edits?: PendingEdits }) {
+export function Facts({ cf, caseId, edits }: { cf: CaseFile; caseId: string; edits?: PendingEdits }) {
   const all: TimelineEntry[] = [
     ...[...cf.facts, ...pendingOf<Fact>(cf, "case_facts")].map((f) => ({ sort: f.date && f.date_precision !== "unknown" ? f.date : null, fact: f })),
-    ...(edits?.timeline ?? []).map((r) => ({ sort: r.sortIso, row: r })),
+    ...(edits?.timeline ?? []).filter((r) => r.on !== "hearings").map((r) => ({ sort: r.sortIso, row: r })),
   ].sort((a, b) => {
     if (a.sort === b.sort) return 0;
     if (!a.sort) return 1;
@@ -276,7 +210,7 @@ const Replied = () => (
 );
 
 /** The two cards of the mockup (Sides*): ours (solid ink header, numbered requests) and theirs (thin gold outline, a warm header, a status per defense). */
-function Sides({ cf, caseId, className, edits }: { cf: CaseFile; caseId: string; className: string; edits?: PendingEdits }) {
+export function Sides({ cf, caseId, className, edits }: { cf: CaseFile; caseId: string; className: string; edits?: PendingEdits }) {
   const requests = [...cf.requests, ...pendingOf<Req>(cf, "case_requests")];
   const args = [...cf.arguments, ...pendingOf<Arg>(cf, "case_arguments")];
   const ours = args.filter((a) => a.side === "ours");
@@ -316,7 +250,7 @@ function Sides({ cf, caseId, className, edits }: { cf: CaseFile; caseId: string;
           </div>
           {total ? (
             <div className="text-end">
-              <div className="font-num text-xl font-extralight text-gold">{needs}<span className="text-md text-text-4"> / {total}</span></div>
+              <div className="font-num text-xl font-extralight text-gold">{needs}<span className="text-md text-text-3"> / {total}</span></div>
               <div className="text-xs text-text-3">محتاجين رد</div>
             </div>
           ) : null}
@@ -343,98 +277,6 @@ function Sides({ cf, caseId, className, edits }: { cf: CaseFile; caseId: string;
   );
 }
 
-// ---------- Side column ----------
-
-/** Big light day + month, then the hearing's lines (mockup: next-hearing card). */
-function DayBlock({ iso }: { iso: string }) {
-  const [, m, d] = iso.split("-").map(Number);
-  return (
-    <div className="w-11 shrink-0 text-center leading-none lg:w-auto lg:min-w-12">
-      <div className="stat-num text-2xl text-title lg:text-display lg:tracking-[-0.04em]" style={{ fontWeight: 200 }}>{d}</div>
-      <div className="mt-1 text-xs text-text-3 lg:mt-1.5 lg:text-sm">{MONTHS[m - 1]}</div>
-    </div>
-  );
-}
-
-function HearingCard({ cf, hs, today, caseId, className, edits }: { cf: CaseFile; hs: HearingState; today: string; caseId: string; className: string; edits?: PendingEdits }) {
-  const circuit = cf.case.circuit;
-  const all = <Link href={`/cases/${caseId}?tab=hearings`} className="-my-3 inline-flex min-h-11 shrink-0 items-center text-sm text-text-3 hover:text-text hover:underline">الجلسات ←</Link>;
-  const h = hs.next ?? hs.undecided;
-  if (!h) {
-    return (
-      <div className={`${CARD} flex items-center justify-between gap-3 px-4.5 py-4 lg:p-5.5 ${className}`}>
-        <div>
-          <p className="text-md font-bold text-text">مفيش جلسة جاية متسجلة</p>
-          <p className="mt-0.5 text-sm text-text-3">لما يتحدد ميعاد، قوله لـ Clausia.</p>
-        </div>
-        {all}
-      </div>
-    );
-  }
-  // «circuit · location» when the hearing's location is stored; never guessed (owner decision)
-  const where = [circuit, h.location].filter(Boolean).join(" · ");
-  const upcoming = h === hs.next;
-  const [y, m, d] = h.date.split("-").map(Number);
-  const weekday = formatDayLabel(h.date).split(" ")[0];
-  const needed = upcoming ? hs.nextNeeded : hs.undecidedNeeded;
-  const when = upcoming ? `الجلسة الجاية · ${untilLabel(daysBetween(today, h.date))}` : `آخر جلسة · ${agoLabel(daysBetween(h.date, today))}`;
-  const decide = !upcoming ? (
-    <Link href={`/cases/${caseId}?tab=hearings#h-${h.id}`} className="relative -my-3 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-gold hover:underline">
-      <span aria-hidden className="size-1.5 rounded-full bg-gold" />محتاجة قرار · سجّله
-    </Link>
-  ) : null;
-  // the mockup draws no «الجلسات ←» link: the whole card opens the hearings view (an overlay link, so the
-  // «سجّله» link inside stays a separate, non-nested target)
-  return (
-    <AskTarget item={{ kind: "hearing", id: h.id, label: `${upcoming ? "الجلسة الجاية" : "آخر جلسة"} · ${formatDmy(h.date)}${where ? ` · ${where}` : ""}` }} className={className}>
-    <div className={`${CARD} relative px-4.5 py-4 transition-colors hover:bg-card-2/40 lg:p-5.5`}>
-      <Link href={`/cases/${caseId}?tab=hearings`} aria-label="الجلسات" className="absolute inset-0 rounded-[inherit]" /* ds-allow: the link overlay takes its card's radius */ />
-      <div className="flex items-center gap-4 lg:gap-4.5">
-        <DayBlock iso={h.date} />
-        <div className="min-w-0 flex-1 border-s border-border-2 ps-4 lg:ps-4.5">
-          <div className="text-xs text-text-3 lg:text-sm"><DateText value={when} /></div>
-          <div className="mt-0.75 text-md font-bold text-text lg:mt-1">
-            {weekday} <DateText value={`${d}/${m}`} className="lg:hidden" /><DateText value={`${d}/${m}/${y}`} className="hidden lg:inline" />
-            {where ? <span className="lg:hidden"> · {where}</span> : null}
-          </div>
-          {where ? <div className="mt-0.5 hidden text-sm text-text-3 lg:block">{where}</div> : null}
-          {needed ? (
-            <div className="mt-1 flex items-center gap-1.5 text-sm text-text lg:hidden">
-              <span aria-hidden className={`size-dot shrink-0 rounded-full ${upcoming ? "bg-gold" : "bg-text-4"}`} />
-              <span className="min-w-0">{upcoming ? "" : "كان المطلوب: "}{needed}</span>
-            </div>
-          ) : null}
-          {decide ? <div className="mt-1.5 lg:hidden">{decide}</div> : null}
-        </div>
-      </div>
-      {needed || decide ? (
-        <div className="mt-4.5 hidden space-y-2 border-t border-border-2 pt-3.5 lg:block">
-          {needed ? (
-            <div className="flex items-center gap-2 text-base">
-              <span aria-hidden className={`size-1.5 shrink-0 rounded-full ${upcoming ? "bg-gold" : "bg-text-4"}`} />
-              <span className="text-text-3">{upcoming ? "المطلوب:" : "كان المطلوب:"}</span>
-              <span className="font-semibold text-text">{needed}</span>
-            </div>
-          ) : null}
-          {decide}
-        </div>
-      ) : null}
-      {/* a decision the chat proposed: the next hearing (old struck → new) and the decision, in a gold wash */}
-      {edits?.decisions.length ? (
-        <div className="gold-wash relative mt-4.5 space-y-2.5 rounded-lg px-4 py-3" data-pending-row>
-          {edits.decisions.flatMap((d) => d.rows).map((r) => (
-            <div key={r.key}>
-              <div className="flex items-center gap-1.5 text-xs text-gold-text-small">{r.label}<SuggestedTag /></div>
-              <div className="mt-0.75 text-md font-semibold leading-[1.5]"><Change old={r.old} next={r.new} /></div>
-            </div>
-          ))}
-        </div>
-      ) : null}
-    </div>
-    </AskTarget>
-  );
-}
-
 function ListCard({ title, end, children, className = "" }: { title?: string; end?: ReactNode; children: ReactNode; className?: string }) {
   return (
     <section className={`${CARD} px-4.5 py-1.5 lg:px-5.5 ${className}`} aria-label={title}>
@@ -449,7 +291,7 @@ function ListCard({ title, end, children, className = "" }: { title?: string; en
   );
 }
 
-function Parties({ cf, caseId, edits }: { cf: CaseFile; caseId: string; edits?: PendingEdits }) {
+export function Parties({ cf, caseId, edits }: { cf: CaseFile; caseId: string; edits?: PendingEdits }) {
   const rows = partyRows(cf.parties, pendingOf<Party>(cf, "case_parties"));
   const line = (name: string, role: string, extra?: ReactNode) => (
     <span className="block py-3">
@@ -492,59 +334,3 @@ function Parties({ cf, caseId, edits }: { cf: CaseFile; caseId: string; edits?: 
   );
 }
 
-function Docs({ cf, caseId }: { cf: CaseFile; caseId: string }) {
-  const docs = cf.documents;
-  const shown = docs.slice(0, 8);
-  // mockup: the header shows only the count; it opens the documents view
-  const all = <Link href={`/cases/${caseId}?tab=documents`} aria-label="كل المستندات" className="-my-3 inline-flex min-h-11 min-w-11 items-center justify-end text-sm text-text-3 hover:text-text hover:underline"><span className="font-num">{docs.length}</span></Link>;
-  return (
-    <ListCard title="المستندات" end={all}>
-      {shown.length ? (
-        <div className="lg:[&>*]:border-t [&>*+*]:border-t [&>*]:border-[var(--border-2)]">
-          {shown.map((d) => (
-            <AskTarget key={d.id} item={{ kind: "document", id: d.id, label: docName(d) }}>
-            <a href={`/api/documents/${d.id}`} target="_blank" rel="noopener" title={d.file_name}
-              className="-mx-2 block min-h-11 rounded-md px-2 py-3 transition-colors hover:bg-card-2/60">
-              <span className="block truncate text-base font-semibold text-text">{docName(d)}</span>
-              <span className="mt-0.5 block text-xs text-text-3">{[pagesLabel(d.page_count), READ_SHORT[d.read_status] ?? d.read_status].filter(Boolean).join(" · ")}</span>
-            </a>
-            </AskTarget>
-          ))}
-          {docs.length ? <div className="flex justify-end py-1 lg:hidden"><Link href={`/cases/${caseId}?tab=documents`} className="-my-1 inline-flex min-h-11 items-center gap-1 text-sm text-text-3 hover:text-text hover:underline"><span className="font-num">{docs.length}</span> الكل ←</Link></div> : null}
-        </div>
-      ) : (
-        <p className="py-3.5 text-base leading-6 text-text-3">لسه مفيش مستندات. ارفع صحيفة الدعوى أو أي ورقة من «+» تحت، وClausia هيقراها صفحة صفحة.</p>
-      )}
-    </ListCard>
-  );
-}
-
-// ---------- Page body ----------
-
-export function CaseOverview({ cf, hs, today, caseId, edits }: { cf: CaseFile; hs: HearingState; today: string; caseId: string; edits?: PendingEdits }) {
-  const parties = partyRows(cf.parties, pendingOf<Party>(cf, "case_parties")).length;
-  const facts = cf.facts.length + pendingOf<Fact>(cf, "case_facts").length;
-  return (
-    <TabScope>
-      <div className="mt-3 flex flex-col gap-3 leading-[1.35] lg:mt-8.5 lg:grid lg:grid-cols-[minmax(0,1.85fr)_minmax(0,1fr)] lg:items-start lg:gap-4.5">
-        {/* desktop: its own full-width first row, right under the header card (two equal cards, mockup Sides*; owner 2026-10-23); first in the DOM too, so focus order matches; phone: after the facts (order-6), as before */}
-        <Sides cf={cf} caseId={caseId} edits={edits} className="order-6 lg:order-none lg:col-span-2" />
-        <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-4.5">
-          <Summary cf={cf} hs={hs} today={today} edits={edits} className="order-2 mt-1.5 lg:order-none lg:mt-0" />
-          <ReviewBanner cf={cf} hs={hs} caseId={caseId} className="order-3" />
-          <SegBar className="order-4 mt-2.5 lg:hidden" items={[
-            { key: "facts", label: "الوقائع", count: facts },
-            { key: "docs", label: "المستندات", count: cf.documents.length },
-            { key: "parties", label: "الأطراف", count: parties },
-          ]} />
-          <Seg k="facts" className="order-5 lg:order-none"><Facts cf={cf} caseId={caseId} edits={edits} /></Seg>
-        </div>
-        <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-4.5">
-          <HearingCard cf={cf} hs={hs} today={today} caseId={caseId} edits={edits} className="order-1 lg:order-none" />
-          <Seg k="parties" className="order-5 lg:order-none"><Parties cf={cf} caseId={caseId} edits={edits} /></Seg>
-          <Seg k="docs" className="order-5 lg:order-none"><Docs cf={cf} caseId={caseId} /></Seg>
-        </div>
-      </div>
-    </TabScope>
-  );
-}
