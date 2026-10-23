@@ -242,7 +242,7 @@ if (want("faint")) {
 //   --gold            large text (≥3) and text on a white card (4.5)
 //   --gold-text-small small text on the page, on glass, on card-2 and on the tinted surfaces (4.5)
 // A probe is a fixed box with the surface's own classes and a text span in it; the span's text is hidden and the pixels behind it are measured
-// (the same way as the other rows). «page» probes hide the page content first, so only the background shapes are behind the text; the worst of a grid of points is kept.
+// (the same way as the other rows). KNOWN FAILS in light (PR gold-two-tokens, see its body): small gold-text-small straight on the ambient shapes (desktop page column, phone chat) is 3.2-4.4, not the flat-bg 4.95. «page» probes hide the page content first, so only the background shapes are behind the text; the worst of a grid of points is kept.
 if (want("gold")) {
   console.log("== gold tokens: probes (AA: 4.5 small text, 3 large text; worst = 2nd percentile pixel)");
   const fails: string[] = [];
@@ -276,9 +276,9 @@ if (want("gold")) {
     const [ctx, page] = await ctxOf(1440, 900, dark);
     await go(page, `/?s=${longThread}`);
     // 1. the page background (ambient shapes): worst of a grid, content hidden
-    for (const [name, span, min] of [["gold-text-small on the page bg (page column, left of the chat)", SMALL, 4.5], ["gold (small) on the page bg (page column): NOT allowed, for comparison", GOLD_SMALL, 4.5], ["gold LARGE on the page bg (page column)", GOLD_LARGE, 3]] as const) {
+    for (const [name, span, min] of [["gold-text-small on the page bg (page column, left of the chat)", SMALL, 4.5], ["gold (small) on the page bg (page column): NOT allowed, for comparison", GOLD_SMALL, 4.5], ["gold LARGE on the page bg (page column; no site sits on bare bg, the sweep covers the real ones)", GOLD_LARGE, 3]] as const) {
       let worst: { worst: number; median: number } | null = null;
-      for (const x of [60, 260, 460, 660]) for (const y of [120, 330, 540, 760]) {
+      for (const x of [60, 260, 460, 660, 860]) for (const y of [120, 330, 540, 760]) {
         const r = await probe(page, name, { wrap: "", span, x, y, min, hideContent: true }, t);
         if (r && (!worst || r.worst < worst.worst)) worst = r;
       }
