@@ -3,7 +3,7 @@
  * Chat sessions of ONE context: the list (with «+ محادثة جديدة» on top) and the desktop button + menu in the panel header.
  * Each session has an auto title (its first message, about 40 characters) and a date; a hearing's session reads «جلسة 22/10».
  */
-import { List, Plus } from "lucide-react";
+import { ChevronDown, List, Plus } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -38,8 +38,11 @@ export function SessionList({ sessions, currentId, hrefFor, onPick }: {
   );
 }
 
-/** The sessions button of the chat header (desktop): opens a list of this context's sessions only. */
-export function SessionsMenu({ sessions, currentId }: { sessions: Session[]; currentId: string | null }) {
+/**
+ * The chat panel's desktop header: the context title (a button, with a chevron) and a small line under it. The title and the
+ * list button on the end side open the same menu: this context's sessions only.
+ */
+export function SessionsMenu({ sessions, currentId, title, sub }: { sessions: Session[]; currentId: string | null; title: string; sub: string | null }) {
   const path = usePathname();
   const params = useSearchParams();
   const [open, setOpen] = useState(false);
@@ -54,13 +57,25 @@ export function SessionsMenu({ sessions, currentId }: { sessions: Session[]; cur
   }, [open]);
   const sp = new URLSearchParams(params.toString());
   return (
-    <div ref={box} className="relative">
+    <div ref={box} className="relative hidden items-center gap-2.5 border-b border-border-2 px-4.5 py-4 xl:flex">
+      <div className="min-w-0 flex-1 leading-[normal]">
+        <button type="button" onClick={() => setOpen(!open)} aria-haspopup="true" aria-expanded={open} title="محادثات"
+          className="tap flex max-w-full items-center gap-1.5 text-md font-bold text-title">
+          <span className="truncate">{title}</span>
+          <ChevronDown aria-hidden size={14} strokeWidth={2.2} className="shrink-0 text-glass-icon" />
+        </button>
+        {sub ? (
+          <div className="mt-0.5 flex items-center gap-1.5 text-sm text-text-2">
+            <span aria-hidden className="size-dot shrink-0 rounded-full bg-gold" /><span className="truncate"><DateText value={sub} /></span>
+          </div>
+        ) : null}
+      </div>
       <button type="button" onClick={() => setOpen(!open)} aria-label="محادثات" aria-expanded={open} title="محادثات"
-        className="tap inline-flex size-8.5 items-center justify-center rounded-full border border-border-2 text-glass-icon transition hover:text-text">
+        className="tap inline-flex size-8.5 shrink-0 items-center justify-center rounded-full border border-border-2 text-glass-icon transition hover:text-text">
         <List aria-hidden size={16} strokeWidth={1.9} />
       </button>
       {open ? (
-        <div className="absolute end-0 top-11 z-20 max-h-96 w-80 overflow-y-auto rounded-lg glass p-1.5">
+        <div className="absolute start-3 top-full z-20 mt-1 max-h-96 w-80 overflow-y-auto rounded-lg glass p-1.5">
           <SessionList sessions={sessions} currentId={currentId} hrefFor={(id) => withSession(path, sp, id)} onPick={() => setOpen(false)} />
         </div>
       ) : null}

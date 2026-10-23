@@ -34,7 +34,7 @@ export function TapItem({ id, title, row, children, className = "", tight = fals
       <dialog ref={ref} aria-label={title}
         onClick={(e) => { if (e.target === e.currentTarget) close(); }}
         onClose={() => { if (window.location.hash === hash) history.replaceState(null, "", window.location.pathname + window.location.search); }}
-        className="sheet-enter fixed inset-x-0 bottom-0 top-auto m-0 max-h-[85dvh] w-full max-w-none overflow-y-auto rounded-t-xl border border-border bg-card p-0 text-text shadow-pop backdrop:bg-backdrop sm:[animation:fade-in_180ms_ease-out] sm:inset-y-0 sm:start-auto sm:end-0 sm:h-dvh sm:max-h-none sm:w-105 sm:rounded-none sm:rounded-s-xl" /* ds-allow: dvh: the sheet is at most 85% of the visible screen */>
+        className="sheet-enter fixed inset-x-0 bottom-0 top-auto m-0 max-h-[85dvh] w-full max-w-none overflow-y-auto rounded-t-xl border border-border bg-card p-0 text-text shadow-pop backdrop:bg-backdrop sm:[animation:fade-in_180ms_ease-out] sm:inset-y-0 sm:start-auto sm:end-0 sm:h-dvh sm:max-h-none sm:w-105 sm:rounded-none sm:rounded-s-xl xl:start-0 xl:end-auto xl:rounded-s-none xl:rounded-e-xl" /* ds-allow: dvh: the sheet is at most 85% of the visible screen */>
         <SheetCloseCtx.Provider value={close}>
           <div className="px-5 pb-[calc(20px+env(safe-area-inset-bottom))] pt-4" /* ds-allow: safe-area inset needs calc() */>
             <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-border sm:hidden" aria-hidden />
