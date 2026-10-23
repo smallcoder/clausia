@@ -39,7 +39,7 @@ export function Timeline({ rows, today, next, label, showToday = false }: { rows
               {last ? null : <span className="mt-1.5 w-px flex-1 bg-border-2" />}
             </div>
             <div className={cx("min-w-0 flex-1", last ? "pb-0" : "pb-5.5 sm:pb-6.5")}>
-              {hasNext && label ? <div className={cx("mb-1 text-xs font-semibold sm:text-sm", label.gold ? "text-gold" : "text-text-3")}>{label.text}</div> : null}
+              {hasNext && label ? <div className={cx("mb-1 text-xs font-semibold sm:text-sm", label.gold ? "text-gold-text-small" : "text-text-3")}>{label.text}</div> : null}
               <div className="flex items-baseline justify-between gap-3">
                 <h3 className="min-w-0 truncate text-base font-bold text-text sm:text-md">{g.key}</h3>
                 {circuits ? <span className="shrink-0 truncate text-xs text-text-4 sm:text-sm">{circuits}</span> : null}

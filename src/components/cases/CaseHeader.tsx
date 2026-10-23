@@ -21,7 +21,7 @@ import { AskTarget } from "./AskTarget";
 import { Change, SuggestedTag, Was } from "./Suggest";
 import { specSheet, statusTone, whoLine } from "./case-view";
 
-const TONE = { good: ["bg-good", "text-good"], warn: ["bg-gold", "text-gold"], neutral: ["bg-text-4", "text-text-3"] } as const;
+const TONE = { good: ["bg-good", "text-good"], warn: ["bg-gold", "text-gold-text-small"], neutral: ["bg-text-4", "text-text-3"] } as const;
 
 /** Mockup: 28px outlined pill (content box, so 30px with its hairline), 6px dot, 12.5px semibold word. */
 function StatusPill({ status }: { status: string }) {
@@ -112,7 +112,7 @@ export function CaseHeader({ cf, caseId, stats, edits }: { cf: CaseFile; caseId:
       {/* who: mobile = eyebrow + status, name, «ضد» below; desktop = eyebrow, then name + «ضد» on one line */}
       <div className="px-1 pt-4.5 sm:mt-5.5 sm:px-2 sm:pt-0">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-semibold text-gold">{who.client ? "موكلنا" : "القضية"}</span>
+          <span className="text-sm font-semibold text-gold-text-small">{who.client ? "موكلنا" : "القضية"}</span>
           <span className="sm:hidden"><StatusSlot status={cf.case.status} proposed={proposedStatus} /></span>
         </div>
         <h1 className="mt-1.5 text-xl font-bold leading-[1.2] text-title sm:mt-1 sm:text-2xl sm:leading-[1.15]">
@@ -126,7 +126,7 @@ export function CaseHeader({ cf, caseId, stats, edits }: { cf: CaseFile; caseId:
       <dl className="mt-4 grid grid-cols-2 overflow-hidden rounded-lg border border-border-2 bg-card shadow-card lg:hidden">
         {spec.map((s, i) => (
           <AskTarget key={s.label} inside item={askOf(i)} className={`min-w-0 border-border-2 px-3.5 py-3 ${i % 2 === 0 ? "border-e" : ""} ${i >= 2 ? "border-t" : ""} ${changed(i) ? "gold-wash" : ""}`}>
-            <dt className={changed(i) ? "flex items-center gap-1.5 text-xs text-gold" : "text-xs text-text-4"}>{s.short}{changed(i) ? <SuggestedTag /> : null}</dt>
+            <dt className={changed(i) ? "flex items-center gap-1.5 text-xs text-gold-text-small" : "text-xs text-text-4"}>{s.short}{changed(i) ? <SuggestedTag /> : null}</dt>
             {/* long court / type names stay one line with «…», the full name in the tooltip (owner decision) */}
             <dd title={s.clip && s.value ? s.value : undefined}
               className={`mt-1 text-base leading-[1.4] ${s.clip ? "truncate" : ""} ${s.value ? "font-semibold text-text" : "text-text-4"}`}>
@@ -144,7 +144,7 @@ export function CaseHeader({ cf, caseId, stats, edits }: { cf: CaseFile; caseId:
           <dl className="contents">
             {spec.map((s, i) => (
               <AskTarget key={s.label} item={askOf(i)} className={`min-w-0 px-6 ${i % 2 ? "border-s border-border-2" : ""} ${i >= 2 ? "border-t border-border-2 pt-4" : ""} @3xl:border-t-0 @3xl:pt-0 ${i > 0 ? "@3xl:border-s @3xl:border-border-2" : ""} ${changed(i) ? "gold-wash rounded-lg py-3" : ""}`}>
-                <dt className={changed(i) ? "flex items-center gap-1.5 text-xs leading-4 text-gold" : "text-xs leading-4 text-text-4"}>{s.label}{changed(i) ? <SuggestedTag /> : null}</dt>
+                <dt className={changed(i) ? "flex items-center gap-1.5 text-xs leading-4 text-gold-text-small" : "text-xs leading-4 text-text-4"}>{s.label}{changed(i) ? <SuggestedTag /> : null}</dt>
                 <dd className={`mt-1.75 text-md leading-[1.4] ${s.value ? "font-semibold text-text" : "text-text-4"}`}>
                   {changed(i) && after ? <Change old={full(s)} next={full(after[i]) ?? empty(s.fem)} /> : <>{s.value ?? empty(s.fem)}{s.value && s.extra ? ` · ${s.extra}` : null}</>}
                 </dd>
@@ -201,7 +201,7 @@ export function CaseSubHeader({ cf, caseId, crumb, title, stats = [], action, ey
         </nav>
       </div>
       {eyebrow ? (
-        <p className="hidden px-2 text-sm font-semibold text-gold sm:-mb-4 sm:mt-3 sm:block">
+        <p className="hidden px-2 text-sm font-semibold text-gold-text-small sm:-mb-4 sm:mt-3 sm:block">
           {who.client ?? who.fallback}{who.client && who.opponent ? <span> ضد </span> : null}{who.client && who.opponent ? who.opponent : null}
         </p>
       ) : null}

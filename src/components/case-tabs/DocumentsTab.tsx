@@ -87,7 +87,7 @@ export async function DocumentsTab({ caseId, cf }: { caseId: string; cf: CaseFil
           <ClausiaSays size="md">
             <span className="text-text">
               {read ? <>قريت {readWord} وطلّعت من كل واحد اللي يخص القضية. كل خانة عليها رقم الصفحة، دوس عليها تفتحلك الجملة.</> : <>لسه ما قريتش مستندات القضية. أول ما أخلص هتلاقي كل حاجة هنا.</>}
-              {suggestedCells ? <> فيه {cellsWord} <span className="font-semibold text-gold">مقترحة</span> محتاجة مراجعتك.</> : null}
+              {suggestedCells ? <> فيه {cellsWord} <span className="font-semibold text-gold-text-small">مقترحة</span> محتاجة مراجعتك.</> : null}
             </span>
           </ClausiaSays>
 

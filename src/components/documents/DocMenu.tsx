@@ -79,7 +79,7 @@ export function DocMenu({ documentId, caseId, name, fileName, docType, meta, has
           <a role="menuitem" href={`/api/documents/${documentId}?download=1`} onClick={() => close()} className={ITEM}>تنزيل</a>
           <button type="button" role="menuitem" disabled={!hasText} title={hasText ? undefined : "الورقة لسه ما اتقرتش"}
             onClick={() => { close(); openPaper(cite); }} className={`${ITEM} text-start`}>شوف النص المستخرج</button>
-          {hasPending ? <Link role="menuitem" href={`/cases/${caseId}?tab=chat`} onClick={() => close()} className={`${ITEM} font-semibold text-gold`}>راجع المقترحات في المحادثة ←</Link> : null}
+          {hasPending ? <Link role="menuitem" href={`/cases/${caseId}?tab=chat`} onClick={() => close()} className={`${ITEM} font-semibold text-gold-text-small`}>راجع المقترحات في المحادثة ←</Link> : null}
         </div>, document.body) : null}
     </>
   );

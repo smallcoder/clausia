@@ -37,7 +37,7 @@ const CARD = "rounded-xl border border-border-2 bg-card shadow-card";
 
 /** «مقترحة · راجعها»: a 5px gold dot + 11px gold word (needs the lawyer's action). */
 export const Suggested = ({ label = "مقترحة · راجعها" }: { label?: string }) => (
-  <span className="inline-flex items-center gap-1.25 text-xs font-semibold text-gold"><span aria-hidden className="size-dot rounded-full bg-gold" />{label}</span>
+  <span className="inline-flex items-center gap-1.25 text-xs font-semibold text-gold-text-small"><span aria-hidden className="size-dot rounded-full bg-gold" />{label}</span>
 );
 
 /** The Clausia «C» mark (mockup: 32px / 11px radius / 15px on desktop, 26px / 9px / 12px on mobile; a hairline + inner light in dark). */
@@ -75,7 +75,7 @@ function Summary({ cf, hs, today, className, edits }: { cf: CaseFile; hs: Hearin
   const proposed = typeof next === "string" && next.trim() !== (cf.case.summary ?? "").trim() ? next : null;
   const was = cf.case.summary?.trim() || null;
   if (proposed) cf = { ...cf, case: { ...cf.case, summary: proposed } };
-  const segs = summarySegments(cf, hs, today).map((s, i) => s.gold ? <span key={i} className="font-semibold text-gold">{s.text}</span> : <span key={i}>{s.text}</span>);
+  const segs = summarySegments(cf, hs, today).map((s, i) => s.gold ? <span key={i} className="font-semibold text-gold-text-small">{s.text}</span> : <span key={i}>{s.text}</span>);
   const own = cf.case.summary?.trim();
   return (
     <AskTarget item={{ kind: "summary", id: cf.case.id, label: own || "ملخص القضية" }} className={`flex items-start gap-2.5 px-1 lg:gap-3.5 lg:px-2 ${className}`}>
@@ -83,11 +83,11 @@ function Summary({ cf, hs, today, className, edits }: { cf: CaseFile; hs: Hearin
       <div className={`min-w-0 flex-1 ${proposed ? "gold-wash rounded-lg px-3.5 py-2.5" : ""}`}>
         {proposed ? (
           <div>
-            <div className="flex items-center gap-1.5 text-sm font-semibold text-gold">ملخص مقترح<SuggestedTag /></div>
+            <div className="flex items-center gap-1.5 text-sm font-semibold text-gold-text-small">ملخص مقترح<SuggestedTag /></div>
             {was ? <p className="mt-1 text-base leading-[1.8] text-text-4 line-through">{was}</p> : null}
           </div>
         ) : null}
-        <div className={`hidden text-sm font-semibold text-gold lg:block ${proposed ? "lg:hidden" : ""}`}>ملخص Clausia</div>
+        <div className={`hidden text-sm font-semibold text-gold-text-small lg:block ${proposed ? "lg:hidden" : ""}`}>ملخص Clausia</div>
         <p className="mt-0.5 text-base leading-[1.8] text-text lg:hidden">{own ? (/[.!؟]$/u.test(own) ? own : `${own}.`) : segs}</p>
         <p className="mt-1 hidden text-lg leading-[1.85] text-text lg:block">{segs}</p>
       </div>
@@ -110,7 +110,7 @@ function ReviewBanner({ cf, hs, caseId, className }: { cf: CaseFile; hs: Hearing
         const body = (
           <>
             <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-gold" />
-            <span className="min-w-0 flex-1"><DateText value={r.gold} className="font-semibold text-gold" /> {r.rest}</span>
+            <span className="min-w-0 flex-1"><DateText value={r.gold} className="font-semibold text-gold-text-small" /> {r.rest}</span>
             <ChevronLeft aria-hidden size={18} strokeWidth={2} className="shrink-0 text-gold" />
           </>
         );
@@ -152,7 +152,7 @@ function NewFactRow({ r, last }: { r: PendingRow; last: boolean }) {
   return (
     <div className="gold-wash mb-1.5 rounded-md px-1.5 lg:px-2" data-pending-row>
       <span className="flex gap-3.5">
-        <span className="w-16 shrink-0 pt-1 text-sm font-semibold text-gold lg:w-19.5"><DateText value={r.date ?? "غير محدد"} /></span>
+        <span className="w-16 shrink-0 pt-1 text-sm font-semibold text-gold-text-small lg:w-19.5"><DateText value={r.date ?? "غير محدد"} /></span>
         <span className="flex w-2.25 shrink-0 flex-col items-center" aria-hidden>
           <span className="mt-2.25 size-dot-lg shrink-0 rounded-full bg-gold" />
           {!last ? <span className="mt-1 w-px flex-1 bg-border-2" /> : null}
@@ -188,7 +188,7 @@ function Facts({ cf, caseId, edits }: { cf: CaseFile; caseId: string; edits?: Pe
       <div className="flex items-baseline justify-between gap-3 px-4.5 pt-4 lg:px-6 lg:pb-1.5 lg:pt-4.5">
         <h2 className="hidden text-lg font-bold text-title lg:block">الوقائع</h2>
         {fdProposed ? (
-          <span className="gold-wash inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs text-gold">
+          <span className="gold-wash inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs text-gold-text-small">
             تاريخ الوقائع <Change old={fd ? <DateText value={fd} /> : null} next={<DateText value={fdProposed} />} /> <SuggestedTag />
           </span>
         ) : (
@@ -269,7 +269,7 @@ function NewText({ r }: { r: PendingRow }) {
 
 /** «محتاج رد»: a gold dot and word; «اترد عليه»: a check and a quiet word */
 const NeedsReply = () => (
-  <span className="inline-flex items-center gap-1.5 text-sm font-bold text-gold"><span aria-hidden className="size-1.5 rounded-full bg-gold" />محتاج رد</span>
+  <span className="inline-flex items-center gap-1.5 text-sm font-bold text-gold-text-small"><span aria-hidden className="size-1.5 rounded-full bg-gold" />محتاج رد</span>
 );
 const Replied = () => (
   <span className="inline-flex items-center gap-1.25 text-sm text-text-3"><Check aria-hidden size={13} strokeWidth={2.4} />اترد عليه</span>
@@ -424,7 +424,7 @@ function HearingCard({ cf, hs, today, caseId, className, edits }: { cf: CaseFile
         <div className="gold-wash relative mt-4.5 space-y-2.5 rounded-lg px-4 py-3" data-pending-row>
           {edits.decisions.flatMap((d) => d.rows).map((r) => (
             <div key={r.key}>
-              <div className="flex items-center gap-1.5 text-xs text-gold">{r.label}<SuggestedTag /></div>
+              <div className="flex items-center gap-1.5 text-xs text-gold-text-small">{r.label}<SuggestedTag /></div>
               <div className="mt-0.75 text-md font-semibold leading-[1.5]"><Change old={r.old} next={r.new} /></div>
             </div>
           ))}

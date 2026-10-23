@@ -87,7 +87,7 @@ export async function SummaryTab({ caseId }: { caseId: string }) {
         ) : null}
 
         <section className="rounded-lg bg-gold-bg p-5">
-          <h2 className="font-semibold text-gold">تحليل Clausia</h2>
+          <h2 className="font-semibold text-gold-text-small">تحليل Clausia</h2>
           <p className="mt-2 text-md leading-relaxed text-text-3">سيكتب Clausia هنا رأيًا قانونيًا أو مذكرة من ملف القضية.</p>
           <Button variant="secondary" size="sm" className="mt-4" disabled>اكتب رأيًا قانونيًا (قريبًا)</Button>
         </section>

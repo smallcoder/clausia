@@ -104,7 +104,7 @@ export function MorningBlock({ data }: { data: MorningData }) {
         <div className="min-w-0 text-md leading-[1.9] text-text">
           {brief.empty ? <p>{QUIET}</p> : brief.sentences.map((s, i) => (
             <p key={i} className={i ? "mt-1" : undefined}>
-              {s.parts.map((p, j) => (p.gold ? <DateText key={j} value={p.text} className="font-semibold text-gold" /> : <DateText key={j} value={p.text} />))}
+              {s.parts.map((p, j) => (p.gold ? <DateText key={j} value={p.text} className="font-semibold text-gold-text-small" /> : <DateText key={j} value={p.text} />))}
               {s.sources.map((src, k) => <Source key={k} s={src} className="ms-1 align-[2px]" />)}
             </p>
           ))}

@@ -405,7 +405,7 @@ export function ProposalCard({ proposal: initial, lookup = {}, rows = {} }: {
                     <div className="rounded-md border border-border-2 bg-card-2 px-3.5 py-2.5">
                       <p className="text-xs text-text-3">{sourceLong(o)}</p>
                       {o.source.quote ? <p className="text-doc mt-1 text-md text-text">«{o.source.quote}»</p> : <p className="mt-1 text-sm leading-4 text-text-4">{o.tool === "add_doc_cell" ? "الورقة مش بتذكر ده" : "بدون اقتباس"}</p>}
-                      {!o.quote_verified && !noQuoteByDesign(o) ? <p className="mt-1.5 text-sm leading-4 font-medium text-gold">ما لقيتش النص ده في المصدر، راجعه</p> : null}
+                      {!o.quote_verified && !noQuoteByDesign(o) ? <p className="mt-1.5 text-sm leading-4 font-medium text-gold-text-small">ما لقيتش النص ده في المصدر، راجعه</p> : null}
                     </div>
 
                     {o.status === "failed" && o.error ? <p className="rounded-md bg-bad-bg px-3 py-2 text-sm text-bad">{o.error}</p> : null}

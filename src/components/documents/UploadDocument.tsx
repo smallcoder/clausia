@@ -45,7 +45,7 @@ export function UploadDocument({ caseId, threadId, compact = false, row = false 
         </p>
       ) : null}
       {error ? <p className="text-sm text-bad" role="alert">{error}</p> : null}
-      {warning && !pending ? <p className="text-sm text-gold" role="status">{warning}</p> : null}
+      {warning && !pending ? <p className="text-sm text-gold-text-small" role="status">{warning}</p> : null}
       {done && !pending ? (
         <p className="text-sm text-good" role="status">
           {done.proposal ? "تمت القراءة. المقترحات بانتظار مراجعتك في محادثة الدعوى." : "تمت القراءة وحُفظ النص."}

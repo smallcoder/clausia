@@ -20,7 +20,7 @@ export function SessionList({ sessions, currentId, hrefFor, onPick }: {
   return (
     <ul className="flex flex-col">
       <li>
-        <Link href={hrefFor("new")} onClick={onPick} className="flex min-h-11 items-center gap-2 rounded-md px-3 text-base font-semibold text-gold transition hover:bg-card-2">
+        <Link href={hrefFor("new")} onClick={onPick} className="flex min-h-11 items-center gap-2 rounded-md px-3 text-base font-semibold text-gold-text-small transition hover:bg-card-2">
           <Plus aria-hidden size={16} strokeWidth={2} />محادثة جديدة
         </Link>
       </li>

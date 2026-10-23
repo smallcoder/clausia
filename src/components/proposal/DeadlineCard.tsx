@@ -20,7 +20,7 @@ import { DEFAULT_REMINDERS, REMINDER_CHOICES, type ArticleRef, type DeadlineCard
 import { formatDayLabel, formatDmy } from "@/lib/dates";
 import type { Proposal } from "@/lib/proposals";
 
-const CHIP = "tap inline-flex h-6 items-center gap-1.25 whitespace-nowrap rounded-full border border-gold-edge px-2.25 text-xs font-semibold leading-[normal] text-gold transition-colors hover:bg-gold-bg";
+const CHIP = "tap inline-flex h-6 items-center gap-1.25 whitespace-nowrap rounded-full border border-gold-edge px-2.25 text-xs font-semibold leading-[normal] text-gold-text-small transition-colors hover:bg-gold-bg";
 const PILL = "tap inline-flex h-8 items-center rounded-full px-3.25 text-sm transition";
 /** a chosen pill (segment): .pill-on; an action pill («احسب», «يوم قبلها») keeps the ink fill */
 const PILL_ON = "pill-on";
