@@ -17,7 +17,7 @@ import { processDocument } from "./process";
  * Saves the file to Storage + a documents row, reads every page (document_pages), then posts ONE assistant
  * message into the thread with a confirmation card (proposal) of the extracted parties/facts/requests/arguments.
  */
-export async function uploadDocumentAction(formData: FormData): Promise<{ ok: boolean; documentId?: string; proposalId?: string | null; error?: string; warning?: boolean }> {
+export async function uploadDocumentAction(formData: FormData): Promise<{ ok: boolean; documentId?: string; proposalId?: string | null; threadId?: string; error?: string; warning?: boolean }> {
   const db = await createClient();
   const session = await getSession(db);
   if (!session) return { ok: false, error: "انتهت الجلسة، سجّل الدخول مرة أخرى" };
@@ -79,9 +79,9 @@ export async function uploadDocumentAction(formData: FormData): Promise<{ ok: bo
       // text may be saved (pages read) while reading of a later page or the extraction failed: not a success
       const { data: d } = await db.from("documents").select("read_status").eq("id", documentId).maybeSingle();
       const textSaved = d?.read_status === "done";
-      return { ok: false, documentId, proposalId: r.proposalId, warning: textSaved, error: textSaved ? "حُفظ النص لكن تعذر استخراج البيانات" : "تعذرت قراءة المستند" };
+      return { ok: false, documentId, proposalId: r.proposalId, threadId, warning: textSaved, error: textSaved ? "حُفظ النص لكن تعذر استخراج البيانات" : "تعذرت قراءة المستند" };
     }
-    return { ok: true, documentId, proposalId: r.proposalId };
+    return { ok: true, documentId, proposalId: r.proposalId, threadId };
   } catch (e) {
     if (createdThread) await dropIfEmpty(db, createdThread);
     return { ok: false, error: e instanceof Error ? e.message : String(e) };
