@@ -119,7 +119,7 @@ if (want("contrast")) {
       ["chat: Clausia answer text (on the panel)", "aside ol li p", 4.5],
       ["chat: header title «Clausia»", "aside .text-title", 4.5],
       ["chat: header sub line (text-2)", "aside .text-text-2", 4.5],
-      ["chat: muted text in the chat (text-3)", "aside ol .text-text-3", 4.5],
+      ["chat: muted text in the chat (text-3)", "aside .text-text-3 >> visible=true", 4.5],
       ["chat: composer placeholder (text-4)", 'textarea[aria-label="رسالة لـ Clausia"]', 4.5],
       ["composer: inactive mode (اسأل…)", '.focus-host [role="tab"][aria-selected="false"]', 4.5],
       ["composer: ACTIVE mode", '.focus-host [role="tab"][aria-selected="true"]', 4.5],
@@ -134,7 +134,7 @@ if (want("contrast")) {
     // sessions list (the glass popover)
     await page.locator('button[aria-label="محادثات"]').click();
     await page.waitForTimeout(400);
-    for (const [label, sel] of [["sessions list: title", '[aria-current], a.min-h-11 .truncate'], ["sessions list: date (text-4)", "a.min-h-11 .num"]] as const) {
+    for (const [label, sel] of [["sessions list: title", '[aria-current], a.min-h-11 .truncate'], ["sessions list: date (text-4)", "a.min-h-11 .text-text-4 >> visible=true"]] as const) {
       const r = await contrastOf(page, sel);
       console.log(`${t.padEnd(5)} ${label.padEnd(46)} ${fmt(r)}  ${PASS(r, 4.5)}`);
     }
