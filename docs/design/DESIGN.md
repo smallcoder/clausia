@@ -5,7 +5,7 @@ The 20 `*.dc.html` files here are the approved screens: Home, Chat, Case, Roll a
 ## Principles
 - Chat-first. Clausia (never "مساعد") does everything. There is one input per screen, the composer; it searches, asks and adds. There is no separate search bar.
 - Calm luxury: lots of space, few boxes, large light numbers, and gold only for things that need the lawyer's action.
-- Glass only on floating controls: the top bar, tab capsule, composer, round buttons and suggestion chips. Content (cards, tables, lists) is solid. Content scrolls under the floating composer, which has a soft fade behind it.
+- Glass only on floating controls: the sidebar surface, composer, round buttons and suggestion chips. Content (cards, tables, lists) is solid. Content scrolls under the floating composer, which has a soft fade behind it.
 - RTL Arabic. One content column per page, centered: Home and Chat are 960px (`max-w-narrow`: 912px of content plus 24px side gutters); every other page is 1280px of content (`max-w-page` 1360px = 1280 plus 40px side gutters). On desktop the top bar spans the split layout's whole frame, not its page's column (see «Split layout»). The docked composer on inner pages and over a chat is 780px (`max-w-composer`). Below the column, full width with the gutters.
 
 ## Type
@@ -67,7 +67,7 @@ Tailwind v4 reads a token from the namespace its utility uses, so the name reads
 
 | Namespace | Utilities it feeds | Tokens |
 |---|---|---|
-| `--container-*` | `w-` `min-w-` `max-w-` `basis-` | `page` 1360px (the 1280 column of Cases, Case, Roll plus 40px gutters), `narrow` 960px (the Home and Chat column plus 24px gutters), `frame` 1600px (the split layout's whole frame: top bar, chat and page), `chat` 560px and `chat-min` 480px (the chat panel at its widest and at 1440), `messages` 720px (the messages column in the panel), `composer` 780px (the docked composer on inner pages and over a chat, and its skeleton), `bubble` 88% (mobile) and `bubble-sm` 72% (desktop) of a chat bubble's column |
+| `--container-*` | `w-` `min-w-` `max-w-` `basis-` | `page` 1360px (the 1280 column of Cases, Case, Roll plus 40px gutters), `narrow` 960px (the Home and Chat column plus 24px gutters), `frame` 1800px (the sidebar layout's whole frame), `sidebar` 264px and `rail` 72px (the sidebar in full and as icons), `chat` 480px (the chat attached to the sidebar), `messages` 760px (the messages column, centered), `composer` 780px (the docked composer on inner pages and over a chat, and its skeleton), `bubble` 88% (mobile) and `bubble-sm` 72% (desktop) of a chat bubble's column |
 | `--spacing-*` | `size-` `h-` `w-` `min-h-` `p-` `gap-` `inset-` … | see below |
 
 | Token | Size | Use |
@@ -136,15 +136,18 @@ To see that a CSS refactor changed nothing, `scripts/compare-styles.ts` saves th
 - Light: a white gradient 78%→52%, backdrop blur 24px, saturate 190%; a white border; a 0.5px ink outline at 10%; a white top inset highlight; a soft inner bottom shade; a drop shadow.
 
 ## Screen notes
-- Top bar: on desktop it spans the whole frame (see «Split layout»); the brand plus office name, a centered glass tab capsule (Home, Hearings, Cases), and glass circles for alerts and account. On mobile it shows the logo, the capsule (active tab labeled, the others icon-only) and the account.
+- Navigation: the sidebar (see «Sidebar layout»); there is no top bar.
 - Case: who first (client big, «ضد» opponent below), then a spec sheet (number, court, circuit, type), then the next hearing, the Clausia summary, the needs-review banner, and tabs (Facts, Docs, Parties) on mobile.
 - Roll: a day strip with dots per hearing, then a timeline by court; the next hearing is expanded with a "سجّل قرار الجلسة دي" button. On desktop, a side card lists past hearings that need a decision, each with a record button.
 
-## Split layout (chat-first; mockups in `docs/design/split/`)
-- Desktop (1280 and wider): one centered frame, `max-w-frame` 1600px with 20px margins on a smaller screen. The top bar spans the whole frame, above both columns: logo and office name on the start edge (right in RTL), the tab capsule in the middle, the bell and account on the end edge (left). No side padding, so the chat panel's right edge and the logo, and the page's left edge and the account icons, are on one line.
-- Under the bar (88px, `h-22`): the chat panel on the right (under the logo) and the page column on the left (flipped 2026-10-23, mockups `docs/design/split/Flip*.dc.html`; phone unchanged), 24px apart. The chat header has no brand (it is in the top bar): the context as a title with a chevron («في قضية X ▾» / «محادثة عامة ▾», it opens the sessions list) and a small line under it («N محادثات · آخر محادثة d/m/yyyy», from the loaded sessions; no sessions = no line). The ambient shapes are mirrored at 1280 and up (`--ambient-xl`): champagne behind the chat, navy top-right. The cite panel floats over the page column (left); an item's side sheet opens on the chat side (right). The chat panel is 560px (`chat`), 480px (`chat-min`) at 1440: `chat-width` clamps `100vw - 960px` between the two, so the page keeps 896px or more and shrinks first. The panel is sticky: its top edge is 46px under the bar (`chat-top`, owner 2026-10-23: it lines up with the page content's first line, the breadcrumb on a case page), at rest and while the page scrolls (`mt-chat-top` + `chat-top`), and it ends 24px above the screen's bottom (`chat-height`). The page column is the rest (1016px at 1920 and wider, 896px at 1440).
-- Below 1280 the chat is the whole screen and the page opens as a bottom sheet over it; the top bar is not shown (the chat's own header replaces it). Phone is unchanged.
-- Pages keep their own gutters (`px-10`), so a page's content sits 40px inside its column edge; the mockups draw it flush with the bar's edges (tracked as a `future` issue).
+## Sidebar layout (PR 1 of the restructure; mockups in `docs/design/ia/`: SBC* (sidebar + attached chat), SBF* (full-screen chat), MDrawer*, MChat*)
+- Desktop (1280 and wider): one centered frame, `max-w-frame` 1800px with 20px margins on a smaller screen, 24px from the top and the bottom of the screen. No top bar: the logo is once, in the sidebar.
+- On the end side (the right in RTL) ONE glass surface (`AppShell`): the sidebar (`w-sidebar` 264) and the chat (`w-chat` 480) attached with no gap, a hairline between. The page is the column beside it (it fills the rest, so at most about 1056; pages keep their own `px-10` gutters). DOM and tab order: sidebar, chat, page (a «انتقل لمحتوى الصفحة» skip link comes first).
+- Sidebar (`Sidebar.tsx`), top to bottom: logo and office; search («دوّر في أي حاجة ⌘K»: it filters the cases and sessions below; ⌘K focuses it); nav (الرئيسية، الأجندة with the «محتاجة قرار» count, الموكلين، المكتبة); «القضايا» (running cases first; each opens to «ملف القضية», its newest 6 sessions and «+ محادثة جديدة»; a gold dot = a past hearing with no decision); «محادثات عامة»; the bell and the account (its menu: theme, الإعدادات / الفريق / ورق المكتب as «قريباً», courts' holidays, sign out). The active row uses `.side-on`: a soft ink wash in light, the champagne frame of `.pill-on` in dark.
+- 1280 to 1440 (`rail:` variant): the sidebar is 72px, icons only (a letter tile per case, texts kept for screen readers). Not in the mockups: designed here.
+- Full-screen chat: the expand button in the chat header hides the page; the messages column is 760 (`max-w-messages`), centered. «افتح ملف القضية» (in a case) and the shrink button bring the page back; so does any sidebar link to a page. Remembered per user in localStorage (`clausia:chat-full:<userId>`).
+- Below 1280: the chat is the whole screen. Its header has ≡ (the sidebar as a 320px side drawer over a dim layer), the context pill and, in a case, a button for the page; the page opens as a solid bottom sheet over the chat (`?sheet=1`, or a page's own link).
+- Active-row, glass and gold rules are unchanged (tokens in `globals.css`).
 
 ## Owner decisions (2026-10-21)
 - Font: the system Arabic font (SF Arabic on Apple devices); no bundled Arabic web font.

@@ -1,6 +1,6 @@
-// The chat-first split layout, against a running server (default http://localhost:4500), logged in as the demo user. NO model call:
+// The sidebar layout (docs/design/ia), against a running server (default http://localhost:4500), logged in as the demo user. NO model call:
 // the sessions it needs are made with the demo login (RLS client) and removed again at the end.
-// Checks: one composer on every page; the frame (1600) and the chat panel's width at 1440 (480) / 1920 and 2560 (560), the top bar across the frame above both, the chat panel's top edge 46px under the bar (on the page content's first line) and its bottom 24px above the screen's bottom, at rest and while the page scrolls, and full screen below 1280; the context (case vs general)
+// Checks: one composer on every page; the frame (1800) with the sidebar and the chat (480) as one surface on the right, the page beside it, no top bar, the surface's top and bottom 24px from the screen at rest and while the page scrolls (the chat is 480 at 1440 and 2560 too: the sidebar is 72 as icons at 1440), and full screen below 1280; the context (case vs general)
 // and its sessions only; ?hearing= opens that hearing's session; the old URLs (/chat, /chat/<id>, ?tab=chat) still land; the phone's sheet
 // (closed on Home and a case, open on the Roll, «افتح» opens, «رجوع للشات» closes) and the two-step context picker; the draft survives a page change.
 // Run: npx tsx --env-file=.env.local scripts/test-split-layout.ts [baseUrl]
@@ -87,38 +87,44 @@ try {
     }
     await go(page, `/cases/${caseId}`);
     const aside = await box(page, 'aside[aria-label="محادثة Clausia"]');
-    check("1920: the chat panel is 560 wide", !!aside && Math.abs(aside.width - 560) <= 1, `${aside?.width}`);
-    check("1920: the frame is 1600 centered (panel starts at 160)", !!aside && Math.abs(aside.x - 160) <= 1, `${aside?.x}`);
-    check("the panel is on the left (the end side in RTL)", !!aside && aside.x < 960);
-    const hdr = await box(page, "header");
-    check("the top bar spans the whole frame (1600 wide, its start edge on the chat's)", !!hdr && !!aside && Math.abs(hdr.width - 1600) <= 1 && Math.abs(hdr.x - aside.x) <= 1, `${hdr?.x} / ${hdr?.width}`);
-    check("the chat panel sits below the top bar", !!hdr && !!aside && aside.y >= hdr.y + hdr.height, `${aside?.y} vs ${hdr ? hdr.y + hdr.height : "?"}`);
-    check("the chat panel's top edge is 46px under the top bar", !!hdr && !!aside && Math.abs(aside.y - (hdr.y + hdr.height + 46)) <= 1, `${aside?.y} vs bar bottom ${hdr ? hdr.y + hdr.height : "?"}`);
-    check("1920: the chat panel ends 24px above the screen's bottom", !!aside && Math.abs(aside.y + aside.height - (1080 - 24)) <= 1, `${aside ? aside.y + aside.height : "?"} of 1080`);
-    // the page content's first line (the breadcrumb on a case page): the chat's top edge falls inside that line
-    const line = await firstLine(page);
-    check("the chat's top edge lines up with the breadcrumb line (inside its text line)", !!line && !!aside && aside.y >= line.top - 1 && aside.y <= line.bottom + 1, `${aside?.y} vs line ${line?.top}..${line?.bottom} («${line?.text}»)`);
+    const side = await box(page, 'nav[aria-label="القائمة"]');
+    check("1920: the chat is 480 wide", !!aside && Math.abs(aside.width - 480) <= 1, `${aside?.width}`);
+    check("1920: the sidebar is 264 wide and the chat is attached to it with no gap (the sidebar is on the right)", !!aside && !!side && Math.abs(side.width - 264) <= 1 && Math.abs(aside.x + aside.width - side.x) <= 1, `${side?.x}/${side?.width} vs ${aside?.x}/${aside?.width}`);
+    check("1920: the frame is 1800 centered (the surface ends at 1860)", !!side && Math.abs(side.x + side.width - 1860) <= 1, `${side ? side.x + side.width : "?"}`);
+    check("no top bar", (await page.locator("header").count()) === 0);
+    check("1920: the surface starts 24px under the top and ends 24px above the screen's bottom (24..1056)", !!aside && Math.abs(aside.y - 24) <= 1 && Math.abs(aside.y + aside.height - 1056) <= 1, `${aside?.y}..${aside ? aside.y + aside.height : "?"}`);
     const pg = await box(page, "main");
-    check("the page is right of the chat with a 24px gap and ends on the top bar's far edge", !!pg && !!aside && !!hdr && Math.abs(pg.x - (aside.x + aside.width + 24)) <= 1 && Math.abs(pg.x + pg.width - (hdr.x + hdr.width)) <= 1, `${pg?.x} / ${pg?.width}`);
+    check("the page is on the left: from the frame's start (60) up to the chat", !!pg && !!aside && Math.abs(pg.x - 60) <= 1 && Math.abs(pg.x + pg.width - aside.x) <= 1, `${pg?.x} / ${pg?.width}`);
+    await page.click('button[aria-label="كبّر الشات"]');
+    await page.waitForTimeout(300);
+    const full = await box(page, 'aside[aria-label="محادثة Clausia"]');
+    check("full screen: the page is hidden and the chat fills the frame (1536 wide)", !(await visible(page, "main")) && !!full && Math.abs(full.width - 1536) <= 1, `${full?.width}`);
+    await page.reload({ waitUntil: "load" });
+    await page.waitForTimeout(1200);
+    check("full screen is remembered after a reload", !(await visible(page, "main")));
+    await page.getByRole("button", { name: "افتح ملف القضية" }).click();
+    await page.waitForTimeout(300);
+    check("«افتح ملف القضية» brings the page back", await visible(page, "main"));
     await ctx.close();
   }
   {
     const { ctx, page } = await open(1440, 900);
     await go(page, "/");
     const aside = await box(page, 'aside[aria-label="محادثة Clausia"]');
-    check("1440: the chat panel is 480 wide", !!aside && Math.abs(aside.width - 480) <= 1, `${aside?.width}`);
-    check("1440: top edge 134 (46 under the 88px bar), bottom 24 above the screen's bottom (876 of 900)", !!aside && Math.abs(aside.y - 134) <= 1 && Math.abs(aside.y + aside.height - 876) <= 1, `${aside?.y}..${aside ? aside.y + aside.height : "?"}`);
+    const side = await box(page, 'nav[aria-label="القائمة"]');
+    check("1440: the chat is 480 wide and the sidebar is 72 (icons)", !!aside && !!side && Math.abs(aside.width - 480) <= 1 && Math.abs(side.width - 72) <= 1, `${aside?.width} / ${side?.width}`);
+    check("1440: top edge 24, bottom 24 above the screen's bottom (876 of 900)", !!aside && Math.abs(aside.y - 24) <= 1 && Math.abs(aside.y + aside.height - 876) <= 1, `${aside?.y}..${aside ? aside.y + aside.height : "?"}`);
     await ctx.close();
   }
   {
     const { ctx, page } = await open(2560, 1440);
     await go(page, "/");
     const aside = await box(page, 'aside[aria-label="محادثة Clausia"]');
-    check("2560: the chat panel is 560 and the frame stays 1600 (panel starts at 480)", !!aside && Math.abs(aside.width - 560) <= 1 && Math.abs(aside.x - 480) <= 1, `${aside?.width} @ ${aside?.x}`);
+    check("2560: the chat is 480 and the frame stays 1800 (the chat starts at 1436)", !!aside && Math.abs(aside.width - 480) <= 1 && Math.abs(aside.x - 1436) <= 1, `${aside?.width} @ ${aside?.x}`);
     await ctx.close();
   }
 
-  // the panel stays put while the page scrolls (a short window, so the Cases page is taller than the screen)
+  // the surface stays put while the page scrolls (a short window, so the Cases page is taller than the screen)
   {
     const { ctx, page } = await open(1920, 700);
     await go(page, "/cases");
@@ -127,7 +133,7 @@ try {
     await page.waitForTimeout(300);
     const after = await box(page, 'aside[aria-label="محادثة Clausia"]');
     check("the page really scrolled", (await page.evaluate(() => window.scrollY)) >= 250);
-    check("while the page scrolls the chat panel stays at top 134 and ends 24 above the bottom (676 of 700)", !!before && !!after && Math.abs(before.y - 134) <= 1 && Math.abs(after.y - 134) <= 1 && Math.abs(after.y + after.height - 676) <= 1, `${before?.y} → ${after?.y}..${after ? after.y + after.height : "?"}`);
+    check("while the page scrolls the chat stays at top 24 and ends 24 above the bottom (676 of 700)", !!before && !!after && Math.abs(before.y - 24) <= 1 && Math.abs(after.y - 24) <= 1 && Math.abs(after.y + after.height - 676) <= 1, `${before?.y} → ${after?.y}`);
     await ctx.close();
   }
 
@@ -184,7 +190,7 @@ try {
     check("?tab=chat&q= lands on the case page with the sentence in the box (nothing sent)", !page.url().includes("tab=chat") && (await page.locator("textarea").inputValue()) === "اكتبلي مذكرة", page.url());
     // the draft survives moving between pages
     await page.locator("textarea").fill("مسودة نص");
-    await page.getByRole("link", { name: "الجلسات", exact: true }).first().click();
+    await page.locator('nav[aria-label="القائمة"]').getByRole("link", { name: /^الأجندة/ }).click();
     await page.waitForURL(/\/hearings/);
     await page.waitForTimeout(800);
     check("the draft survives a page change", (await page.locator("textarea").inputValue()) === "مسودة نص");
@@ -205,7 +211,13 @@ try {
     const a = await box(page, 'aside[aria-label="محادثة Clausia"]');
     check("phone: the chat is the main screen", !!a && a.width >= 389 && a.height >= 843);
     check("phone: Home shows no sheet (and no top bar)", !(await visible(page, "main")) && !(await visible(page, "header")));
-    check("phone: the header has the context pill and the round Roll and Cases buttons", (await visible(page, 'button[aria-label="اختار المحادثة"]')) && (await visible(page, 'aside a[aria-label="الجلسات"]')) && (await visible(page, 'aside a[aria-label="القضايا"]')));
+    check("phone: the header has ≡ (the drawer) and the context pill; the Roll and Cases buttons moved into the drawer", (await visible(page, 'button[aria-label="القائمة"]')) && (await visible(page, 'button[aria-label="اختار المحادثة"]')) && (await page.locator('aside a[aria-label="الجلسات"]').count()) === 0)
+    await page.click('button[aria-label="القائمة"]');
+    await page.waitForTimeout(300);
+    check("phone: ≡ opens the sidebar as a drawer on the start side (the right) with the nav", (await visible(page, 'nav[aria-label="القائمة"]')) && ((await box(page, 'nav[aria-label="القائمة"]'))?.x ?? 0) > 390 - 330 && (await page.locator('nav[aria-label="القائمة"]').innerText()).includes("الأجندة"));
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(300);
+    check("phone: Escape closes the drawer", !(await visible(page, 'nav[aria-label="القائمة"]')));
     check("phone: no mic button", (await page.locator('[aria-label*="صوت"], [aria-label*="mic" i]').count()) === 0);
     const send = await box(page, 'button[aria-label="إرسال"]');
     const plus = await box(page, 'label[for="file-panel"]');

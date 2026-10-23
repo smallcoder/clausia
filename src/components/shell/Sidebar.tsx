@@ -122,7 +122,7 @@ export function Sidebar({ data, initials, displayName, officeName, email, alerts
       <nav aria-label="القائمة"
         className={cx(
           "min-h-0 flex-col xl:flex xl:w-sidebar xl:shrink-0 xl:border-e xl:border-border-2 rail:w-rail",
-          "max-xl:fixed max-xl:inset-y-0 max-xl:start-0 max-xl:z-50 max-xl:w-80 max-xl:max-w-7/8 max-xl:bg-bg max-xl:shadow-pop",
+          "max-xl:fixed max-xl:inset-y-0 max-xl:start-0 max-xl:z-50 max-xl:w-80 max-xl:max-w-7/8 max-xl:bg-bg max-xl:shadow-pop max-xl:pt-[env(safe-area-inset-top)] max-xl:pb-[env(safe-area-inset-bottom)]", // ds-allow: safe-area insets need env()
           drawer ? "fade-enter flex" : "max-xl:hidden",
         )}>
         {/* logo */}
@@ -161,7 +161,7 @@ export function Sidebar({ data, initials, displayName, officeName, email, alerts
                   <span className={cx("flex-1", label)}>{text}</span>
                   {badge ? (
                     <span aria-label={attention ?? undefined}
-                      className="font-num inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gold-bg px-1.5 text-xs font-bold text-gold-text-small rail:absolute rail:end-1 rail:top-0.5 rail:h-4 rail:min-w-4 rail:px-1">{badge}</span>
+                      className="font-num inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gold-bg px-1.5 text-xs font-bold text-gold-on-ambient rail:absolute rail:end-1 rail:top-0.5 rail:h-4 rail:min-w-4 rail:px-1">{badge}</span>
                   ) : null}
                 </Link>
               </li>
