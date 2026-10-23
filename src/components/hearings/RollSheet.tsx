@@ -1,9 +1,9 @@
 "use client";
 /**
- * The roll's hearing cards and the decision sheet (design v2, docs/design/*Roll.dc.html). Tapping a card opens one
- * hearing: a bottom sheet on mobile, a side panel on desktop. A held hearing with no decision gets the «تسجيل القرار»
- * form (RecordDecision → applyOp 'record_decision'); every hearing links to its case. Wrap the roll in <RollSheet>;
- * each hearing is a <RollRow>, the next one a <RollNext>; <OpenHearing> is any other control that opens the sheet.
+ * A hearing's decision sheet (design v2): a bottom sheet on mobile, a side panel on desktop. A held hearing with no decision gets
+ * the «تسجيل القرار» form (RecordDecision → applyOp 'record_decision'); every hearing links to its case. Wrap the page in <RollSheet>;
+ * <OpenHearing> is the control that opens it (the chat's morning block). The agenda records decisions one by one (agenda/DecisionFlow)
+ * and its rows open the case.
  */
 import { ChevronLeft, X } from "lucide-react";
 import Link from "next/link";
@@ -45,101 +45,6 @@ export function CircuitNum({ h, size = "row" }: { h: HearingWithCase; size?: "ro
       <span className={cx("font-num font-extralight leading-none", digits, n ? "text-gold" : "text-text-4")}>{n ?? "—"}</span>
       <span className={cx("mt-0.75", size === "row" ? "text-xs text-text-4" : "text-xs text-text-3")}>دائرة</span>
     </span>
-  );
-}
-
-/** decided → the decision (← next date) · before today with no decision → «محتاجة قرار» · today → «النهارده» (only when asked) */
-function RowStatus({ h, today, showToday }: { h: HearingWithCase; today: string; showToday: boolean }) {
-  const s = hearingStatus(h, today);
-  if (s.tone === "good" || (s.tone === "accent" && !showToday)) return null;
-  return (
-    <StatusChip tone={s.tone}>
-      {s.label}
-      {s.next ? <>&nbsp;← <DateText value={s.next} /></> : null}
-    </StatusChip>
-  );
-}
-
-const sep = (items: (ReactNode | null | false | undefined)[]) =>
-  items.filter(Boolean).map((t, i) => <span key={i}>{i ? " · " : ""}{t}</span>);
-
-/**
- * One hearing as a solid card: the circuit number, «client — subject», number/year (· type), «المطلوب: …».
- * `showDate` / `showCourt` for lists that are not grouped by day / court; `showToday` adds the «النهارده» chip.
- */
-export function RollRow({ h, today, showDate = false, showCourt = false, showToday = false }: { h: HearingWithCase; today: string; showDate?: boolean; showCourt?: boolean; showToday?: boolean }) {
-  const open = useContext(Ctx);
-  const num = caseNumber(h);
-  const need = h.purpose?.trim() || null;
-  const date = showDate ? <DateText iso={h.hearing_date} /> : null;
-  const court = showCourt ? courtOf(h) : null;
-  const status = <RowStatus h={h} today={today} showToday={showToday} />;
-  return (
-    <button type="button" onClick={() => open?.(h)} aria-haspopup="dialog"
-      className="flex w-full items-center gap-3.5 rounded-lg border border-border-2 bg-card px-4 py-3.25 text-start shadow-card transition hover:border-border sm:gap-5.5 sm:rounded-xl sm:px-6 sm:py-4.5">
-      <CircuitNum h={h} />
-      <span className="min-w-0 flex-1 border-s border-border-2 ps-3.5 sm:ps-5.5">
-        <span className="flex items-center justify-between gap-2">
-          <span className="min-w-0 truncate text-base font-semibold text-text sm:whitespace-normal sm:text-md">{hearingTitle(h)}</span>
-          <span className="shrink-0 sm:hidden">{status}</span>
-        </span>
-        {/* mobile: date / court, then «المطلوب: …» */}
-        <span className="mt-0.75 block truncate text-sm text-text-3 sm:hidden">
-          {sep([date, court, need ? <>المطلوب: <span className="text-text">{need}</span></> : !date && !court && num ? <span>{num}</span> : null])}
-        </span>
-        {/* desktop: date · court · number · type */}
-        <span className="mt-0.75 hidden truncate text-sm text-text-3 sm:block">
-          {sep([date, court, num ? <span>{num}</span> : null, h.case.case_type?.trim()])}
-        </span>
-      </span>
-      <span className="hidden max-w-[38%] shrink-0 flex-col items-end gap-1.5 text-sm sm:flex" /* ds-allow: a share of the row (38%), not a length */>
-        {status}
-        {need ? <span className="max-w-full truncate text-text"><span className="text-text-3">المطلوب: </span>{need}</span> : null}
-      </span>
-    </button>
-  );
-}
-
-/**
- * The next hearing, expanded: big circuit number, title, number, a gold-dot «المطلوب», and «سجّل قرار الجلسة دي»
- * (only once the hearing is held — the server refuses a decision on a future hearing).
- */
-export function RollNext({ h, today }: { h: HearingWithCase; today: string }) {
-  const open = useContext(Ctx);
-  const num = caseNumber(h);
-  const need = h.purpose?.trim() || null;
-  const type = h.case.case_type?.trim() || null;
-  const canDecide = !h.decision_type && h.hearing_date <= today;
-  const needLine = need ? (
-    <span className="flex items-center gap-2 text-sm sm:text-base">
-      <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-gold" />
-      <span className="text-text-3">المطلوب:</span>
-      <span className="min-w-0 font-semibold text-text">{need}</span>
-    </span>
-  ) : null;
-  return (
-    <div className="rounded-xl border border-border-2 bg-card p-4.5 shadow-card sm:flex sm:items-center sm:gap-6.5 sm:px-6.5 sm:py-6">
-      <button type="button" onClick={() => open?.(h)} aria-haspopup="dialog" className="flex w-full min-w-0 items-center gap-4 text-start sm:flex-1 sm:gap-6.5">
-        <CircuitNum h={h} size="next" />
-        <span className="min-w-0 flex-1 border-s border-border-2 ps-4 sm:ps-6.5">
-          <span className="block text-md font-semibold leading-[1.5] text-text sm:text-lg">{hearingTitle(h)}</span>
-          {num ? (
-            <span className="mt-0.75 block text-sm text-text-3">
-              <span>{num}</span>
-              {type ? <span className="hidden sm:inline"> · {type}</span> : null}
-            </span>
-          ) : type ? <span className="mt-0.75 block text-sm text-text-3">{type}</span> : null}
-          {needLine ? <span className="mt-3.5 hidden sm:block">{needLine}</span> : null}
-        </span>
-      </button>
-      {needLine ? <div className="mt-4 border-t border-border-2 pt-3.25 sm:hidden">{needLine}</div> : null}
-      {canDecide ? (
-        <button type="button" onClick={() => open?.(h)} aria-haspopup="dialog"
-          className="bg-primary-fill mt-3.5 inline-flex h-11 w-full shrink-0 items-center justify-center rounded-full px-5.5 text-base font-bold transition hover:opacity-90 sm:mt-0 sm:h-control-xl sm:w-auto sm:self-end">
-          سجّل قرار الجلسة دي
-        </button>
-      ) : null}
-    </div>
   );
 }
 

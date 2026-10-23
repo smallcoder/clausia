@@ -2,7 +2,7 @@ import "server-only";
 /**
  * After a judgment is recorded and confirmed, propose ONE deadlines card (made by code, never by the model) in the same
  * thread, or in the case's own thread when the judgment came from a card with no thread (a paper's card).
- * Nothing is saved here: the card becomes rows only when the lawyer taps «حطهم في الرول» (decideProposal → applyOp('add_deadline')).
+ * Nothing is saved here: the card becomes rows only when the lawyer taps «حطهم في الأجندة» (decideProposal → applyOp('add_deadline')).
  * Behind the flag NEXT_PUBLIC_FEATURE_DEADLINES; with it off nothing is proposed.
  */
 import { deadlinesEnabled } from "@/lib/flags";
@@ -14,7 +14,7 @@ export type ProposeResult = { proposed: true; proposalId: string } | { proposed:
 
 /** The assistant line above the card (written by code; it says what the card assumes). */
 const intro = (kind: DeadlineKind) =>
-  `سجّلت الحكم. وحسبت مواعيد ${kind === "appeal" ? "الطعن" : "الطعن بالنقض"} من تاريخ صدوره (م 213)، على أساس إنه حضوري. راجعها، ولو الحكم مش حضوري اضغط «الحكم مش حضوري». ولما توافق هحطها في الرول وأنبّهك قبلها.`;
+  `سجّلت الحكم. وحسبت مواعيد ${kind === "appeal" ? "الطعن" : "الطعن بالنقض"} من تاريخ صدوره (م 213)، على أساس إنه حضوري. راجعها، ولو الحكم مش حضوري اضغط «الحكم مش حضوري». ولما توافق هحطها في الأجندة وأنبّهك قبلها.`;
 
 export async function proposeDeadlinesForJudgment(db: Db, input: { judgmentId: string; threadId?: string | null }): Promise<ProposeResult> {
   if (!deadlinesEnabled()) return { proposed: false, why: "flag off" };

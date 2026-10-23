@@ -59,7 +59,7 @@ interface Built {
   blocked: string | null;
 }
 
-/** The card for these inputs and (when everything is clear) the row that «حطهم في الرول» saves. */
+/** The card for these inputs and (when everything is clear) the row that «حطهم في الأجندة» saves. */
 export async function buildDeadlines(db: Db, input: DeadlineInputs): Promise<Built> {
   const { data: c } = await db.from("cases").select("id, title, case_number, case_year, stage, clients(name)").eq("id", input.caseId).maybeSingle();
   if (!c) throw new DeadlineError("الدعوى مش موجودة");

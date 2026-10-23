@@ -320,7 +320,7 @@ async function applyOpRaw(db: Db, tool: WriteTool, rawArgs: unknown, p: Provenan
       });
       if (!built.save) throw new Error(built.blocked ?? "ماقدرتش أحسب الميعاد");
       const row = must(await db.from("case_deadlines").insert({
-        ...built.save, review_status: p.review_status, created_by_kind: "lawyer", source_kind: "manual", // the lawyer's tap on «حطهم في الرول» is the act; code made the numbers
+        ...built.save, review_status: p.review_status, created_by_kind: "lawyer", source_kind: "manual", // the lawyer's tap on «حطهم في الأجندة» is the act; code made the numbers
       }).select("id").single());
       return { id: row.id, undo: del(db, "case_deadlines", row.id), steps: rm("case_deadlines", row.id) };
     }

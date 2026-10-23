@@ -21,6 +21,8 @@ export interface HearingCase {
   client_name: string | null;
   /** «مدني» / «عمال» … free text, shown after the case number in the roll */
   case_type: string | null;
+  /** the other side (a party that is not our client), as saved on the case: «وليد التجريبي»; «… وآخرين» when there are several; null when none is saved */
+  opponent: string | null;
 }
 
 export interface HearingRow {
@@ -60,9 +62,18 @@ export interface HearingWithCase extends HearingRow {
 
 const HEARING_COLS =
   "id, case_id, hearing_date, purpose, location, decision_type, decision_text, next_requirements, previous_hearing_id, next_hearing_id, review_status, created_by_kind, source_kind, source_page, source_document_id, source_quote, source_char_start, source_char_end, decision_source_kind, decision_source_document_id, decision_source_page, decision_source_quote, decision_source_char_start, decision_source_char_end";
-const WITH_CASE = `${HEARING_COLS}, cases!inner(id, case_number, case_year, title, court, circuit, client_role, status, case_type, clients(name))`;
+const WITH_CASE = `${HEARING_COLS}, cases!inner(id, case_number, case_year, title, court, circuit, client_role, status, case_type, clients(name), case_parties(name, is_our_client, review_status))`;
 
-type RawCase = Omit<HearingCase, "client_name"> & { clients: { name: string } | null };
+type RawParty = { name: string; is_our_client: boolean; review_status: E["item_status"] };
+type RawCase = Omit<HearingCase, "client_name" | "opponent"> & { clients: { name: string } | null; case_parties: RawParty[] | null };
+
+/** The other side of a case: its saved parties that are not our client (never a rejected one); the confirmed ones first. */
+export function opponentOf(parties: RawParty[] | null): string | null {
+  const them = (parties ?? []).filter((p) => !p.is_our_client && p.review_status !== "rejected" && p.name.trim());
+  them.sort((a, b) => Number(b.review_status === "confirmed") - Number(a.review_status === "confirmed"));
+  if (!them.length) return null;
+  return them.length > 1 ? `${them[0].name.trim()} وآخرين` : them[0].name.trim();
+}
 type Raw = HearingRow & { cases: RawCase };
 
 /** Flatten the join and fill `next_date` (one extra query for the linked next hearings). */
@@ -74,8 +85,8 @@ async function shape(db: Db, raw: Raw[]): Promise<HearingWithCase[]> {
     for (const r of rows) dates.set(r.id, r.hearing_date);
   }
   return raw.map(({ cases, ...h }) => {
-    const { clients, ...c } = cases;
-    return { ...h, case: { ...c, client_name: clients?.name ?? null }, next_date: h.next_hearing_id ? dates.get(h.next_hearing_id) ?? null : null };
+    const { clients, case_parties, ...c } = cases;
+    return { ...h, case: { ...c, client_name: clients?.name ?? null, opponent: opponentOf(case_parties) }, next_date: h.next_hearing_id ? dates.get(h.next_hearing_id) ?? null : null };
   });
 }
 
