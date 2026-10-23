@@ -97,7 +97,7 @@ export function MorningBlock({ data }: { data: MorningData }) {
   return (
     <RollSheet today={today}>
       <div className="flex flex-col gap-4">
-        <p className="text-center text-xs leading-[normal] text-text-4"><DateText value={`النهارده · ${stamp.time} ${stamp.period}`} /></p>
+        <p className="text-center text-xs leading-[normal] text-text-4 on-ambient"><DateText value={`النهارده · ${stamp.time} ${stamp.period}`} /></p>
         {/* the phone has no page beside the chat, so the greeting is on top of it (the desktop page carries it) */}
         <h1 className="text-xl font-bold leading-[1.2] text-title xl:hidden"><Greeting text={greeting} /></h1>
 
@@ -108,7 +108,7 @@ export function MorningBlock({ data }: { data: MorningData }) {
               {s.sources.map((src, k) => <Source key={k} s={src} className="ms-1 align-[2px]" />)}
             </p>
           ))}
-          {line ? <p className="mt-1 text-xs leading-[normal] text-text-4"><DateText value={line} /></p> : null}
+          {line ? <p className="mt-1 text-xs leading-[normal] text-text-4 on-ambient"><DateText value={line} /></p> : null}
         </div>
 
         {notices.length ? (

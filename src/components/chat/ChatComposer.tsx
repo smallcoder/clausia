@@ -88,7 +88,7 @@ export function ChatComposer({ id, value, onChange, onSend, onFile, sending, bus
             </button>
           </div>
         </div>
-        <p className="mt-2 hidden min-h-4 text-center text-xs text-text-4 xl:block" aria-live="polite">{status ?? "مفيش حاجة بتتغير من غير موافقتك"}</p>
+        <p className="mt-2 hidden min-h-4 text-center text-xs text-text-4 on-ambient xl:block" aria-live="polite">{status ?? "مفيش حاجة بتتغير من غير موافقتك"}</p>
       </div>
     </div>
   );

@@ -51,7 +51,7 @@ export function AppHeader({ initials, officeName, email, alerts, userId, holiday
   }, [open]);
   // desktop: the top bar spans the whole frame (logo on the start edge, icons on the end edge), above the chat panel and the page; below 1280 the phone's chat header replaces it
   return (
-    <header className="sticky top-0 z-40 hidden h-22 w-full grid-cols-[1fr_auto_1fr] items-center gap-2 bar-solid xl:grid">
+    <header className="sticky top-0 z-40 hidden h-22 w-full grid-cols-[1fr_auto_1fr] items-center gap-2 bar-solid on-ambient xl:grid">
       <Link href="/" className="flex items-center gap-2.5 justify-self-start" aria-label="Clausia — الرئيسية">
         <span className="sm:hidden"><ClausiaMark size={40} /></span>
         <span className="hidden sm:inline-flex"><ClausiaMark size={36} /></span>
@@ -66,7 +66,7 @@ export function AppHeader({ initials, officeName, email, alerts, userId, holiday
           const active = on === href;
           return (
             <Link key={href} href={session ? `${href}?s=${session}` : href} aria-label={label} aria-current={active ? "page" : undefined}
-              className={`tap inline-flex h-9 items-center gap-2 rounded-lg text-sm transition sm:h-10 sm:px-4.5 sm:text-base ${active ? "pill-on px-3" : "glass-icon px-2.5 font-medium hover:text-text"}`}>
+              className={`tap inline-flex h-9 items-center gap-2 rounded-lg text-sm transition sm:h-10 sm:px-4.5 sm:text-base ${active ? "pill-on px-3" : "px-2.5 font-medium text-text-2 hover:text-text"}`}>
               <Icon size={16} strokeWidth={1.9} aria-hidden className="size-glyph-sm sm:size-4" />
               <span className={active ? "" : "hidden sm:inline"}>{label}</span>
             </Link>
