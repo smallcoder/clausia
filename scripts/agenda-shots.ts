@@ -54,15 +54,23 @@ async function contrast(page: Page, root: string, tag: string) {
   const items = await page.evaluate((sel) => {
     const el0 = document.querySelector(sel);
     if (!el0) return [];
-    const out: { text: string; x: number; y: number; w: number; h: number; color: string; size: number; weight: number }[] = [];
+    const out: { text: string; x: number; y: number; w: number; h: number; color: number[]; size: number; weight: number }[] = [];
+    // any CSS colour (srgb, oklab, color-mix …) → sRGB rgba, through a canvas
+    const g = document.createElement("canvas").getContext("2d", { willReadFrequently: true })!;
     el0.querySelectorAll("*").forEach((el) => {
       const own = [...el.childNodes].filter((n) => n.nodeType === 3 && n.textContent!.trim()).map((n) => n.textContent!.trim()).join(" ");
       if (!own) return;
-      const r = el.getBoundingClientRect();
+      // the box of the text itself (not the element, which can be wider and run under a neighbour)
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      const r = range.getBoundingClientRect();
       const cs = getComputedStyle(el);
       if (r.width < 2 || r.height < 2 || cs.visibility === "hidden" || cs.display === "none" || el.closest(".sr-only") || el.closest("[aria-hidden='true']") && !el.closest("[role='dialog']")) return;
       if (r.top < 0 || r.bottom > window.innerHeight || r.left < 0 || r.right > window.innerWidth) return;
-      out.push({ text: own.slice(0, 28), x: r.x, y: r.y, w: r.width, h: r.height, color: cs.color, size: parseFloat(cs.fontSize), weight: Number(cs.fontWeight) });
+      // only what can be seen: the text is the topmost thing at its centre (not clipped by a scroller, not under another panel)
+      const top = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+      if (!top || !el.contains(top)) return;
+      out.push({ text: own.slice(0, 28), x: r.x, y: r.y, w: r.width, h: r.height, color: ((): number[] => { g.canvas.width = g.canvas.height = 1; g.clearRect(0, 0, 1, 1); g.fillStyle = cs.color; g.fillRect(0, 0, 1, 1); const d = g.getImageData(0, 0, 1, 1).data; return [d[0], d[1], d[2], d[3] / 255]; })(), size: parseFloat(cs.fontSize), weight: Number(cs.fontWeight) });
     });
     return out;
   }, root);
@@ -84,7 +92,7 @@ async function contrast(page: Page, root: string, tag: string) {
   }, { b64: buf.toString("base64"), rects: items });
   let worst = 99;
   items.forEach((it, i) => {
-    const m = it.color.match(/[\d.]+/g)!.map(Number);
+    const m = it.color;
     const bg = data[i];
     const a = m[3] ?? 1;
     const fg = [0, 1, 2].map((j) => Math.round(m[j] * a + bg[j] * (1 - a)));

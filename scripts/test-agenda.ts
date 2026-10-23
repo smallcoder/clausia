@@ -4,6 +4,8 @@
 // Run: npx tsx --conditions=react-server --env-file=.env.local scripts/test-agenda.ts [baseUrl]
 import { chromium } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
+import type { Db } from "@/lib/supabase/server";
+import { applyOp, MANUAL } from "@/lib/tools/apply";
 
 const BASE = process.argv[2] ?? "http://localhost:3101";
 let fails = 0;
@@ -13,6 +15,7 @@ const sb = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_
 await sb.auth.signInWithPassword({ email: process.env.DEMO_EMAIL!, password: process.env.DEMO_PASSWORD! });
 const today = new Date().toLocaleDateString("en-CA", { timeZone: "Africa/Cairo" });
 const undecidedNow = async () => (await sb.from("hearings").select("id", { count: "exact", head: true }).lt("hearing_date", today).is("decision_type", null).neq("review_status", "rejected")).count ?? -1;
+const db = sb as unknown as Db;
 const before = await undecidedNow();
 const { data: busy } = await sb.from("hearings").select("hearing_date").lt("hearing_date", today).neq("review_status", "rejected");
 const perDay = new Map<string, number>();
@@ -93,6 +96,7 @@ try {
   const slimText = await slim.innerText();
   check(slimText.includes(String(before)) && slimText.includes("سجّلها واحدة واحدة"), "the slim line says the count and «سجّلها واحدة واحدة»", slimText.replace(/\s+/g, " "));
   check((await page.locator("main input[name='decision_text']").count()) === 0, "no decision inputs in the agenda list");
+  await page.waitForTimeout(3000); // the strip finishes its own reads first
   const mark = writes.length; // the strip reads weeks with server actions (POST): those are reads; the flow itself must send none
   await slim.click();
   const dlg = page.getByRole("dialog");
@@ -114,6 +118,52 @@ try {
   await page.getByRole("dialog").waitFor({ state: "detached" });
   check(!url().includes("decide"), "closing it drops ?decide=1 from the address", url());
   check((await undecidedNow()) === before, "the undecided count is the same after", `${before} → ${await undecidedNow()}`);
+
+  // ---- the one write the flow needs checked: a decision SAVED through it, on a temporary case that is deleted again ----
+  // (demo account, RLS client, the same applyOp the app uses; dated 2019 so its hearings come first in the flow)
+  let caseId: string | null = null;
+  let clientId: string | null = null;
+  try {
+    clientId = (await applyOp(db, "create_client", { name: "اختبار-أجندة موكل", quote: "اختبار" }, MANUAL)).id;
+    caseId = (await applyOp(db, "create_case", { client: clientId, title: "اختبار-أجندة", court: "محكمة اختبار الأجندة", circuit: "الدائرة 3 اختبار", case_number: "9999", case_year: 2019, client_role: "plaintiff", quote: "اختبار" }, MANUAL)).id;
+    await applyOp(db, "add_party", { case: caseId, name: "اختبار-أجندة خصم", role: "defendant", is_our_client: false, quote: "اختبار" }, MANUAL);
+    const hA = (await applyOp(db, "add_hearing", { case: caseId, date: "1/5/2019", purpose: "مطلوب-اختبار", location: "الدور 4 · قاعة 12", quote: "اختبار" }, MANUAL)).id;
+    await applyOp(db, "add_hearing", { case: caseId, date: "1/5/2019", location: "الدور 4 · قاعة 12", quote: "اختبار" }, MANUAL);
+
+    // the agenda day of the temporary hearings: the floor and hall beside the court, the party names, «المطلوب»
+    await page.goto(`${BASE}/agenda?view=day&date=1/5/2019`, { waitUntil: "load", timeout: 120_000 });
+    await page.waitForSelector("main section[aria-label='محكمة اختبار الأجندة']", { timeout: 60_000 });
+    const grp = await page.locator("main section[aria-label='محكمة اختبار الأجندة']").innerText();
+    check(grp.includes("الدور 4 · قاعة 12"), "the court's group shows the floor and hall (hearings.location)");
+    check(grp.includes("اختبار-أجندة موكل") && grp.includes("ضد") && grp.includes("اختبار-أجندة خصم"), "«client ضد opponent» from the case's parties");
+    check(grp.includes("9999 لسنة 2019") && grp.includes("مطلوب-اختبار"), "the case number and «المطلوب»");
+    await page.screenshot({ path: "screenshots/agenda/day-location-1920-light.png" });
+
+    // the flow: the two 2019 hearings are the oldest, so they come first; save the first one with «قرار آخر»
+    await page.goto(`${BASE}/agenda?decide=1`, { waitUntil: "load", timeout: 120_000 });
+    const d2 = page.getByRole("dialog");
+    await d2.waitFor({ timeout: 60_000 });
+    await d2.getByRole("radio", { name: "قرار آخر" }).click();
+    await d2.locator("input[name='decision_text']").fill("قرار-اختبار");
+    await page.screenshot({ path: "screenshots/agenda/flow-filled-1920-light.png" });
+    await d2.getByRole("button", { name: "حفظ القرار" }).click();
+    await d2.getByRole("status").waitFor({ timeout: 30_000 });
+    check((await d2.innerText()).includes("اتسجّل القرار"), "the save confirms inside the flow");
+    const { data: saved } = await sb.from("hearings").select("decision_type, decision_text, source_kind").eq("case_id", caseId!).not("decision_type", "is", null);
+    check(saved?.length === 1 && saved[0].decision_type === "other" && saved[0].decision_text === "قرار-اختبار" && saved[0].source_kind === "manual", "one decision saved, with manual provenance", JSON.stringify(saved));
+    await page.screenshot({ path: "screenshots/agenda/flow-saved-1920-light.png" });
+    await d2.getByRole("button", { name: "الجلسة اللي بعدها" }).click();
+    await page.waitForFunction(() => /جلسة\s*2\s*من/.test(document.querySelector("[role=dialog]")?.textContent ?? ""));
+    check(true, "«الجلسة اللي بعدها» goes on to the next one, and the list did not jump after the refresh");
+    check(!(await d2.getByText("اتسجّل القرار").count()), "the next hearing shows an empty form again");
+    void hA;
+  } finally {
+    if (caseId) { await db.from("hearings").delete().eq("case_id", caseId); await db.from("cases").delete().eq("id", caseId); }
+    if (clientId) await db.from("clients").delete().eq("id", clientId);
+  }
+  check((await undecidedNow()) === before, "cleanup: the demo account is as before (the undecided count is the same)", `${before} → ${await undecidedNow()}`);
+  const { data: left } = await sb.from("cases").select("id").eq("title", "اختبار-أجندة");
+  check(!left?.length, "cleanup: the temporary case is gone");
 
   // ---- the old addresses ----
   for (const [from, want] of [["/hearings", "/agenda"], [`/hearings?view=week&date=${dmy(DAY)}`, `/agenda?view=week&date=${dmy(DAY)}`], ["/hearings?filter=undecided", "/agenda?decide=1"]] as const) {
