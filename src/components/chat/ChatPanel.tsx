@@ -13,7 +13,7 @@ import { moveThreadAction } from "@/lib/assistant/actions";
 import { ChatThread } from "./ChatThread";
 import { ContextPicker } from "./ContextPicker";
 import { SessionsMenu } from "./Sessions";
-import { shortDay, type PanelData } from "./panel-types";
+import type { PanelData } from "./panel-types";
 import { DateText } from "@/components/ui";
 import { formatDmy } from "@/lib/dates";
 
