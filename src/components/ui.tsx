@@ -78,7 +78,7 @@ export function Button({ variant = "primary", size = "md", className, ...p }: Co
     <button
       {...p}
       className={cx(
-        "inline-flex select-none items-center justify-center gap-1.5 rounded-md font-semibold transition duration-150 disabled:cursor-not-allowed disabled:opacity-45",
+        "inline-flex select-none items-center justify-center gap-1.5 rounded-md font-semibold transition duration-150 disabled:opacity-45",
         size === "sm" ? "min-h-11 px-3.5 text-base leading-[1.55] lg:min-h-9" : "min-h-11 px-5 text-md leading-[1.6]",
         BTN[variant],
         className,

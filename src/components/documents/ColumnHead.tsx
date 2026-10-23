@@ -12,7 +12,7 @@ import { createPortal } from "react-dom";
 import { removeColumnAction, renameColumnAction } from "@/lib/doc-columns/actions";
 
 const ITEM = "flex min-h-11 w-full items-center px-4 text-start text-base text-text hover:bg-card-2";
-const FIELD = "h-11 w-full rounded-md border border-border bg-field px-3.5 text-md font-normal text-text placeholder:text-text-4 focus:border-gold focus:outline-none";
+const FIELD = "h-11 w-full rounded-md border border-border bg-field px-3.5 text-md font-normal text-text placeholder:text-text-4";
 
 export function ColumnHead({ id, title, suggested }: { id: string; title: string; suggested: boolean }) {
   const [renaming, setRenaming] = useState(false);

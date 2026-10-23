@@ -534,7 +534,7 @@ function decisionSummary(p: Proposal) {
 function EditFields({ op, values, notes, onChange, display }: {
   op: ProposalOp; values: Record<string, unknown>; notes: Record<string, string>; onChange: (k: string, v: unknown) => void; display: (f: FieldSpec, v: unknown) => string | null;
 }) {
-  const input = "min-h-11 w-full rounded-md border border-border bg-field px-3 py-2 text-md text-text focus:border-text-4 focus:outline-none";
+  const input = "min-h-11 w-full rounded-md border border-border bg-field px-3 py-2 text-md text-text";
   return (
     <div className="space-y-2.5">
       {OP_FIELDS[op.tool].map((field) => {

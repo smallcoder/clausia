@@ -3,7 +3,7 @@ import { useActionState, useState } from "react";
 import { ThemeToggle } from "@/components/shell/ThemeToggle";
 import { signIn, signUp, type AuthState } from "./actions";
 
-const FIELD = "mt-1.5 h-12 w-full rounded-md border border-border bg-field px-4 text-md text-text shadow-soft placeholder:text-text-4 focus:border-gold/60 focus:outline-none";
+const FIELD = "mt-1.5 h-12 w-full rounded-md border border-border bg-field px-4 text-md text-text shadow-soft placeholder:text-text-4";
 
 export default function LoginPage() {
   const [mode, setMode] = useState<"in" | "up">("in");

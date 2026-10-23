@@ -52,7 +52,7 @@ export function AddColumn({ caseId, disabled = false }: { caseId: string; disabl
           <label htmlFor="doc-column-q" className="block text-base font-semibold text-text">اسأل سؤال على كل مستندات القضية</label>
           <input id="doc-column-q" ref={input} value={question} onChange={(e) => setQuestion(e.target.value)} maxLength={300} disabled={pending}
             placeholder="مثلاً: فيه شرط جزائي؟"
-            className="min-h-11 w-full rounded-md border border-border bg-field px-3 py-2 text-md text-text focus:border-text-4 focus:outline-none disabled:opacity-60" />
+            className="min-h-11 w-full rounded-md border border-border bg-field px-3 py-2 text-md text-text disabled:opacity-60" />
           <p className="text-sm leading-5 text-text-3">
             Clausia بيسأله لكل مستند لوحده، ويطلّع إجابة قصيرة مع الصفحة والجملة. هتشوف النتيجة في بطاقة، ومفيش حاجة هتتحفظ قبل ما تأكد.
           </p>

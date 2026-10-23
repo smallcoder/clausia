@@ -7,7 +7,7 @@ import type { EditState } from "@/app/(app)/cases/actions";
 
 type Action = (prev: EditState, form: FormData) => Promise<EditState>;
 
-const field = "w-full rounded-md border border-border bg-field px-3.5 text-md text-text placeholder:text-text-4 focus:border-gold focus:outline-none";
+const field = "w-full rounded-md border border-border bg-field px-3.5 text-md text-text placeholder:text-text-4";
 
 export function InlineEdit({
   action, hidden, initial, display, placeholder, options, multiline, hint, label = "تعديل", startOpen = false,

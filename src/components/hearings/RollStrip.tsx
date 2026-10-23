@@ -319,7 +319,7 @@ export function RollStrip({ center, selected, focusDay, today, counts, pinned, o
   const tabStop = selected ?? focusDay;
   const todayOut = today < vis.first || today > vis.last;
   const mid = vis.first <= vis.last ? midDay(vis.first, vis.last) : vis.first;
-  const arrow = "glass glass-icon tap absolute top-1/2 z-10 hidden size-9 -translate-y-1/2 items-center justify-center rounded-full transition hover:text-text aria-disabled:cursor-default aria-disabled:text-text-4 aria-disabled:opacity-50 aria-disabled:hover:text-text-4 sm:inline-flex";
+  const arrow = "glass glass-icon tap absolute top-1/2 z-10 hidden size-9 -translate-y-1/2 items-center justify-center rounded-full transition hover:text-text aria-disabled:text-text-4 aria-disabled:opacity-50 aria-disabled:hover:text-text-4 sm:inline-flex";
 
   return (
     <div className="mt-4.5 leading-[normal]">
