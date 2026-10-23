@@ -12,7 +12,7 @@ import { DECISION } from "@/lib/labels";
 import { recordDecisionAction, type HearingFormState } from "./actions";
 import { useDecisionNotice } from "./DecisionNotices";
 
-const sheetInput = "h-11 w-full rounded-md border border-border bg-field px-3 text-md text-text placeholder:text-text-4 focus:border-gold focus:outline-none";
+const sheetInput = "h-11 w-full rounded-md border border-border bg-field px-3 text-md text-text placeholder:text-text-4";
 
 export function RecordDecision({ hearingId, caseId, hearingDate, label, compact = false, layout = "inline", onSaved, onCancel }: {
   hearingId: string;
@@ -85,7 +85,7 @@ export function RecordDecision({ hearingId, caseId, hearingDate, label, compact 
               return (
                 <button key={k} type="button" role="radio" aria-checked={on} onClick={() => setDecision(k)}
                   className={cx("h-11 rounded-full px-4 text-base transition",
-                    on ? "bg-primary-fill font-bold" : "border border-border bg-chip text-text-2 shadow-soft hover:text-text",
+                    on ? "pill-on" : "border border-border bg-chip text-text-2 shadow-soft hover:text-text",
                     !on && err?.field === "decision" && "border-bad")}>
                   {v}
                 </button>

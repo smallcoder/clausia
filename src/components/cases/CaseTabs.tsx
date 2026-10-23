@@ -37,7 +37,7 @@ export function SegBar({ items, className = "" }: { items: { key: SegKey; label:
         return (
           <button key={t.key} type="button" role="tab" aria-selected={active} aria-controls={`seg-${t.key}`} onClick={() => set(t.key)}
             className={`tap h-9 flex-1 rounded-lg text-sm transition ${active
-              ? "bg-selected font-semibold text-on-selected shadow-[var(--tab-shadow)]"
+              ? "pill-on"
               : "font-medium glass-icon hover:text-text"}`}>
             {t.label} <span className="font-num opacity-70">{t.count}</span>
           </button>
