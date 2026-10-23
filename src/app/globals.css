@@ -61,9 +61,11 @@
   --shadow-soft: 0 1px 2px rgba(18,26,43,0.04);
   --shadow-pop: 0 2px 4px rgba(18,26,43,0.05), 0 22px 44px -20px rgba(18,26,43,0.32);
   --shadow-mark: 0 4px 10px rgba(18,26,43,0.25);
-  /* ambient shapes behind the whole app (fixed, soft, not animated): navy top-left, champagne bottom-left (behind the chat), light accents elsewhere.
+  /* ambient shapes behind the whole app (fixed, soft, not animated): navy top-left, champagne bottom-left, light accents elsewhere (phone and tablet).
+     --ambient-xl is the same set mirrored for the desktop split (1280 and up, chat on the right): champagne behind the chat (bottom-right), navy top-right.
      Each is a circle gradient: centre offset from the edges, radius = half the box's diagonal, clear from 65% (the mockups' 900/760/700/600px blobs). */
   --ambient: radial-gradient(circle 636px at left 290px top 190px, rgba(38,49,75,0.26), transparent 65%), radial-gradient(circle 537px at left 560px bottom 60px, rgba(214,192,143,0.70), transparent 65%), radial-gradient(circle 495px at right 150px bottom 50px, rgba(38,49,75,0.12), transparent 65%), radial-gradient(circle 424px at right 680px top -60px, rgba(214,192,143,0.32), transparent 65%);
+  --ambient-xl: radial-gradient(circle 636px at right 290px top 190px, rgba(38,49,75,0.26), transparent 65%), radial-gradient(circle 537px at right 560px bottom 60px, rgba(214,192,143,0.70), transparent 65%), radial-gradient(circle 495px at left 150px bottom 50px, rgba(38,49,75,0.12), transparent 65%), radial-gradient(circle 424px at left 680px top -60px, rgba(214,192,143,0.32), transparent 65%);
   /* glass (floating surfaces: chat panel, top bar, composer, sessions list, sheets, undo toast; and the round controls): white 55% to 30%, no tint colour */
   --glass-bg: linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.30) 100%);
   --glass-filter: blur(44px) saturate(180%);
@@ -127,6 +129,7 @@
   --shadow-pop: 0 24px 50px -22px rgba(0,0,0,0.85);
   --shadow-mark: 0 4px 12px rgba(0,0,0,0.4);
   --ambient: radial-gradient(circle 636px at left 290px top 190px, rgba(64,86,140,0.38), transparent 65%), radial-gradient(circle 537px at left 560px bottom 60px, rgba(214,192,143,0.14), transparent 65%), radial-gradient(circle 495px at right 150px bottom 50px, rgba(64,86,140,0.16), transparent 65%), radial-gradient(circle 424px at right 680px top -60px, rgba(214,192,143,0.07), transparent 65%);
+  --ambient-xl: radial-gradient(circle 636px at right 290px top 190px, rgba(64,86,140,0.38), transparent 65%), radial-gradient(circle 537px at right 560px bottom 60px, rgba(214,192,143,0.14), transparent 65%), radial-gradient(circle 495px at left 150px bottom 50px, rgba(64,86,140,0.16), transparent 65%), radial-gradient(circle 424px at left 680px top -60px, rgba(214,192,143,0.07), transparent 65%);
   --glass-bg: linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.035) 100%), rgba(24,27,35,0.42);
   --glass-filter: blur(44px) saturate(180%);
   --glass-border: 1px solid rgba(255,255,255,0.10);
@@ -184,6 +187,7 @@
   --shadow-pop: 0 24px 50px -22px rgba(0,0,0,0.85);
   --shadow-mark: 0 4px 12px rgba(0,0,0,0.4);
   --ambient: radial-gradient(circle 636px at left 290px top 190px, rgba(64,86,140,0.38), transparent 65%), radial-gradient(circle 537px at left 560px bottom 60px, rgba(214,192,143,0.14), transparent 65%), radial-gradient(circle 495px at right 150px bottom 50px, rgba(64,86,140,0.16), transparent 65%), radial-gradient(circle 424px at right 680px top -60px, rgba(214,192,143,0.07), transparent 65%);
+  --ambient-xl: radial-gradient(circle 636px at right 290px top 190px, rgba(64,86,140,0.38), transparent 65%), radial-gradient(circle 537px at right 560px bottom 60px, rgba(214,192,143,0.14), transparent 65%), radial-gradient(circle 495px at left 150px bottom 50px, rgba(64,86,140,0.16), transparent 65%), radial-gradient(circle 424px at left 680px top -60px, rgba(214,192,143,0.07), transparent 65%);
   --glass-bg: linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.035) 100%), rgba(24,27,35,0.42);
   --glass-filter: blur(44px) saturate(180%);
   --glass-border: 1px solid rgba(255,255,255,0.10);
@@ -350,6 +354,7 @@ body {
 /* The ambient background: fixed behind everything (z -1 under the body's content; the body paints no background of its own), soft, not animated, never takes a pointer.
    The page's own soft light (--bg-image) sits under the shapes. */
 body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: var(--ambient), var(--bg-image); background-repeat: no-repeat; }
+@media (min-width: 80rem) { body::before { background: var(--ambient-xl), var(--bg-image); background-repeat: no-repeat; } }
 
 /* Numbers: SF Pro Display / Inter, tabular */
 .font-num { font-family: -apple-system, "SF Pro Display", system-ui, var(--font-inter), sans-serif; font-variant-numeric: tabular-nums; }
