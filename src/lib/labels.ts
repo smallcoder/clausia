@@ -87,6 +87,17 @@ export function caseLabel(c: { case_number: string | null; case_year: number | n
   return c.title || "دعوى بلا رقم";
 }
 
+// ---- the library (PR 6, المكتبة) ----
+export const TEMPLATE_CATEGORY: Record<E["template_category"], string> = {
+  claim: "صحف الدعاوى",
+  appeal: "استئناف ونقض",
+  memo: "مذكرات",
+  notice: "إنذارات",
+  contract: "توكيلات وعقود",
+};
+/** the chip after the five categories: the office's own templates (any category) */
+export const OFFICE_TEMPLATES_LABEL = "صيغ المكتب";
+
 // ---- money (PR 5, الحسابات) ----
 export const MONEY_METHOD: Record<E["money_method"], string> = {
   cash: "كاش",

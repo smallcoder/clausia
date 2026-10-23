@@ -6,7 +6,7 @@ import "server-only";
 import { listBalances } from "@/lib/accounts";
 import { formatDmy, normalizeDigits } from "@/lib/dates";
 import { formatEgp } from "@/lib/money";
-import { caseLabel } from "@/lib/labels";
+import { caseLabel, TEMPLATE_CATEGORY } from "@/lib/labels";
 import type { Db } from "@/lib/supabase/server";
 import type { ToolSpec } from "@/lib/llm";
 
@@ -35,6 +35,11 @@ export const READ_TOOL_SPECS: ToolSpec[] = [
     name: "list_balances",
     description: "مين عليه فلوس؟ الموكلون اللي عليهم باقي أتعاب (قضايا بأتعاب ثابتة لم تُدفع كاملة)، الأكبر أولًا، والباقي لكل قضية. الأرقام محسوبة بالكود: انقلها كما هي ولا تجمع أو تطرح بنفسك. القضايا ذات الأتعاب «المفتوحة» أو غير المحددة ليس لها باقي. اختياري: client_id لموكل واحد.",
     parameters: { type: "object", properties: { client_id: { type: "string", description: "معرف موكل (اختياري)" } } },
+  },
+  {
+    name: "search_templates",
+    description: "صيغ المكتبة (صحيفة دعوى، صحيفة استئناف، مذكرة، إنذار، توكيل، وصيغ المكتب) بمعرفاتها وتصنيفاتها. استخدمها لمعرفة template_id قبل create_draft. بدون query ترجع كل الصيغ.",
+    parameters: { type: "object", properties: { query: { type: "string", description: "جزء من اسم الصيغة، مثل «استئناف» (اختياري)" } } },
   },
   {
     name: "get_document_text",
@@ -90,6 +95,17 @@ export async function runReadTool(db: Db, name: string, args: Record<string, unk
           client_id: r.client_id, client: r.client, remaining: formatEgp(r.remaining),
           cases: r.cases.map((c) => ({ case_id: c.case_id, case: c.label, agreed: formatEgp(c.agreed), paid: formatEgp(c.paid), remaining: formatEgp(c.remaining) })),
         })),
+      };
+    }
+    case "search_templates": {
+      const q = safeTerm(String(args.query ?? ""));
+      let sel = db.from("templates").select("id, name, category, description, office_id, needs_lawyer_review").order("created_at").limit(30);
+      if (q.length >= 2) sel = sel.ilike("name", `%${q}%`);
+      const { data, error } = await sel;
+      if (error) return { error: error.message };
+      return {
+        note: "الصيغ هياكل بسيطة. عند create_draft: الكود بيملا البيانات من ملف القضية، والأسباب والطلبات بتتساب فاضية للمحامي.",
+        templates: (data ?? []).map((t) => ({ template_id: t.id, name: t.name, category: TEMPLATE_CATEGORY[t.category], description: t.description, source: t.office_id ? "مكتبك" : "صيغة أساسية", needs_lawyer_review: t.needs_lawyer_review })),
       };
     }
     case "get_document_text": {

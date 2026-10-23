@@ -7,7 +7,8 @@ import { formatDmy, parseDmy, todayIso } from "@/lib/dates";
 import { buildDeadlines } from "@/lib/deadlines/service";
 import { parseAmount } from "@/lib/money";
 import type { Db } from "@/lib/supabase/server";
-import type { Database } from "@/lib/db/types";
+import type { Database, Json } from "@/lib/db/types";
+import { buildDraft } from "@/lib/library/make";
 import { WRITE_TOOL_ARGS, type WriteArgs, type WriteTool } from "./registry";
 
 type E = Database["public"]["Enums"];
@@ -101,7 +102,7 @@ function must<R extends { data: unknown; error: { message: string } | null }>(r:
 /** Puts the database back as it was before one applied op (a card is saved all or nothing). */
 export type Undo = () => Promise<void>;
 
-type Table = "clients" | "cases" | "case_parties" | "case_facts" | "case_requests" | "case_arguments" | "hearings" | "judgments" | "doc_columns" | "doc_column_cells" | "case_deadlines" | "documents" | "case_fees" | "account_movements";
+type Table = "clients" | "cases" | "case_parties" | "case_facts" | "case_requests" | "case_arguments" | "hearings" | "judgments" | "doc_columns" | "doc_column_cells" | "case_deadlines" | "documents" | "case_fees" | "account_movements" | "drafts";
 const del = (db: Db, table: Table, id: string): Undo => async () => { must(await db.from(table).delete().eq("id", id).select("id")); };
 
 /**
@@ -373,6 +374,19 @@ async function applyOpRaw(db: Db, tool: WriteTool, rawArgs: unknown, p: Provenan
       const before = { kind: cur.kind, amount_piasters: cur.amount_piasters, updated_at: cur.updated_at, review_status: cur.review_status };
       must(await db.from("case_fees").update({ kind: x.kind, amount_piasters: piasters, updated_at: new Date().toISOString(), review_status: p.review_status }).eq("id", cur.id).select("id").single());
       return { id: cur.id, undo: async () => { must(await db.from("case_fees").update(before).eq("id", cur.id).select("id").single()); }, steps: [back("case_fees", cur.id, before)] };
+    }
+    case "create_draft": {
+      const x = a as WriteArgs<"create_draft">;
+      // the fill is worked out again HERE, from the file as it is now (code, not the model); the template and the case must be ones this lawyer can read
+      const templateId = resolveRef(x.template, refs)!;
+      const caseId = (await visibleCase(db, resolveRef(x.case, refs)!)).id;
+      const built = await buildDraft(db, { template: templateId, case: caseId, grounds: x.grounds, requests: x.requests });
+      const row = must(await db.from("drafts").insert({
+        case_id: caseId, template_id: templateId, template_name: built.template.name, title: built.title,
+        body: built.body as unknown as Json, fill: built.fill as unknown as Json, needs_lawyer_review: built.template.needs_lawyer_review,
+        review_status: p.review_status, created_by_kind: p.created_by_kind, source_kind: p.source_kind, source_message_id: p.source_message_id ?? null,
+      }).select("id").single());
+      return { id: row.id, undo: del(db, "drafts", row.id), steps: rm("drafts", row.id) };
     }
     case "add_deadline": {
       const x = a as WriteArgs<"add_deadline">;
