@@ -5,7 +5,7 @@
 import type { CiteSource } from "@/components/cite/context";
 import type { CaseFile, Provenance } from "@/lib/case-file";
 import { formatDmy, type DatePrecision } from "@/lib/dates";
-import { DOC_TYPE, PARTY_ROLE, STAGE, caseLabel } from "@/lib/labels";
+import { DECISION, DOC_TYPE, PARTY_ROLE, STAGE, caseLabel } from "@/lib/labels";
 
 type Party = CaseFile["parties"][number];
 type Hearing = CaseFile["hearings"][number];
@@ -247,13 +247,98 @@ export function pendingWords(cf: CaseFile): string | null {
 export const READ_SHORT: Record<string, string> = { pending: "مستنية القراءة", reading: "بتتقري", done: "اتقرت", failed: "ما اتقرتش" };
 
 
-/** Where the «محتاجة مراجعة» tile links: the first suggested item. */
+/** Where a suggested item is shown: the case tab that holds it (`?tab=` is in the link, the sheet opens from the `#item-` hash). */
 export function pendingHref(cf: CaseFile): string | undefined {
   const first = cf.pending_suggestions[0];
   if (!first) return undefined;
   if (first.table === "hearings") return `?tab=hearings#h-${first.id}`;
-  // judgments live in the hearings view (owner decision 2026-10-21)
-  if (first.table === "judgments") return `?tab=hearings#item-${first.id}`;
-  return `#item-${first.id}`;
+  // judgments sit with the memos (the dossier's last tab)
+  if (first.table === "judgments") return `?tab=memos#item-${first.id}`;
+  if (first.table === "case_requests" || first.table === "case_arguments") return `?tab=sides#item-${first.id}`;
+  return `?tab=facts#item-${first.id}`; // facts and parties
+}
+
+// ---------- the dossier header: 8 cells ----------
+
+export interface HeaderCell {
+  key: string;
+  label: string;
+  /** null = not recorded (the cell says so, in the faint colour); never a guess */
+  value: string | null;
+  extra?: string;
+  /** feminine label: «مش متسجلة» */
+  fem?: boolean;
+  /** one line with «…», the full text in the tooltip */
+  clip?: boolean;
+  /** gold text (the next hearing) */
+  gold?: boolean;
+  /** an ISO day: the value is that date (shown through DateText) */
+  iso?: string;
+}
+
+/** The party that is our opponent (the first one on the other side), as `whoLine` picks it. */
+export function opponentParty(cf: CaseFile): Party | null {
+  const client = cf.parties.find((p) => p.is_our_client);
+  // no party is marked as our client: which side is the other one is not known, so no party is called the opponent (never a guess)
+  const ourSide = client ? sideOf(client.role) : null;
+  if (!client || ourSide === null) return null;
+  return cf.parties.find((p) => !p.is_our_client && sideOf(p.role) !== null && sideOf(p.role) !== ourSide) ?? null;
+}
+
+/**
+ * A recorded decision as one line, the way the mockup writes it («تأجيل لأصل العقد»): the kind of decision, then its text.
+ * The text is the lawyer's own words and is never changed: «للمستندات» after «تأجيل» reads as one phrase; a text that already says
+ * the kind («حجز الدعوى للحكم») stands alone; any other text follows the kind after « · ». No text: the kind alone.
+ */
+export function decisionLine(type: string, text: string | null | undefined): string {
+  const kind = DECISION[type as keyof typeof DECISION] ?? type;
+  const t = text?.trim();
+  if (!t) return kind;
+  if (t.includes(kind.split(" ")[0])) return t;
+  return /^ل/u.test(t) ? `${kind} ${t}` : `${kind} · ${t}`;
+}
+
+/** The latest hearing (today or before) with a recorded decision, and its line. */
+export function lastDecision(cf: CaseFile, today: string): { hearing: Hearing; text: string } | null {
+  const h = cf.hearings.filter((x) => x.date <= today && x.decision_type).at(-1);
+  if (!h) return null;
+  return { hearing: h, text: decisionLine(h.decision_type as string, h.decision_text) };
+}
+
+/** The case's subject, for the page title: the case title without a leading «<client> — », else the type, else the label. */
+export function caseSubject(cf: CaseFile): string {
+  const c = cf.case;
+  const t = c.title?.trim();
+  if (t) {
+    const client = whoLine(cf).client;
+    const parts = t.split(/\s+[—–]\s+/);
+    if (parts.length > 1 && client && parts[0] === client) return parts.slice(1).join(" — ");
+    return heroSubject(cf, heroTitle(cf)) ?? t;
+  }
+  return c.case_type ?? c.label;
+}
+
+/**
+ * The 8 cells of the dossier header, in the owner's order: number, court, circuit, next hearing, client (+ role), opponent
+ * (+ role), the opponent's lawyer, last decision. Every value is read from the case file as saved; none is worked out.
+ */
+export function headerCells(cf: CaseFile, hs: HearingState, today: string): HeaderCell[] {
+  const spec = specSheet(cf);
+  const client = cf.parties.find((p) => p.is_our_client);
+  const opp = opponentParty(cf);
+  const role = (r: string | null | undefined) => (r ? PARTY_ROLE[r as keyof typeof PARTY_ROLE] ?? r : null);
+  const clientName = client?.name ?? cf.client?.name ?? null;
+  const clientRole = role(client?.role ?? cf.case.client_role);
+  const last = lastDecision(cf, today);
+  return [
+    { key: "case_number", label: spec[0].label, value: spec[0].value },
+    { key: "court", label: spec[1].label, value: spec[1].value, fem: true, clip: true },
+    { key: "circuit", label: spec[2].label, value: spec[2].value, extra: spec[2].extra, fem: true },
+    { key: "next_hearing", label: "الجلسة الجاية", value: hs.next ? formatDmy(hs.next.date) : null, iso: hs.next?.date, fem: true, gold: true },
+    { key: "client", label: "الموكل", value: clientName ? [clientName, clientRole].filter(Boolean).join(" · ") : null, clip: true },
+    { key: "opponent", label: "الخصم", value: opp ? [opp.name, role(opp.role)].filter(Boolean).join(" · ") : null, clip: true },
+    { key: "opponent_lawyer", label: "محامي الخصم", value: opp?.representative?.trim() || null, clip: true },
+    { key: "last_decision", label: "آخر قرار", value: last?.text ?? null, clip: true },
+  ];
 }
 

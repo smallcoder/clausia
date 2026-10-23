@@ -97,7 +97,11 @@ export const editsLabel = (n: number) => (n === 1 ? "تعديل واحد" : n ==
 // ---------- the page: what the case page highlights ----------
 
 /** A new row waiting in a list of the page (the lawyer has not confirmed it yet). */
-export interface PendingRow { key: string; sortIso: string | null; date: string | null; text: string; kind?: string | null; side?: "ours" | "opponent" }
+export interface PendingRow {
+  key: string; sortIso: string | null; date: string | null; text: string; kind?: string | null; side?: "ours" | "opponent";
+  /** the case tab that shows the row (the timeline mixes them): «الجلسات» for a hearing, «الوقائع» (default) for a fact */
+  on?: "hearings" | "facts";
+}
 
 export interface PendingEdits {
   /** what «أكّد» on the page confirms: the open ops this page shows, per card */
@@ -158,7 +162,7 @@ export function buildPendingEdits(
           out.decisions.push({ hearingId: hearing.id, hearingDate: hearing.hearing_date, rows });
           const line = ["القرار:", DECISION[a.decision as keyof typeof DECISION] ?? "", str(a.decision_text), dateOf(a.next_date) && `الجلسة القادمة ${dateOf(a.next_date)}`, str(a.next_requirements) && `المطلوب: ${a.next_requirements}`]
             .filter(Boolean).join(" ");
-          out.timeline.push({ key, sortIso: hearing.hearing_date, date: formatDmy(hearing.hearing_date), text: line });
+          out.timeline.push({ key, sortIso: hearing.hearing_date, date: formatDmy(hearing.hearing_date), text: line, kind: "decision", on: "hearings" });
           shown = rows.length;
           break;
         }
@@ -166,7 +170,7 @@ export function buildPendingEdits(
           if (!mine) break;
           const d = parseDmy(str(a.date));
           if (!d) break;
-          out.timeline.push({ key, sortIso: d.iso, date: formatDmy(d.iso), text: ["جلسة", str(a.purpose), str(a.location)].filter(Boolean).join(" · ") });
+          out.timeline.push({ key, sortIso: d.iso, date: formatDmy(d.iso), text: ["جلسة", str(a.purpose), str(a.location)].filter(Boolean).join(" · "), on: "hearings" });
           shown = 1;
           break;
         }

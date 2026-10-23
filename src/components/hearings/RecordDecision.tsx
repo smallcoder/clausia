@@ -13,12 +13,14 @@ import { useDecisionNotice } from "./DecisionNotices";
 
 const sheetInput = "h-11 w-full rounded-md border border-border bg-field px-3 text-md text-text placeholder:text-text-4";
 
-export function RecordDecision({ hearingId, caseId, hearingDate, label, compact = false, layout = "inline", cancelLabel = "إلغاء", onSaved, onCancel }: {
+export function RecordDecision({ hearingId, caseId, hearingDate, label, compact = false, trigger, layout = "inline", cancelLabel = "إلغاء", onSaved, onCancel }: {
   hearingId: string;
   caseId: string;
   hearingDate: string;
   label: string;
   compact?: boolean;
+  /** the dossier's hearings table: the closed state is this gold line («القرار متسجلش · سجّله»), not a button; the form opens in place */
+  trigger?: string;
   /** "sheet": open at once, larger stacked fields (the roll's decision sheet / panel) */
   layout?: "inline" | "sheet";
   /** the text of the button next to «حفظ القرار» (the decision flow says «بعدين») */
@@ -54,6 +56,13 @@ export function RecordDecision({ hearingId, caseId, hearingDate, label, compact 
     );
   }
 
+  if (!open && trigger) {
+    return (
+      <button type="button" onClick={() => setOpen(true)} className="tap inline-flex min-h-8 items-center gap-1.5 text-base font-semibold text-gold hover:underline">
+        <span aria-hidden className="size-dot rounded-full bg-gold" />{trigger}
+      </button>
+    );
+  }
   if (!open) {
     return (
       <button type="button" onClick={() => setOpen(true)}

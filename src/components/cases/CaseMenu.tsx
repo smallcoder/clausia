@@ -1,11 +1,10 @@
 "use client";
 /**
- * The case page's «…» round button (owner decision 2026-10-21): a small glass popover with the case's links —
- * case details, hearings and the JSON download (the case chat is the panel beside the page). Mobile: the floating «…» at the top end; desktop: next
- * to the back button. `align` puts the popover under the button's own side.
+ * The case page's «…» round button: a small glass popover. It holds only the JSON download now: the case's data, hearings and
+ * documents each have their tab (one home each), so the menu has no links to pages. Mobile: the floating «…» at the top end;
+ * desktop: next to the status chip. `align` puts the popover under the button's own side.
  */
 import { Ellipsis } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 export function CaseMenu({ caseId, align, className }: { caseId: string; align: "start" | "end"; className: string }) {
@@ -29,8 +28,6 @@ export function CaseMenu({ caseId, align, className }: { caseId: string; align: 
       </button>
       {open ? (
         <div role="menu" aria-label="القضية" className={`glass absolute top-[calc(100%+8px)] z-50 w-56 rounded-lg p-1.5 ${align === "end" ? "end-0" : "start-0"}`} /* ds-allow: 8px under the button needs calc() */>
-          <Link role="menuitem" href={`/cases/${caseId}?tab=details`} onClick={close} className={item}>بيانات الدعوى</Link>
-          <Link role="menuitem" href={`/cases/${caseId}?tab=hearings`} onClick={close} className={item}>الجلسات</Link>
           <a role="menuitem" href={`/api/cases/${caseId}/case-file?download`} onClick={close} className={item}>تنزيل ملف القضية (JSON)</a>
         </div>
       ) : null}

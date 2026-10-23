@@ -1,8 +1,8 @@
-// «الأحكام» inside the hearings view (?tab=hearings), under the hearings panel (owner decision 2026-10-21: judgments
-// leave the case page). Same panel as the hearings; each judgment: date, kind, outcome, the operative text (Naskh),
+// «الأحكام» in the «المذكرات والأحكام» tab (?tab=memos); they were under the hearings before.
+// Each judgment: date, kind, outcome, the operative text (Naskh),
 // the appeal deadline only as the lawyer stated it, its source; a suggested one gets confirm / reject.
 // Nothing renders when the case has no judgment.
-import { Suggested } from "@/components/cases/CaseOverview";
+import { Suggested } from "@/components/cases/CaseItems";
 import { SheetReview } from "@/components/cases/ItemSheet";
 import { SourceChip } from "@/components/cite/SourceChip";
 import { aboutItem, citeOf, sourceText } from "@/components/cases/case-view";
@@ -22,7 +22,7 @@ export function JudgmentsTab({ cf, caseId }: { cf: CaseFile; caseId: string }) {
   const rows = [...cf.judgments, ...pending].sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
   if (!rows.length) return null;
   return (
-    <Panel title="الأحكام" className="mb-4">
+    <Panel title="الأحكام">
       <ul className="divide-y divide-border-2">
         {rows.map((j) => {
           const outcome = j.outcome ? OUTCOME[j.outcome] : null;
