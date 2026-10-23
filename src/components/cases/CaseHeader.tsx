@@ -19,8 +19,10 @@ import { caseSubject, headerCells, specSheet, statusTone, whoLine, type HearingS
 const TONE = { good: ["bg-good", "text-good"], warn: ["bg-gold", "text-gold-on-ambient"], neutral: ["bg-text-4", "text-text-3"] } as const;
 
 /** 28px outlined pill (content box, so 30px with its hairline), 6px dot, 12.5px semibold word. */
-function StatusPill({ status }: { status: string }) {
-  const [dot, text] = TONE[statusTone(status)];
+function StatusPill({ status, wash = false }: { status: string; wash?: boolean }) {
+  const tone = statusTone(status);
+  const [dot, text0] = TONE[tone];
+  const text = wash && tone === "warn" ? "text-gold-text-small" : text0; // inside the gold wash the small gold text is the one that passes
   return (
     <span className={`box-content inline-flex h-7 items-center gap-1.5 rounded-full border border-border-2 px-3 text-sm font-semibold ${text}`}>
       <span aria-hidden className={`size-1.5 rounded-full ${dot}`} />{CASE_STATUS[status as keyof typeof CASE_STATUS] ?? status}
@@ -34,7 +36,7 @@ function StatusSlot({ status, proposed }: { status: string; proposed: string | n
   return (
     <span className="inline-flex items-center gap-2">
       <Was>{CASE_STATUS[status as keyof typeof CASE_STATUS] ?? status}</Was>
-      <span className="gold-wash rounded-full"><StatusPill status={proposed} /></span>
+      <span className="gold-wash rounded-full"><StatusPill status={proposed} wash /></span>
       <SuggestedTag />
     </span>
   );

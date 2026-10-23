@@ -1,5 +1,5 @@
 // «الجلسات» (?tab=hearings, the dossier's first tab; docs/design/ia/IACase*, MCase*): a table of the case's hearings — date, decision,
-// and the minutes. The next hearing comes first with «الجاية», then the held ones, newest first. A held hearing with no decision says
+// and the minutes. The next hearing comes first with «الجاية», then the held ones, newest first. A hearing before today with no decision says
 // «القرار متسجلش · سجّله» in gold; «سجّله» opens the decision recorder in place (RecordDecision → recordDecisionAction → applyOp), so
 // nothing is saved without the tap. This tab is the home of hearings and decisions: «أضف جلسة» is its last row.
 import { SourceChip } from "@/components/cite/SourceChip";
@@ -33,7 +33,7 @@ function minutesChip(h: Row, names: Map<string, string>): CiteSource | null {
 const NextPill = () => <span className="pill-on inline-flex h-6 items-center rounded-md px-2.5 text-xs font-bold">الجاية</span>;
 
 function HearingRow({ h, today, next, needed, caseId, names }: { h: Row; today: string; next: boolean; needed: string | null; caseId: string; names: Map<string, string> }) {
-  const held = h.hearing_date <= today;
+  const held = h.hearing_date < today; // the one rule: a hearing dated today is the next one (no «سجّله» until the day is over)
   const minutes = minutesChip(h, names);
   const suggested = h.review_status === "suggested";
   return (

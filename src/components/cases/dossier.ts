@@ -29,7 +29,7 @@ const ALIAS: Record<string, TabKey> = {
 export function resolveTab(tab: string | undefined): { key: TabKey; canonical: boolean } {
   if (!tab) return { key: DEFAULT_TAB, canonical: true };
   if (TABS.some((t) => t.key === tab)) return { key: tab as TabKey, canonical: true };
-  return { key: ALIAS[tab] ?? DEFAULT_TAB, canonical: false };
+  return { key: Object.hasOwn(ALIAS, tab) ? ALIAS[tab] : DEFAULT_TAB, canonical: false };
 }
 
 /** documents that count as «المذكرات والأحكام» (the data tells it: the document's type) */
