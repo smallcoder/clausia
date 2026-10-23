@@ -17,13 +17,6 @@ import type { PanelData } from "./panel-types";
 import { DateText } from "@/components/ui";
 import { formatDmy } from "@/lib/dates";
 
-/** «محادثة واحدة» · «محادثتان» · «3 محادثات» · «11 محادثة» */
-function sessionsCount(n: number): string {
-  if (n === 1) return "محادثة واحدة";
-  if (n === 2) return "محادثتان";
-  return n <= 10 ? `${n} محادثات` : `${n} محادثة`;
-}
-
 export function ChatPanel({ data }: { data: PanelData }) {
   const { context, sessions, threadId, hearing, thread, moveOffer, chips, morning, starter } = data;
   const caseId = context.kind === "case" ? context.id : null;
@@ -33,7 +26,8 @@ export function ChatPanel({ data }: { data: PanelData }) {
 
   const who = context.kind === "case" ? `في قضية ${context.name}` : "محادثة عامة";
   // the small line under the title, from the sessions list the panel already has (never invented: none = no line)
-  const sub = sessions.length ? `${sessionsCount(sessions.length)}${caseId ? " في القضية" : ""} · آخر محادثة ${formatDmy(sessions[0].day)}` : null;
+  const sub = sessions.length ? // «N محادثات» for every N (owner 2026-10-23)
+     `${sessions.length} محادثات${caseId ? " في القضية" : ""} · آخر محادثة ${formatDmy(sessions[0].day)}` : null;
   const sheetHref = (() => { const p = new URLSearchParams(params.toString()); p.set("sheet", "1"); return `${path}?${p.toString()}`; })();
 
   return (
