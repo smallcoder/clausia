@@ -12,3 +12,6 @@ supabase/.temp/
 .DS_Store
 screenshots/tmp/
 .claude/worktrees/
+
+# dry-run reports hold client names: never commit them
+scripts/out/
