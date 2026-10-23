@@ -9,7 +9,7 @@ import "server-only";
  */
 import { formatDmy, normalizeDigits, parseDmy, todayIso } from "@/lib/dates";
 import type { Json } from "@/lib/db/types";
-import { caseLabel } from "@/lib/labels";
+import { caseLabel, DOC_TYPE } from "@/lib/labels";
 import { getLlm, LlmUnavailableError, SpendCapError, type ChatRequest, type LlmMessage, type LlmToolCall } from "@/lib/llm";
 import { UNAVAILABLE_TEXT } from "@/lib/llm/unavailable";
 import { DEFAULT_TITLE, titleFrom } from "@/lib/threads";
@@ -22,6 +22,8 @@ import { isInternalTool, isWriteTool, OP_TITLE, WRITE_TOOL_ARGS, writeToolSpecs 
 import { askContextBlock, type AskItem } from "./ask";
 import type { ChatMode } from "./modes";
 import { buildSystemPrompt, type CaseContext } from "./prompt";
+import { SourceLog, type SourceItem } from "./sources";
+import { CARD_STEP, readStepLabel } from "./step-labels";
 
 const MAX_ROUNDS = 6;
 const HISTORY = 40;
@@ -40,6 +42,8 @@ export interface TurnResult {
   text: string;
   rounds: number;
   error?: string;
+  /** the papers this turn really used («استخدمت:»); also saved on the answer's row */
+  sources: SourceItem[];
 }
 
 /** Thrown by runAssistantTurn; `userMessageSaved` tells the UI whether the lawyer's text is already in the thread. */
@@ -67,14 +71,17 @@ export class TurnTimeLimitError extends LlmUnavailableError {
 /** The turn's clock: `signal` aborts when the limit passes (it cancels the model call in flight). */
 interface Clock { signal: AbortSignal; deadline: number; limitMs: number }
 
-/** `opts.turnLimitMs`: the whole turn's limit (default TURN_LIMIT_MS; tests pass a short one). */
-export async function runAssistantTurn(db: Db, input: TurnInput, opts: { turnLimitMs?: number } = {}): Promise<TurnResult> {
+/**
+ * `opts.turnLimitMs`: the whole turn's limit (default TURN_LIMIT_MS; tests pass a short one).
+ * `opts.onStep`: called with the words of each REAL step as it starts (a read tool call, a card being prepared): the live steps.
+ */
+export async function runAssistantTurn(db: Db, input: TurnInput, opts: { turnLimitMs?: number; onStep?: (label: string) => void } = {}): Promise<TurnResult> {
   const state = { saved: false };
   const limitMs = opts.turnLimitMs ?? TURN_LIMIT_MS;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), limitMs);
   try {
-    return await turn(db, input, state, { signal: ctrl.signal, deadline: Date.now() + limitMs, limitMs });
+    return await turn(db, input, state, { signal: ctrl.signal, deadline: Date.now() + limitMs, limitMs }, opts.onStep);
   } catch (e) {
     throw new TurnError(e instanceof Error ? e.message : String(e), state.saved);
   } finally {
@@ -92,7 +99,7 @@ function withinTurn<T>(work: Promise<T>, clock: Clock): Promise<T> {
   });
 }
 
-async function turn(db: Db, input: TurnInput, state: { saved: boolean }, clock: Clock): Promise<TurnResult> {
+async function turn(db: Db, input: TurnInput, state: { saved: boolean }, clock: Clock, onStep?: (label: string) => void): Promise<TurnResult> {
   const text = input.userText.trim();
   if (!text) throw new Error("الرسالة فارغة");
   const { data: thread, error: te } = await db.from("chat_threads").select("id, case_id, hearing_id, title").eq("id", input.threadId).single();
@@ -104,13 +111,15 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }, clock: 
   // the session's title: the lawyer's first message, cut to about 40 characters (a session made by an upload keeps its file name)
   await db.from("chat_threads").update({ updated_at: new Date().toISOString(), ...(!thread.title || thread.title === DEFAULT_TITLE ? { title: titleFrom(text) } : {}) }).eq("id", thread.id);
 
+  const sources = new SourceLog();
   const [history, caseContext, cardNotes, docs, { texts: sourceTexts, lawyer }, docPages] = await Promise.all([
     loadHistory(db, thread.id),
     thread.case_id ? loadCaseContext(db, thread.case_id) : Promise.resolve(null),
     loadCardNotes(db, thread.id),
-    db.from("documents").select("id, file_name, page_count, read_status").eq("thread_id", thread.id).order("created_at").then((r) => r.data ?? []),
+    db.from("documents").select("id, file_name, page_count, read_status, doc_type").eq("thread_id", thread.id).order("created_at").then((r) => r.data ?? []),
     loadSourceTexts(db, thread.id),
     loadDocPages(db, thread.id),
+    addChipSources(db, input.context ?? [], sources),
   ]);
 
   // relative days («بكرة»، «الخميس الجاي») in the lawyer's own messages, each from its own time in Cairo — worked
@@ -133,7 +142,8 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }, clock: 
   const lastTurn = messages[messages.length - 1];
   if (ask && lastTurn?.role === "user") lastTurn.text = `${lastTurn.text}\n\n${ask}`;
   const meta = { purpose: "chat" as const, officeId: input.officeId, userId: input.userId, threadId: thread.id };
-  const out: TurnResult = { userMessageId: userMsg.id, assistantMessageIds: [], proposalIds: [], text: "", rounds: 0 };
+  const out: TurnResult = { userMessageId: userMsg.id, assistantMessageIds: [], proposalIds: [], text: "", rounds: 0, sources: [] };
+  let lastTextId: string | null = null; // the last assistant row with words in it: the «استخدمت:» footer goes under it
 
   /** The model call for this turn: under the turn's limit, and never more than the provider's own 60s per call. */
   const chat = (req: Omit<ChatRequest, "signal" | "timeoutMs">) => {
@@ -180,6 +190,7 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }, clock: 
       .select("id").single();
     if (ae || !am) throw new Error(ae?.message ?? "تعذّر حفظ رد Clausia");
     out.assistantMessageIds.push(am.id);
+    if (res.text?.trim()) lastTextId = am.id;
     if (res.text) out.text = out.text ? `${out.text}\n${res.text}` : res.text;
     messages.push({ role: "assistant", text: res.text ?? "", toolCalls: calls, raw: res.raw });
     if (!calls.length) break;
@@ -190,8 +201,13 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }, clock: 
 
     for (const call of calls) {
       if (isReadTool(call.name)) {
+        // a live step for a read that really runs («بقرا الصحيفة ص 2…»); a paper is named by its type, else by its file name
+        const label = readStepLabel(call.name, call.args, call.name === "get_document_text" ? await documentName(db, call.args.document_id, docs) : null);
+        if (label) onStep?.(label);
         try {
-          results.set(call.id, await withinTurn(runReadTool(db, call.name, call.args), clock));
+          const result = await withinTurn(runReadTool(db, call.name, call.args), clock);
+          results.set(call.id, result);
+          if (call.name === "get_document_text") logPagesRead(sources, result);
         } catch (e) {
           if (e instanceof TurnTimeLimitError) return cutShort(e);
           results.set(call.id, { error: e instanceof Error ? e.message : String(e) });
@@ -240,9 +256,11 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }, clock: 
 
     if (drafts.length) {
       const caseId = thread.case_id ?? firstCaseUuid(drafts.map((x) => x.op));
+      onStep?.(CARD_STEP);
       try {
         const proposal: Proposal = await createProposal(db, { threadId: thread.id, messageId: am.id, caseId, ops: drafts.map((x) => x.op), sourceTexts: [...sourceTexts, text] });
         out.proposalIds.push(proposal.id);
+        for (const o of proposal.ops) if (o.source.kind === "document") sources.addCited(o.source.document_id ?? "", o.source.page, o.source.quote, o.source.char_start, o.source.char_end);
         for (const x of drafts) results.set(x.call.id, { status: PROPOSED_RESULT, card_id: proposal.id });
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
@@ -272,10 +290,45 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }, clock: 
       if (!reply) reply = "راجعت اللي عندي ولسه محتاج خطوة كمان. اكتب «كمّل» وأنا أجهّز البطاقة.";
     }
     const { data: m } = await db.from("chat_messages").insert({ thread_id: thread.id, role: "assistant", content: reply }).select("id").single();
-    if (m) out.assistantMessageIds.push(m.id);
+    if (m) { out.assistantMessageIds.push(m.id); lastTextId = m.id; }
     out.text = reply;
   }
+
+  // «استخدمت:» — the papers this turn really used, saved with the answer so the footer survives a reload (none used: no footer)
+  out.sources = sources.items();
+  if (out.sources.length && lastTextId) {
+    const { error } = await db.from("chat_messages").update({ sources: out.sources as unknown as Json }).eq("id", lastTextId);
+    if (error) console.warn(`[turn] ${thread.id}: the sources footer was not saved (${error.message})`);
+  }
   return out;
+}
+
+/** The paper's name for a live step: its type («صحيفة دعوى») when known, else its file name. Null when it can not be told. */
+async function documentName(db: Db, id: unknown, threadDocs: { id: string; file_name: string; doc_type?: string | null }[]): Promise<string | null> {
+  if (typeof id !== "string" || !UUID.test(id)) return null;
+  let d: { file_name: string; doc_type?: string | null } | null | undefined = threadDocs.find((x) => x.id === id);
+  if (!d) d = await db.from("documents").select("file_name, doc_type").eq("id", id).maybeSingle().then((r) => r.data, () => null);
+  if (!d) return null;
+  return d.doc_type && d.doc_type !== "other" && d.doc_type in DOC_TYPE ? DOC_TYPE[d.doc_type as keyof typeof DOC_TYPE] : d.file_name;
+}
+
+/** The pages a get_document_text call really returned (not the ones it was asked for). */
+function logPagesRead(log: SourceLog, result: unknown) {
+  const r = result as { document?: { id?: unknown }; pages?: { page_no?: unknown }[] } | null;
+  const id = r?.document?.id;
+  if (typeof id !== "string" || !Array.isArray(r?.pages)) return;
+  log.addRead(id, r.pages.map((p) => Number(p.page_no)));
+}
+
+/** The rows a context chip points at that have a paper source (the row's own page, quote and span). A chip with none came from the lawyer's words: no source. */
+const CHIP_TABLE = { fact: "case_facts", party: "case_parties", request: "case_requests", argument: "case_arguments", hearing: "hearings" } as const;
+async function addChipSources(db: Db, items: AskItem[], log: SourceLog): Promise<void> {
+  await Promise.all(items.map(async (i) => {
+    if (!(i.kind in CHIP_TABLE)) return;
+    const table = CHIP_TABLE[i.kind as keyof typeof CHIP_TABLE];
+    const { data } = await db.from(table).select("source_document_id, source_page, source_quote, source_char_start, source_char_end").eq("id", i.id).maybeSingle();
+    if (data?.source_document_id) log.addCited(data.source_document_id, data.source_page, data.source_quote, data.source_char_start, data.source_char_end);
+  }));
 }
 
 type DocPage = { document_id: string; page_no: number; text: string; norm: string };

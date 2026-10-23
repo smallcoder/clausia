@@ -17,6 +17,7 @@ import { CitePanel } from "@/components/cite/CitePanel";
 import { CONFIRM_SLOT } from "@/components/cases/ConfirmBar";
 import { DraftProvider, type Account } from "@/components/chat/draft";
 import { closeHref } from "@/components/shell/close-href";
+import { DropProvider } from "@/components/shell/DropZone";
 import { UndoToastProvider } from "@/components/shell/UndoToast";
 import { cx } from "@/components/ui";
 
@@ -32,6 +33,7 @@ export function SplitShell({ header, chat, account, children }: { header: ReactN
   const open = sheetOpen(path, sp);
   return (
     <DraftProvider account={account}>
+    <DropProvider>
     <UndoToastProvider>
       <div className="xl:px-5">
       <div className="xl:mx-auto xl:w-full xl:max-w-frame">
@@ -58,6 +60,7 @@ export function SplitShell({ header, chat, account, children }: { header: ReactN
       </div>
       <CitePanel />
     </UndoToastProvider>
+    </DropProvider>
     </DraftProvider>
   );
 }

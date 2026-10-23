@@ -12,8 +12,13 @@ import { DeadlineCard } from "@/components/proposal/DeadlineCard";
 import { ProposalCard } from "@/components/proposal/ProposalCard";
 import type { DeadlineCardEntry } from "@/lib/deadlines/cards";
 import { useReadProgress } from "@/components/documents/useReadProgress";
+import { SourceChip } from "@/components/cite/SourceChip";
+import { useDrop } from "@/components/shell/DropZone";
+import { routeDrop } from "@/lib/documents/drop";
 import { AskChips } from "./AskChips";
 import { ChatComposer } from "./ChatComposer";
+import { DropPicker } from "./DropPicker";
+import { useTurnSteps } from "./useTurnSteps";
 import { ChipIcon, MorningBlock } from "./MorningBlock";
 import { useDraft } from "./draft";
 import { shortDay, withSession } from "./panel-types";
@@ -33,6 +38,20 @@ export interface ChatItem {
   createdAt: string;
   attachments: { documentId: string; fileName: string }[];
   proposals: Proposal[];
+  /** «استخدمت:» — the papers this answer really used (saved with the answer; empty = no footer) */
+  used: UsedSource[];
+}
+
+/** One chip of the «استخدمت:» footer: where the paper panel opens (page, and the sentence when there is one). */
+export interface UsedSource {
+  key: string;
+  documentId: string;
+  page: number;
+  quote: string | null;
+  start: number | null;
+  end: number | null;
+  /** «صحيفة دعوى · ص 2» */
+  label: string;
 }
 
 /** A paper uploaded in this thread (for the attachment chip). */
@@ -72,7 +91,10 @@ export function ChatThread({ threadId, caseId, hearing, items, lookup, rows = {}
   const [error, setError] = useState<string | null>(null);
   const [sending, startSend] = useTransition();
   const [uploading, startUpload] = useTransition();
-  const [shown, addOptimistic] = useOptimistic(items, (cur, t: string) => [...cur, { id: `tmp-${cur.length}`, role: "user" as const, content: t, createdAt: new Date().toISOString(), attachments: [], proposals: [] }]);
+  const [turn, setTurn] = useState<string | null>(null); // the id of the turn this browser is waiting for (its live steps are polled under it)
+  const [pick, setPick] = useState<File | null>(null); // a paper dropped in the general context: waiting for the case to be chosen
+  const { dropped, clear: clearDrop } = useDrop();
+  const [shown, addOptimistic] = useOptimistic(items, (cur, t: string) => [...cur, { id: `tmp-${cur.length}`, role: "user" as const, content: t, createdAt: new Date().toISOString(), attachments: [], proposals: [], used: [] }]);
   const scroller = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const boxRef = useRef<HTMLTextAreaElement>(null);
@@ -108,59 +130,86 @@ export function ChatThread({ threadId, caseId, hearing, items, lookup, rows = {}
     // the chips go with the lawyer's own message (not with a quick answer) and are used up by it
     const asked = quick === undefined ? askChips : [];
     if (quick === undefined) { setText(""); clearChips(); }
+    const turnId = crypto.randomUUID();
+    setTurn(turnId);
     startSend(async () => {
-      addOptimistic(t);
-      let err: string | undefined;
-      let saved = false; // the lawyer's message is in the thread
-      if (threadId) {
-        const r = await sendMessageAction(threadId, t, mode, asked);
-        err = r.error;
-        saved = !!r.saved;
-      } else {
-        const r = await composerSendAction({ caseId, hearingId: hearing?.id }, t, mode, asked);
-        err = r.error;
-        saved = !!r.threadId;
-        if (r.threadId) open(r.threadId);
+      try {
+        addOptimistic(t);
+        let err: string | undefined;
+        let saved = false; // the lawyer's message is in the thread
+        if (threadId) {
+          const r = await sendMessageAction(threadId, t, mode, asked, turnId);
+          err = r.error;
+          saved = !!r.saved;
+        } else {
+          const r = await composerSendAction({ caseId, hearingId: hearing?.id }, t, mode, asked, turnId);
+          err = r.error;
+          saved = !!r.threadId;
+          if (r.threadId) open(r.threadId);
+        }
+        if (err) {
+          setError(err);
+          // not in the thread (session expired, thread missing…): give the text back instead of losing it
+          if (!saved) { setText((cur) => cur || t); asked.forEach(addChip); }
+        }
+        router.refresh();
+      } finally {
+        setTurn(null);
       }
-      if (err) {
-        setError(err);
-        // not in the thread (session expired, thread missing…): give the text back instead of losing it
-        if (!saved) { setText((cur) => cur || t); asked.forEach(addChip); }
-      }
-      router.refresh();
     });
   }
 
-  function onFile(f: File | undefined) {
+  /** `pickedCase`: the case chosen for a paper dropped in the general context (it goes to that case's chat, and we go there to see its card) */
+  function onFile(f: File | undefined, pickedCase?: string) {
     if (!f) return;
     setError(null);
+    setPick(null);
     const fd = new FormData();
     fd.set("file", f);
     startUpload(async () => {
+      let went = false;
       try {
-        let r: { ok?: boolean; error?: string; threadId?: string };
-        if (threadId) {
+        if (pickedCase) {
+          fd.set("caseId", pickedCase);
+          const r = await uploadDocumentAction(fd);
+          if (r.threadId && (r.ok || r.warning)) { went = true; router.push(`/cases/${pickedCase}?s=${r.threadId}`); }
+          if (!r.ok) setError(`لم يُرفع «${f.name}»: ${r.error ?? "حدث خطأ"}`);
+        } else if (threadId) {
           fd.set("threadId", threadId);
           if (caseId) fd.set("caseId", caseId);
-          r = await uploadDocumentAction(fd);
+          const r = await uploadDocumentAction(fd);
+          if (!r.ok) setError(`لم يُرفع «${f.name}»: ${r.error ?? "حدث خطأ"}`);
         } else {
-          r = await composerUploadAction({ caseId, hearingId: hearing?.id }, fd);
+          const r = await composerUploadAction({ caseId, hearingId: hearing?.id }, fd);
           if (r.threadId) open(r.threadId);
+          if (r.error && !r.threadId) setError(`لم يُرفع «${f.name}»: ${r.error ?? "حدث خطأ"}`);
         }
-        if (r.error && !r.threadId && !r.ok) setError(`لم يُرفع «${f.name}»: ${r.error ?? "حدث خطأ"}`);
       } catch {
         setError(`لم يُرفع «${f.name}»: تعذّر الاتصال`);
       }
       if (fileRef.current) fileRef.current.value = "";
-      router.refresh();
+      if (!went) router.refresh();
     });
   }
+
+  // a paper dropped anywhere on the page or the chat (DropZone): to the open case, or ask which case, or say why not
+  useEffect(() => {
+    if (!dropped) return;
+    clearDrop();
+    const route = routeDrop(dropped.files, { caseId, busy: sending || uploading });
+    if (route.kind === "error") { setPick(null); setError(route.message); return; }
+    setError(null);
+    if (route.kind === "upload") onFile(dropped.files[0]);
+    else setPick(dropped.files[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reacts to a new drop only
+  }, [dropped]);
 
   const busy = sending || uploading;
   const lastSpoken = [...shown].reverse().find((x) => x.role === "user" || x.content.trim());
   const answers = lastSpoken?.role === "assistant" && !busy ? quickAnswers(lastSpoken.content) : [];
   const reading = useReadProgress(uploading);
-  const status = sending ? "Clausia بيكتب…" : uploading ? reading : null;
+  const step = useTurnSteps(sending ? turn : null); // the real step Clausia is on; none yet: the plain waiting line
+  const status = sending ? (step ?? "Clausia بيكتب…") : uploading ? reading : null;
 
   return (
     <>
@@ -191,6 +240,7 @@ export function ChatThread({ threadId, caseId, hearing, items, lookup, rows = {}
                 ) : (
                   <ClausiaLine>
                     {m.content.trim() ? <p className="whitespace-pre-wrap break-words"><Prose text={m.content} /></p> : null}
+                    {m.used.length ? <UsedFooter items={m.used} /> : null}
                     {m === lastSpoken && answers.length ? (
                       <div className="mt-3 flex flex-wrap gap-2">
                         {answers.map((a) => (
@@ -229,6 +279,8 @@ export function ChatThread({ threadId, caseId, hearing, items, lookup, rows = {}
         </div>
       </div>
 
+      {pick ? <DropPicker fileName={pick.name} onPick={(c) => (c ? onFile(pick, c) : onFile(pick))} onCancel={() => setPick(null)} /> : null}
+
       <ChatComposer id="panel" value={text} onChange={setText} onSend={() => send()} onFile={onFile}
         sending={sending} busy={busy} status={status} error={error} onDismissError={() => setError(null)}
         placeholder={modePlaceholder(mode, !!caseId)} mode={mode} onMode={setMode} boxRef={boxRef} fileRef={fileRef}
@@ -255,6 +307,18 @@ function quickAnswers(text: string): { label: string; text: string }[] {
 
 /** quick answers and starters: glass chips (floating controls), 36px tall (44px hit area) */
 const CHIP = "tap glass inline-flex min-h-9 shrink-0 items-center rounded-full px-3.75 py-1 text-sm font-medium glass-icon transition hover:text-text";
+
+/** «استخدمت: الصحيفة ص 2، الإنذار ص 1» — the papers this answer really used; each chip opens the paper at that page (the sentence marked when there is one). */
+function UsedFooter({ items }: { items: UsedSource[] }) {
+  return (
+    <div role="group" aria-label="المصادر المستخدمة" className="mt-2.5 flex flex-wrap items-center gap-1.5">
+      <span className="text-sm font-semibold text-text-3">استخدمت:</span>
+      {items.map((u) => (
+        <SourceChip key={u.key} cite={{ id: `used:${u.key}`, documentId: u.documentId, page: u.page, start: u.start, end: u.end, quote: u.quote, label: u.label, about: null }} />
+      ))}
+    </div>
+  );
+}
 
 /** The model could not answer (402 / 429 / 5xx / timeout): one calm notice, not a Clausia sentence. */
 function UnavailableNotice() {

@@ -11,11 +11,13 @@ import { createClient, getSession } from "@/lib/supabase/server";
 import { createThread, dropNewIfEmpty, titleFrom } from "@/lib/threads";
 import { cleanAsk } from "./ask";
 import { parseMode } from "./modes";
+import { stepRecorder } from "./steps";
 import { runAssistantTurn } from "./turn";
 
 export type NewSessionTarget = { caseId?: string | null; hearingId?: string | null };
 
-export async function composerSendAction(target: NewSessionTarget, text: string, mode?: string, context?: unknown): Promise<{ threadId?: string; error?: string }> {
+/** `turnId`: the browser's id for this turn, for the live steps (see sendMessageAction). */
+export async function composerSendAction(target: NewSessionTarget, text: string, mode?: string, context?: unknown, turnId?: string): Promise<{ threadId?: string; error?: string }> {
   const msg = text.trim();
   if (!msg) return { error: "اكتب رسالتك أولًا" };
   if (msg.length > 8000) return { error: "الرسالة طويلة جدًا" };
@@ -29,12 +31,15 @@ export async function composerSendAction(target: NewSessionTarget, text: string,
   } catch (e) {
     return { error: e instanceof Error ? e.message : "تعذّر بدء المحادثة" };
   }
+  const steps = stepRecorder(db, turnId);
   try {
-    await runAssistantTurn(db, { threadId, userText: msg, userId: s.user.id, officeId: s.officeId, mode: parseMode(mode), context: cleanAsk(context) });
+    await runAssistantTurn(db, { threadId, userText: msg, userId: s.user.id, officeId: s.officeId, mode: parseMode(mode), context: cleanAsk(context) }, { onStep: steps.onStep });
   } catch (e) {
     // the message never got in: no empty session; the composer keeps the text
     if (await dropNewIfEmpty(db, threadId)) return { error: e instanceof Error ? e.message : "تعذّر الإرسال" };
     // otherwise the lawyer's message is saved; the thread shows it and lets them retry
+  } finally {
+    await steps.finish();
   }
   revalidatePath("/", "layout");
   return { threadId };
