@@ -38,7 +38,7 @@ if (MODE === "compare") {
     const img = (p: string) => `data:image/png;base64,${readFileSync(p).toString("base64")}`;
     const dark = t === "dark";
     const html = `<html><body style="margin:0;background:${dark ? "#05070c" : "#dfe2e8"};font:600 14px -apple-system,sans-serif;color:${dark ? "#ccc" : "#333"}">
-      <div style="display:flex;gap:24px;padding:16px;align-items:flex-start;direction:ltr">
+      <div style="display:flex;flex-direction:${w < 600 ? "row" : "column"};gap:24px;padding:16px;align-items:flex-start;direction:ltr">
         <div><div style="padding:0 0 8px">before (origin/main) · ${n} · ${w}px · ${t}</div><img src="${img(a)}" style="display:block;max-width:${w < 600 ? 390 : 1440}px;border-radius:8px"></div>
         <div><div style="padding:0 0 8px">after (date-text) · ${n} · ${w}px · ${t}</div><img src="${img(b)}" style="display:block;max-width:${w < 600 ? 390 : 1440}px;border-radius:8px"></div>
       </div></body></html>`;

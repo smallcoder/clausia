@@ -97,18 +97,18 @@ export function MorningBlock({ data }: { data: MorningData }) {
   return (
     <RollSheet today={today}>
       <div className="flex flex-col gap-4">
-        <p className="text-center text-xs leading-[normal] text-text-4">النهارده · <span className="num font-num">{stamp.time}</span> {stamp.period}</p>
+        <p className="text-center text-xs leading-[normal] text-text-4"><DateText value={`النهارده · ${stamp.time} ${stamp.period}`} /></p>
         {/* the phone has no page beside the chat, so the greeting is on top of it (the desktop page carries it) */}
         <h1 className="text-xl font-bold leading-[1.2] text-title xl:hidden"><Greeting text={greeting} /></h1>
 
         <div className="min-w-0 text-md leading-[1.9] text-text">
           {brief.empty ? <p>{QUIET}</p> : brief.sentences.map((s, i) => (
             <p key={i} className={i ? "mt-1" : undefined}>
-              {s.parts.map((p, j) => (p.gold ? <span key={j} className="font-semibold text-gold">{p.text}</span> : <span key={j}>{p.text}</span>))}
+              {s.parts.map((p, j) => (p.gold ? <DateText key={j} value={p.text} className="font-semibold text-gold" /> : <DateText key={j} value={p.text} />))}
               {s.sources.map((src, k) => <Source key={k} s={src} className="ms-1 align-[2px]" />)}
             </p>
           ))}
-          {line ? <p className="mt-1 text-xs leading-[normal] text-text-4">{line}</p> : null}
+          {line ? <p className="mt-1 text-xs leading-[normal] text-text-4"><DateText value={line} /></p> : null}
         </div>
 
         {notices.length ? (
