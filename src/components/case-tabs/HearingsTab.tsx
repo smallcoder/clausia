@@ -1,115 +1,114 @@
-// «الجلسات» (?tab=hearings): the case's hearings as a vertical timeline, like the facts timeline on the case page.
-// Each hearing: date · dot · its state chip (DecisionBadge), what was needed, the decision, the link to the next one.
-// A held hearing (today or before) without a decision gets «سجّل القرار» inline. «أضف جلسة» is the panel's last row.
+// «الجلسات» (?tab=hearings, the dossier's first tab; docs/design/ia/IACase*, MCase*): a table of the case's hearings — date, decision,
+// and the minutes. The next hearing comes first with «الجاية», then the held ones, newest first. A held hearing with no decision says
+// «القرار متسجلش · سجّله» in gold; «سجّله» opens the decision recorder in place (RecordDecision → recordDecisionAction → applyOp), so
+// nothing is saved without the tap. This tab is the home of hearings and decisions: «أضف جلسة» is its last row.
+import { SourceChip } from "@/components/cite/SourceChip";
+import type { CiteSource } from "@/components/cite/context";
+import { Change, SuggestedTag, WaitingLine } from "@/components/cases/Suggest";
+import { decisionLine } from "@/components/cases/case-view";
 import { AddHearing } from "@/components/hearings/AddHearing";
 import { DecisionNotices } from "@/components/hearings/DecisionNotices";
-import { DecisionBadge } from "@/components/hearings/HearingItem";
 import { RecordDecision } from "@/components/hearings/RecordDecision";
-import { SourceChip } from "@/components/cite/SourceChip";
-import { Panel, StatusChip } from "@/components/shell/PageHero";
 import { DateText, cx } from "@/components/ui";
-import { formatDayLabel, formatDmy, todayIso } from "@/lib/dates";
+import { formatDmy } from "@/lib/dates";
+import type { PendingEdits } from "@/lib/edits";
 import { DOC_TYPE } from "@/lib/labels";
 import { caseHearings } from "@/lib/hearings";
-import type { CiteSource } from "@/components/cite/context";
 import { createClient } from "@/lib/supabase/server";
 
 type Row = Awaited<ReturnType<typeof caseHearings>>[number];
 
-const countLabel = (n: number) => (n === 1 ? "جلسة واحدة" : n === 2 ? "جلستين" : n <= 10 ? `${n} جلسات` : `${n} جلسة`);
-
-function sourceLine(h: Row): string {
-  if (h.source_kind === "document") return `من مستند${h.source_page ? ` ص ${h.source_page}` : ""}`;
-  if (h.source_kind === "chat") return h.created_by_kind === "model" ? "من رسالتك · صاغها Clausia" : "من رسالتك";
-  return "سجّلها المحامي";
+/** The paper the decision was recorded from (the minutes): a chip that opens it at the sentence. Null when the decision has no paper. */
+function minutesChip(h: Row, names: Map<string, string>): CiteSource | null {
+  if (!h.decision_type || h.decision_source_kind !== "document" || !h.decision_source_document_id) return null;
+  const page = h.decision_source_page;
+  return {
+    id: `hearing-decision:${h.id}`, documentId: h.decision_source_document_id, page: page ?? 1, start: h.decision_source_char_start, end: h.decision_source_char_end,
+    quote: h.decision_source_quote, about: `قرار · ${formatDmy(h.hearing_date)}${h.decision_text ? ` · ${h.decision_text}` : ""}`,
+    label: `${names.get(h.decision_source_document_id) ?? "المحضر"}${page ? ` · ص ${page}` : ""}`,
+  };
 }
 
-type DocNames = Map<string, string>;
+/** «الجاية»: the ink pill (champagne frame in dark) */
+const NextPill = () => <span className="pill-on inline-flex h-6 items-center rounded-md px-2.5 text-xs font-bold">الجاية</span>;
 
-/** «الصحيفة · ص 2» as a chip that opens the paper at the sentence; null when the source is not a paper */
-function paperChip(id: string, names: DocNames, src: { document_id: string | null; page: number | null; quote: string | null; start: number | null; end: number | null }, about: string): CiteSource | null {
-  if (!src.document_id) return null;
-  return { id, documentId: src.document_id, page: src.page ?? 1, start: src.start, end: src.end, quote: src.quote, about, label: `${names.get(src.document_id) ?? "مستند"}${src.page ? ` · ص ${src.page}` : ""}` };
-}
-
-function HearingRow({ h, today, nextUp, last, caseId, names }: { h: Row; today: string; nextUp: boolean; last: boolean; caseId: string; names: DocNames }) {
-  const label = formatDmy(h.hearing_date);
-  const own = h.source_kind === "document"
-    ? paperChip(`hearing:${h.id}`, names, { document_id: h.source_document_id, page: h.source_page, quote: h.source_quote, start: h.source_char_start, end: h.source_char_end }, `جلسة · ${label}${h.purpose ? ` · ${h.purpose}` : ""}`) : null;
-  // the decision's own paper, when it is not the one the hearing came from
-  const decided = h.decision_type && h.decision_source_kind === "document"
-    ? paperChip(`hearing-decision:${h.id}`, names, { document_id: h.decision_source_document_id, page: h.decision_source_page, quote: h.decision_source_quote, start: h.decision_source_char_start, end: h.decision_source_char_end }, `قرار · ${label}${h.decision_text ? ` · ${h.decision_text}` : ""}`) : null;
+function HearingRow({ h, today, next, needed, caseId, names }: { h: Row; today: string; next: boolean; needed: string | null; caseId: string; names: Map<string, string> }) {
   const held = h.hearing_date <= today;
-  const needsDecision = !h.decision_type && h.hearing_date < today;
-  const isToday = !h.decision_type && h.hearing_date === today;
-  // v2: gold only where a decision is due; decided = muted dot; upcoming = muted ring (the next one darker)
-  const dot = needsDecision || isToday ? "bg-gold"
-    : h.decision_type ? "bg-text-3"
-    : nextUp ? "border-[1.5px] border-text-2 bg-card"
-    : "border border-text-4 bg-card";
+  const minutes = minutesChip(h, names);
+  const suggested = h.review_status === "suggested";
   return (
-    <li id={`h-${h.id}`} className="flex scroll-mt-24 gap-2.5 sm:gap-3.5">
-      <span className="w-17 shrink-0 pt-px sm:w-21">
-        <DateText iso={h.hearing_date} className="block text-sm font-semibold leading-[22px] text-title" />
-        <DateText value={formatDayLabel(h.hearing_date).split(" ")[0]} className="block text-xs text-text-4" />
-      </span>
-      <span className="flex w-2.5 shrink-0 flex-col items-center sm:w-3" aria-hidden>
-        <span className={cx("mt-2 size-dot-lg shrink-0 rounded-full", dot)} />
-        {!last ? <span className="mt-1 w-px flex-1 bg-border-2" /> : null}
-      </span>
-      <div className="min-w-0 flex-1 pb-5 sm:pb-6">
-        <div className="flex min-h-5.75 flex-wrap items-center gap-1.5">
-          <DecisionBadge h={h} today={today} />
-          {h.review_status === "suggested" ? <StatusChip tone="warn">مقترحة · راجعها</StatusChip> : null}
-          {nextUp && !h.decision_type && h.hearing_date > today ?<span className="text-sm font-semibold text-text-3">الجلسة الجاية</span> : null}
-        </div>
-        <div className="mt-1.5 max-w-170 space-y-1 text-md leading-[1.75]">
-          {h.purpose ? <p className="text-text"><span className="text-text-3">المطلوب: </span>{h.purpose}</p> : null}
-          {h.decision_text ? <p className="text-text"><span className="text-text-3">القرار: </span>{h.decision_text}</p> : null}
-          {h.next_requirements ? <p className="text-text"><span className="text-text-3">المطلوب للجلسة الجاية: </span>{h.next_requirements}</p> : null}
-          {!h.purpose && !h.decision_text && !h.next_requirements && !held ? <p className="text-text-3">لسه مفيش مطلوب متسجل للجلسة دي.</p> : null}
-        </div>
-        <div className="mt-1 flex flex-wrap items-center gap-x-3">
-          {own ? <SourceChip cite={own} /> : <span className="text-sm text-text-4">{sourceLine(h)}</span>}
-          {decided && decided.id !== own?.id ? <><span className="text-sm text-text-4">القرار:</span><SourceChip cite={decided} /></> : null}
-          {h.next_hearing_id ? (
-            <a href={`#h-${h.next_hearing_id}`} className="inline-flex min-h-11 items-center text-sm font-semibold text-text-2 hover:text-text hover:underline sm:min-h-8">
-              الجلسة التالية&nbsp;<DateText iso={h.next_date} />&nbsp;←
-            </a>
-          ) : null}
-        </div>
-        {!h.decision_type && held ? <RecordDecision hearingId={h.id} caseId={caseId} hearingDate={h.hearing_date} label={`جلسة ${formatDmy(h.hearing_date)}`} /> : null}
+    <li id={`h-${h.id}`} className="flex scroll-mt-24 flex-wrap items-start gap-x-4 gap-y-1 border-t border-border-2 px-4 py-3.5 sm:items-center sm:px-6 sm:py-4">
+      <DateText iso={h.hearing_date} className={cx("w-21 shrink-0 text-base sm:w-30 sm:text-md", next ? "font-bold text-title" : "font-medium text-text")} />
+      <div className="min-w-0 flex-1 basis-40 text-base sm:text-md">
+        {h.decision_type ? (
+          <span className="text-text">{decisionLine(h.decision_type, h.decision_text)}</span>
+        ) : held ? (
+          <RecordDecision hearingId={h.id} caseId={caseId} hearingDate={h.hearing_date} label={`جلسة ${formatDmy(h.hearing_date)}`} trigger="القرار متسجلش · سجّله" />
+        ) : (
+          <>
+            {next ? <NextPill /> : null}
+            {needed ? <span className={next ? "ms-2 text-text" : "text-text"}>{needed}</span> : next ? null : <span className="text-text-3">لسه مفيش مطلوب متسجل للجلسة دي</span>}
+          </>
+        )}
+        {suggested ? <span className="ms-2 inline-flex align-middle"><SuggestedTag>مقترحة · راجعها</SuggestedTag></span> : null}
       </div>
+      {minutes ? <SourceChip cite={minutes} /> : null}
     </li>
   );
 }
 
-export async function HearingsTab({ caseId }: { caseId: string }) {
+/** the decisions and hearings the chat proposed (nothing is saved until the lawyer confirms): a gold wash, «old ← new» */
+function Proposed({ edits }: { edits: PendingEdits }) {
+  const added = edits.timeline.filter((r) => r.on === "hearings" && r.kind !== "decision");
+  const decisions = edits.decisions.flatMap((d) => d.rows);
+  if (!decisions.length && !added.length) return null;
+  return (
+    <div className="gold-wash space-y-2.5 rounded-xl px-5 py-4" data-pending-row>
+      {decisions.map((r) => (
+        <div key={r.key + r.label}>
+          <div className="flex items-center gap-1.5 text-xs text-gold-text-small">{r.label}<SuggestedTag /></div>
+          <div className="mt-0.75 text-md font-semibold leading-[1.5]"><Change old={r.old} next={r.new} /></div>
+        </div>
+      ))}
+      {added.map((r) => (
+        <div key={r.key}>
+          <div className="flex items-center gap-1.5 text-xs text-gold-text-small">جلسة جديدة<SuggestedTag /></div>
+          <div className="mt-0.75 text-md font-semibold leading-[1.5]">{r.text}</div>
+          <WaitingLine />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export async function HearingsTab({ caseId, today, edits }: { caseId: string; today: string; edits?: PendingEdits }) {
   const db = await createClient();
-  const today = todayIso();
   const rows = await caseHearings(db, caseId);
   const { data: docs } = await db.from("documents").select("id, file_name, title, doc_type").eq("case_id", caseId);
-  const names: DocNames = new Map((docs ?? []).map((d) => [d.id, d.title || DOC_TYPE[d.doc_type] || d.file_name]));
-  // the nearest hearing today or later gets the darker ring
-  const nextUp = rows.find((h) => h.hearing_date >= today)?.id;
-  const waiting = rows.filter((h) => !h.decision_type && h.hearing_date < today).length;
+  const names = new Map((docs ?? []).map((d) => [d.id, d.title || DOC_TYPE[d.doc_type] || d.file_name]));
+  // the next hearing first (the nearest one today or later), the others after it, then the held ones, newest first
+  const upcoming = rows.filter((h) => h.hearing_date >= today);
+  const held = rows.filter((h) => h.hearing_date < today).reverse();
+  const ordered = [...upcoming, ...held];
+  const nextId = upcoming.find((h) => !h.decision_type)?.id;
+  /** what is asked for a hearing: the previous decision's requirements, else its own purpose */
+  const needed = (h: Row) => rows.find((p) => p.next_hearing_id === h.id)?.next_requirements || h.purpose || null;
 
   return (
-    <div className="pb-4">
+    <div className="space-y-4 pb-4">
+      {edits ? <Proposed edits={edits} /> : null}
       <DecisionNotices>
-        <Panel title={rows.length ? countLabel(rows.length) : "لسه مفيش جلسات"}
-          meta={waiting ? <span className="font-semibold text-gold">{waiting === 1 ? "واحدة محتاجة قرار" : `${waiting} محتاجة قرار`}</span> : null}>
-          {rows.length ? (
-            <ol className="px-4 pt-5 sm:px-5">
-              {rows.map((h, i) => <HearingRow key={h.id} h={h} today={today} nextUp={h.id === nextUp} last={i === rows.length - 1} caseId={caseId} names={names} />)}
-            </ol>
-          ) : (
-            <p className="px-5 py-5 text-base leading-7 text-text-3">لسه مفيش جلسات متسجلة للقضية دي. أضف أول جلسة بتاريخها، أو قول لـ Clausia ميعادها.</p>
-          )}
-          <div className="overflow-hidden rounded-b-lg border-t border-border-2">
-            <AddHearing caseId={caseId} />
+        <section className="overflow-hidden rounded-xl border border-border-2 bg-card shadow-card" aria-label="الجلسات">
+          <div className="hidden gap-x-4 px-6 py-3 text-sm font-semibold text-text-3 sm:flex">
+            <span className="w-30 shrink-0">التاريخ</span><span className="flex-1">القرار</span><span className="sr-only">المحضر</span>
           </div>
-        </Panel>
+          {ordered.length ? (
+            <ol>{ordered.map((h) => <HearingRow key={h.id} h={h} today={today} next={h.id === nextId} needed={needed(h)} caseId={caseId} names={names} />)}</ol>
+          ) : (
+            <p className="border-t border-border-2 px-6 py-5 text-base leading-7 text-text-3">لسه مفيش جلسات متسجلة للقضية دي. أضف أول جلسة بتاريخها، أو قول لـ Clausia ميعادها.</p>
+          )}
+          <div className="border-t border-border-2"><AddHearing caseId={caseId} /></div>
+        </section>
       </DecisionNotices>
     </div>
   );

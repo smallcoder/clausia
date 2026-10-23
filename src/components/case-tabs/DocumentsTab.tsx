@@ -7,6 +7,7 @@ import { DocsTable } from "@/components/case-tabs/DocsTable";
 import { buildDocsTable, type DocInfo, type PendingOp, type TableCell, type TableColumn } from "@/components/case-tabs/docs-table";
 import { AddColumn } from "@/components/documents/AddColumn";
 import { UploadDocument } from "@/components/documents/UploadDocument";
+import { docsTableEnabled } from "@/lib/flags";
 import { ProposalCard } from "@/components/proposal/ProposalCard";
 import { ClausiaSays } from "@/components/shell/PageHero";
 import { buildProposalLookup } from "@/lib/assistant/lookup";
@@ -76,10 +77,10 @@ export async function DocumentsTab({ caseId, cf }: { caseId: string; cf: CaseFil
 
   return (
     <div className="space-y-4 pb-4">
-      {/* phone: the count, the upload and the new column live here; desktop: they are the title row's stat and far-end buttons (CaseSubHeader) */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-1 sm:hidden">
+      {/* the count, «ارفع مستند» and «+ عمود جديد» (the column question only while its flag is on) */}
+      <div className="flex flex-wrap items-center justify-between gap-3 px-1">
         <h2 className="text-lg font-bold text-title">{total ? pagesWord(total) : "ارفع أول ورقة"}</h2>
-        <div className="flex items-center gap-2"><UploadDocument caseId={caseId} compact /><AddColumn caseId={caseId} disabled={!total} /></div>
+        <div className="flex items-center gap-2"><UploadDocument caseId={caseId} compact />{docsTableEnabled() ? <AddColumn caseId={caseId} disabled={!total} /> : null}</div>
       </div>
 
       {total ? (

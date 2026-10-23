@@ -7,9 +7,11 @@
  */
 import { MoreHorizontal } from "lucide-react";
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useCite, type CiteSource } from "@/components/cite/context";
+import { closeHref } from "@/components/shell/close-href";
 import { DocTypeSelect } from "@/components/documents/DocTypeSelect";
 import { DateText } from "@/components/ui";
 
@@ -19,6 +21,8 @@ export function DocMenu({ documentId, caseId, name, fileName, docType, meta, has
   documentId: string; caseId: string; name: string; fileName: string; docType: string; meta: string; hasText: boolean; hasPending: boolean;
 }) {
   const { open: openPaper } = useCite();
+  const path = usePathname();
+  const sp = useSearchParams(); // the chat is the panel beside the page (on a phone the sheet closes): «راجع المقترحات» goes to it, keeping the open session
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const btn = useRef<HTMLButtonElement>(null);
@@ -79,7 +83,7 @@ export function DocMenu({ documentId, caseId, name, fileName, docType, meta, has
           <a role="menuitem" href={`/api/documents/${documentId}?download=1`} onClick={() => close()} className={ITEM}>تنزيل</a>
           <button type="button" role="menuitem" disabled={!hasText} title={hasText ? undefined : "الورقة لسه ما اتقرتش"}
             onClick={() => { close(); openPaper(cite); }} className={`${ITEM} text-start`}>شوف النص المستخرج</button>
-          {hasPending ? <Link role="menuitem" href={`/cases/${caseId}?tab=chat`} onClick={() => close()} className={`${ITEM} font-semibold text-gold-text-small`}>راجع المقترحات في المحادثة ←</Link> : null}
+          {hasPending ? <Link role="menuitem" href={closeHref(path, new URLSearchParams(sp.toString()))} onClick={() => close()} className={`${ITEM} font-semibold text-gold-text-small`}>راجع المقترحات في المحادثة ←</Link> : null}
         </div>, document.body) : null}
     </>
   );
