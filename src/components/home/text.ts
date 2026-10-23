@@ -2,7 +2,7 @@
  * Home wording, built from real data (no LLM call): the long date, the greeting, Arabic counts,
  * and the Clausia sentence. Pure functions — no DB access.
  */
-import { normalizeDigits } from "@/lib/dates";
+import { formatDmy, normalizeDigits } from "@/lib/dates";
 import type { HearingWithCase } from "@/lib/hearings";
 
 const AR_WEEKDAYS = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
@@ -15,7 +15,20 @@ export function formatLongDay(iso: string): string {
   return `${AR_WEEKDAYS[wd]} ${d} ${AR_MONTHS[m - 1]}`;
 }
 
-const cairoHour = (now: Date) => Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Cairo", hour: "numeric", hour12: false }).format(now));
+/**
+ * The day column of «الجلسات الجاية»: «النهارده» / «بكرة» / «الأحد 25» (within the next 6 days) / «5/12/2026» (later, d/m/yyyy).
+ * `soon` = today or tomorrow (the mockup draws those in gold).
+ */
+export function upcomingDay(iso: string, today: string): { label: string; soon: boolean } {
+  const days = Math.round((Date.UTC(...ymd(iso)) - Date.UTC(...ymd(today))) / 86_400_000);
+  if (days <= 0) return { label: "النهارده", soon: true };
+  if (days === 1) return { label: "بكرة", soon: true };
+  if (days <= 6) { const [y, m, d] = ymd(iso); return { label: `${AR_WEEKDAYS[new Date(Date.UTC(y, m, d)).getUTCDay()]} ${d}`, soon: false }; }
+  return { label: formatDmy(iso), soon: false };
+}
+const ymd = (iso: string): [number, number, number] => { const [y, m, d] = iso.slice(0, 10).split("-").map(Number); return [y, m - 1, d]; };
+
+const cairoHour =(now: Date) => Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Cairo", hour: "numeric", hour12: false }).format(now));
 
 /** «مساء الخير، أستاذ تجريبي» — «أ.» is spelled out; an e-mail is never used as a name. */
 export function greeting(displayName: string | null | undefined, now = new Date()): string {

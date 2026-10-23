@@ -13,6 +13,7 @@ import { ProposalCard } from "@/components/proposal/ProposalCard";
 import type { DeadlineCardEntry } from "@/lib/deadlines/cards";
 import { useReadProgress } from "@/components/documents/useReadProgress";
 import { ChatComposer } from "./ChatComposer";
+import { ChipIcon, MorningBlock } from "./MorningBlock";
 import { useDraft } from "./draft";
 import { shortDay, withSession } from "./panel-types";
 import { sendMessageAction } from "@/lib/assistant/actions";
@@ -21,6 +22,7 @@ import { modePlaceholder } from "@/lib/assistant/modes";
 import { uploadDocumentAction } from "@/lib/documents/actions";
 import { UNAVAILABLE_TEXT } from "@/lib/llm/unavailable";
 import type { EditRow } from "@/lib/edits";
+import type { Chip, MorningData } from "@/lib/morning/types";
 import type { Proposal } from "@/lib/proposals";
 
 export interface ChatItem {
@@ -43,7 +45,7 @@ export interface ThreadDoc {
 /** The upload posts «أرفقتُ مستندًا: X» for the lawyer; the chip says it already, so no bubble for it. */
 const AUTO_ATTACH = /^أرفقتُ مستندًا: /;
 
-export function ChatThread({ threadId, caseId, hearing, items, lookup, rows = {}, deadlines = {}, docs = {}, chips = [], starter = "" }: {
+export function ChatThread({ threadId, caseId, hearing, items, lookup, rows = {}, deadlines = {}, docs = {}, chips = [], morning = null, starter = "" }: {
   /** null = a new session (the first message makes it) */
   threadId: string | null;
   caseId: string | null;
@@ -56,7 +58,9 @@ export function ChatThread({ threadId, caseId, hearing, items, lookup, rows = {}
   /** the deadlines cards' data by proposal id (empty with the flag off) */
   deadlines?: Record<string, DeadlineCardEntry>;
   docs?: Record<string, ThreadDoc>;
-  chips?: { label: string; text: string }[];
+  chips?: Chip[];
+  /** the general context's top (the morning brief and the «noticed» cards); it is not a saved message */
+  morning?: MorningData | null;
   /** a starter sentence already in the box (from a brief chip's link); it is not sent */
   starter?: string;
 }) {
@@ -81,8 +85,8 @@ export function ChatThread({ threadId, caseId, hearing, items, lookup, rows = {}
   // keep the latest message in view: the panel's own scroll area (not the window)
   useEffect(() => {
     const el = scroller.current;
-    if (!el) return;
-    const go = () => el.scrollTo({ top: el.scrollHeight });
+    if (!el || (morning && shown.length === 0)) return; // an empty general chat opens at the top: the brief is read from its start
+    const go =() => el.scrollTo({ top: el.scrollHeight });
     go();
     const raf = requestAnimationFrame(go);
     return () => cancelAnimationFrame(raf);
@@ -154,7 +158,9 @@ export function ChatThread({ threadId, caseId, hearing, items, lookup, rows = {}
     <>
       <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <div className="mx-auto flex w-full max-w-messages flex-col gap-4 px-4 py-4 xl:px-4.5 xl:py-6">
-          {shown.length === 0 ? (
+          {morning ? <MorningBlock data={morning} /> : null}
+
+          {shown.length === 0 && !morning ? (
             <ClausiaLine>
               <p>{hearing ? `جلسة ${shortDay(hearing.date)}: قول لي حصل إيه فيها، أو ارفع ورقة منها.` : caseId ? "اكتب لي اللي استجد في القضية دي، أو ارفع ورقة." : "أهلًا. احكي لي عن الموكل أو القضية، أو ارفع الصحيفة."} هجهّز لك اللي هيتحفظ في بطاقة، ومش هيتحفظ حاجة قبل ما تأكد.</p>
             </ClausiaLine>
@@ -205,10 +211,10 @@ export function ChatThread({ threadId, caseId, hearing, items, lookup, rows = {}
             ) : null}
           </ol>
 
-          {chips.length && !busy ? (
+          {chips.length && !busy && (!morning || shown.length === 0) ? (
             <div className="flex flex-wrap gap-1.5">
               {chips.map((c) => (
-                <button key={c.label} type="button" onClick={() => { setText(c.text); boxRef.current?.focus(); }} className={CHIP}>{c.label}</button>
+                <button key={c.label} type="button" onClick={() => { setText(c.text); boxRef.current?.focus(); }} className={cx(CHIP, c.icon && "gap-1.75")}><ChipIcon icon={c.icon} />{c.label}</button>
               ))}
             </div>
           ) : null}

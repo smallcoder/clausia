@@ -16,7 +16,7 @@ import { SessionsMenu } from "./Sessions";
 import { shortDay, type PanelData } from "./panel-types";
 
 export function ChatPanel({ data }: { data: PanelData }) {
-  const { context, sessions, threadId, hearing, thread, moveOffer, chips, starter } = data;
+  const { context, sessions, threadId, hearing, thread, moveOffer, chips, morning, starter } = data;
   const caseId = context.kind === "case" ? context.id : null;
   const path = usePathname();
   const params = useSearchParams();
@@ -69,7 +69,7 @@ export function ChatPanel({ data }: { data: PanelData }) {
 
         {moveOffer && threadId ? <MoveOffer key={threadId} threadId={threadId} caseId={moveOffer.caseId} label={moveOffer.label} /> : null}
 
-        <ChatThread key={threadId ?? "new"} threadId={threadId} caseId={caseId} hearing={hearing} items={thread?.items ?? []} lookup={thread?.lookup ?? {}} rows={thread?.rows ?? {}} deadlines={thread?.deadlines ?? {}} docs={thread?.docs ?? {}} chips={chips} starter={starter} />
+        <ChatThread key={threadId ?? "new"} threadId={threadId} caseId={caseId} hearing={hearing} items={thread?.items ?? []} lookup={thread?.lookup ?? {}} rows={thread?.rows ?? {}} deadlines={thread?.deadlines ?? {}} docs={thread?.docs ?? {}} chips={chips} morning={morning} starter={starter} />
       </div>
       {picker ? <ContextPicker currentCaseId={caseId} currentSessionId={threadId} onClose={() => setPicker(false)} /> : null}
     </aside>

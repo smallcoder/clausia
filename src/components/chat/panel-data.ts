@@ -8,6 +8,7 @@ import "server-only";
 import { formatDmy, todayIso } from "@/lib/dates";
 import { caseLabel } from "@/lib/labels";
 import type { Db } from "@/lib/supabase/server";
+import { loadMorning } from "@/lib/morning/load";
 import { hearingThread, latestCaseThread, listSessions } from "@/lib/threads";
 import type { PanelContext, PanelData } from "./panel-types";
 import { shortDay } from "./panel-types";
@@ -32,7 +33,7 @@ async function caseContext(db: Db, caseId: string): Promise<PanelContext | null>
   };
 }
 
-export async function loadPanel(db: Db, path: string[] | undefined, sp: { s?: string; hearing?: string; q?: string }): Promise<PanelData> {
+export async function loadPanel(db: Db, path: string[] | undefined, sp: { s?: string; hearing?: string; q?: string }, who: { userId: string; displayName: string } | null = null): Promise<PanelData> {
   const wantCase = path?.[0] === "cases" && path[1] && UUID.test(path[1]) ? path[1] : null;
   const ctx = wantCase ? await caseContext(db, wantCase) : null;
   const context: PanelContext = ctx ?? { kind: "general" };
@@ -88,9 +89,20 @@ export async function loadPanel(db: Db, path: string[] | undefined, sp: { s?: st
     }
   }
 
+  // the general context starts with the morning brief, the «noticed» cards and chips built from the lawyer's own cases
+  let morning: PanelData["morning"] = null;
+  if (!caseId && who) {
+    try {
+      morning = await loadMorning(db, who.userId, who.displayName);
+      chips.push(...morning.chips);
+    } catch (e) {
+      console.error("morning brief failed", e); // the chat still works: it falls back to the plain greeting
+    }
+  }
+
   return {
     context, sessions, threadId, hearing,
     thread: data ? { items: data.items, lookup: data.lookup, rows: data.rows, deadlines: data.deadlines, docs: data.docs } : null,
-    moveOffer, chips, starter: (sp.q ?? "").slice(0, 300),
+    moveOffer, chips, morning, starter: (sp.q ?? "").slice(0, 300),
   };
 }

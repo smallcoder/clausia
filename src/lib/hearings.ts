@@ -90,6 +90,12 @@ export async function hearingsInRange(db: Db, from: string, to: string): Promise
   return (await shape(db, rows as unknown as Raw[])).sort(byDateCourt);
 }
 
+/** The next `limit` hearings from `from` (a date, inclusive) on, soonest first. */
+export async function upcomingHearings(db: Db, from: string, limit = 5): Promise<HearingWithCase[]> {
+  const rows = must(await db.from("hearings").select(WITH_CASE).gte("hearing_date", from).neq("review_status", "rejected").order("hearing_date").limit(limit));
+  return (await shape(db, rows as unknown as Raw[])).sort(byDateCourt);
+}
+
 /** Past hearings (before today in Cairo) with no decision recorded yet, oldest first. */
 export async function undecidedPastHearings(db: Db, limit = 50): Promise<HearingWithCase[]> {
   const rows = must(await db.from("hearings").select(WITH_CASE).lt("hearing_date", todayIso()).is("decision_type", null).neq("review_status", "rejected").order("hearing_date", { ascending: true }).limit(limit));

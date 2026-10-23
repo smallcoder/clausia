@@ -852,6 +852,76 @@ export type Database = {
           },
         ]
       }
+      daily_briefs: {
+        Row: {
+          created_at: string
+          for_date: string
+          id: string
+          office_id: string
+          payload: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          for_date: string
+          id?: string
+          office_id?: string
+          payload: Json
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          for_date?: string
+          id?: string
+          office_id?: string
+          payload?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_briefs_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dismissed_notices: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          kind: string
+          office_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          kind: string
+          office_id?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          kind?: string
+          office_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dismissed_notices_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       doc_column_cells: {
         Row: {
           answer: string | null

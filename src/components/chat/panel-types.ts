@@ -1,6 +1,7 @@
 /** What the server hands the chat panel (see panel-data.ts) and the small URL rules both sides share. No server-only import. */
 import type { DeadlineCardEntry } from "@/lib/deadlines/cards";
 import type { EditRow } from "@/lib/edits";
+import type { Chip, MorningData } from "@/lib/morning/types";
 import type { Session } from "@/lib/threads";
 import type { ChatItem, ThreadDoc } from "./ChatThread";
 
@@ -31,7 +32,9 @@ export interface PanelData {
   /** a general session that is about a case: «انقل المحادثة دي لقضية X» */
   moveOffer: { caseId: string; label: string } | null;
   /** starter chips above the composer (they fill the box; nothing is sent) */
-  chips: { label: string; text: string }[];
+  chips: Chip[];
+  /** the general context's top: the morning brief and the «noticed» cards (null in a case, or when it could not be built) */
+  morning: MorningData | null;
   /** a starter sentence from a link (?q=); it fills the box, nothing is sent */
   starter: string;
 }
