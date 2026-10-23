@@ -19,6 +19,7 @@ import { cairoDateOf, resolveRelativeDays, type RelativeDay } from "@/lib/relati
 import type { Db } from "@/lib/supabase/server";
 import { isReadTool, READ_TOOL_SPECS, runReadTool } from "@/lib/tools/read";
 import { isInternalTool, isWriteTool, OP_TITLE, WRITE_TOOL_ARGS, writeToolSpecs } from "@/lib/tools/registry";
+import { askContextBlock, type AskItem } from "./ask";
 import type { ChatMode } from "./modes";
 import { buildSystemPrompt, type CaseContext } from "./prompt";
 
@@ -49,7 +50,8 @@ export class TurnError extends Error {
 }
 
 /** `mode`: the composer's mode tab for this message (ask / rulings / draft / analyze); it only changes one line of the system prompt. */
-type TurnInput = { threadId: string; userText: string; userId: string; officeId: string; mode?: ChatMode };
+/** `context`: the items the lawyer attached with «اسأل Clausia» (already cleaned by `cleanAsk`); sent to the model as marked data for this turn only. */
+type TurnInput = { threadId: string; userText: string; userId: string; officeId: string; mode?: ChatMode; context?: AskItem[] };
 
 /** A whole chat turn — every model and tool call in it — gets 2 minutes (owner decision 2026-10-21). */
 export const TURN_LIMIT_MS = 120_000;
@@ -125,6 +127,11 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }, clock: 
   const system = buildSystemPrompt({ caseContext, cardNotes, documents: docs, relativeDays, mode: input.mode, hearing: hearing ? { id: hearing.id, date: formatDmy(hearing.hearing_date) } : null });
   const tools = [...READ_TOOL_SPECS, ...writeToolSpecs()];
   const messages: LlmMessage[] = history;
+  // the chips: a data block after the lawyer's text in what the model sees; it is not in the saved message (so it is never read as
+  // something the lawyer said: no quote check, no relative day, no session title from it)
+  const ask = askContextBlock(input.context ?? [], thread.case_id);
+  const lastTurn = messages[messages.length - 1];
+  if (ask && lastTurn?.role === "user") lastTurn.text = `${lastTurn.text}\n\n${ask}`;
   const meta = { purpose: "chat" as const, officeId: input.officeId, userId: input.userId, threadId: thread.id };
   const out: TurnResult = { userMessageId: userMsg.id, assistantMessageIds: [], proposalIds: [], text: "", rounds: 0 };
 

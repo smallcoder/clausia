@@ -9,6 +9,7 @@ import { Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
+import { useUndoToast } from "@/components/shell/UndoToast";
 import { decideProposalAction } from "@/lib/assistant/actions";
 import { editsLabel } from "@/lib/edits";
 
@@ -16,6 +17,7 @@ export const CONFIRM_SLOT = "sheet-confirm-slot";
 
 export function ConfirmBar({ groups, count }: { groups: { proposalId: string; opIds: string[] }[]; count: number }) {
   const router = useRouter();
+  const undoToast = useUndoToast();
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [slot, setSlot] = useState<HTMLElement | null>(null);
@@ -24,10 +26,16 @@ export function ConfirmBar({ groups, count }: { groups: { proposalId: string; op
   function confirm() {
     setError(null);
     start(async () => {
+      const events: string[] = [];
+      let saved = 0;
       for (const g of groups) {
         const r = await decideProposalAction(g.proposalId, { mode: "confirm", opIds: g.opIds });
         if (!r.ok) { setError(r.error ?? "تعذّر الحفظ"); break; } // a card that fails is saved nowhere (all or nothing); the next ones wait
+        saved += g.opIds.length;
+        if (r.undoEventId) events.push(r.undoEventId);
       }
+      // the toast with «تراجع» (10 seconds): the page bar is gone after the refresh, so the toast lives in the shell
+      if (events.length) undoToast.show({ eventIds: events, count: saved === groups.reduce((n, g) => n + g.opIds.length, 0) ? count : saved });
       router.refresh();
     });
   }

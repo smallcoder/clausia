@@ -84,11 +84,43 @@ function must<R extends { data: unknown; error: { message: string } | null }>(r:
 /** Puts the database back as it was before one applied op (a card is saved all or nothing). */
 export type Undo = () => Promise<void>;
 
-type Table = "clients" | "cases" | "case_parties" | "case_facts" | "case_requests" | "case_arguments" | "hearings" | "judgments" | "doc_columns" | "doc_column_cells" | "case_deadlines";
+type Table = "clients" | "cases" | "case_parties" | "case_facts" | "case_requests" | "case_arguments" | "hearings" | "judgments" | "doc_columns" | "doc_column_cells" | "case_deadlines" | "documents";
 const del = (db: Db, table: Table, id: string): Undo => async () => { must(await db.from(table).delete().eq("id", id).select("id")); };
 
-/** Validate + execute. Returns the id of the created/updated row (for @ref resolution) and how to undo it. */
-export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Provenance, refs: RefMap = {}): Promise<{ id: string; extra?: Record<string, unknown>; undo: Undo }> {
+/**
+ * The same undo as DATA (for «تراجع» after a confirm, src/lib/undo.ts): what to delete, what to write back. Mirrors the
+ * closures above one to one. `after` = the row as it stood right after the op (a deleted row: all columns; a restored row:
+ * the columns the op changed). A later undo compares it with the row NOW and refuses when someone changed the row since.
+ */
+export type UndoStep =
+  | { op: "delete"; table: Table; id: string; after?: Record<string, unknown> }
+  | { op: "restore"; table: Table; id: string; cols: Record<string, unknown>; after?: Record<string, unknown> };
+const rm = (table: Table, id: string): UndoStep[] => [{ op: "delete", table, id }];
+const back = (table: Table, id: string, cols: Record<string, unknown>): UndoStep => ({ op: "restore", table, id, cols });
+
+export interface Applied {
+  id: string;
+  extra?: Record<string, unknown>;
+  /** puts the database back as it was (in memory, for a card that fails half way) */
+  undo: Undo;
+  /** the same as data, for «تراجع» later; null = this op cannot be undone later (create_case, add_judgment) */
+  steps: UndoStep[] | null;
+}
+
+/** Validate + execute. Also records the rows the undo will compare against. */
+export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Provenance, refs: RefMap = {}): Promise<Applied> {
+  const r = await applyOpRaw(db, tool, rawArgs, p, refs);
+  if (!r.steps) return r;
+  for (const st of r.steps) {
+    const cols = st.op === "delete" ? "*" : Object.keys(st.cols).join(",");
+    const { data } = await db.from(st.table).select(cols).eq("id", st.id).maybeSingle();
+    st.after = (data ?? undefined) as unknown as Record<string, unknown> | undefined;
+  }
+  return r;
+}
+
+/** Returns the id of the created/updated row (for @ref resolution) and how to undo it. */
+async function applyOpRaw(db: Db, tool: WriteTool, rawArgs: unknown, p: Provenance, refs: RefMap = {}): Promise<Applied> {
   const parsed = WRITE_TOOL_ARGS[tool].safeParse(rawArgs);
   if (!parsed.success) throw new Error(parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; "));
   const a = parsed.data as WriteArgs<WriteTool>;
@@ -97,7 +129,7 @@ export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Prov
     case "create_client": {
       const x = a as WriteArgs<"create_client">;
       const row = must(await db.from("clients").insert({ name: x.name, kind: x.kind, phone: x.phone ?? null, address: x.address ?? null, notes: x.notes ?? null, ...prov(p) }).select("id").single());
-      return { id: row.id, undo: del(db, "clients", row.id) };
+      return { id: row.id, undo: del(db, "clients", row.id), steps: rm("clients", row.id) };
     }
     case "create_case": {
       const x = a as WriteArgs<"create_case">;
@@ -113,7 +145,8 @@ export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Prov
       }).select("id").single());
       // every case gets its own chat thread
       await db.from("chat_threads").insert({ case_id: row.id, title: x.title ?? x.case_number ?? null });
-      return { id: row.id, undo: async () => { await db.from("chat_threads").delete().eq("case_id", row.id); await del(db, "cases", row.id)(); } };
+      // no later undo: deleting the case would delete the card that made it (proposals.case_id cascades): a GitHub issue
+      return { id: row.id, undo: async () => { await db.from("chat_threads").delete().eq("case_id", row.id); await del(db, "cases", row.id)(); }, steps: null };
     }
     case "update_case": {
       const x = a as WriteArgs<"update_case">;
@@ -127,7 +160,7 @@ export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Prov
       if (x.circuit !== undefined) patch.circuit = circuitText(x.circuit);
       const before = must(await db.from("cases").select(Object.keys(patch).join(",")).eq("id", id).single()) as unknown as typeof patch;
       must(await db.from("cases").update(patch).eq("id", id).select("id").single());
-      return { id, undo: async () => { must(await db.from("cases").update(before).eq("id", id).select("id").single()); } };
+      return { id, undo: async () => { must(await db.from("cases").update(before).eq("id", id).select("id").single()); }, steps: [back("cases", id, before as Record<string, unknown>)] };
     }
     case "add_party": {
       const x = a as WriteArgs<"add_party">;
@@ -135,7 +168,7 @@ export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Prov
         case_id: resolveRef(x.case, refs)!, name: x.name, role: x.role, is_our_client: x.is_our_client,
         client_id: resolveRef(x.client, refs) ?? null, representative: x.representative ?? null, notes: x.notes ?? null, ...prov(p),
       }).select("id").single());
-      return { id: row.id, undo: del(db, "case_parties", row.id) };
+      return { id: row.id, undo: del(db, "case_parties", row.id), steps: rm("case_parties", row.id) };
     }
     case "add_fact": {
       const x = a as WriteArgs<"add_fact">;
@@ -144,30 +177,30 @@ export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Prov
         case_id: resolveRef(x.case, refs)!, fact_date: d?.iso ?? null, date_precision: d?.precision ?? "unknown",
         date_text: x.date_text ?? x.date ?? null, text: x.text, ...prov(p),
       }).select("id").single());
-      return { id: row.id, undo: del(db, "case_facts", row.id) };
+      return { id: row.id, undo: del(db, "case_facts", row.id), steps: rm("case_facts", row.id) };
     }
     case "add_request": {
       const x = a as WriteArgs<"add_request">;
       const row = must(await db.from("case_requests").insert({ case_id: resolveRef(x.case, refs)!, text: x.text, kind: x.kind ?? null, ...prov(p) }).select("id").single());
-      return { id: row.id, undo: del(db, "case_requests", row.id) };
+      return { id: row.id, undo: del(db, "case_requests", row.id), steps: rm("case_requests", row.id) };
     }
     case "add_argument": {
       const x = a as WriteArgs<"add_argument">;
       const row = must(await db.from("case_arguments").insert({ case_id: resolveRef(x.case, refs)!, side: x.side, kind: x.kind ?? null, text: x.text, ...prov(p) }).select("id").single());
-      return { id: row.id, undo: del(db, "case_arguments", row.id) };
+      return { id: row.id, undo: del(db, "case_arguments", row.id), steps: rm("case_arguments", row.id) };
     }
     case "add_hearing": {
       const x = a as WriteArgs<"add_hearing">;
       const d = date(x.date)!;
       const row = must(await db.from("hearings").insert({ case_id: resolveRef(x.case, refs)!, hearing_date: d.iso, purpose: x.purpose ?? null, location: x.location ?? null, ...prov(p) }).select("id").single());
-      return { id: row.id, undo: del(db, "hearings", row.id) };
+      return { id: row.id, undo: del(db, "hearings", row.id), steps: rm("hearings", row.id) };
     }
     case "set_hearing_location": {
       const x = a as WriteArgs<"set_hearing_location">;
       const id = resolveRef(x.hearing, refs)!;
       const before = must(await db.from("hearings").select("location").eq("id", id).single());
       must(await db.from("hearings").update({ location: x.location }).eq("id", id).select("id").single());
-      return { id, undo: async () => { must(await db.from("hearings").update({ location: before.location }).eq("id", id).select("id").single()); } };
+      return { id, undo: async () => { must(await db.from("hearings").update({ location: before.location }).eq("id", id).select("id").single()); }, steps: [back("hearings", id, { location: before.location })] };
     }
     case "record_decision": {
       const x = a as WriteArgs<"record_decision">;
@@ -190,8 +223,16 @@ export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Prov
       });
       if (error) throw new Error(error.message);
       const created = !h0.next_hearing_id ? ((data as { next_hearing_id?: string | null } | null)?.next_hearing_id ?? null) : null;
+      const { id: _id, office_id: _o, created_at: _c, ...hBack } = h0;
       return {
         id, extra: data as Record<string, unknown>,
+        // the same order as `undo`: the hearing first (so it stops pointing at the new next hearing), then that one, the moved one, the case
+        steps: [
+          back("hearings", id, hBack),
+          ...(created ? rm("hearings", created) : []),
+          ...(h0.next_hearing_id && next0 ? [back("hearings", h0.next_hearing_id, next0)] : []),
+          back("cases", h0.case_id, case0),
+        ],
         undo: async () => {
           const { id: _id, office_id: _o, created_at: _c, ...back } = h0;
           must(await db.from("hearings").update(back).eq("id", id).select("id").single());
@@ -210,14 +251,15 @@ export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Prov
         kind: x.kind, operative_text: x.operative_text, outcome: x.outcome ?? null,
         appeal_deadline: dl?.iso ?? null, appeal_deadline_note: x.appeal_deadline_note ?? null, ...prov(p),
       }).select("id").single());
-      return { id: row.id, undo: del(db, "judgments", row.id) };
+      // no later undo: confirming a final judgment proposes the appeal-deadlines card, which would be left pointing at nothing (a GitHub issue)
+      return { id: row.id, undo: del(db, "judgments", row.id), steps: null };
     }
     case "attach_document": {
       const x = a as WriteArgs<"attach_document">;
       const id = resolveRef(x.document, refs)!;
       const before = must(await db.from("documents").select("case_id, doc_type, title").eq("id", id).single());
       must(await db.from("documents").update({ case_id: resolveRef(x.case, refs)!, doc_type: x.doc_type, ...(x.title ? { title: x.title } : {}) }).eq("id", id).select("id").single());
-      return { id, undo: async () => { must(await db.from("documents").update(before).eq("id", id).select("id").single()); } };
+      return { id, undo: async () => { must(await db.from("documents").update(before).eq("id", id).select("id").single()); }, steps: [back("documents", id, before)] };
     }
     case "add_doc_column": {
       const x = a as WriteArgs<"add_doc_column">;
@@ -225,7 +267,7 @@ export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Prov
         case_id: resolveRef(x.case, refs)!, question: x.question.trim(), title: x.title.trim(),
         review_status: p.review_status, created_by_kind: p.created_by_kind, source_kind: "manual", // the question is typed on the documents page
       }).select("id").single());
-      return { id: row.id, undo: del(db, "doc_columns", row.id) };
+      return { id: row.id, undo: del(db, "doc_columns", row.id), steps: rm("doc_columns", row.id) };
     }
     case "add_doc_cell": {
       const x = a as WriteArgs<"add_doc_cell">;
@@ -247,7 +289,7 @@ export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Prov
         source_quote: answer ? p.source_quote ?? null : null,
         ...(answer ? span({ ...p, source_kind: "document", source_document_id: documentId }) : { source_char_start: null, source_char_end: null }),
       }).select("id").single());
-      return { id: row.id, undo: del(db, "doc_column_cells", row.id) };
+      return { id: row.id, undo: del(db, "doc_column_cells", row.id), steps: rm("doc_column_cells", row.id) };
     }
     case "add_deadline": {
       const x = a as WriteArgs<"add_deadline">;
@@ -260,7 +302,7 @@ export async function applyOp(db: Db, tool: WriteTool, rawArgs: unknown, p: Prov
       const row = must(await db.from("case_deadlines").insert({
         ...built.save, review_status: p.review_status, created_by_kind: "lawyer", source_kind: "manual", // the lawyer's tap on «حطهم في الرول» is the act; code made the numbers
       }).select("id").single());
-      return { id: row.id, undo: del(db, "case_deadlines", row.id) };
+      return { id: row.id, undo: del(db, "case_deadlines", row.id), steps: rm("case_deadlines", row.id) };
     }
   }
 }

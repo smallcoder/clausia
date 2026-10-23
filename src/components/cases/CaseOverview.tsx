@@ -8,6 +8,7 @@ import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { SourceChip } from "@/components/cite/SourceChip";
+import { AskTarget } from "@/components/cases/AskTarget";
 import { SegBar, Seg, TabScope } from "@/components/cases/CaseTabs";
 import { SheetEditText, SheetReview, TapItem } from "@/components/cases/ItemSheet";
 import { pagesLabel } from "@/components/documents/DocThumb";
@@ -74,7 +75,7 @@ function Summary({ cf, hs, today, className, edits }: { cf: CaseFile; hs: Hearin
   const segs = summarySegments(cf, hs, today).map((s, i) => s.gold ? <span key={i} className="font-semibold text-gold">{s.text}</span> : <span key={i}>{s.text}</span>);
   const own = cf.case.summary?.trim();
   return (
-    <div className={`flex items-start gap-2.5 px-1 lg:gap-3.5 lg:px-2 ${className}`}>
+    <AskTarget item={{ kind: "summary", id: cf.case.id, label: own || "ملخص القضية" }} className={`flex items-start gap-2.5 px-1 lg:gap-3.5 lg:px-2 ${className}`}>
       <span aria-hidden className={MARK}>C</span>
       <div className={`min-w-0 flex-1 ${proposed ? "gold-wash rounded-lg px-3.5 py-2.5" : ""}`}>
         {proposed ? (
@@ -87,7 +88,7 @@ function Summary({ cf, hs, today, className, edits }: { cf: CaseFile; hs: Hearin
         <p className="mt-0.5 text-base leading-[1.8] text-text lg:hidden">{own ? (/[.!؟]$/u.test(own) ? own : `${own}.`) : segs}</p>
         <p className="mt-1 hidden text-lg leading-[1.85] text-text lg:block">{segs}</p>
       </div>
-    </div>
+    </AskTarget>
   );
 }
 
@@ -194,13 +195,15 @@ function Facts({ cf, caseId, edits }: { cf: CaseFile; caseId: string; edits?: Pe
       {all.length ? (
         <div className="px-3 pb-1.5 pt-2.5 lg:px-4">
           {all.map((e, i) => e.row ? <NewFactRow key={e.row.key} r={e.row} last={i === all.length - 1} /> : e.fact && ((f) => (
-            <TapItem key={f.id} id={f.id} title="واقعة" tight className="rounded-md px-1.5 lg:px-2" row={<FactRow f={f} last={i === all.length - 1} cf={cf} />}>
+            <AskTarget key={f.id} item={{ kind: "fact", id: f.id, label: `${factDate(f.date, f.date_precision)} · ${f.text}` }}>
+            <TapItem id={f.id} title="واقعة" tight className="rounded-md px-1.5 lg:px-2" row={<FactRow f={f} last={i === all.length - 1} cf={cf} />}>
               <p className="font-num text-sm font-bold text-title">{factDate(f.date, f.date_precision)}{f.date_text && f.date_text !== factDate(f.date, f.date_precision) ? <span className="font-sans font-normal text-text-4"> · «{f.date_text}»</span> : null}</p>
               <p className="text-doc text-lg text-text">{f.text}</p>
               <SheetSource cf={cf} item={f} about={aboutItem("واقعة", `${factDate(f.date, f.date_precision)} · ${f.text}`)} />
               {f.review_status === "suggested" ? <SheetReview table="case_facts" id={f.id} caseId={caseId} /> : null}
               <SheetEditText table="case_facts" id={f.id} caseId={caseId} initial={f.text} />
             </TapItem>
+            </AskTarget>
           ))(e.fact))}
         </div>
       ) : (
@@ -215,6 +218,7 @@ function Facts({ cf, caseId, edits }: { cf: CaseFile; caseId: string; edits?: Pe
 function TextItem({ cf, caseId, table, item, kindLabel }: { cf: CaseFile; caseId: string; table: "case_requests" | "case_arguments"; item: Req | Arg; kindLabel: string | null }) {
   const suggested = item.review_status === "suggested";
   return (
+    <AskTarget item={{ kind: table === "case_requests" ? "request" : "argument", id: item.id, label: item.text }}>
     <TapItem id={item.id} title={table === "case_requests" ? "طلب" : "دفع / دفاع"} tight className="-mx-2 mt-1.5 rounded-md px-2 lg:mt-2"
       row={<span className="block text-base leading-[1.7] text-text">{item.text}{suggested ? <span className="ms-2 inline-block"><Suggested /></span> : null}</span>}>
       {kindLabel ? <p className="text-sm font-bold text-text-3">{kindLabel}</p> : null}
@@ -223,6 +227,7 @@ function TextItem({ cf, caseId, table, item, kindLabel }: { cf: CaseFile; caseId
       {suggested ? <SheetReview table={table} id={item.id} caseId={caseId} /> : null}
       <SheetEditText table={table} id={item.id} caseId={caseId} initial={item.text} />
     </TapItem>
+    </AskTarget>
   );
 }
 
@@ -321,7 +326,8 @@ function HearingCard({ cf, hs, today, caseId, className, edits }: { cf: CaseFile
   // the mockup draws no «الجلسات ←» link: the whole card opens the hearings view (an overlay link, so the
   // «سجّله» link inside stays a separate, non-nested target)
   return (
-    <div className={`${CARD} relative px-4.5 py-4 transition-colors hover:bg-card-2/40 lg:p-5.5 ${className}`}>
+    <AskTarget item={{ kind: "hearing", id: h.id, label: `${upcoming ? "الجلسة الجاية" : "آخر جلسة"} · ${formatDmy(h.date)}${where ? ` · ${where}` : ""}` }} className={className}>
+    <div className={`${CARD} relative px-4.5 py-4 transition-colors hover:bg-card-2/40 lg:p-5.5`}>
       <Link href={`/cases/${caseId}?tab=hearings`} aria-label="الجلسات" className="absolute inset-0 rounded-[inherit]" /* ds-allow: the link overlay takes its card's radius */ />
       <div className="flex items-center gap-4 lg:gap-4.5">
         <DayBlock iso={h.date} />
@@ -365,6 +371,7 @@ function HearingCard({ cf, hs, today, caseId, className, edits }: { cf: CaseFile
         </div>
       ) : null}
     </div>
+    </AskTarget>
   );
 }
 
@@ -404,7 +411,8 @@ function Parties({ cf, caseId, edits }: { cf: CaseFile; caseId: string; edits?: 
             </div>
           ))}
           {rows.map((r, i) => r.id && r.party ? (
-            <TapItem key={r.id} id={r.id} title="طرف في الدعوى" className="-mx-2 rounded-md px-2" row={line(r.name, r.role, r.suggested ? <Suggested label="مقترح · راجعه" /> : null)}>
+            <AskTarget key={r.id} item={{ kind: "party", id: r.id, label: `${r.name} · ${r.role}` }}>
+            <TapItem id={r.id} title="طرف في الدعوى" className="-mx-2 rounded-md px-2" row={line(r.name, r.role, r.suggested ? <Suggested label="مقترح · راجعه" /> : null)}>
               <div>
                 <p className="text-lg font-bold text-text">{r.name}</p>
                 <p className="text-sm text-text-3">{r.role}</p>
@@ -414,6 +422,7 @@ function Parties({ cf, caseId, edits }: { cf: CaseFile; caseId: string; edits?: 
               <SheetSource cf={cf} item={r.party} about={aboutItem("طرف", r.name)} />
               {r.suggested ? <SheetReview table="case_parties" id={r.id} caseId={caseId} /> : null}
             </TapItem>
+            </AskTarget>
           ) : <div key={`rep-${i}`}>{line(r.name, r.role)}</div>)}
         </div>
       ) : (
@@ -433,11 +442,13 @@ function Docs({ cf, caseId }: { cf: CaseFile; caseId: string }) {
       {shown.length ? (
         <div className="lg:[&>*]:border-t [&>*+*]:border-t [&>*]:border-[var(--border-2)]">
           {shown.map((d) => (
-            <a key={d.id} href={`/api/documents/${d.id}`} target="_blank" rel="noopener" title={d.file_name}
+            <AskTarget key={d.id} item={{ kind: "document", id: d.id, label: docName(d) }}>
+            <a href={`/api/documents/${d.id}`} target="_blank" rel="noopener" title={d.file_name}
               className="-mx-2 block min-h-11 rounded-md px-2 py-3 transition-colors hover:bg-card-2/60">
               <span className="block truncate text-base font-semibold text-text">{docName(d)}</span>
               <span className="mt-0.5 block text-xs text-text-3">{[pagesLabel(d.page_count), READ_SHORT[d.read_status] ?? d.read_status].filter(Boolean).join(" · ")}</span>
             </a>
+            </AskTarget>
           ))}
           {docs.length ? <div className="flex justify-end py-1 lg:hidden"><Link href={`/cases/${caseId}?tab=documents`} className="-my-1 inline-flex min-h-11 items-center gap-1 text-sm text-text-3 hover:text-text hover:underline"><span className="font-num">{docs.length}</span> الكل ←</Link></div> : null}
         </div>

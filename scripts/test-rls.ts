@@ -12,6 +12,7 @@ import { remindInstant } from "../src/lib/brief/time";
 import { todayIso } from "../src/lib/dates";
 import { moveThreadToCase } from "../src/lib/threads";
 import { createProposal, decideProposal } from "../src/lib/proposals";
+import { undoConfirm } from "../src/lib/undo";
 import { loadCardRows, loadPendingEdits } from "../src/lib/pending-edits";
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -440,6 +441,41 @@ const rows = (r: { data: { id: string }[] | null }) => r.data ?? [];
       if (made.length) await A.from("proposals").delete().in("id", made);
     }
   } else check("A has two cases to test the edit highlights", false);
+}
+
+// ---------- «تراجع» after a confirm (PR 2b): the log of confirms and undos is the office's own ----------
+{
+  const { data: tc } = await A.from("cases").insert({ title: "اختبار-RLS-تراجع", source_kind: "manual" }).select("id").single();
+  try {
+    const T = "واقعة اختبار RLS للتراجع";
+    const p = await createProposal(A as unknown as Db, { caseId: tc!.id, ops: [{ tool: "add_fact", args: { case: tc!.id, text: T, quote: T }, source: { kind: "chat" } }], sourceTexts: [T] });
+    const r = await decideProposal(A as unknown as Db, p.id, { mode: "confirm" });
+    const evId = r.undo_event_id!;
+    const { data: aEv } = await A.from("proposal_events").select("id, office_id, action").eq("proposal_id", p.id);
+    check("undo: DEMO reads the confirm event of its own office", aEv?.length === 1 && aEv[0].action === "confirm" && aEv[0].office_id === officeA);
+    const { data: bEv } = await B.from("proposal_events").select("id").eq("office_id", officeA);
+    const { data: bById } = await B.from("proposal_events").select("id").eq("id", evId);
+    check("undo: OTHER reads 0 events of office A", (bEv?.length ?? 0) === 0 && (bById?.length ?? 0) === 0);
+    const bIns = await B.from("proposal_events").insert({ office_id: officeA, proposal_id: p.id, op_ids: ["op1"], action: "confirm" }).select("id");
+    check("undo: OTHER cannot insert an event into office A", !!bIns.error && bIns.data === null, bIns.error?.message ?? "inserted!");
+    const bUp = await B.from("proposal_events").update({ op_ids: ["x"] }).eq("id", evId).select("id");
+    const bDel = await B.from("proposal_events").delete().eq("id", evId).select("id");
+    const aUp = await A.from("proposal_events").update({ op_ids: ["x"] }).eq("id", evId).select("id");
+    const aDel = await A.from("proposal_events").delete().eq("id", evId).select("id");
+    check("undo: nobody can change or delete an event (append-only log, not even DEMO)", !bUp.data?.length && !bDel.data?.length && !aUp.data?.length && !aDel.data?.length);
+    const u = await undoConfirm(B as unknown as Db, evId);
+    const { data: stillFact } = await A.from("case_facts").select("id").eq("case_id", tc!.id).eq("text", T);
+    check("undo: OTHER cannot undo office A's confirm (refused, the fact stays)", !u.ok && stillFact?.length === 1, u.ok ? "undone!" : u.error);
+    const { data: afterEv } = await A.from("proposal_events").select("id").eq("proposal_id", p.id);
+    check("undo: ...and no event was logged by that attempt", afterEv?.length === 1);
+    const uA = await undoConfirm(A as unknown as Db, evId);
+    const { data: gone } = await A.from("case_facts").select("id").eq("case_id", tc!.id).eq("text", T);
+    const { data: evs2 } = await A.from("proposal_events").select("action, created_by").eq("proposal_id", p.id).order("created_at");
+    const uidA2 = (await A.auth.getUser()).data.user!.id;
+    check("undo: DEMO can undo its own confirm; both events are logged with who did it", uA.ok && gone?.length === 0 && evs2?.map((e) => e.action).join() === "confirm,undo" && evs2.every((e) => e.created_by === uidA2));
+  } finally {
+    await A.from("cases").delete().eq("id", tc!.id); // its proposals and events go with it
+  }
 }
 
 console.log(failed ? `\n${failed} check(s) FAILED` : "\nall checks passed");
