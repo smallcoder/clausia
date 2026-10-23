@@ -105,7 +105,7 @@ try {
     for (const [w, h] of [[1440, 900], [1920, 1080], [2560, 1440]] as const) {
       const [ctx, page] = await ctxOf(w, h, dark);
       await go(page);
-      await toSides(page, w === 1920 ? 312 : 120);
+      await toSides(page, 130);
       await shot(page, `Sides-${w}-${t}`);
       if (w === 1920) await compare(`${OUT}/Sides-1920-${t}.png`, `screenshots/mockups/split/${dark ? "SidesDark" : "SidesLight"}.png`, `${OUT}/Sides-compare-1920-${t}.png`, dark);
       await ctx.close();
@@ -124,7 +124,7 @@ try {
   {
     const [ctx, page] = await ctxOf(1920, 1080, false);
     await go(page);
-    await toSides(page, 312);
+    await toSides(page, 130);
     const needs = page.locator('section[aria-label="ضدنا · دفوع الخصم"] button', { hasText: "اكتب الرد" });
     console.log("«اكتب الرد» buttons:", await needs.count());
     const box = await page.locator('section[aria-label="ضدنا · دفوع الخصم"] button', { hasText: "اكتب الرد" }).first().boundingBox();
@@ -136,7 +136,7 @@ try {
     console.log(`after «اكتب الرد»: box = «${text}», focused = ${await page.evaluate(() => document.activeElement?.tagName)}, sheet open = ${await page.locator("dialog[open]").count()}, chip mentions = ${chips}`);
     await shot(page, "Sides-write-reply-1920-light");
     await go(page);
-    await toSides(page, 312);
+    await toSides(page, 130);
     await page.locator('section[aria-label="ضدنا · دفوع الخصم"] a', { hasText: "شوف الرد" }).first().click();
     await page.waitForTimeout(700);
     console.log(`after «شوف الرد»: open sheet = ${await page.locator("dialog[open]").count()}, url hash = ${new URL(page.url()).hash}, expected #item-${f.reply}`);
