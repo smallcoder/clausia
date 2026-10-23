@@ -30,9 +30,9 @@ const NAV = [
   { href: "/library", label: "المكتبة", Icon: BookOpen },
 ];
 
-/** Which nav item the path belongs to (the brief is an agenda page; the chat threads opened from it are Home). */
+/** Which nav item the path belongs to (the chat threads opened from Home are Home). */
 function activeNav(path: string): string | null {
-  if (path.startsWith(AGENDA) || path.startsWith("/brief")) return AGENDA;
+  if (path.startsWith(AGENDA)) return AGENDA;
   if (path.startsWith("/clients")) return "/clients";
   if (path.startsWith("/library")) return "/library";
   if (path === "/" || path.startsWith("/chat")) return "/";
