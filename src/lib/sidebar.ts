@@ -32,11 +32,12 @@ export const SIDE_SESSIONS = 6;
 export async function loadSidebar(db: Db): Promise<SideData> {
   const [{ data: cases }, { data: threads }, needing] = await Promise.all([
     db.from("cases").select("id, case_number, case_year, title, status, clients(name)").neq("review_status", "rejected").order("updated_at", { ascending: false }).limit(200),
-    db.from("chat_threads").select("id, case_id, title, hearings(hearing_date)").order("updated_at", { ascending: false }).limit(600),
+    db.from("chat_threads").select("id, case_id, client_id, title, hearings(hearing_date)").order("updated_at", { ascending: false }).limit(600),
     casesNeedingDecision(db).catch(() => new Set<string>()),
   ]);
   const by = new Map<string | null, SideSession[]>();
   for (const t of threads ?? []) {
+    if (t.client_id) continue; // a client's sessions live in the client's own chat, not in the general list
     const list = by.get(t.case_id) ?? [];
     if (list.length < SIDE_SESSIONS) list.push({ id: t.id, title: t.title || DEFAULT_TITLE, hearingDate: t.hearings?.hearing_date ?? null });
     by.set(t.case_id, list);

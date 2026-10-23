@@ -32,7 +32,7 @@ function caseNumber(r: CaseRow): string {
 }
 
 /** today «النهارده», tomorrow «بكرة», else d/m/yyyy (CLAUDE.md: dates always d/m/yyyy). */
-function dateLabel(iso: string, today: string): { text: string; today: boolean } {
+export function dateLabel(iso: string, today: string): { text: string; today: boolean } {
   if (iso === today) return { text: "النهارده", today: true };
   if (iso === addDaysIso(today, 1)) return { text: "بكرة", today: false };
   const [y, m, d] = iso.split("-").map(Number);

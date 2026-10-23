@@ -65,10 +65,12 @@ export interface ThreadDoc {
 /** The upload posts «أرفقتُ مستندًا: X» for the lawyer; the chip says it already, so no bubble for it. */
 const AUTO_ATTACH = /^أرفقتُ مستندًا: /;
 
-export function ChatThread({ threadId, caseId, hearing, items, lookup, rows = {}, deadlines = {}, docs = {}, chips = [], morning = null, starter = "" }: {
+export function ChatThread({ threadId, caseId, clientId = null, hearing, items, lookup, rows = {}, deadlines = {}, docs = {}, chips = [], morning = null, starter = "" }: {
   /** null = a new session (the first message makes it) */
   threadId: string | null;
   caseId: string | null;
+  /** a client's chat: a new session made from here belongs to this client (never with a case) */
+  clientId?: string | null;
   /** a new session made from here is about this hearing */
   hearing: { id: string; date: string } | null;
   items: ChatItem[];
@@ -142,7 +144,7 @@ export function ChatThread({ threadId, caseId, hearing, items, lookup, rows = {}
           err = r.error;
           saved = !!r.saved;
         } else {
-          const r = await composerSendAction({ caseId, hearingId: hearing?.id }, t, mode, asked, turnId);
+          const r = await composerSendAction({ caseId, clientId, hearingId: hearing?.id }, t, mode, asked, turnId);
           err = r.error;
           saved = !!r.threadId;
           if (r.threadId) open(r.threadId);
@@ -180,7 +182,7 @@ export function ChatThread({ threadId, caseId, hearing, items, lookup, rows = {}
           const r = await uploadDocumentAction(fd);
           if (!r.ok) setError(`لم يُرفع «${f.name}»: ${r.error ?? "حدث خطأ"}`);
         } else {
-          const r = await composerUploadAction({ caseId, hearingId: hearing?.id }, fd);
+          const r = await composerUploadAction({ caseId, clientId, hearingId: hearing?.id }, fd);
           if (r.threadId) open(r.threadId);
           if (r.error && !r.threadId) setError(`لم يُرفع «${f.name}»: ${r.error ?? "حدث خطأ"}`);
         }
@@ -219,7 +221,7 @@ export function ChatThread({ threadId, caseId, hearing, items, lookup, rows = {}
 
           {shown.length === 0 && !morning ? (
             <ClausiaLine>
-              <p>{hearing ? `جلسة ${shortDay(hearing.date)}: قول لي حصل إيه فيها، أو ارفع ورقة منها.` : caseId ? "اكتب لي اللي استجد في القضية دي، أو ارفع ورقة." : "أهلًا. احكي لي عن الموكل أو القضية، أو ارفع الصحيفة."} هجهّز لك اللي هيتحفظ في بطاقة، ومش هيتحفظ حاجة قبل ما تأكد.</p>
+              <p>{hearing ? `جلسة ${shortDay(hearing.date)}: قول لي حصل إيه فيها، أو ارفع ورقة منها.` : caseId ? "اكتب لي اللي استجد في القضية دي، أو ارفع ورقة." : clientId ? "اسألني عن الموكل ده وقضاياه، أو قول لي على قضية جديدة ليه." : "أهلًا. احكي لي عن الموكل أو القضية، أو ارفع الصحيفة."} هجهّز لك اللي هيتحفظ في بطاقة، ومش هيتحفظ حاجة قبل ما تأكد.</p>
             </ClausiaLine>
           ) : null}
 

@@ -43,9 +43,11 @@ export function SessionList({ sessions, currentId, hrefFor, onPick }: {
  * list button on the end side open the same menu: this context's sessions only. Next to it: expand (full-screen chat) / shrink,
  * and in full screen inside a case «افتح ملف القضية» (it brings the page back).
  */
-export function SessionsMenu({ sessions, currentId, title, sub, full, onFull, inCase }: {
+export function SessionsMenu({ sessions, currentId, title, sub, full, onFull, inCase, openLabel = "افتح ملف القضية" }: {
   sessions: Session[]; currentId: string | null; title: string; sub: string | null;
   full: boolean; onFull: (v: boolean) => void; inCase: boolean;
+  /** the full-screen button that brings the page back: «افتح ملف القضية» or «افتح ملف الموكل» */
+  openLabel?: string;
 }) {
   const path = usePathname();
   const params = useSearchParams();
@@ -77,7 +79,7 @@ export function SessionsMenu({ sessions, currentId, title, sub, full, onFull, in
       </div>
       {full && inCase ? (
         <button type="button" onClick={() => onFull(false)} className="tap inline-flex h-8.5 shrink-0 items-center gap-1.5 rounded-full border border-border-2 px-3 text-sm font-semibold text-text-2 transition hover:text-text">
-          <FolderClosed aria-hidden size={14} strokeWidth={1.9} />افتح ملف القضية
+          <FolderClosed aria-hidden size={14} strokeWidth={1.9} />{openLabel}
         </button>
       ) : null}
       <button type="button" onClick={() => onFull(!full)} aria-label={full ? "صغّر الشات" : "كبّر الشات"} title={full ? "صغّر الشات" : "كبّر الشات"} className={round}>

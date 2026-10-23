@@ -14,7 +14,7 @@ import { parseMode } from "./modes";
 import { stepRecorder } from "./steps";
 import { runAssistantTurn } from "./turn";
 
-export type NewSessionTarget = { caseId?: string | null; hearingId?: string | null };
+export type NewSessionTarget = { caseId?: string | null; clientId?: string | null; hearingId?: string | null };
 
 /** `turnId`: the browser's id for this turn, for the live steps (see sendMessageAction). */
 export async function composerSendAction(target: NewSessionTarget, text: string, mode?: string, context?: unknown, turnId?: string): Promise<{ threadId?: string; error?: string }> {
@@ -27,7 +27,7 @@ export async function composerSendAction(target: NewSessionTarget, text: string,
   let threadId: string;
   try {
     // a hearing's session is labelled by its date; any other new session by the lawyer's first words
-    threadId = await createThread(db, { caseId: target.caseId, hearingId: target.hearingId, title: target.hearingId ? null : titleFrom(msg) });
+    threadId = await createThread(db, { caseId: target.caseId, clientId: target.clientId, hearingId: target.hearingId, title: target.hearingId ? null : titleFrom(msg) });
   } catch (e) {
     return { error: e instanceof Error ? e.message : "تعذّر بدء المحادثة" };
   }
@@ -52,7 +52,7 @@ export async function composerUploadAction(target: NewSessionTarget, form: FormD
   const file = form.get("file");
   let threadId: string;
   try {
-    threadId = await createThread(db, { caseId: target.caseId, hearingId: target.hearingId, title: target.hearingId ? null : file instanceof File ? file.name.slice(0, 40) : "مستند جديد" });
+    threadId = await createThread(db, { caseId: target.caseId, clientId: target.clientId, hearingId: target.hearingId, title: target.hearingId ? null : file instanceof File ? file.name.slice(0, 40) : "مستند جديد" });
   } catch (e) {
     return { error: e instanceof Error ? e.message : "تعذّر بدء المحادثة" };
   }

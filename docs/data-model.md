@@ -39,7 +39,7 @@ Schema: `supabase/migrations/20261020150000_base_schema.sql`. Types: `src/lib/db
 | judgments | judgment_date, kind (final/preliminary/interim), operative_text, outcome, **appeal_deadline (only as the lawyer states it)**, hearing_id | never auto-calculated |
 | documents | case_id, client_id, thread_id, storage_path, file_name, mime_type, doc_type (claim_sheet, contract, opponent_memo, our_memo, judgment, power_of_attorney, expert_report, evidence, correspondence, id_document, other), page_count, read_status | |
 | document_pages | document_id, page_no, text, model | extracted text per page |
-| chat_threads | case_id (null = general chat) | every case gets a thread |
+| chat_threads | case_id or client_id (both null = general chat; never both) | every case gets a thread; a client has its own sessions |
 | chat_messages | thread_id, role (user/assistant/tool), content, tool_calls jsonb (incl. provider raw parts), attachments | |
 | proposals | thread_id, message_id, case_id, document_id, ops jsonb, status | **confirmation cards** — nothing in the content tables is written before the tap |
 | llm_calls | purpose, provider, model, tokens, cost_usd, latency_ms, ok, error | spend cap check sums cost_usd |

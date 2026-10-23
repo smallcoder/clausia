@@ -42,7 +42,7 @@ export const WRITE_TOOL_ARGS = {
   }),
   create_case: z.object({
     ref: selfRef,
-    client: ref("الموكل").optional(),
+    client: ref("الموكل (مطلوب: لا تُنشأ دعوى بلا موكل؛ إن لم يُعرف فاسأل المحامي «مين موكلك؟»)"),
     title: z.string().optional().describe("وصف قصير للدعوى، مثل «دعوى صحة ونفاذ عقد بيع»"),
     case_number: z.string().optional().describe("رقم الدعوى كما ذُكر حرفيًا. لا تخمّن."),
     case_year: z.coerce.number().int().min(1950).max(2100).optional().describe("سنة الدعوى (لسنة ...) كما ذُكرت"),
@@ -58,6 +58,7 @@ export const WRITE_TOOL_ARGS = {
   }),
   update_case: z.object({
     case: ref("الدعوى"),
+    client: ref("الموكل (لدعوى بلا موكل فقط، بعد أن يحدده المحامي)").optional(),
     title: z.string().optional(),
     case_number: z.string().optional(),
     case_year: z.coerce.number().int().min(1950).max(2100).optional(),
@@ -245,6 +246,7 @@ export const OP_FIELDS: Record<WriteTool, FieldSpec[]> = {
   ],
   update_case: [
     { key: "case", label: "الدعوى", type: "ref" },
+    { key: "client", label: "الموكل", type: "ref" },
     { key: "title", label: "وصف الدعوى", type: "text" },
     { key: "case_number", label: "رقم الدعوى", type: "text" },
     { key: "case_year", label: "السنة", type: "number" },
