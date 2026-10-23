@@ -28,13 +28,13 @@ export function ChatPanel({ data }: { data: PanelData }) {
 
   return (
     <aside aria-label="محادثة Clausia" className="flex min-w-0 flex-col max-xl:fixed max-xl:inset-0 xl:sticky xl:mt-chat-top xl:chat-top xl:chat-height xl:shrink-0 xl:chat-width">
-      <div className="flex min-h-0 flex-1 flex-col xl:overflow-hidden xl:rounded-xl xl:border xl:border-border-2 xl:bg-card-2 xl:shadow-card dark:xl:bg-card">
+      <div className="flex min-h-0 flex-1 flex-col xl:overflow-hidden xl:rounded-xl glass-xl">
         {/* desktop header: the «C» mark, who this chat is about, the sessions of THIS context */}
         <div className="hidden items-center gap-2.5 border-b border-border-2 px-4.5 py-4 xl:flex">
           <span aria-hidden className="mark font-num inline-flex size-mark-lg shrink-0 items-center justify-center rounded-sm text-base font-extrabold">C</span>
           <div className="min-w-0 flex-1 leading-[normal]">
             <div className="text-md font-bold text-title">Clausia</div>
-            <div className="mt-px flex items-center gap-1.5 text-sm text-text-3">
+            <div className="mt-px flex items-center gap-1.5 text-sm text-text-2">
               <span aria-hidden className="size-dot shrink-0 rounded-full bg-gold" /><span className="truncate">{sub}</span>
             </div>
           </div>

@@ -44,7 +44,7 @@ export function ContextPicker({ currentCaseId, currentSessionId, onClose }: { cu
   return (
     <div className="fixed inset-0 z-50 flex flex-col justify-end xl:hidden">
       <button type="button" aria-label="اقفل" tabIndex={-1} onClick={onClose} className="fade-enter absolute inset-0 bg-backdrop" />
-      <div role="dialog" aria-modal="true" aria-label="اختار المحادثة" className="sheet-enter relative flex max-h-[85dvh] flex-col rounded-t-xl border-t border-border-2 bg-card shadow-pop" /* ds-allow: dvh: at most 85% of the visible screen */>
+      <div role="dialog" aria-modal="true" aria-label="اختار المحادثة" className="sheet-enter relative flex max-h-[85dvh] flex-col rounded-t-xl glass" /* ds-allow: dvh: at most 85% of the visible screen */>
         <div aria-hidden className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-card-3" />
         <div className="flex items-center gap-2 px-3 pb-1 pt-2">
           {pick ? (

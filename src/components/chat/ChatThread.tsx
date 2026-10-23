@@ -214,7 +214,7 @@ export function ChatThread({ threadId, caseId, hearing, items, lookup, rows = {}
   return (
     <>
       <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        <div className="mx-auto flex w-full max-w-messages flex-col gap-4 px-4 py-4 xl:px-4.5 xl:py-6">
+        <div className="mx-auto flex w-full max-w-messages flex-col gap-4 px-4 pb-12 pt-4 xl:px-4.5 xl:pt-6">
           {morning ? <MorningBlock data={morning} /> : null}
 
           {shown.length === 0 && !morning ? (
@@ -305,8 +305,8 @@ function quickAnswers(text: string): { label: string; text: string }[] {
   return opts.map((o) => ({ label: o, text: client ? `موكلي ${o}` : o }));
 }
 
-/** quick answers and starters: glass chips (floating controls), 36px tall (44px hit area) */
-const CHIP = "tap glass inline-flex min-h-9 shrink-0 items-center rounded-full px-3.75 py-1 text-sm font-medium glass-icon transition hover:text-text";
+/** quick answers and starters: glass-flat chips (no blur: they sit inside the glass panel), 36px tall (44px hit area) */
+const CHIP = "tap glass-flat inline-flex min-h-9 shrink-0 items-center rounded-full px-3.75 py-1 text-sm font-medium glass-icon transition hover:text-text";
 
 /** «استخدمت: الصحيفة ص 2، الإنذار ص 1» — the papers this answer really used; each chip opens the paper at that page (the sentence marked when there is one). */
 function UsedFooter({ items }: { items: UsedSource[] }) {

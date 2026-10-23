@@ -66,7 +66,7 @@ export function AppHeader({ initials, officeName, email, alerts, userId, holiday
           const active = on === href;
           return (
             <Link key={href} href={session ? `${href}?s=${session}` : href} aria-label={label} aria-current={active ? "page" : undefined}
-              className={`tap inline-flex h-9 items-center gap-2 rounded-lg text-sm transition sm:h-10 sm:px-4.5 sm:text-base ${active ? "bg-selected px-3 font-semibold text-on-selected shadow-[var(--tab-shadow)]" : "glass-icon px-2.5 font-medium hover:text-text"}`}>
+              className={`tap inline-flex h-9 items-center gap-2 rounded-lg text-sm transition sm:h-10 sm:px-4.5 sm:text-base ${active ? "pill-on px-3" : "glass-icon px-2.5 font-medium hover:text-text"}`}>
               <Icon size={16} strokeWidth={1.9} aria-hidden className="size-glyph-sm sm:size-4" />
               <span className={active ? "" : "hidden sm:inline"}>{label}</span>
             </Link>

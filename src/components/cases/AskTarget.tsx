@@ -55,7 +55,7 @@ export function AskTarget({ item, className, inside = false, children }: { item:
     <div ref={ref} data-armed={armed} onClick={() => setArmed(true)} className={cx("group/ask relative", className)}>
       {children}
       <button type="button" onClick={(e) => { e.stopPropagation(); ask(); }} aria-label={`اسأل Clausia عن ${cleanLabel(item.label, 60)}`}
-        className={cx("tap glass glass-icon pointer-events-none absolute end-2 z-10 inline-flex h-7 items-center gap-1.25 rounded-full px-2.5 text-xs font-semibold opacity-0 transition hover:text-text focus-visible:pointer-events-auto focus-visible:opacity-100 group-hover/ask:pointer-events-auto group-hover/ask:opacity-100 group-focus-within/ask:pointer-events-auto group-focus-within/ask:opacity-100 pointer-coarse:group-data-[armed=true]/ask:pointer-events-auto pointer-coarse:group-data-[armed=true]/ask:opacity-100", inside ? "top-1" : "-top-3")}>
+        className={cx("tap glass-flat glass-icon pointer-events-none absolute end-2 z-10 inline-flex h-7 items-center gap-1.25 rounded-full px-2.5 text-xs font-semibold opacity-0 transition hover:text-text focus-visible:pointer-events-auto focus-visible:opacity-100 group-hover/ask:pointer-events-auto group-hover/ask:opacity-100 group-focus-within/ask:pointer-events-auto group-focus-within/ask:opacity-100 pointer-coarse:group-data-[armed=true]/ask:pointer-events-auto pointer-coarse:group-data-[armed=true]/ask:opacity-100", inside ? "top-1" : "-top-3")}>
         <MessageCircle aria-hidden size={13} strokeWidth={1.9} />اسأل Clausia
       </button>
     </div>
