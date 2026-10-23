@@ -8,18 +8,34 @@
  */
 import { MessageCircle } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useDraft } from "@/components/chat/draft";
 import { closeHref } from "@/components/shell/close-href";
 import { cx } from "@/components/ui";
 import { cleanLabel, type AskItem } from "@/lib/assistant/ask";
 
-/** `inside`: the pill sits inside the item's top corner (for an item in a box that clips, like the phone's spec card); default: on its top edge. */
-export function AskTarget({ item, className, inside = false, children }: { item: AskItem; className?: string; inside?: boolean; children: ReactNode }) {
-  const { addChip, focusComposer } = useDraft();
+/**
+ * Attaches an item to the ONE composer (a context chip), puts the cursor in the box and sends nothing. `prefill` is put in the
+ * box only when it is empty (a half-written message is never replaced). On the phone the page is a sheet over the chat, so the sheet closes first.
+ */
+export function useAttach() {
+  const { addChip, setText, focusComposer } = useDraft();
   const router = useRouter();
   const path = usePathname();
   const sp = useSearchParams();
+  return useCallback((item: AskItem, prefill?: string) => {
+    addChip({ ...item, label: cleanLabel(item.label) });
+    if (prefill) setText((cur) => (cur.trim() ? cur : prefill));
+    // below 1280 the page is a bottom sheet over the chat: close it so the chat and its box are in front
+    if (!window.matchMedia("(min-width: 80rem)").matches) router.push(closeHref(path, new URLSearchParams(sp.toString())));
+    document.querySelector<HTMLTextAreaElement>("aside textarea")?.focus(); // inside the tap, so the phone's keyboard opens
+    focusComposer(); // and once the chat is in front (after the sheet closed)
+  }, [addChip, setText, focusComposer, router, path, sp]);
+}
+
+/** `inside`: the pill sits inside the item's top corner (for an item in a box that clips, like the phone's spec card); default: on its top edge. */
+export function AskTarget({ item, className, inside = false, children }: { item: AskItem; className?: string; inside?: boolean; children: ReactNode }) {
+  const attach = useAttach();
   const ref = useRef<HTMLDivElement>(null);
   /** touch: a tap on the item shows the pill (hover does not exist there); a tap elsewhere hides it */
   const [armed, setArmed] = useState(false);
@@ -31,12 +47,8 @@ export function AskTarget({ item, className, inside = false, children }: { item:
   }, [armed]);
 
   function ask() {
-    addChip({ ...item, label: cleanLabel(item.label) });
+    attach(item);
     setArmed(false);
-    // below 1280 the page is a bottom sheet over the chat: close it so the chat and its box are in front
-    if (!window.matchMedia("(min-width: 80rem)").matches) router.push(closeHref(path, new URLSearchParams(sp.toString())));
-    document.querySelector<HTMLTextAreaElement>("aside textarea")?.focus(); // inside the tap, so the phone's keyboard opens
-    focusComposer(); // and once the chat is in front (after the sheet closed)
   }
 
   return (
