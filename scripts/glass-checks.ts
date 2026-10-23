@@ -120,12 +120,12 @@ if (want("contrast")) {
       ["chat: header title «Clausia»", "aside .text-title", 4.5],
       ["chat: header sub line (text-2)", "aside .text-text-2", 4.5],
       ["chat: muted text in the chat (text-3)", "aside ol .text-text-3", 4.5],
-      ["chat: composer placeholder (text-4)", 'textarea[aria-label="رسالة لـ Clausia"]', 3],
+      ["chat: composer placeholder (text-4)", 'textarea[aria-label="رسالة لـ Clausia"]', 4.5],
       ["composer: inactive mode (اسأل…)", '.focus-host [role="tab"][aria-selected="false"]', 4.5],
       ["composer: ACTIVE mode", '.focus-host [role="tab"][aria-selected="true"]', 4.5],
       ["top bar: inactive tab «الجلسات»", 'nav[aria-label="الأقسام"] a:not([aria-current])', 4.5],
       ["top bar: ACTIVE tab", 'nav[aria-label="الأقسام"] a[aria-current="page"]', 4.5],
-      ["top bar: office name (text-4, on the page)", "header .text-text-4", 3],
+      ["top bar: office name (text-4, on the page)", "header .text-text-4", 4.5],
     ];
     for (const [label, sel, min] of rows) {
       const r = await contrastOf(page, sel);
@@ -136,7 +136,7 @@ if (want("contrast")) {
     await page.waitForTimeout(400);
     for (const [label, sel] of [["sessions list: title", '[aria-current], a.min-h-11 .truncate'], ["sessions list: date (text-4)", "a.min-h-11 .num"]] as const) {
       const r = await contrastOf(page, sel);
-      console.log(`${t.padEnd(5)} ${label.padEnd(46)} ${fmt(r)}  ${PASS(r, label.includes("date") ? 3 : 4.5)}`);
+      console.log(`${t.padEnd(5)} ${label.padEnd(46)} ${fmt(r)}  ${PASS(r, 4.5)}`);
     }
     await page.keyboard.press("Escape");
     // undo toast: the same classes, injected over the chat bottom and over a page card (the toast is only shown after a confirm; no write is made here)
@@ -167,7 +167,7 @@ if (want("contrast")) {
     // the phone: the page sheet and the chat
     const [mctx, mpage] = await ctxOf(390, 844, dark);
     await go(mpage, `/cases/${caseId}?sheet=1`);
-    for (const [label, sel, min] of [["sheet: page title (on the sheet glass)", "main h1", 4.5], ["sheet: «موكلنا» label (gold)", "main .text-gold", 4.5], ["sheet: «ضد» (text-4)", "main .text-text-4", 3], ["sheet: «رجوع للشات»", 'a:has-text("رجوع للشات")', 4.5]] as const) {
+    for (const [label, sel, min] of [["sheet: page title (on the solid sheet)", "main h1", 4.5], ["sheet: «موكلنا» label (gold)", "main .text-gold >> visible=true", 4.5], ["sheet: «ضد» (text-4)", "main .text-text-4 >> visible=true", 4.5], ["sheet: «رجوع للشات»", 'a:has-text("رجوع للشات")', 4.5]] as const) {
       const r = await contrastOf(mpage, sel);
       console.log(`${t.padEnd(5)} ${label.padEnd(46)} ${fmt(r)}  ${PASS(r, min)}`);
     }
@@ -189,6 +189,8 @@ if (want("faint")) {
     ["text-4", ".text-text-4"],
     ["text-4 placeholder", "textarea"],
     ["gold", ".text-gold"],
+    ["chat text-3", "aside .text-text-3"],
+    ["chat text-2", "aside .text-text-2"],
   ];
   const sweep = async (page: Page, sel: string) => {
     const loc = page.locator(`${sel} >> visible=true`);
