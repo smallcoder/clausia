@@ -189,7 +189,7 @@ function Facts({ cf, caseId, edits }: { cf: CaseFile; caseId: string; edits?: Pe
         <h2 className="hidden text-lg font-bold text-title lg:block">الوقائع</h2>
         {fdProposed ? (
           <span className="gold-wash inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs text-gold">
-            تاريخ الوقائع <Change old={fd} next={fdProposed} className="num font-num" /> <SuggestedTag />
+            تاريخ الوقائع <Change old={fd ? <DateText value={fd} /> : null} next={<DateText value={fdProposed} />} /> <SuggestedTag />
           </span>
         ) : (
           <span className="text-xs text-text-4">تاريخ الوقائع {fd ? <DateText value={fd} /> : "مش محدد"} · بيحدد نسخة القانون</span>
