@@ -307,29 +307,25 @@
  * A width used in two or more places for the same job is named here; a one-off uses a spacing step or carries a ds-allow reason.
  */
 @theme {
-  --container-page: 1360px;        /* the 1280 page column (Cases, Case, Roll) plus its 40px side gutters; the top bar uses the same box */
-  --container-narrow: 960px;       /* the Home and Chat column: 912 of content plus 24px side gutters; the top bar uses the same box */
+  --container-page: 1360px;        /* a page's own box: its content plus 40px side gutters (the page column beside the chat is never wider than about 1056) */
+  --container-narrow: 960px;       /* the Home and Chat column: 912 of content plus 24px side gutters */
   --container-composer: 780px;     /* the docked composer on inner pages and over a chat */
-  /* chat-first split layout (docs/design/split): one centered frame; the top bar spans it; the chat panel on the end side (the left in RTL) and the page beside it, both under the bar */
-  --container-frame: 1600px;       /* the whole frame: top bar, chat and page, with 20px margins on a smaller screen */
-  --container-chat: 560px;         /* the chat panel at its widest */
-  --container-chat-min: 480px;     /* the chat panel at its narrowest (at 1440 it is this) */
-  --container-messages: 720px;     /* the messages column, centered in the panel */
+  /* sidebar layout (docs/design/ia): one centered frame; on the end side (the right in RTL) ONE glass surface = the sidebar + the chat attached to it; the page on the other side */
+  --container-frame: 1800px;       /* the whole frame, with 20px margins on a smaller screen */
+  --container-sidebar: 264px;      /* the sidebar (1441 and wider, and the phone's drawer is 320) */
+  --container-rail: 72px;          /* the sidebar as icons (1280 to 1440) */
+  --container-chat: 480px;         /* the chat attached to the sidebar */
+  --container-messages: 760px;     /* the messages column, centered (the full-screen chat; the attached chat is narrower than this) */
   --container-bubble: 88%;         /* a chat bubble's widest share of the column, on mobile */
   --container-bubble-sm: 72%;      /* the same on desktop */
-  --spacing-chat-top: 46px;        /* owner 2026-10-23: the chat panel's top edge sits 46px under the top bar, on the page content's first line */
-  --spacing-chat-bottom: 24px;     /* the chat panel ends 24px above the screen's bottom */
 }
 
-/* the chat panel's width: the page shrinks first (it keeps 896px), then the chat goes from 560 down to 480 (at 1440 it is 480).
-   960 = the frame's two 20px margins + the 24px gap + the page's 896px. Below 1280 the chat is full screen and this is not used. */
-@utility chat-width { width: clamp(var(--container-chat-min), calc(100vw - 960px), var(--container-chat)); }
-/* the chat panel (desktop): sticky under the 88px (5.5rem) top bar. It starts chat-top (46px) below the bar, at rest (mt-chat-top) and while the
-   page scrolls (the sticky top = bar + chat-top), and ends chat-bottom (24px) above the screen's bottom: height = screen - bar - 46 - 24 */
-@utility chat-top { top: calc(5.5rem + var(--spacing-chat-top)); }
-@utility chat-height { height: calc(100dvh - 5.5rem - var(--spacing-chat-top) - var(--spacing-chat-bottom)); }
-@utility page-min-height { min-height: calc(100dvh - 5.5rem); }
-/* the top bar's brief label shows only when the page column has room for it (a 1920 screen and wider) */
+/* the sidebar + chat surface (desktop): sticky, 24px (top-6) from the top and the bottom of the screen; the page column is at least as tall */
+@utility shell-height { height: calc(100dvh - 3rem); }
+@utility page-min-height { min-height: calc(100dvh - 3rem); }
+/* the sidebar shows as icons only between 1280 and 1440 (the phone's drawer and 1441+ show it in full) */
+@custom-variant rail (@media (min-width: 80rem) and (max-width: 90rem));
+/* the home page's brief label and other wide-screen extras show from a 1920 screen */
 @theme { --breakpoint-3xl: 120rem; }
 
 /*
@@ -389,6 +385,11 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-even
 @media (min-width: 80rem) { .glass-xl { background: var(--glass-bg); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); border: var(--glass-border); box-shadow: var(--glass-shadow); } }
 /* the active tab / composer mode / segment (AppHeader, CaseTabs, composer, filter chips, choices): ink pill in light, champagne frame in dark (tokens --pill-on-*) */
 .pill-on { background: var(--pill-on-bg); color: var(--pill-on-fg); box-shadow: var(--pill-on-shadow); font-weight: 600; }
+/* the active row of the sidebar (nav item, session): a soft ink wash in light (no new colour: the border token, ink 8%); in dark the same champagne frame as .pill-on
+   (champagne 8% fill, inset ring, champagne text). Not .pill-on itself: in light that is a solid ink pill. */
+.side-on { background: var(--border); color: var(--title); }
+:root[data-theme="dark"] .side-on { background: var(--pill-on-bg); color: var(--pill-on-fg); box-shadow: var(--pill-on-shadow); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .side-on { background: var(--pill-on-bg); color: var(--pill-on-fg); box-shadow: var(--pill-on-shadow); } }
 /* invisible 44px tap area around a control drawn smaller (owner decision: draw as the mockup, tap at 44px) */
 @layer components {
   /* layered, so utilities like sr-only / absolute still win over position: relative */
@@ -410,14 +411,6 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-even
 
 /* Document text and quotes read better in Naskh */
 .text-doc { font-family: var(--font-naskh), serif; line-height: 1.9; }
-}
-
-/* the sticky top bar: clear at rest (the page's soft light shows through, no seam); once the page has scrolled 40px a glass layer fades in behind it
-   (the same 44px blur as the other panels, so content under it is smeared, not readable). Scroll-driven (no script); a browser without it keeps the bar clear. */
-.bar-solid::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0; background: var(--glass-bg), color-mix(in srgb, var(--bg) 50%, transparent); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); box-shadow: inset 0 -1px 0 var(--border-2); }
-@keyframes bar-solid { to { opacity: 1; } }
-@supports (animation-timeline: scroll()) {
-  .bar-solid::before { animation: bar-solid linear both; animation-timeline: scroll(root); animation-range: 0 40px; }
 }
 
 /* Numbers (dates, case numbers) stay left-to-right inside RTL text */
@@ -504,5 +497,4 @@ html[data-input="key"] .focus-host:has(.bare-field:focus-visible) { outline-colo
     --glass-filter: none;
     --glass-flat-bg: var(--card);
   }
-  .bar-solid::before { background: var(--bg); }
 }

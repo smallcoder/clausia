@@ -1,20 +1,21 @@
 "use client";
 /**
- * The chat panel (docs/design/split/*): the app's chat, always there. Desktop: a rounded panel on the right (under the logo) with its
- * own header (who this chat is about; the title opens the sessions list; no brand, it is in the top bar). Phone: the whole screen — a header with the
- * context pill (opens the context picker) and round buttons for the Roll and Cases, and inside a case a small case strip
+ * The chat panel (docs/design/ia: SBC*, SBF*, MChat*): the app's chat, always there. Desktop: attached to the sidebar (480 wide; the shell draws the glass
+ * around both), with its own header (who this chat is about; the title opens the sessions list; the expand button makes it full screen). Phone: the whole
+ * screen — a header with ≡ (the sidebar drawer), the context pill (opens the context picker) and, inside a case, a button for the page, and a small case strip
  * with «افتح» (it opens the page as a sheet). Data comes from the @chat slot (panel-data.ts) for the current URL.
  */
-import { CalendarDays, ChevronDown, FolderClosed } from "lucide-react";
+import { ChevronDown, FolderClosed, Menu } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { moveThreadAction } from "@/lib/assistant/actions";
 import { ChatThread } from "./ChatThread";
 import { ContextPicker } from "./ContextPicker";
 import { SessionsMenu } from "./Sessions";
 import type { PanelData } from "./panel-types";
-import { DateText } from "@/components/ui";
+import { useShell } from "@/components/shell/ShellContext";
+import { DateText, cx } from "@/components/ui";
 import { formatDmy } from "@/lib/dates";
 
 export function ChatPanel({ data }: { data: PanelData }) {
@@ -23,6 +24,9 @@ export function ChatPanel({ data }: { data: PanelData }) {
   const path = usePathname();
   const params = useSearchParams();
   const [picker, setPicker] = useState(false);
+  const { full, setFull, setDrawer, setOpenThread } = useShell();
+  // the sidebar marks the open session
+  useEffect(() => { setOpenThread(threadId); return () => setOpenThread(null); }, [threadId, setOpenThread]);
 
   const who = context.kind === "case" ? `في قضية ${context.name}` : "محادثة عامة";
   // the small line under the title, from the sessions list the panel already has (never invented: none = no line)
@@ -31,13 +35,14 @@ export function ChatPanel({ data }: { data: PanelData }) {
   const sheetHref = (() => { const p = new URLSearchParams(params.toString()); p.set("sheet", "1"); return `${path}?${p.toString()}`; })();
 
   return (
-    <aside aria-label="محادثة Clausia" className="flex min-w-0 flex-col max-xl:fixed max-xl:inset-0 xl:sticky xl:mt-chat-top xl:chat-top xl:chat-height xl:shrink-0 xl:chat-width">
-      <div className="flex min-h-0 flex-1 flex-col xl:overflow-hidden xl:rounded-xl glass-xl">
-        {/* desktop header: who this chat is about (the brand is in the top bar); the title opens the sessions of THIS context */}
-        <SessionsMenu sessions={sessions} currentId={threadId} title={who} sub={sub} />
+    <aside aria-label="محادثة Clausia" className={cx("flex min-w-0 flex-col max-xl:fixed max-xl:inset-0 xl:min-h-0", full ? "xl:flex-1" : "xl:w-chat xl:shrink-0")}>
+      <div className="flex min-h-0 flex-1 flex-col">
+        {/* desktop header: who this chat is about; the title opens the sessions of THIS context; the expand button makes the chat full screen */}
+        <SessionsMenu sessions={sessions} currentId={threadId} title={who} sub={sub} full={full} onFull={setFull} inCase={!!caseId} />
 
-        {/* phone header: the context pill + round buttons for the Roll and the Cases */}
+        {/* phone header: ≡ (the sidebar), the context pill, and (in a case) a button that opens the page */}
         <div className="flex items-center gap-2 px-3.5 pb-2.5 pt-[calc(14px+env(safe-area-inset-top))] xl:hidden" /* ds-allow: safe-area inset needs calc() */>
+          <button type="button" onClick={() => setDrawer(true)} aria-label="القائمة" className="tap glass glass-icon inline-flex size-10 items-center justify-center rounded-full"><Menu aria-hidden size={19} strokeWidth={1.8} /></button>
           <button type="button" onClick={() => setPicker(true)} aria-haspopup="dialog" aria-label="اختار المحادثة"
             className="tap glass flex h-10 min-w-0 items-center gap-2 rounded-full pe-3.5 ps-2 text-base font-bold text-text">
             <span aria-hidden className="mark font-num inline-flex size-mark shrink-0 items-center justify-center rounded-sm text-sm font-extrabold">C</span>
@@ -45,8 +50,7 @@ export function ChatPanel({ data }: { data: PanelData }) {
             <ChevronDown aria-hidden size={16} strokeWidth={1.9} className="shrink-0 text-glass-icon" />
           </button>
           <div className="flex-1" />
-          <Link href="/hearings" aria-label="الجلسات" className="tap glass glass-icon inline-flex size-10 items-center justify-center rounded-full"><CalendarDays aria-hidden size={19} strokeWidth={1.8} /></Link>
-          <Link href="/cases" aria-label="القضايا" className="tap glass glass-icon inline-flex size-10 items-center justify-center rounded-full"><FolderClosed aria-hidden size={19} strokeWidth={1.8} /></Link>
+          {caseId ? <Link href={sheetHref} aria-label="افتح ملف القضية" className="tap glass glass-icon inline-flex size-10 items-center justify-center rounded-full"><FolderClosed aria-hidden size={19} strokeWidth={1.8} /></Link> : null}
         </div>
 
         {context.kind === "case" ? (
