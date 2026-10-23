@@ -230,7 +230,7 @@ function TextItem({ cf, caseId, table, item, kindLabel, number, status, action, 
   const about = aboutItem(table === "case_requests" ? "طلب" : "دفع", item.text);
   const cite = citeOf(`item:${item.id}`, item.source, cf.documents, about);
   return (
-    <AskTarget item={{ kind: table === "case_requests" ? "request" : "argument", id: item.id, label: item.text }} className="border-t border-border-2">
+    <AskTarget item={{ kind: table === "case_requests" ? "request" : "argument", id: item.id, label: item.text }} className="isolate border-t border-border-2">
     <TapItem id={item.id} title={table === "case_requests" ? "طلب" : "دفع / دفاع"} tight className="-mx-2 rounded-md px-2"
       row={
         <span className="flex gap-3 py-3.5">
