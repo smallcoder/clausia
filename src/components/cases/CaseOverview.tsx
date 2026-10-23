@@ -1,6 +1,6 @@
 // The case page's default view (docs/design/{Light,Dark}{,Mobile}Case.dc.html, v2), built from getCaseFile.
-// Desktop: main column (Clausia summary, facts timeline, لنا/ضدنا) + side column (next hearing, parties,
-// documents), all solid cards. Judgments live in the hearings view and the case links in the «…» menu (owner
+// Desktop: لنا/ضدنا as a full-width first row, then the main column (Clausia summary, facts timeline) + side column
+// (next hearing, parties, documents), all solid cards. Judgments live in the hearings view and the case links in the «…» menu (owner
 // decisions). Mobile: one column in the mobile mockup's order — the two columns become
 // `display: contents` and `order-*` sorts them — with Facts / Docs / Parties as tabs (CaseTabs).
 // Rows show no edit links: tapping an item opens its actions (confirm / reject / edit) in the sheet (ItemSheet).
@@ -541,8 +541,8 @@ export function CaseOverview({ cf, hs, today, caseId, edits }: { cf: CaseFile; h
           <Seg k="parties" className="order-5 lg:order-none"><Parties cf={cf} caseId={caseId} edits={edits} /></Seg>
           <Seg k="docs" className="order-5 lg:order-none"><Docs cf={cf} caseId={caseId} /></Seg>
         </div>
-        {/* desktop: its own full-width row under the two columns (two equal cards, mockup Sides*); phone: after the facts, as before */}
-        <Sides cf={cf} caseId={caseId} edits={edits} className="order-6 lg:order-none lg:col-span-2" />
+        {/* desktop: its own full-width first row, right under the header card (two equal cards, mockup Sides*; owner 2026-10-23); phone: after the facts, as before */}
+        <Sides cf={cf} caseId={caseId} edits={edits} className="order-6 lg:order-first lg:col-span-2" />
       </div>
     </TabScope>
   );
