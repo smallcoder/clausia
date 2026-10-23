@@ -7,8 +7,8 @@
  *   below 1280 (phone / tablet): the chat is the whole screen; the sidebar is a side drawer (≡ in the chat header); the page opens as a bottom sheet over the chat.
  * The chat arrives as the @chat slot (it knows the context and the session from the URL); the composer's draft lives here, so it survives moving between pages.
  *
- * When the sheet is open (below 1280): any page except Home and a case's own page (they ARE the chat's context); a case's
- * page opens with «افتح» (?sheet=1) or one of its views (?tab=…).
+ * When the sheet is open (below 1280): any page except Home, a case's own page and a client's own page (they ARE the chat's context); a case's or
+ * a client's page opens with «افتح» (?sheet=1) or one of its views (?tab=…).
  */
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -27,7 +27,7 @@ import type { SideData } from "@/lib/sidebar";
 function sheetOpen(path: string, sp: URLSearchParams): boolean {
   if (sp.get("sheet") === "1") return true;
   if (path === "/") return false;
-  return !(/^\/cases\/[^/]+\/?$/.test(path) && !sp.get("tab"));
+  return !(/^\/(cases|clients)\/[^/]+\/?$/.test(path) && !sp.get("tab"));
 }
 
 export interface ShellUser { id: string; initials: string; displayName: string; officeName: string; email: string }

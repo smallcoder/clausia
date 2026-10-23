@@ -135,7 +135,7 @@ async function applyOpRaw(db: Db, tool: WriteTool, rawArgs: unknown, p: Provenan
       const x = a as WriteArgs<"create_case">;
       const fd = date(x.facts_date);
       const row = must(await db.from("cases").insert({
-        client_id: resolveRef(x.client, refs) ?? null,
+        client_id: resolveRef(x.client, refs)!,
         title: x.title ?? null, case_number: x.case_number ?? null, case_year: x.case_year ?? null,
         court: x.court ?? null, circuit: circuitText(x.circuit), case_type: x.case_type ?? null,
         stage: x.stage, previous_stage_case_id: resolveRef(x.previous_stage_case, refs) ?? null,
@@ -157,6 +157,12 @@ async function applyOpRaw(db: Db, tool: WriteTool, rawArgs: unknown, p: Provenan
         if (x[k] !== undefined) (patch as Record<string, unknown>)[k] = x[k];
       }
       if (fd) { patch.facts_date = fd.iso; patch.facts_date_precision = fd.precision; }
+      if (x.client !== undefined) {
+        // the lawyer's own pick («حدد الموكل» / «تغيير») may set or change it; a card the model drafted only fills an EMPTY client
+        const cur = must(await db.from("cases").select("client_id").eq("id", id).single());
+        if (cur.client_id && p.created_by_kind === "model") throw new Error("الدعوى لها موكل بالفعل");
+        patch.client_id = resolveRef(x.client, refs)!;
+      }
       if (x.circuit !== undefined) patch.circuit = circuitText(x.circuit);
       const before = must(await db.from("cases").select(Object.keys(patch).join(",")).eq("id", id).single()) as unknown as typeof patch;
       must(await db.from("cases").update(patch).eq("id", id).select("id").single());

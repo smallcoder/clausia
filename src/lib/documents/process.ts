@@ -263,7 +263,9 @@ export function extractionToOps({ ex, documentId, caseId, pages, existing }: Ops
     const before = ops.length;
     push("create_case", {
       ref: "case1",
-      client: clientRef, // the document's title («صحيفة دعوى») is not a case title: left for the lawyer
+      // create_case needs a client now. With none found in the paper this draft is never saved as a card: the chat asks «مين موكلك؟» first (needsClient below)
+      client: clientRef ?? "@client_unknown",
+      // the document's title («صحيفة دعوى») is not a case title: left for the lawyer
       // a case number is kept only if it is literally on the page
       case_number: num && normalizeDigits(pageText).includes(num) ? num : undefined,
       case_year: Number.isInteger(year) && year >= 1950 && year <= 2100 && normalizeDigits(pageText).includes(String(year)) ? year : undefined,

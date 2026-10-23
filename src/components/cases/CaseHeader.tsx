@@ -12,6 +12,7 @@ import type { CaseFile } from "@/lib/case-file";
 import type { PendingEdits } from "@/lib/edits";
 import { CASE_STATUS } from "@/lib/labels";
 import { CaseMenu } from "./CaseMenu";
+import { ClientPicker, type PickerClient } from "./ClientPicker";
 import { AskTarget } from "./AskTarget";
 import { Change, SuggestedTag, Was } from "./Suggest";
 import { caseSubject, headerCells, specSheet, statusTone, whoLine, type HearingState, type HeaderCell } from "./case-view";
@@ -49,7 +50,7 @@ const ROUND = "tap glass glass-icon inline-flex size-control-lg shrink-0 items-c
 const emptyText = (c: HeaderCell) => (c.key === "next_hearing" ? "مفيش جلسة جاية متسجلة" : c.key === "last_decision" ? "مفيش قرار متسجل" : c.fem ? "مش متسجلة" : "مش متسجل");
 const full = (c: HeaderCell) => (c.value ? `${c.value}${c.extra ? ` · ${c.extra}` : ""}` : null);
 
-export function CaseHeader({ cf, caseId, hs, today, edits }: { cf: CaseFile; caseId: string; hs: HearingState; today: string; edits?: PendingEdits }) {
+export function CaseHeader({ cf, caseId, hs, today, edits, clients = [] }: { cf: CaseFile; caseId: string; hs: HearingState; today: string; edits?: PendingEdits; clients?: PickerClient[] }) {
   const who = whoLine(cf);
   const cells = headerCells(cf, hs, today);
   const number = cells[0].value;
@@ -103,6 +104,21 @@ export function CaseHeader({ cf, caseId, hs, today, edits }: { cf: CaseFile; cas
           {cells.map((c, i) => {
             const ch = change(i);
             const ask = { kind: "field" as const, id: caseId, field: c.key, label: `${c.label} · ${full(c) ?? "غير مسجل"}` };
+            // the client cell is the one-home link to the client's page, with «حدد الموكل» (no client yet) or «تغيير» beside it
+            if (c.key === "client") {
+              const text = full(c);
+              return (
+                <AskTarget key={c.key} inside item={ask} className="min-w-0 bg-card px-3.5 py-3 @3xl:px-5 @3xl:py-3.5">
+                  <dt className="text-xs text-text-4">{c.label}</dt>
+                  <dd className="mt-1 flex min-w-0 items-center gap-2.5 text-base leading-[1.4] @3xl:text-md">
+                    {text ? (cf.client
+                      ? <Link href={`/clients/${cf.client.id}`} title={text} className="tap min-w-0 truncate font-semibold text-text hover:underline">{text}</Link>
+                      : <span title={text} className="min-w-0 truncate font-semibold text-text">{text}</span>) : <span className="text-text-4">{emptyText(c)}</span>}
+                    <ClientPicker caseId={caseId} clients={clients} currentId={cf.client?.id ?? null} />
+                  </dd>
+                </AskTarget>
+              );
+            }
             return (
               <AskTarget key={c.key} inside item={ask} className={`min-w-0 bg-card px-3.5 py-3 @3xl:px-5 @3xl:py-3.5 ${ch ? "gold-wash" : ""}`}>
                 <dt className={ch ? "flex items-center gap-1.5 text-xs text-gold-text-small" : "text-xs text-text-4"}>{c.label}{ch ? <SuggestedTag /> : null}</dt>

@@ -4,6 +4,7 @@
 import { revalidatePath } from "next/cache";
 import { parseDmy } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
+import { applyOp, MANUAL, type Applied } from "@/lib/tools/apply";
 
 const ITEM_TABLES = ["case_parties", "case_facts", "case_requests", "case_arguments", "judgments", "hearings"] as const;
 type ItemTable = (typeof ITEM_TABLES)[number];
@@ -45,6 +46,40 @@ export async function editItemText(_prev: EditState, form: FormData): Promise<Ed
   const { error, data } = await db.from(table).update({ text }).eq("id", id).select("id");
   if (error || !data?.length) return { error: "تعذر الحفظ" };
   revalidatePath(`/cases/${caseId}`);
+  return { ok: true };
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * «حدد الموكل» / «تغيير»: the lawyer picks an existing client (`client_id`) or types a new one (`new_name`, `new_phone`) for a case, and taps «حفظ».
+ * Both writes go through `applyOp` with MANUAL provenance (the same path as the chat's cards and the hearing forms), RLS-bound: `create_client`, then
+ * `update_case`. If the second fails the new client is taken back, so no orphan client is left. A case's parties are not touched (a `future` issue).
+ */
+export async function setCaseClientAction(_prev: EditState, form: FormData): Promise<EditState> {
+  const caseId = str(form, "case_id");
+  const picked = str(form, "client_id");
+  const name = str(form, "new_name");
+  const phone = str(form, "new_phone");
+  if (!UUID.test(caseId)) return { error: "طلب غير صالح" };
+  if (picked && !UUID.test(picked)) return { error: "طلب غير صالح" };
+  if (!picked && name.length < 2) return { error: "اختار موكل من القائمة أو اكتب اسم موكل جديد" };
+  const db = await createClient();
+  let created: Applied | null = null;
+  try {
+    const client = picked ? { id: picked } : (created = await applyOp(db, "create_client", { name, kind: "person", phone: phone || undefined, quote: "موكل أضافه المحامي يدويًا" }, MANUAL));
+    try {
+      await applyOp(db, "update_case", { case: caseId, client: client.id, quote: "موكل حدده المحامي يدويًا" }, MANUAL);
+    } catch (e) {
+      await created?.undo();
+      throw e;
+    }
+  } catch (e) {
+    return { error: e instanceof Error && /violates foreign key|not found|لم يُؤكَّد/.test(e.message) ? "الموكل أو الدعوى غير موجودة" : "تعذر الحفظ" };
+  }
+  revalidatePath(`/cases/${caseId}`);
+  revalidatePath("/clients");
+  revalidatePath("/", "layout"); // the sidebar and the chat panel show the client's name
   return { ok: true };
 }
 

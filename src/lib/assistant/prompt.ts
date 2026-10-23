@@ -1,6 +1,6 @@
 /** Arabic system prompt for the chat assistant. Pure: callers pass the context in. */
 import { formatDayLabel, formatDmy, todayIso } from "@/lib/dates";
-import { PARTY_ROLE } from "@/lib/labels";
+import { CASE_STATUS, PARTY_ROLE } from "@/lib/labels";
 import type { ChatMode } from "./modes";
 import type { RelativeDay } from "@/lib/relative-days";
 
@@ -17,6 +17,14 @@ export interface CaseContext {
   hearings: { id: string; date: string; purpose: string | null; decided: boolean }[];
 }
 
+/** A chat opened on a client's page: who the client is and the cases already saved for them. */
+export interface ClientContext {
+  id: string;
+  name: string;
+  phone: string | null;
+  cases: { id: string; label: string; status: string }[];
+}
+
 /**
  * One line per composer mode (src/lib/assistant/modes.ts). For now a mode only steers the reply; it adds no tool and no source.
  * The never-guess rules above stay in force in every mode.
@@ -30,6 +38,8 @@ export const MODE_PROMPT: Record<ChatMode, string> = {
 
 export interface PromptInput {
   caseContext?: CaseContext | null;
+  /** this session belongs to a client (their page), not to a case */
+  clientContext?: ClientContext | null;
   /** the composer's mode for this message (default: no mode line) */
   mode?: ChatMode;
   /** this session is about one hearing of the case (its date, d/m/yyyy, and id) */
@@ -65,7 +75,7 @@ export function buildSystemPrompt(p: PromptInput): string {
 12. صفة الموكل: إن قال المحامي «رفعنا دعوى» فموكلنا مدعٍ (plaintiff) والخصم مدعى عليه (defendant)، و«مرفوع علينا دعوى» عكس ذلك. إن لم تتضح الصفة فاسأل.
 13. اكتب ردودك بالعامية المصرية البسيطة اللي المحامي بيتكلم بيها، قصيرة ومهذبة، زي: «قريت رسالتك والصحيفة، وجهّزت ملف القضية. راجعه، ولما توافق هحفظه كله مرة واحدة.» أو «سؤال واحد قبل ما أحفظ: المستأجر بطّل يدفع من يوم كام؟». متكتبش بالفصحى الرسمية. بس اكتب أسماء المحاكم والقوانين ونصوص الأحكام والاقتباسات زي ما هي بالظبط. بعد ما تقترح بطاقة قول باختصار اقترحت إيه واطلب المراجعة، ومتقولش إن حاجة اتحفظت قبل ما المحامي يأكدها. متذكرش القيم الداخلية بالإنجليزي (زي judged أو plaintiff) ولا المعرفات (uuid)؛ اكتب معناها بالعربي.
 14. تاريخ الوقائع الأساسي للدعوى (facts_date) مهم جدًا: به يُختار إصدار القانون المنطبق. إن لم يكن محددًا للدعوى بعد: فإذا ذكر المحامي تاريخ الواقعة التي تقوم عليها الدعوى صراحةً (مثل تاريخ العقد أو الفصل أو الحادث) فاقترح facts_date بالتاريخ نفسه في create_case أو update_case مع اقتباسه، وإلا فاسأله مرة واحدة: «ما تاريخ الواقعة الأساسية التي تقوم عليها الدعوى؟». لا تختره من عندك إذا تعددت التواريخ دون بيان.
-15. الموكل: لا تقترح دعوى جديدة قبل أن تعرف من هو موكلنا. إن لم يتضح من كلام المحامي أو من المستند فاسأله أولًا بالنص: «مين موكلك؟» (واذكر الأسماء المحتملة إن وُجدت)، ولا تقترح أي بطاقة في هذه الجولة.
+15. الموكل: لا تقترح دعوى جديدة قبل أن تعرف من هو موكلنا. إن لم يتضح من كلام المحامي أو من المستند فاسأله أولًا بالنص: «مين موكلك؟» (واذكر الأسماء المحتملة إن وُجدت)، ولا تقترح أي بطاقة في هذه الجولة. أداة create_case تتطلب الموكل دائمًا (uuid لموكل محفوظ أو @مرجع لـ create_client في نفس البطاقة)؛ ولدعوى محفوظة بلا موكل استخدم update_case مع client بعد أن يحدده المحامي.
 16. إن كان في هذه المحادثة مستند لم تُعدّ له بطاقة لأن الموكل لم يكن معروفًا، فبعد أن يحدد المحامي موكله: اقرأ نص المستند بـ get_document_text واقترح بطاقة واحدة كاملة منه (الموكل، الدعوى، الأطراف، الوقائع، الطلبات، الدفوع، الجلسات) مع quote حرفي من المستند لكل عنصر. ولا تسجل قرارًا لجلسة ذُكرت في صحيفة الدعوى: أضفها جلسةً فقط.
 17. مكان الجلسة (الدور / القاعة / المبنى): سجّله في add_hearing (location) أو بـ set_hearing_location لجلسة موجودة، فقط لو المحامي قاله أو مكتوب في الورقة، ومتخمّنوش أبدًا.
 18. اسمك Clausia. لا تصف نفسك بـ«المساعد».`);
@@ -78,6 +88,16 @@ export function buildSystemPrompt(p: PromptInput): string {
     if (c.parties.length) lines.push(`- الأطراف: ${c.parties.map((x) => `${x.name} [${PARTY_ROLE[x.role as keyof typeof PARTY_ROLE] ?? x.role}] (id = ${x.id})`).join("؛ ")}`);
     if (c.hearings.length) lines.push(`- جلسات بلا قرار أو قادمة: ${c.hearings.map((h) => `${h.date}${h.purpose ? ` (${h.purpose})` : ""}${h.decided ? " [صدر فيها قرار]" : ""} (hearing_id = ${h.id})`).join("؛ ")}`);
     else lines.push("- لا توجد جلسات قادمة مسجلة.");
+    parts.push(lines.join("\n"));
+  }
+
+  const k = p.clientContext;
+  if (k) {
+    const lines = [`\nهذه المحادثة خاصة بالموكل التالي (client_id = ${k.id}): ${k.name}${k.phone ? ` — ${k.phone}` : ""}.`];
+    lines.push(k.cases.length
+      ? `- قضاياه المحفوظة: ${k.cases.map((x) => `${x.label} [${CASE_STATUS[x.status as keyof typeof CASE_STATUS] ?? x.status}] (case_id = ${x.id})`).join("؛ ")}`
+      : "- لا توجد قضايا محفوظة له بعد.");
+    lines.push("- الموكل معروف: لأي دعوى جديدة له استخدم create_case مع client = المعرف أعلاه (لا تسأل «مين موكلك؟» ولا تنشئ موكلًا جديدًا بنفس الاسم). ولتعديل دعوى له استخدم case_id من القائمة.");
     parts.push(lines.join("\n"));
   }
 

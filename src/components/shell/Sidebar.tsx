@@ -71,7 +71,7 @@ export function Sidebar({ data, initials, displayName, officeName, email, alerts
   const caseId = path.match(/^\/cases\/([^/]+)/)?.[1] ?? null;
   const onNav = activeNav(path);
   /** a general chat keeps its open session when the lawyer moves between the nav pages (a case's sessions are its own) */
-  const general = !caseId ? sp.get("s") : null;
+  const general = !caseId && !/^\/clients\/[^/]+/.test(path) ? sp.get("s") : null;
   const navHref = (href: string) => (general ? `${href}?s=${general}` : href);
 
   // the drawer closes when the lawyer goes somewhere

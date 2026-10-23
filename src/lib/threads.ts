@@ -25,13 +25,19 @@ export interface Session {
   hearingDate: string | null;
 }
 
-/** The sessions of ONE context, newest first. `caseId` null = the general context. */
-export async function listSessions(db: Db, caseId: string | null, limit = 40): Promise<Session[]> {
+/** The sessions of ONE context, newest first. `caseId` and `clientId` null = the general context (a client's sessions are not general ones). */
+export async function listSessions(db: Db, caseId: string | null, limit = 40, clientId: string | null = null): Promise<Session[]> {
   const q = db.from("chat_threads").select("id, title, updated_at, hearings(hearing_date)").order("updated_at", { ascending: false }).limit(limit);
-  const { data } = await (caseId ? q.eq("case_id", caseId) : q.is("case_id", null));
+  const { data } = await (caseId ? q.eq("case_id", caseId) : clientId ? q.eq("client_id", clientId) : q.is("case_id", null).is("client_id", null));
   return (data ?? []).map((t) => ({
     id: t.id, title: t.title || DEFAULT_TITLE, day: cairoDateOf(t.updated_at), hearingDate: t.hearings?.hearing_date ?? null,
   }));
+}
+
+/** A client's latest session (by last activity), or null when it has none yet. */
+export async function latestClientThread(db: Db, clientId: string): Promise<string | null> {
+  const { data } = await db.from("chat_threads").select("id").eq("client_id", clientId).order("updated_at", { ascending: false }).limit(1).maybeSingle();
+  return data?.id ?? null;
 }
 
 /** A case's latest session (by last activity), or null when it has none yet. */
@@ -54,9 +60,9 @@ export async function getOrCreateCaseThread(db: Db, caseId: string): Promise<str
 }
 
 /** A new session. The database checks that the case / hearing belong to this office (and the hearing to the case). */
-export async function createThread(db: Db, o: { caseId?: string | null; hearingId?: string | null; title?: string | null }): Promise<string> {
+export async function createThread(db: Db, o: { caseId?: string | null; clientId?: string | null; hearingId?: string | null; title?: string | null }): Promise<string> {
   const { data, error } = await db.from("chat_threads")
-    .insert({ case_id: o.caseId ?? null, hearing_id: o.hearingId ?? null, title: o.title ?? null }).select("id").single();
+    .insert({ case_id: o.caseId ?? null, client_id: o.caseId ? null : o.clientId ?? null, hearing_id: o.hearingId ?? null, title: o.title ?? null }).select("id").single();
   if (error) throw new Error(error.message);
   return data.id;
 }
@@ -80,7 +86,7 @@ async function dropEmpty(db: Db, threadId: string, generalOnly: boolean): Promis
   const { count } = await db.from("chat_messages").select("id", { count: "exact", head: true }).eq("thread_id", threadId);
   if (count) return false;
   const q = db.from("chat_threads").delete().eq("id", threadId);
-  const { data } = await (generalOnly ? q.is("case_id", null) : q).select("id");
+  const { data } = await (generalOnly ? q.is("case_id", null).is("client_id", null) : q).select("id");
   return !!data?.length;
 }
 
@@ -88,7 +94,7 @@ async function dropEmpty(db: Db, threadId: string, generalOnly: boolean): Promis
 export async function moveThreadToCase(db: Db, threadId: string, caseId: string): Promise<void> {
   const { data: c } = await db.from("cases").select("id").eq("id", caseId).maybeSingle();
   if (!c) throw new Error("القضية غير موجودة");
-  const { data, error } = await db.from("chat_threads").update({ case_id: caseId, hearing_id: null }).eq("id", threadId).is("case_id", null).select("id");
+  const { data, error } = await db.from("chat_threads").update({ case_id: caseId, hearing_id: null }).eq("id", threadId).is("case_id", null).is("client_id", null).select("id");
   if (error) throw new Error(error.message);
   if (!data?.length) throw new Error("المحادثة دي مش محادثة عامة");
 }

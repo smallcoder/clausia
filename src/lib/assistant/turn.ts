@@ -21,7 +21,7 @@ import { isReadTool, READ_TOOL_SPECS, runReadTool } from "@/lib/tools/read";
 import { isInternalTool, isWriteTool, OP_TITLE, WRITE_TOOL_ARGS, writeToolSpecs } from "@/lib/tools/registry";
 import { askContextBlock, type AskItem } from "./ask";
 import type { ChatMode } from "./modes";
-import { buildSystemPrompt, type CaseContext } from "./prompt";
+import { buildSystemPrompt, type CaseContext, type ClientContext } from "./prompt";
 import { SourceLog, type SourceItem } from "./sources";
 import { CARD_STEP, readStepLabel } from "./step-labels";
 
@@ -102,7 +102,7 @@ function withinTurn<T>(work: Promise<T>, clock: Clock): Promise<T> {
 async function turn(db: Db, input: TurnInput, state: { saved: boolean }, clock: Clock, onStep?: (label: string) => void): Promise<TurnResult> {
   const text = input.userText.trim();
   if (!text) throw new Error("الرسالة فارغة");
-  const { data: thread, error: te } = await db.from("chat_threads").select("id, case_id, hearing_id, title").eq("id", input.threadId).single();
+  const { data: thread, error: te } = await db.from("chat_threads").select("id, case_id, client_id, hearing_id, title").eq("id", input.threadId).single();
   if (te || !thread) throw new Error("المحادثة غير موجودة");
 
   const { data: userMsg, error: ue } = await db.from("chat_messages").insert({ thread_id: thread.id, role: "user", content: text }).select("id, created_at").single();
@@ -112,9 +112,10 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }, clock: 
   await db.from("chat_threads").update({ updated_at: new Date().toISOString(), ...(!thread.title || thread.title === DEFAULT_TITLE ? { title: titleFrom(text) } : {}) }).eq("id", thread.id);
 
   const sources = new SourceLog();
-  const [history, caseContext, cardNotes, docs, { texts: sourceTexts, lawyer }, docPages] = await Promise.all([
+  const [history, caseContext, clientContext, cardNotes, docs, { texts: sourceTexts, lawyer }, docPages] = await Promise.all([
     loadHistory(db, thread.id),
     thread.case_id ? loadCaseContext(db, thread.case_id) : Promise.resolve(null),
+    thread.client_id ? loadClientContext(db, thread.client_id) : Promise.resolve(null),
     loadCardNotes(db, thread.id),
     db.from("documents").select("id, file_name, page_count, read_status, doc_type").eq("thread_id", thread.id).order("created_at").then((r) => r.data ?? []),
     loadSourceTexts(db, thread.id),
@@ -133,7 +134,7 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }, clock: 
   const resolved = [...relativeDays.current, ...relativeDays.earlier.flatMap((e) => e.days)];
 
   const hearing = thread.hearing_id ? (await db.from("hearings").select("id, hearing_date").eq("id", thread.hearing_id).maybeSingle()).data : null;
-  const system = buildSystemPrompt({ caseContext, cardNotes, documents: docs, relativeDays, mode: input.mode, hearing: hearing ? { id: hearing.id, date: formatDmy(hearing.hearing_date) } : null });
+  const system = buildSystemPrompt({ caseContext, clientContext, cardNotes, documents: docs, relativeDays, mode: input.mode, hearing: hearing ? { id: hearing.id, date: formatDmy(hearing.hearing_date) } : null });
   const tools = [...READ_TOOL_SPECS, ...writeToolSpecs()];
   const messages: LlmMessage[] = history;
   // the chips: a data block after the lawyer's text in what the model sees; it is not in the saved message (so it is never read as
@@ -413,6 +414,13 @@ async function loadCaseContext(db: Db, caseId: string): Promise<CaseContext | nu
     hearings: hearings.filter((h) => !h.decision_type || h.hearing_date >= today)
       .map((h) => ({ id: h.id, date: formatDmy(h.hearing_date), purpose: h.purpose, decided: !!h.decision_type })),
   };
+}
+
+async function loadClientContext(db: Db, clientId: string): Promise<ClientContext | null> {
+  const { data: c } = await db.from("clients").select("id, name, phone").eq("id", clientId).maybeSingle();
+  if (!c) return null;
+  const { data: cases } = await db.from("cases").select("id, case_number, case_year, title, status").eq("client_id", clientId).neq("review_status", "rejected").order("created_at", { ascending: false }).limit(30);
+  return { id: c.id, name: c.name, phone: c.phone, cases: (cases ?? []).map((x) => ({ id: x.id, label: caseLabel(x), status: x.status })) };
 }
 
 const STATUS_NOTE: Record<string, string> = { pending: "بانتظار التأكيد", confirmed: "حُفظ", suggested: "حُفظ كمقترح", rejected: "رفضه المحامي", failed: "تعذّر الحفظ" };

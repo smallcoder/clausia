@@ -7,9 +7,18 @@ import type { ChatItem, ThreadDoc } from "./ChatThread";
 
 export type { Session };
 
-/** The context a chat belongs to: the general one (Home, Roll, Cases list …) or one case. */
+/** The context a chat belongs to: the general one (Home, Roll, Cases list …), one case, or one client. */
 export type PanelContext =
   | { kind: "general" }
+  | {
+      kind: "client"; id: string;
+      /** «موكل عادل»: the phone's context pill */
+      pill: string;
+      /** «عادل النموذجي»: the panel header's «الموكل · …» */
+      name: string;
+      /** the phone's strip: the name, then «3 قضايا · الجلسة الجاية 22/10» */
+      strip: { title: string; meta: string };
+    }
   | {
       kind: "case"; id: string;
       /** «قضية عادل»: the phone's context pill */

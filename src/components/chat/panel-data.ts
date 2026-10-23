@@ -9,7 +9,7 @@ import { formatDmy, todayIso } from "@/lib/dates";
 import { caseLabel } from "@/lib/labels";
 import type { Db } from "@/lib/supabase/server";
 import { loadMorning } from "@/lib/morning/load";
-import { hearingThread, latestCaseThread, listSessions } from "@/lib/threads";
+import { hearingThread, latestCaseThread, latestClientThread, listSessions } from "@/lib/threads";
 import type { PanelContext, PanelData } from "./panel-types";
 import { shortDay } from "./panel-types";
 import { loadThread } from "./ThreadView";
@@ -33,22 +33,42 @@ async function caseContext(db: Db, caseId: string): Promise<PanelContext | null>
   };
 }
 
+async function clientContext(db: Db, clientId: string): Promise<PanelContext | null> {
+  const { data: c } = await db.from("clients").select("id, name").eq("id", clientId).neq("review_status", "rejected").maybeSingle();
+  if (!c) return null;
+  const { data: cases } = await db.from("cases").select("id").eq("client_id", clientId).neq("review_status", "rejected");
+  const ids = (cases ?? []).map((x) => x.id);
+  const { data: next } = ids.length
+    ? await db.from("hearings").select("hearing_date").in("case_id", ids).gte("hearing_date", todayIso()).neq("review_status", "rejected").order("hearing_date").limit(1).maybeSingle()
+    : { data: null };
+  const n = ids.length;
+  return {
+    kind: "client", id: c.id,
+    pill: `موكل ${c.name.split(/\s+/)[0]}`,
+    name: c.name,
+    strip: { title: c.name, meta: [n === 1 ? "قضية واحدة" : n === 2 ? "قضيتين" : n ? `${n} ${n <= 10 ? "قضايا" : "قضية"}` : "بلا قضايا", next ? `الجلسة الجاية ${shortDay(next.hearing_date)}` : null].filter(Boolean).join(" · ") },
+  };
+}
+
 export async function loadPanel(db: Db, path: string[] | undefined, sp: { s?: string; hearing?: string; q?: string }, who: { userId: string; displayName: string } | null = null): Promise<PanelData> {
   const wantCase = path?.[0] === "cases" && path[1] && UUID.test(path[1]) ? path[1] : null;
-  const ctx = wantCase ? await caseContext(db, wantCase) : null;
+  const wantClient = path?.[0] === "clients" && path[1] && UUID.test(path[1]) ? path[1] : null;
+  const ctx = wantCase ? await caseContext(db, wantCase) : wantClient ? await clientContext(db, wantClient) : null;
   const context: PanelContext = ctx ?? { kind: "general" };
   const caseId = context.kind === "case" ? context.id : null;
+  const clientId = context.kind === "client" ? context.id : null;
 
-  const sessions = await listSessions(db, caseId);
+  const sessions = await listSessions(db, caseId, 40, clientId);
 
   // which session is open
   let threadId: string | null = null;
   let hearing: { id: string; date: string } | null = null;
   const s = sp.s ?? "";
   if (UUID.test(s)) {
-    const { data: t } = await db.from("chat_threads").select("id, case_id").eq("id", s).maybeSingle();
-    if (t && (t.case_id ?? null) === caseId) threadId = t.id; // a link to another context's session is ignored
+    const { data: t } = await db.from("chat_threads").select("id, case_id, client_id").eq("id", s).maybeSingle();
+    if (t && (t.case_id ?? null) === caseId && (t.client_id ?? null) === clientId) threadId = t.id; // a link to another context's session is ignored
   }
+  if (!threadId && s !== "new" && clientId) threadId = await latestClientThread(db, clientId);
   if (!threadId && s !== "new" && caseId) {
     const h = sp.hearing && UUID.test(sp.hearing)
       ? (await db.from("hearings").select("id, hearing_date").eq("id", sp.hearing).eq("case_id", caseId).maybeSingle()).data : null;
@@ -68,7 +88,7 @@ export async function loadPanel(db: Db, path: string[] | undefined, sp: { s?: st
 
   // a general session that is about a case: a card in it points at that case (or created it)
   let moveOffer: PanelData["moveOffer"] = null;
-  if (data && !caseId) {
+  if (data && !caseId && !clientId) {
     const ps = [...data.proposals].reverse();
     const created = ps.flatMap((p) => p.ops).find((o) => o.tool === "create_case" && o.result_id && (o.status === "confirmed" || o.status === "suggested"))?.result_id ?? null;
     const target = ps.find((p) => p.case_id)?.case_id ?? created;
@@ -91,7 +111,7 @@ export async function loadPanel(db: Db, path: string[] | undefined, sp: { s?: st
 
   // the general context starts with the morning brief, the «noticed» cards and chips built from the lawyer's own cases
   let morning: PanelData["morning"] = null;
-  if (!caseId && who) {
+  if (!caseId && !clientId && who) {
     try {
       morning = await loadMorning(db, who.userId, who.displayName);
       chips.push(...morning.chips);

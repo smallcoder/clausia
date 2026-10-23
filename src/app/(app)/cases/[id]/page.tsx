@@ -15,6 +15,7 @@ import { ConfirmBar } from "@/components/cases/ConfirmBar";
 import { hearingState } from "@/components/cases/case-view";
 import { resolveTab, tabCounts, tabHref } from "@/components/cases/dossier";
 import { getCaseFile, type CaseFile } from "@/lib/case-file";
+import { pickableClients } from "@/lib/clients";
 import { loadPendingEdits } from "@/lib/pending-edits";
 import { todayIso } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
@@ -45,13 +46,13 @@ export default async function CasePage({ params, searchParams }: { params: Promi
     throw e;
   }
   // edits the chat proposed and the lawyer has not confirmed: shown in the tab that holds them (read through RLS, this case only)
-  const edits = await loadPendingEdits(db, id, cf);
+  const [edits, clients] = await Promise.all([loadPendingEdits(db, id, cf), pickableClients(db)]);
   const today = todayIso();
   const hs = hearingState(cf.hearings, today);
 
   return (
     <div className="mx-auto flex w-full max-w-page flex-1 flex-col px-4 sm:px-10">
-      <CaseHeader cf={cf} caseId={id} hs={hs} today={today} edits={edits} />
+      <CaseHeader cf={cf} caseId={id} hs={hs} today={today} edits={edits} clients={clients} />
       <CaseTabBar caseId={id} active={active} counts={tabCounts(cf, today)} keep={keep} />
       <div className="mt-4 sm:mt-5">
         {active === "hearings" ? <HearingsTab caseId={id} today={today} edits={edits} />
