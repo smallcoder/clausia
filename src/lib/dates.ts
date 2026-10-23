@@ -83,3 +83,31 @@ export function addDaysIso(iso: string, days: number): string {
   const dt = new Date(Date.UTC(y, m - 1, d + days));
   return `${dt.getUTCFullYear()}-${pad(dt.getUTCMonth() + 1)}-${pad(dt.getUTCDate())}`;
 }
+
+// ---- how a date label is drawn (owner rule 2026-10-23) ----
+
+const DIGIT = "[0-9٠-٩۰-۹]";
+const PURE_NUMERIC = new RegExp(`^(?=.*${DIGIT})[0-9٠-٩۰-۹\\s/:.\\-–—]+$`);
+const NUMBER_RUN = new RegExp(`${DIGIT}+(?:[/:.]${DIGIT}+)*`, "g");
+
+/**
+ * True when the value is only a number, a date or a time: digits plus `/ : . -` and spaces
+ * («22/10/2026», «5/11», «2026», «9:00»). These use the numbers font and dir="ltr".
+ * Anything with a word («النهارده», «الأحد 25», «جلسة 22/10», «يناير 2026») is Arabic text: Arabic font and dir="rtl".
+ */
+export function isNumericDate(value: string): boolean {
+  return PURE_NUMERIC.test(value.trim());
+}
+
+/** Splits Arabic text into plain pieces and number runs («جلسة 22/10» → «جلسة », «22/10»); the runs are drawn in <bdi>. */
+export function splitNumbers(value: string): { text: string; num: boolean }[] {
+  const out: { text: string; num: boolean }[] = [];
+  let at = 0;
+  for (const m of value.matchAll(NUMBER_RUN)) {
+    if (m.index > at) out.push({ text: value.slice(at, m.index), num: false });
+    out.push({ text: m[0], num: true });
+    at = m.index + m[0].length;
+  }
+  if (at < value.length) out.push({ text: value.slice(at), num: false });
+  return out;
+}
