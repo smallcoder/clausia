@@ -5,7 +5,7 @@
  */
 import Link from "next/link";
 import type { HearingWithCase } from "@/lib/hearings";
-import { cx } from "@/components/ui";
+import { DateText, cx } from "@/components/ui";
 import { placeLine, rowTitle, upcomingDay } from "./text";
 
 function Row({ h, today }: { h: HearingWithCase; today: string }) {
@@ -13,7 +13,7 @@ function Row({ h, today }: { h: HearingWithCase; today: string }) {
   const need = h.purpose?.trim() || null;
   return (
     <Link href={`/cases/${h.case_id}?hearing=${h.id}`} className="group flex items-center gap-4.5 border-t border-border-2 py-3.75">
-      <span className={cx("num font-num w-20 shrink-0 text-base font-bold leading-[normal]", day.soon ? "text-gold" : "text-title")}>{day.label}</span>
+      <span className={cx("w-20 shrink-0 text-base font-bold leading-[normal]", day.soon ? "text-gold" : "text-title")}><DateText value={day.label} /></span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-md font-semibold leading-[normal] text-text group-hover:underline">{rowTitle(h)}</span>
         <span className="mt-0.75 block truncate text-sm leading-[normal] text-text-3">{placeLine(h)}</span>

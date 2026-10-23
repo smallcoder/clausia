@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { SourceChip, SourceLabel } from "@/components/cite/SourceChip";
 import { OpenHearing, RollSheet } from "@/components/hearings/RollSheet";
-import { cx } from "@/components/ui";
+import { DateText, cx } from "@/components/ui";
 import { formatDmy } from "@/lib/dates";
 import { builtLine, clockStamp, QUIET } from "@/lib/morning/build";
 import { dismissNoticeAction } from "@/lib/morning/actions";
@@ -51,7 +51,7 @@ function Card({ n, kicker, gold, onIgnore, children }: { n: Notice; kicker: stri
 function HearingCard({ n, onIgnore }: { n: HearingNotice; onIgnore: () => void }) {
   return (
     <Card n={n} kicker={n.title} gold onIgnore={onIgnore}>
-      <p className="mt-0.75 text-base leading-[1.65] text-text">{n.text}</p>
+      <p className="mt-0.75 text-base leading-[1.65] text-text"><DateText value={n.text} /></p>
       {n.source ? <p className="mt-1.5"><Source s={n.source} /></p> : null}
     </Card>
   );
@@ -60,7 +60,7 @@ function HearingCard({ n, onIgnore }: { n: HearingNotice; onIgnore: () => void }
 function ConflictCard({ n, onIgnore }: { n: ConflictNotice; onIgnore: () => void }) {
   return (
     <Card n={n} kicker={n.title} onIgnore={onIgnore}>
-      <p className="mt-0.75 text-base leading-[1.65] text-text">{n.text}</p>
+      <p className="mt-0.75 text-base leading-[1.65] text-text"><DateText value={n.text} /></p>
       {n.quote ? <p className="mt-1 line-clamp-2 text-sm leading-[1.6] text-text-3" dir="auto">«{n.quote}»</p> : null}
       <p className="mt-1.5 flex flex-wrap items-center gap-1.5">
         <span className="text-sm font-semibold text-text-2">شوف الورقتين:</span>

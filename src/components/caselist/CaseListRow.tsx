@@ -9,6 +9,7 @@ import Link from "next/link";
 import type { CaseRow } from "@/lib/cases";
 import { addDaysIso } from "@/lib/dates";
 import { CASE_STATUS } from "@/lib/labels";
+import { DateText } from "@/components/ui";
 
 /**
  * md+ column template, shared by the header and every row so they line up. Fixed widths as the mockup draws them
@@ -31,11 +32,11 @@ function caseNumber(r: CaseRow): string {
 }
 
 /** today «النهارده», tomorrow «بكرة», else d/m/yyyy (CLAUDE.md: dates always d/m/yyyy). */
-function dateLabel(iso: string, today: string): { text: string; today: boolean; word: boolean } {
-  if (iso === today) return { text: "النهارده", today: true, word: true };
-  if (iso === addDaysIso(today, 1)) return { text: "بكرة", today: false, word: true };
+function dateLabel(iso: string, today: string): { text: string; today: boolean } {
+  if (iso === today) return { text: "النهارده", today: true };
+  if (iso === addDaysIso(today, 1)) return { text: "بكرة", today: false };
   const [y, m, d] = iso.split("-").map(Number);
-  return { text: `${d}/${m}/${y}`, today: false, word: false };
+  return { text: `${d}/${m}/${y}`, today: false };
 }
 
 export interface RowFlags { decision: boolean; review: boolean; againstUs: boolean }
@@ -66,7 +67,7 @@ export function CaseListRow({ r, today, flags }: { r: CaseRow; today: string; fl
   const where = [r.court, r.circuit].filter(Boolean).join(" · ");
   const next = r.next_hearing ? dateLabel(r.next_hearing, today) : null;
   const nextCls = next?.today ? "font-bold text-text" : flags.decision && !next ? "font-medium text-gold" : "font-medium text-text-3";
-  const nextText = next ? <span className={next.word ? "" : "num"}>{next.text}</span> : <span aria-label="لا جلسة جاية">—</span>;
+  const nextText = next ? <DateText value={next.text} /> : <span aria-label="لا جلسة جاية">—</span>;
   const marker = <Marker r={r} f={flags} />;
   return (
     <li className="border-t border-border-2 first:border-t-0 md:first:border-t">
@@ -84,12 +85,12 @@ export function CaseListRow({ r, today, flags }: { r: CaseRow; today: string; fl
 
         {/* desktop columns */}
         <span className="hidden truncate text-base leading-[18px] text-text-3 md:block" title={where || undefined}>{where || "المحكمة غير محددة"}</span>
-        <span className={`font-num hidden text-base leading-[18px] md:block ${nextCls}`}>{nextText}</span>
+        <span className={`hidden text-base leading-[18px] md:block ${nextCls}`}>{nextText}</span>
         <span className="hidden justify-self-start md:block">{marker}</span>
 
         {/* mobile: date, marker under it */}
         <span className="flex shrink-0 flex-col items-end text-left md:hidden">
-          <span className={`font-num text-sm leading-4 ${nextCls}`}>{nextText}</span>
+          <span className={`text-sm leading-4 ${nextCls}`}>{nextText}</span>
           {marker ? <span className="mt-0.75 flex">{marker}</span> : null}
         </span>
       </Link>

@@ -3,7 +3,7 @@
 // Drafts («محتاج مراجعة») are never used in a computation; a year with no approved holiday makes the card say «راجع الإجازات».
 import { notFound } from "next/navigation";
 import { StatusChip } from "@/components/shell/PageHero";
-import { PageHeader } from "@/components/ui";
+import { DateText, PageHeader } from "@/components/ui";
 import { formatDayLabel } from "@/lib/dates";
 import { deadlinesEnabled } from "@/lib/flags";
 import { createClient } from "@/lib/supabase/server";
@@ -40,7 +40,7 @@ export default async function HolidaysPage() {
               {pending.map((r) => (
                 <li key={r.id} className="flex flex-wrap items-center gap-3 px-6 py-3.5 not-first:border-t not-first:border-border-2">
                   <div className="min-w-0 flex-1">
-                    <div className="text-md font-semibold text-text">{r.name} · <span className="num font-num">{formatDayLabel(r.holiday_date)}</span></div>
+                    <div className="text-md font-semibold text-text">{r.name} · <DateText value={formatDayLabel(r.holiday_date)} /></div>
                     {r.note ? <div className="mt-0.5 text-sm text-text-3">{r.note}</div> : null}
                   </div>
                   <form action={approveReportAction}><input type="hidden" name="id" value={r.id} /><button className={BTN_GOLD}>اعتمد</button></form>
@@ -67,7 +67,7 @@ export default async function HolidaysPage() {
                     <li key={h.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-6 py-2.5">
                       <div className="min-w-0 flex-1">
                         <span className="text-base font-semibold text-text">{h.name}</span>
-                        <span className="num font-num ms-2.5 text-base text-text-3">{formatDayLabel(h.holiday_date)}</span>
+                        <DateText value={formatDayLabel(h.holiday_date)} className="ms-2.5 text-base text-text-3" />
                         {h.note ? <div className="text-sm text-text-4">{h.note}</div> : null}
                       </div>
                       <StatusChip tone={h.status === "approved" ? "good" : "warn"}>{h.status === "approved" ? "معتمدة" : "محتاج مراجعة"}</StatusChip>
@@ -98,7 +98,7 @@ export default async function HolidaysPage() {
               <ul className="border-t border-border-2">
                 {(reports ?? []).map((r) => (
                   <li key={r.id} className="flex flex-wrap items-center gap-3 px-6 py-3 not-first:border-t not-first:border-border-2">
-                    <span className="min-w-0 flex-1 text-base text-text">{r.name} · <span className="num font-num text-text-3">{formatDayLabel(r.holiday_date)}</span></span>
+                    <span className="min-w-0 flex-1 text-base text-text">{r.name} · <DateText value={formatDayLabel(r.holiday_date)} className="text-text-3" /></span>
                     <StatusChip tone={REPORT[r.status].tone}>{REPORT[r.status].label}</StatusChip>
                   </li>
                 ))}

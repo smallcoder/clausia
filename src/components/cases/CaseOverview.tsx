@@ -22,6 +22,7 @@ import {
   MONTHS, READ_SHORT, aboutItem, agoLabel, citeOf, daysBetween, docName, factDate, partyRows, pendingHref, pendingWords, shortDmy, sourceText,
   summarySegments, untilLabel, type HearingState,
 } from "@/components/cases/case-view";
+import { DateText } from "@/components/ui";
 
 type Fact = CaseFile["facts"][number];
 type Req = CaseFile["requests"][number];
@@ -109,7 +110,7 @@ function ReviewBanner({ cf, hs, caseId, className }: { cf: CaseFile; hs: Hearing
         const body = (
           <>
             <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-gold" />
-            <span className="min-w-0 flex-1"><span className="font-semibold text-gold">{r.gold}</span> {r.rest}</span>
+            <span className="min-w-0 flex-1"><DateText value={r.gold} className="font-semibold text-gold" /> {r.rest}</span>
             <ChevronLeft aria-hidden size={18} strokeWidth={2} className="shrink-0 text-gold" />
           </>
         );
@@ -127,8 +128,8 @@ function FactRow({ f, last, cf }: { f: Fact; last: boolean; cf: CaseFile }) {
   const dated = f.date && f.date_precision !== "unknown";
   return (
     <span className="flex gap-3.5">
-      <span className={`font-num w-16 shrink-0 pt-1 text-sm font-semibold lg:w-19.5 ${dated ? "text-text" : "text-text-4"}`}>
-        <span className={f.date_precision === "day" ? "num" : ""}>{factDate(f.date, f.date_precision)}</span>
+      <span className={`w-16 shrink-0 pt-1 text-sm font-semibold lg:w-19.5 ${dated ? "text-text" : "text-text-4"}`}>
+        <DateText value={factDate(f.date, f.date_precision)} />
       </span>
       <span className="flex w-2.25 shrink-0 flex-col items-center" aria-hidden>
         <span className={`mt-2.25 size-dot-lg shrink-0 rounded-full ${suggested ? "bg-gold" : "bg-text-3"}`} />
@@ -151,7 +152,7 @@ function NewFactRow({ r, last }: { r: PendingRow; last: boolean }) {
   return (
     <div className="gold-wash mb-1.5 rounded-md px-1.5 lg:px-2" data-pending-row>
       <span className="flex gap-3.5">
-        <span className="font-num w-16 shrink-0 pt-1 text-sm font-semibold text-gold lg:w-19.5"><span className="num">{r.date ?? "غير محدد"}</span></span>
+        <span className="w-16 shrink-0 pt-1 text-sm font-semibold text-gold lg:w-19.5"><DateText value={r.date ?? "غير محدد"} /></span>
         <span className="flex w-2.25 shrink-0 flex-col items-center" aria-hidden>
           <span className="mt-2.25 size-dot-lg shrink-0 rounded-full bg-gold" />
           {!last ? <span className="mt-1 w-px flex-1 bg-border-2" /> : null}
@@ -191,7 +192,7 @@ function Facts({ cf, caseId, edits }: { cf: CaseFile; caseId: string; edits?: Pe
             تاريخ الوقائع <Change old={fd} next={fdProposed} className="num font-num" /> <SuggestedTag />
           </span>
         ) : (
-          <span className="text-xs text-text-4">تاريخ الوقائع {fd ? <span className="num font-num">{fd}</span> : "مش محدد"} · بيحدد نسخة القانون</span>
+          <span className="text-xs text-text-4">تاريخ الوقائع {fd ? <DateText value={fd} /> : "مش محدد"} · بيحدد نسخة القانون</span>
         )}
       </div>
       {all.length ? (
@@ -199,7 +200,7 @@ function Facts({ cf, caseId, edits }: { cf: CaseFile; caseId: string; edits?: Pe
           {all.map((e, i) => e.row ? <NewFactRow key={e.row.key} r={e.row} last={i === all.length - 1} /> : e.fact && ((f) => (
             <AskTarget key={f.id} item={{ kind: "fact", id: f.id, label: `${factDate(f.date, f.date_precision)} · ${f.text}` }}>
             <TapItem id={f.id} title="واقعة" tight className="rounded-md px-1.5 lg:px-2" row={<FactRow f={f} last={i === all.length - 1} cf={cf} />}>
-              <p className="font-num text-sm font-bold text-title">{factDate(f.date, f.date_precision)}{f.date_text && f.date_text !== factDate(f.date, f.date_precision) ? <span className="font-sans font-normal text-text-4"> · «{f.date_text}»</span> : null}</p>
+              <p className="text-sm font-bold text-title"><DateText value={factDate(f.date, f.date_precision)} />{f.date_text && f.date_text !== factDate(f.date, f.date_precision) ? <span className="font-normal text-text-4"> · «<DateText value={f.date_text} />»</span> : null}</p>
               <p className="text-doc text-lg text-text">{f.text}</p>
               <SheetSource cf={cf} item={f} about={aboutItem("واقعة", `${factDate(f.date, f.date_precision)} · ${f.text}`)} />
               {f.review_status === "suggested" ? <SheetReview table="case_facts" id={f.id} caseId={caseId} /> : null}
@@ -391,9 +392,9 @@ function HearingCard({ cf, hs, today, caseId, className, edits }: { cf: CaseFile
       <div className="flex items-center gap-4 lg:gap-4.5">
         <DayBlock iso={h.date} />
         <div className="min-w-0 flex-1 border-s border-border-2 ps-4 lg:ps-4.5">
-          <div className="text-xs text-text-3 lg:text-sm">{when}</div>
+          <div className="text-xs text-text-3 lg:text-sm"><DateText value={when} /></div>
           <div className="mt-0.75 text-md font-bold text-text lg:mt-1">
-            {weekday} <span className="num font-num lg:hidden">{d}/{m}</span><span className="num font-num hidden lg:inline">{d}/{m}/{y}</span>
+            {weekday} <DateText value={`${d}/${m}`} className="lg:hidden" /><DateText value={`${d}/${m}/${y}`} className="hidden lg:inline" />
             {where ? <span className="lg:hidden"> · {where}</span> : null}
           </div>
           {where ? <div className="mt-0.5 hidden text-sm text-text-3 lg:block">{where}</div> : null}

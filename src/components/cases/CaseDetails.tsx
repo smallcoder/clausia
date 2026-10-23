@@ -8,6 +8,7 @@ import { Panel } from "@/components/shell/PageHero";
 import type { CaseFile } from "@/lib/case-file";
 import { formatDmy } from "@/lib/dates";
 import { CASE_STATUS, STAGE } from "@/lib/labels";
+import { DateText } from "@/components/ui";
 
 function Row({ label, value, children }: { label: string; value: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -36,7 +37,7 @@ export function CaseDetails({ cf }: { cf: CaseFile }) {
     <p className="mb-3 px-2 text-sm text-text-3">اضغط على أي سطر لتعديله.</p>
     <Panel className="overflow-hidden">
       <ul className="divide-y divide-border-2">
-        <Row label="تاريخ الوقائع" value={fd ? <span className="num font-num">{fd}</span> : "غير محدد"}>
+        <Row label="تاريخ الوقائع" value={fd ? <DateText value={fd} /> : "غير محدد"}>
           <InlineEdit action={editCaseField} hidden={{ ...hidden, field: "facts_date" }} initial={fd} label="تغيير" startOpen
             placeholder="مثال: 15/3/2023 أو 3/2023 أو 2023" hint="يوم/شهر/سنة، أو شهر/سنة، أو السنة بس. بالتاريخ ده بيتحدد إصدار القانون اللي ينطبق."
             display={fd || "غير محدد"} />
