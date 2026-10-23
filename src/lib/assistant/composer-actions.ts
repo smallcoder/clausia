@@ -9,12 +9,13 @@ import { revalidatePath } from "next/cache";
 import { uploadDocumentAction } from "@/lib/documents/actions";
 import { createClient, getSession } from "@/lib/supabase/server";
 import { createThread, dropNewIfEmpty, titleFrom } from "@/lib/threads";
+import { cleanAsk } from "./ask";
 import { parseMode } from "./modes";
 import { runAssistantTurn } from "./turn";
 
 export type NewSessionTarget = { caseId?: string | null; hearingId?: string | null };
 
-export async function composerSendAction(target: NewSessionTarget, text: string, mode?: string): Promise<{ threadId?: string; error?: string }> {
+export async function composerSendAction(target: NewSessionTarget, text: string, mode?: string, context?: unknown): Promise<{ threadId?: string; error?: string }> {
   const msg = text.trim();
   if (!msg) return { error: "اكتب رسالتك أولًا" };
   if (msg.length > 8000) return { error: "الرسالة طويلة جدًا" };
@@ -29,7 +30,7 @@ export async function composerSendAction(target: NewSessionTarget, text: string,
     return { error: e instanceof Error ? e.message : "تعذّر بدء المحادثة" };
   }
   try {
-    await runAssistantTurn(db, { threadId, userText: msg, userId: s.user.id, officeId: s.officeId, mode: parseMode(mode) });
+    await runAssistantTurn(db, { threadId, userText: msg, userId: s.user.id, officeId: s.officeId, mode: parseMode(mode), context: cleanAsk(context) });
   } catch (e) {
     // the message never got in: no empty session; the composer keeps the text
     if (await dropNewIfEmpty(db, threadId)) return { error: e instanceof Error ? e.message : "تعذّر الإرسال" };

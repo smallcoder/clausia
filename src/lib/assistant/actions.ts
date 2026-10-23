@@ -6,20 +6,22 @@ import { decideProposal, type Proposal } from "@/lib/proposals";
 import { createClient, getSession } from "@/lib/supabase/server";
 import { listSessions, moveThreadToCase, type Session } from "@/lib/threads";
 import { undoConfirms } from "@/lib/undo";
+import { cleanAsk } from "./ask";
 import { parseMode } from "./modes";
 import { runAssistantTurn, TurnError } from "./turn";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** `saved`: the lawyer's message is in the thread (so the UI must not put it back in the composer). */
-export async function sendMessageAction(threadId: string, text: string, mode?: string): Promise<{ ok: boolean; error?: string; saved?: boolean }> {
+/** `context`: the items attached with «اسأل Clausia» (the browser sends kind, id and a short label; `cleanAsk` keeps only what is safe). */
+export async function sendMessageAction(threadId: string, text: string, mode?: string, context?: unknown): Promise<{ ok: boolean; error?: string; saved?: boolean }> {
   const db = await createClient();
   const s = await getSession(db);
   if (!s) return { ok: false, error: "انتهت الجلسة، سجّل الدخول من جديد" };
   if (!text.trim()) return { ok: false, error: "الرسالة فارغة" };
   if (text.length > 8000) return { ok: false, error: "الرسالة طويلة جدًا" };
   try {
-    const r = await runAssistantTurn(db, { threadId, userText: text, userId: s.user.id, officeId: s.officeId, mode: parseMode(mode) });
+    const r = await runAssistantTurn(db, { threadId, userText: text, userId: s.user.id, officeId: s.officeId, mode: parseMode(mode), context: cleanAsk(context) });
     revalidatePath("/", "layout");
     // an LLM failure already left a friendly assistant message in the thread: no second error in the composer
     if (r.error && !r.assistantMessageIds.length) return { ok: false, error: "تعذّر رد Clausia", saved: true };
