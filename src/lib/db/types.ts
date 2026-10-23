@@ -63,6 +63,7 @@ export type Database = {
           id: string
           kind: string | null
           office_id: string
+          reply_argument_id: string | null
           review_status: Database["public"]["Enums"]["item_status"]
           side: Database["public"]["Enums"]["argument_side"]
           source_char_end: number | null
@@ -82,6 +83,7 @@ export type Database = {
           id?: string
           kind?: string | null
           office_id?: string
+          reply_argument_id?: string | null
           review_status?: Database["public"]["Enums"]["item_status"]
           side?: Database["public"]["Enums"]["argument_side"]
           source_char_end?: number | null
@@ -101,6 +103,7 @@ export type Database = {
           id?: string
           kind?: string | null
           office_id?: string
+          reply_argument_id?: string | null
           review_status?: Database["public"]["Enums"]["item_status"]
           side?: Database["public"]["Enums"]["argument_side"]
           source_char_end?: number | null
@@ -125,6 +128,13 @@ export type Database = {
             columns: ["office_id"]
             isOneToOne: false
             referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_arguments_reply_argument_id_fkey"
+            columns: ["reply_argument_id"]
+            isOneToOne: false
+            referencedRelation: "case_arguments"
             referencedColumns: ["id"]
           },
           {

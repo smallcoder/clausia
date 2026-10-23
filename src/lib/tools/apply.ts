@@ -186,8 +186,28 @@ async function applyOpRaw(db: Db, tool: WriteTool, rawArgs: unknown, p: Provenan
     }
     case "add_argument": {
       const x = a as WriteArgs<"add_argument">;
-      const row = must(await db.from("case_arguments").insert({ case_id: resolveRef(x.case, refs)!, side: x.side, kind: x.kind ?? null, text: x.text, ...prov(p) }).select("id").single());
-      return { id: row.id, undo: del(db, "case_arguments", row.id), steps: rm("case_arguments", row.id) };
+      const caseId = resolveRef(x.case, refs)!;
+      const answers = resolveRef(x.answers, refs);
+      if (answers && x.side !== "ours") throw new Error("الرد لازم يكون دفاع من جانبنا (side = ours)");
+      // a reply answers ONE defense of the opponent in the same case that has no reply yet (checked before anything is written)
+      const target = answers ? (await db.from("case_arguments").select("id, case_id, side, reply_argument_id").eq("id", answers).maybeSingle()).data : null;
+      if (answers && !target) throw new Error("الدفع اللي بترد عليه مش موجود");
+      if (target && (target.case_id !== caseId || target.side !== "opponent")) throw new Error("الدفع اللي بترد عليه مش من دفوع الخصم في نفس الدعوى");
+      if (target?.reply_argument_id) throw new Error("الدفع ده اترد عليه قبل كده");
+      const row = must(await db.from("case_arguments").insert({ case_id: caseId, side: x.side, kind: x.kind ?? null, text: x.text, ...prov(p) }).select("id").single());
+      if (!target) return { id: row.id, undo: del(db, "case_arguments", row.id), steps: rm("case_arguments", row.id) };
+      // link the defense to our reply; if that fails the new row is removed again (a card is saved all or nothing)
+      const { data: linked, error: linkErr } = await db.from("case_arguments").update({ reply_argument_id: row.id }).eq("id", target.id).select("id");
+      if (linkErr || !linked?.length) {
+        await del(db, "case_arguments", row.id)();
+        throw new Error(linkErr?.message ?? "ما قدرتش أربط الرد بالدفع");
+      }
+      return {
+        id: row.id,
+        // the same order for both: the defense stops pointing at our reply first, then the reply is deleted
+        undo: async () => { must(await db.from("case_arguments").update({ reply_argument_id: null }).eq("id", target.id).select("id").single()); await del(db, "case_arguments", row.id)(); },
+        steps: [back("case_arguments", target.id, { reply_argument_id: null }), ...rm("case_arguments", row.id)],
+      };
     }
     case "add_hearing": {
       const x = a as WriteArgs<"add_hearing">;

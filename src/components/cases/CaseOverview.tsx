@@ -4,11 +4,13 @@
 // decisions). Mobile: one column in the mobile mockup's order — the two columns become
 // `display: contents` and `order-*` sorts them — with Facts / Docs / Parties as tabs (CaseTabs).
 // Rows show no edit links: tapping an item opens its actions (confirm / reject / edit) in the sheet (ItemSheet).
-import { ChevronLeft } from "lucide-react";
+import { Check, ChevronLeft, Shield, Target } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { SourceChip } from "@/components/cite/SourceChip";
 import { AskTarget } from "@/components/cases/AskTarget";
+import { WriteReply } from "@/components/cases/ReplyButton";
+import { memoLine, ourSideLabel, replyCount, replyStatus } from "@/components/cases/sides";
 import { SegBar, Seg, TabScope } from "@/components/cases/CaseTabs";
 import { SheetEditText, SheetReview, TapItem } from "@/components/cases/ItemSheet";
 import { pagesLabel } from "@/components/documents/DocThumb";
@@ -215,15 +217,38 @@ function Facts({ cf, caseId, edits }: { cf: CaseFile; caseId: string; edits?: Pe
 
 // ---------- لنا / ضدنا ----------
 
-function TextItem({ cf, caseId, table, item, kindLabel }: { cf: CaseFile; caseId: string; table: "case_requests" | "case_arguments"; item: Req | Arg; kindLabel: string | null }) {
+/**
+ * One request or argument: a row that opens its sheet (confirm / reject / edit). `number`: the request's number (the mockup's
+ * big light digit). `status` + `action`: the top line of a defense of the opponent («محتاج رد» / «اترد عليه» and its button).
+ * The source chip (or the source word) sits under the text. Buttons in the row are above the stretched row button (z-10).
+ */
+function TextItem({ cf, caseId, table, item, kindLabel, number, status, action, indent = false }: {
+  cf: CaseFile; caseId: string; table: "case_requests" | "case_arguments"; item: Req | Arg; kindLabel: string | null;
+  number?: number; status?: ReactNode; action?: ReactNode; indent?: boolean;
+}) {
   const suggested = item.review_status === "suggested";
+  const about = aboutItem(table === "case_requests" ? "طلب" : "دفع", item.text);
+  const cite = citeOf(`item:${item.id}`, item.source, cf.documents, about);
   return (
-    <AskTarget item={{ kind: table === "case_requests" ? "request" : "argument", id: item.id, label: item.text }}>
-    <TapItem id={item.id} title={table === "case_requests" ? "طلب" : "دفع / دفاع"} tight className="-mx-2 mt-1.5 rounded-md px-2 lg:mt-2"
-      row={<span className="block text-base leading-[1.7] text-text">{item.text}{suggested ? <span className="ms-2 inline-block"><Suggested /></span> : null}</span>}>
+    <AskTarget item={{ kind: table === "case_requests" ? "request" : "argument", id: item.id, label: item.text }} className="isolate border-t border-border-2">
+    <TapItem id={item.id} title={table === "case_requests" ? "طلب" : "دفع / دفاع"} tight className="-mx-2 rounded-md px-2"
+      row={
+        <span className="flex gap-3 py-3.5">
+          {number !== undefined ? <span className="font-num w-5.5 shrink-0 text-lg font-light text-text-3">{number}</span> : indent ? <span aria-hidden className="w-5.5 shrink-0" /> : null}
+          <span className="block min-w-0 flex-1">
+            {status ? <span className="mb-1.5 flex items-center justify-between gap-2">{status}{action}</span> : null}
+            {indent && kindLabel ? <span className="block text-xs text-text-4">{kindLabel}</span> : null}
+            <span className="block text-base font-semibold leading-[1.6] text-text">{item.text}</span>
+            <span className="mt-1.5 flex flex-wrap items-center gap-2">
+              {cite ? <SourceChip cite={cite} className="z-10" /> : <span className="text-xs text-text-4">{sourceText(item.source, cf.documents)}</span>}
+              {suggested ? <Suggested /> : null}
+            </span>
+          </span>
+        </span>
+      }>
       {kindLabel ? <p className="text-sm font-bold text-text-3">{kindLabel}</p> : null}
       <p className="text-doc text-lg text-text">{item.text}</p>
-      <SheetSource cf={cf} item={item} about={aboutItem(table === "case_requests" ? "طلب" : "دفع", item.text)} />
+      <SheetSource cf={cf} item={item} about={about} />
       {suggested ? <SheetReview table={table} id={item.id} caseId={caseId} /> : null}
       <SheetEditText table={table} id={item.id} caseId={caseId} initial={item.text} />
     </TapItem>
@@ -231,50 +256,84 @@ function TextItem({ cf, caseId, table, item, kindLabel }: { cf: CaseFile; caseId
   );
 }
 
-/** Mockup: dot (5px mobile / 6px desktop) + 11.5px / 12px semibold word, 6px apart. */
-function SideLabel({ tone, children }: { tone: "good" | "bad"; children: ReactNode }) {
-  return (
-    <h2 className={`flex items-center gap-1.5 text-xs font-semibold lg:text-sm ${tone === "good" ? "text-good" : "text-bad"}`}>
-      <span aria-hidden className={`size-dot rounded-full lg:size-1.5 ${tone === "good" ? "bg-good" : "bg-bad"}`} />{children}
-    </h2>
-  );
-}
-
 /** A request or an argument the chat proposed: a gold wash, «مستني تأكيدك». */
 function NewText({ r }: { r: PendingRow }) {
   return (
-    <div className="gold-wash -mx-2 mt-1.5 rounded-md px-2 py-1.5 lg:mt-2" data-pending-row>
-      <span className="block text-base leading-[1.7] text-text">{r.text}</span>
+    <div className="gold-wash -mx-2 my-1.5 rounded-md px-2 py-1.5" data-pending-row>
+      <span className="block text-base font-semibold leading-[1.6] text-text">{r.text}</span>
       <WaitingLine />
     </div>
   );
 }
 
+/** «محتاج رد»: a gold dot and word; «اترد عليه»: a check and a quiet word */
+const NeedsReply = () => (
+  <span className="inline-flex items-center gap-1.5 text-sm font-bold text-gold"><span aria-hidden className="size-1.5 rounded-full bg-gold" />محتاج رد</span>
+);
+const Replied = () => (
+  <span className="inline-flex items-center gap-1.25 text-sm text-text-3"><Check aria-hidden size={13} strokeWidth={2.4} />اترد عليه</span>
+);
+
+/** The two cards of the mockup (Sides*): ours (solid ink header, numbered requests) and theirs (thin gold outline, a warm header, a status per defense). */
 function Sides({ cf, caseId, className, edits }: { cf: CaseFile; caseId: string; className: string; edits?: PendingEdits }) {
   const requests = [...cf.requests, ...pendingOf<Req>(cf, "case_requests")];
   const args = [...cf.arguments, ...pendingOf<Arg>(cf, "case_arguments")];
   const ours = args.filter((a) => a.side === "ours");
   const theirs = args.filter((a) => a.side === "opponent");
-  // mobile: one card (4px 18px) with the two halves split by a hairline; desktop: two equal-height cards 14px apart
-  const card = "lg:flex-1 lg:rounded-xl lg:border lg:border-border-2 lg:bg-card lg:px-5.5 lg:py-4.5 lg:shadow-card";
   const newOurs = [...(edits?.requests ?? []), ...(edits?.arguments ?? []).filter((r) => r.side === "ours")];
   const newTheirs = (edits?.arguments ?? []).filter((r) => r.side !== "ours");
-  const empty = (t: string) => <p className="mt-1.5 text-base leading-[1.7] text-text-4 lg:mt-2">{t}</p>;
+  const { needs, total } = replyCount(theirs, ours);
+  const memo = memoLine(theirs, cf.documents);
+  const side = ourSideLabel(cf.case.client_role);
+  const empty = (t: string) => <p className="py-3.5 text-base leading-[1.7] text-text-4">{t}</p>;
+  const head = "flex items-center gap-3 rounded-t-xl px-6 py-4";
+  const tile = "inline-flex size-8.5 shrink-0 items-center justify-center rounded-md";
   return (
-    <div className={`${CARD} px-4.5 py-1 lg:flex lg:gap-3.5 lg:rounded-none lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none ${className}`}>
-      <section className={`border-b border-border-2 pb-3 pt-3.5 lg:border-b-0 ${card}`}>
-        <SideLabel tone="good">لنا · طلباتنا</SideLabel>
-        <div>
-          {requests.map((r) => <TextItem key={r.id} cf={cf} caseId={caseId} table="case_requests" item={r} kindLabel={r.kind ? REQUEST_KIND[r.kind] ?? r.kind : null} />)}
-          {ours.map((a) => <TextItem key={a.id} cf={cf} caseId={caseId} table="case_arguments" item={a} kindLabel={`دفاعنا${a.kind ? ` · ${ARG_KIND[a.kind] ?? a.kind}` : ""}`} />)}
+    <div className={`grid gap-3.5 lg:grid-cols-2 lg:gap-4 ${className}`}>
+      <section aria-label="لنا · طلباتنا" className={CARD}>
+        <div className={`${head} bg-selected text-on-selected`}>
+          <span aria-hidden className={`${tile} bg-on-selected/10 text-mark-fg`}><Target size={17} strokeWidth={2} /></span>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-md font-bold">لنا · طلباتنا</h2>
+            {side ? <p className="text-sm text-on-selected/65">{side}</p> : null}
+          </div>
+          <span className="font-num text-xl font-extralight">{requests.length}</span>
+        </div>
+        <div className="px-6 pb-2">
+          {requests.map((r, i) => <TextItem key={r.id} cf={cf} caseId={caseId} table="case_requests" item={r} number={i + 1} kindLabel={r.kind ? REQUEST_KIND[r.kind] ?? r.kind : null} />)}
+          {ours.map((a) => <TextItem key={a.id} cf={cf} caseId={caseId} table="case_arguments" item={a} indent kindLabel={`دفاعنا${a.kind ? ` · ${ARG_KIND[a.kind] ?? a.kind}` : ""}`} />)}
           {newOurs.map((r) => <NewText key={r.key} r={r} />)}
           {!requests.length && !ours.length && !newOurs.length ? empty("لسه مفيش طلبات متسجلة.") : null}
         </div>
       </section>
-      <section className={`py-3.5 ${card}`}>
-        <SideLabel tone="bad">ضدنا · دفوع الخصم</SideLabel>
-        <div>
-          {theirs.map((a) => <TextItem key={a.id} cf={cf} caseId={caseId} table="case_arguments" item={a} kindLabel={a.kind ? ARG_KIND[a.kind] ?? a.kind : null} />)}
+      <section aria-label="ضدنا · دفوع الخصم" className="gold-ring rounded-xl bg-card">
+        <div className={`${head} border-b border-border-2 bg-gold-bg`}>
+          <span aria-hidden className={`${tile} gold-ring text-gold`}><Shield size={17} strokeWidth={2} /></span>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-md font-bold text-text">ضدنا · دفوع الخصم</h2>
+            {memo ? <p className="text-sm text-text-3">{memo}</p> : null}
+          </div>
+          {total ? (
+            <div className="text-end">
+              <div className="font-num text-xl font-extralight text-gold">{needs}<span className="text-md text-text-4"> / {total}</span></div>
+              <div className="text-xs text-text-3">محتاجين رد</div>
+            </div>
+          ) : null}
+        </div>
+        <div className="px-6 pb-2">
+          {theirs.map((a) => {
+            const kindLabel = a.kind ? ARG_KIND[a.kind] ?? a.kind : null;
+            // a defense that is only suggested has nothing to answer yet: the lawyer reviews it first
+            if (a.review_status !== "confirmed") return <TextItem key={a.id} cf={cf} caseId={caseId} table="case_arguments" item={a} kindLabel={kindLabel} />;
+            const done = replyStatus(a, ours) === "done";
+            return (
+              <TextItem key={a.id} cf={cf} caseId={caseId} table="case_arguments" item={a} kindLabel={kindLabel}
+                status={done ? <Replied /> : <NeedsReply />}
+                action={done
+                  ? <a href={`#item-${a.reply_argument_id}`} className="tap relative z-10 inline-flex h-8 items-center rounded-full border border-border-2 px-3.5 text-sm font-semibold text-text-2 transition-colors hover:bg-card-2">شوف الرد</a>
+                  : <WriteReply item={{ kind: "argument", id: a.id, label: a.text }} />} />
+            );
+          })}
           {newTheirs.map((r) => <NewText key={r.key} r={r} />)}
           {!theirs.length && !newTheirs.length ? empty("لسه مفيش دفوع للخصم متسجلة.") : null}
         </div>
@@ -476,13 +535,14 @@ export function CaseOverview({ cf, hs, today, caseId, edits }: { cf: CaseFile; h
             { key: "parties", label: "الأطراف", count: parties },
           ]} />
           <Seg k="facts" className="order-5 lg:order-none"><Facts cf={cf} caseId={caseId} edits={edits} /></Seg>
-          <Sides cf={cf} caseId={caseId} edits={edits} className="order-6 lg:order-none" />
         </div>
         <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-4.5">
           <HearingCard cf={cf} hs={hs} today={today} caseId={caseId} edits={edits} className="order-1 lg:order-none" />
           <Seg k="parties" className="order-5 lg:order-none"><Parties cf={cf} caseId={caseId} edits={edits} /></Seg>
           <Seg k="docs" className="order-5 lg:order-none"><Docs cf={cf} caseId={caseId} /></Seg>
         </div>
+        {/* desktop: its own full-width row under the two columns (two equal cards, mockup Sides*); phone: after the facts, as before */}
+        <Sides cf={cf} caseId={caseId} edits={edits} className="order-6 lg:order-none lg:col-span-2" />
       </div>
     </TabScope>
   );

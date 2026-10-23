@@ -99,6 +99,7 @@ export const WRITE_TOOL_ARGS = {
     side: z.enum(["opponent", "ours"]).default("opponent"),
     kind: z.string().optional().describe("دفع شكلي / دفع موضوعي / دفاع"),
     text: z.string().min(3),
+    answers: ref("دفع الخصم الذي يرد عليه هذا الدفاع (فقط عند side = ours)").optional(),
     quote,
   }),
   add_hearing: z.object({
@@ -185,7 +186,7 @@ export const WRITE_TOOL_DESCRIPTIONS: Record<WriteTool, string> = {
   add_party: "اقتراح إضافة طرف (خصم أو غيره) إلى دعوى مع صفته.",
   add_fact: "اقتراح إضافة واقعة مؤرخة إلى الدعوى.",
   add_request: "اقتراح إضافة طلب من طلبات موكلنا.",
-  add_argument: "اقتراح إضافة دفع أو دفاع (للخصم أو لنا).",
+  add_argument: "اقتراح إضافة دفع أو دفاع (للخصم أو لنا). عند كتابة رد على دفع للخصم: side = ours و answers = رقم ذلك الدفع.",
   add_hearing: "اقتراح إضافة جلسة بتاريخها (ومكانها إن ذُكر).",
   set_hearing_location: "اقتراح تسجيل مكان جلسة موجودة (الدور / القاعة / المبنى) كما ذُكر فقط.",
   record_decision: "اقتراح تسجيل قرار جلسة. عند التأجيل يجب ذكر تاريخ الجلسة القادمة، وتُنشأ تلقائيًا.",
@@ -280,6 +281,7 @@ export const OP_FIELDS: Record<WriteTool, FieldSpec[]> = {
     { key: "side", label: "الجانب", type: { enum: ARG_SIDE } },
     { key: "kind", label: "النوع", type: "text" },
     { key: "text", label: "النص", type: "longtext" },
+    { key: "answers", label: "رد على دفع", type: "ref" },
   ],
   add_hearing: [
     { key: "case", label: "الدعوى", type: "ref" },

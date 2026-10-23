@@ -478,6 +478,55 @@ const rows = (r: { data: { id: string }[] | null }) => r.data ?? [];
   }
 }
 
+// ---------- «ضدنا · دفوع الخصم»: the reply link (case_arguments.reply_argument_id) stays inside its own office and case ----------
+{
+  const mkCase = async (db: typeof A, title: string) => (await db.from("cases").insert({ title, source_kind: "manual" }).select("id").single()).data!.id;
+  const mkArg = async (db: typeof A, case_id: string, side: "ours" | "opponent", text: string) => (await db.from("case_arguments").insert({ case_id, side, text, source_kind: "manual" }).select("id").single()).data!.id;
+  const a1 = await mkCase(A, "اختبار-RLS-رد-1");
+  const a2 = await mkCase(A, "اختبار-RLS-رد-2");
+  const b1 = await mkCase(B, "اختبار-RLS-رد-ب");
+  try {
+    const defA = await mkArg(A, a1, "opponent", "دفع اختبار الرد");
+    const ourA = await mkArg(A, a1, "ours", "رد اختبار الرد");
+    const ourA2 = await mkArg(A, a2, "ours", "رد في دعوى تانية");
+    const defB = await mkArg(B, b1, "opponent", "دفع خصم الأوفيس ب");
+    const ourB = await mkArg(B, b1, "ours", "رد الأوفيس ب");
+
+    const link = (db: typeof A, id: string, to: string | null) => db.from("case_arguments").update({ reply_argument_id: to }).eq("id", id).select("id");
+    const e1 = await link(A, defA, ourA2);
+    check("reply link: A cannot link a defense to its own argument of ANOTHER case", !!e1.error, e1.error?.message ?? "linked!");
+    const e2 = await link(A, ourA, ourA);
+    check("reply link: an argument of ours cannot itself carry a reply link", !!e2.error, e2.error?.message ?? "linked!");
+    const e3 = await link(A, defA, defA);
+    check("reply link: a defense cannot answer itself", !!e3.error, e3.error?.message ?? "linked!");
+    const okA = await link(A, defA, ourA);
+    check("reply link: A links its defense to its own argument of the same case", !okA.error && okA.data?.length === 1, okA.error?.message ?? "");
+
+    const e4 = await link(B, defB, ourA);
+    check("reply link: OTHER cannot link its defense to an office-A argument", !!e4.error, e4.error?.message ?? "linked!");
+    const e5 = await B.from("case_arguments").insert({ case_id: b1, side: "opponent", text: "اختراق", source_kind: "manual", reply_argument_id: ourA }).select("id");
+    check("reply link: OTHER cannot insert a defense that points at an office-A argument", !!e5.error && e5.data === null, e5.error?.message ?? "inserted!");
+    const e6 = await link(B, defA, ourB);
+    check("reply link: OTHER cannot change the reply link of an office-A defense", (e6.data?.length ?? 0) === 0);
+    const { data: bSees } = await B.from("case_arguments").select("id").eq("reply_argument_id", ourA);
+    check("reply link: OTHER sees 0 rows linked to an office-A argument", (bSees?.length ?? 0) === 0);
+    const okB = await link(B, defB, ourB);
+    check("reply link: OTHER can link inside its own office (control)", !okB.error && okB.data?.length === 1, okB.error?.message ?? "");
+
+    // through the confirm card (applyOp): office B answering an office-A defense saves nothing
+    const T = "رد اختبار اختراق";
+    const p = await createProposal(B as unknown as Db, { caseId: b1, ops: [{ tool: "add_argument", args: { case: b1, side: "ours", text: T, answers: defA, quote: T }, source: { kind: "chat" } }], sourceTexts: [T] });
+    let refused = "";
+    try { await decideProposal(B as unknown as Db, p.id, { mode: "confirm" }); } catch (e) { refused = e instanceof Error ? e.message : String(e); } // a failed card throws and saves nothing
+    const { data: made } = await B.from("case_arguments").select("id").eq("case_id", b1).eq("text", T);
+    const { data: stillOne } = await A.from("case_arguments").select("reply_argument_id").eq("id", defA).single();
+    check("reply link: a card of OTHER with answers = an office-A defense saves nothing", refused !== "" && (made?.length ?? 0) === 0 && stillOne?.reply_argument_id === ourA, refused);
+  } finally {
+    await A.from("cases").delete().in("id", [a1, a2]);
+    await B.from("cases").delete().eq("id", b1);
+  }
+}
+
 // ---------- live steps and the «استخدمت:» footer (PR 4) ----------
 {
   const turn = crypto.randomUUID();
