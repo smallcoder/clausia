@@ -55,7 +55,7 @@ export function DropProvider({ children }: { children: ReactNode }) {
       {children}
       {over ? (
         <div aria-hidden className="fade-enter pointer-events-none fixed inset-0 z-70 flex items-center justify-center bg-backdrop p-5">
-          <div className="flex size-full items-center justify-center rounded-xl border-2 border-dashed border-gold-edge bg-gold-bg">
+          <div className="flex size-full items-center justify-center rounded-xl border-2 border-dashed border-gold bg-gold-bg">
             <div className="flex flex-col items-center gap-3 rounded-xl border border-border-2 bg-card px-10 py-8 text-center shadow-pop">
               <span className="mark inline-flex size-14 items-center justify-center rounded-lg"><FileUp size={26} strokeWidth={1.8} /></span>
               <p className="text-lg font-bold text-title">ارمي الورقة هنا</p>
