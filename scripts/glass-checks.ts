@@ -3,6 +3,8 @@
 //   hscroll    no horizontal scroll at 390 / 1440 / 1920
 //   cursor     clickable elements (links, buttons, role, tabindex, React onClick) whose computed cursor is not pointer; disabled ones must be not-allowed
 //   reduced    prefers-reduced-transparency: reduce → glass is solid (no backdrop-filter, opaque background)
+//   faint      (PR contrast-sheet, issue #143) every visible text-text-4 and small text-gold label on the main pages, at 1440 and 390, light and dark: worst pixel over its real background (AA 4.5)
+//   shots      (PR contrast-sheet) screenshots to screenshots/compare/contrast-sheet/<TAG>-*.png (TAG=before|after)
 //   perf       frame timing (rAF) while scrolling a long chat and a long page, with the blur on and with it forced off
 // Needs the app running. Run: npx tsx --conditions=react-server --env-file=.env.local scripts/glass-checks.ts [baseUrl] [contrast|hscroll|cursor|reduced|perf ...]
 import { chromium, type BrowserContext, type Page } from "@playwright/test";
@@ -178,6 +180,76 @@ if (want("contrast")) {
     }
     await m2.close();
   }
+}
+
+// ---------- faint text and small gold labels (issue #143): every visible match, worst pixel over its real background
+if (want("faint")) {
+  console.log("== faint text (text-4) and small gold labels (text-gold, under 24px): AA 4.5 on real pixels; min over all visible matches");
+  const groups: [string, string][] = [
+    ["text-4", ".text-text-4"],
+    ["text-4 placeholder", "textarea"],
+    ["gold", ".text-gold"],
+  ];
+  const sweep = async (page: Page, sel: string) => {
+    const loc = page.locator(`${sel} >> visible=true`);
+    const n = Math.min(await loc.count(), 40);
+    let min = 99; let med = 99; let which = ""; let measured = 0;
+    for (let i = 0; i < n; i++) {
+      const el = loc.nth(i);
+      // small text only: a number over 24px (display figures) is large text, 3:1; icons have no text
+      await el.scrollIntoViewIfNeeded().catch(() => {});
+      // «seen»: the element is the top thing at its centre (not hidden under the sheet or the dim layer)
+      const meta = await el.evaluate((e) => {
+        const r = e.getBoundingClientRect();
+        const top = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+        return { fs: parseFloat(getComputedStyle(e).fontSize), txt: (e.textContent ?? "").trim().slice(0, 28), svg: e instanceof SVGElement, seen: !!top && e.contains(top) };
+      });
+      if (!meta.seen || meta.svg || (!meta.txt && !sel.includes("textarea"))) continue;
+      if (meta.fs >= 24) continue;
+      const r = await contrastOf(page, `${sel} >> visible=true`, { which: i, color: sel === "textarea" ? await el.evaluate((e) => getComputedStyle(e, "::placeholder").color) : undefined });
+      if (!r) continue;
+      measured++;
+      if (r.worst < min) { min = r.worst; med = r.median; which = `«${meta.txt}» ${meta.fs}px`; }
+    }
+    return { min, med, which, measured };
+  };
+  const pages: [number, number, string, string][] = [
+    [1440, 900, "case page", `/cases/${caseId}`], [1440, 900, "hearings", "/hearings"], [1440, 900, "cases", "/cases"], [1440, 900, "home", `/?s=${longThread}`],
+    [390, 844, "case sheet", `/cases/${caseId}?sheet=1`], [390, 844, "hearings sheet", "/hearings"], [390, 844, "cases sheet", "/cases"], [390, 844, "phone chat", `/?s=${longThread}`],
+  ];
+  for (const dark of [false, true]) {
+    for (const [w, h, label, path] of pages) {
+      const [ctx, page] = await ctxOf(w, h, dark);
+      await go(page, path);
+      for (const [g, sel] of groups) {
+        const r = await sweep(page, sel);
+        if (!r.measured) continue;
+        console.log(`${dark ? "dark " : "light"} ${String(w).padEnd(4)} ${label.padEnd(15)} ${g.padEnd(19)} n=${String(r.measured).padEnd(3)} worst ${r.min.toFixed(2)}  median ${r.med.toFixed(2)}  ${r.min >= 4.5 ? "PASS" : "FAIL"}  (lowest: ${r.which})`);
+      }
+      await ctx.close();
+    }
+  }
+}
+
+// ---------- screenshots for the PR
+if (want("shots")) {
+  const tag = process.env.TAG ?? "after";
+  const dir = "screenshots/compare/contrast-sheet";
+  (await import("node:fs")).mkdirSync(dir, { recursive: true });
+  for (const dark of [false, true]) {
+    const t = dark ? "dark" : "light";
+    const [mctx, mpage] = await ctxOf(390, 844, dark);
+    await go(mpage, `/cases/${caseId}?sheet=1`);
+    await mpage.waitForTimeout(600);
+    await mpage.screenshot({ path: `${dir}/${tag}-sheet-390-${t}.png` });
+    await mctx.close();
+    const [ctx, page] = await ctxOf(1440, 900, dark);
+    await go(page, `/cases/${caseId}`);
+    await page.waitForTimeout(600);
+    await page.screenshot({ path: `${dir}/${tag}-case-1440-${t}.png` });
+    await ctx.close();
+  }
+  console.log(`shots saved to ${dir}/${tag}-*.png`);
 }
 
 // ---------- horizontal scroll
