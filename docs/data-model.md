@@ -41,8 +41,15 @@ Schema: `supabase/migrations/20261020150000_base_schema.sql`. Types: `src/lib/db
 | document_pages | document_id, page_no, text, model | extracted text per page |
 | chat_threads | case_id or client_id (both null = general chat; never both) | every case gets a thread; a client has its own sessions |
 | chat_messages | thread_id, role (user/assistant/tool), content, tool_calls jsonb (incl. provider raw parts), attachments | |
+| case_fees | case_id (unique), kind (fixed/open), amount_piasters (bigint; null when open) | PR 5. The fee agreed for one case; optional: no row = not set. «open» = no amount, so no balance |
+| account_movements | client_id, case_id (null = the client's general account), kind (receipt/expense), amount_piasters (bigint, > 0), method (cash/vodafone_cash/instapay/bank_transfer/cheque), moved_on, charged_to (client/office, expenses only), note | PR 5. **Money is integer piasters, never a float.** A link trigger checks that the client and the case are visible and that the case is the client's. Deleting a client or case that has movements is refused (restrict) |
 | proposals | thread_id, message_id, case_id, document_id, ops jsonb, status | **confirmation cards** — nothing in the content tables is written before the tap |
 | llm_calls | purpose, provider, model, tokens, cost_usd, latency_ms, ok, error | spend cap check sums cost_usd |
+
+## Money (PR 5, الحسابات)
+- Amounts are whole piasters (1 EGP = 100) in `bigint` columns, whole JS integers in code (`src/lib/money.ts`: `parseAmount` reads Western and Arabic numerals and refuses anything unclear, `formatAmount` groups with commas). No float anywhere.
+- Paid so far = confirmed receipts. Remaining = fixed fees − paid on those cases (never below zero; an overpayment is shown apart). Open or unset fees have no balance. Expenses charged to the client are summed apart; ones charged to the office are listed, not billed. A row saved «as a suggestion» is shown tagged and counted nowhere (`src/lib/accounts-calc.ts`).
+- Migration `20261025100000_accounts.sql` (+ `_down.sql`, never run by a tool). RLS: the standard four office policies. Tests: `scripts/test-accounts-rls.sql` (one transaction, rolled back), `scripts/test-accounts.ts`.
 
 ## Rules in the database
 - `record_hearing_decision(hearing_id, decision, text, next_date, next_requirements, provenance…)`:

@@ -18,10 +18,12 @@ import { Check, ChevronDown, FolderClosed, X } from "lucide-react";
 import { useCite, type CiteSource } from "@/components/cite/context";
 import { SourceChip, SourceLabel } from "@/components/cite/SourceChip";
 import { Was } from "@/components/cases/Suggest";
+import { isMoneyCard, MoneyCard } from "@/components/proposal/MoneyCard";
 import { useUndoToast } from "@/components/shell/UndoToast";
 import { cx, DateText } from "@/components/ui";
 import { decideProposalAction } from "@/lib/assistant/actions";
-import { CASE_STATUS, DECISION, DOC_TYPE, PARTY_ROLE, STAGE } from "@/lib/labels";
+import { CASE_STATUS, DECISION, DOC_TYPE, MONEY_METHOD, PARTY_ROLE, STAGE } from "@/lib/labels";
+import { formatEgp, parseAmount } from "@/lib/money";
 import { editsLabel, type EditRow } from "@/lib/edits";
 import type { Proposal, ProposalOp } from "@/lib/proposals";
 import { relativeDayText } from "@/lib/relative-days";
@@ -71,6 +73,8 @@ function kindOf(o: ProposalOp): string {
     case "add_doc_column": return "عمود";
     case "add_doc_cell": return "خانة";
     case "add_deadline": return "ميعاد طعن"; // drawn by DeadlineCard
+    case "record_movement": return a.kind === "expense" ? "مصروف" : "استلام";
+    case "set_case_fee": return "الأتعاب";
   }
 }
 
@@ -91,6 +95,8 @@ function summaryOf(o: ProposalOp, lookup: Record<string, string> = {}): string {
     case "add_doc_column": return String(a.title ?? "");
     case "add_doc_cell": return [lookup[String(a.document)], a.answer ? cut(a.answer, 90) : "مش مذكور"].filter(Boolean).join(" · ");
     case "add_deadline": return "ميعاد طعن";
+    case "record_movement": return [a.amount && formatEgp(parseAmount(String(a.amount)) ?? 0), a.method && MONEY_METHOD[a.method as keyof typeof MONEY_METHOD], a.note].filter(Boolean).join(" · ");
+    case "set_case_fee": return a.kind === "open" ? "مفتوحة (بلا مبلغ)" : a.amount ? formatEgp(parseAmount(String(a.amount)) ?? 0) : "";
   }
 }
 
@@ -231,6 +237,15 @@ export function ProposalCard({ proposal: initial, lookup = {}, rows = {} }: {
     return () => { document.body.style.overflow = prev; window.removeEventListener("keydown", onKey); mq.removeEventListener("change", onMq); };
   }, [showSheet]);
 
+  // a card made only of money entries is drawn by MoneyCard (the mockup's «هسجّل استلام»); the tap, the edits and the undo toast stay here
+  if (isMoneyCard(p)) {
+    return (
+      <MoneyCard proposal={p} lookup={lookup} edits={edits} pending={pending} error={error}
+        setEdit={(opId, key, value) => setEdits((e) => ({ ...e, [opId]: { ...(e[opId] ?? {}), [key]: value } }))}
+        onDecide={(mode, opIds) => decide(mode, opIds)} />
+    );
+  }
+
   const toggle = (id: string) => setExpanded((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   /** «عدّل» opens every open row and the footer's second line; «اقفل» closes both. On mobile it opens the sheet. */
   function editSomething(mobile: boolean) {
@@ -249,6 +264,7 @@ export function ProposalCard({ proposal: initial, lookup = {}, rows = {} }: {
     if (v === undefined || v === null || v === "") return null;
     if (f.type === "bool") return v ? "نعم" : "لا";
     if (typeof f.type === "object") return f.type.enum[String(v)] ?? String(v);
+    if (f.type === "money") { const m = parseAmount(String(v)); return m === null ? String(v) : formatEgp(m); }
     if (f.type === "ref") {
       const s = String(v);
       if (s.startsWith("@")) {

@@ -1,7 +1,7 @@
 /**
  * A client's page head (docs/design/ia/IAClient*): the breadcrumb «الموكلين / name», the avatar + name with «موكل من <year>» and the case
  * counts, the buttons «اتصل» (a tel: link; none without a phone) and «+ قضية جديدة له» (it opens a fresh session in this client's chat with a
- * starter sentence: nothing is sent), then the info cells: phone, address, power of attorney, and «الأتعاب» (قريباً: PR 5).
+ * starter sentence: nothing is sent), then the info cells: phone, address, power of attorney, and «الأتعاب» (the agreed fees added up).
  * A value that is not recorded says so, faint, never a guess. The power of attorney is the client's own paper of that type, if saved.
  */
 import { ChevronRight, Phone, Plus } from "lucide-react";
@@ -19,7 +19,11 @@ const casesWord = (n: number) => (n === 1 ? "قضية واحدة" : n === 2 ? "�
 
 const ROUND = "tap glass glass-icon inline-flex size-control-lg shrink-0 items-center justify-center rounded-full";
 
-export function ClientHeader({ client }: { client: ClientFile }) {
+/**
+ * `fees`: the «الأتعاب» cell (the fixed fees added up, «مفتوحة», or null = none set). `actions`: replaces the two default buttons («اتصل», «+ قضية جديدة له»);
+ * the accounts tab puts «إيصال استلام» and «+ حركة» there (docs/design/ia/SBAcct*).
+ */
+export function ClientHeader({ client, fees = null, actions }: { client: ClientFile; fees?: React.ReactNode | null; actions?: React.ReactNode }) {
   const running = client.cases.filter((c) => RUNNING.includes(c.status)).length;
   const since = new Date(client.created_at).getFullYear();
   const n = client.cases.length;
@@ -28,11 +32,11 @@ export function ClientHeader({ client }: { client: ClientFile }) {
   const phone = client.phone?.trim() || null;
   const poa = client.poa ? [client.poa.title || DOC_TYPE.power_of_attorney, client.poa.doc_date ? formatDmy(client.poa.doc_date) : null].filter(Boolean).join(" · ") : null;
   // the cells: the value (null = not recorded) and, for the phone, a number that reads left to right
-  const cells: { key: string; label: string; value: React.ReactNode | null; soon?: boolean }[] = [
+  const cells: { key: string; label: string; value: React.ReactNode | null }[] = [
     { key: "phone", label: "التليفون", value: phone ? <span className="font-num" dir="ltr">{phone}</span> : null },
     { key: "address", label: "العنوان", value: client.address?.trim() || null },
     { key: "poa", label: "التوكيل", value: poa ? <DateText value={poa} /> : null },
-    { key: "fees", label: "الأتعاب", value: null, soon: true },
+    { key: "fees", label: "الأتعاب", value: fees },
   ];
   const starter = `عايز أفتح قضية جديدة للموكل ${client.name}. `;
   const newCase = `/clients/${client.id}?${new URLSearchParams({ s: "new", q: starter })}`;
@@ -64,14 +68,14 @@ export function ClientHeader({ client }: { client: ClientFile }) {
           </div>
         </div>
         <div className="flex items-center gap-2.5">
-          {phone ? (
+          {actions ?? <>{phone ? (
             <a href={`tel:${phone.replace(/[^\d+]/g, "")}`} className={`${btn} border border-border bg-chip text-text-2 hover:text-text`}>
               <Phone aria-hidden size={16} strokeWidth={1.9} />اتصل
             </a>
           ) : null}
           <Link href={newCase} className={`${btn} bg-selected text-on-selected shadow-card hover:opacity-90`}>
             <Plus aria-hidden size={16} strokeWidth={2.2} />قضية جديدة له
-          </Link>
+          </Link></>}
         </div>
       </div>
 
@@ -82,7 +86,7 @@ export function ClientHeader({ client }: { client: ClientFile }) {
             <div key={c.key} className="min-w-0 bg-card px-3.5 py-3 @3xl:px-5 @3xl:py-3.5">
               <dt className="text-xs text-text-4">{c.label}</dt>
               <dd className={`mt-1 truncate text-base leading-[1.4] @3xl:text-md ${c.value ? "font-semibold text-text" : "text-text-4"}`}>
-                {c.value ?? (c.soon ? "قريباً" : "مش متسجل")}
+                {c.value ?? "مش متسجل"}
               </dd>
             </div>
           ))}

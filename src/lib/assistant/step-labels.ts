@@ -20,6 +20,7 @@ export function readStepLabel(tool: string, args: Record<string, unknown>, docNa
     case "search_cases": return "بدوّر في القضايا…";
     case "get_case": return "بقرا ملف القضية…";
     case "list_hearings": return "بقرا جلسات القضية…";
+    case "list_balances": return "بحسب الباقي على الموكلين…";
     case "get_document_text": return `بقرا ${docName?.trim() || "الورقة"}${pagesPart(args.pages)}…`;
     default: return null;
   }

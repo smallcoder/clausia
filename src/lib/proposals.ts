@@ -44,7 +44,11 @@ export interface ProposalOp {
    * edit of that field drops it.
    */
   resolved_from?: Record<string, ResolvedFrom>;
+  /** a money card (PR 5): the client's cases to change the choice, the sentence saying why this case, and whether the date is today's by default */
+  hint?: OpHint;
 }
+
+export interface OpHint { cases: { id: string; label: string; name: string; remaining: number | null }[]; note: string | null; today: boolean; suggested?: boolean }
 
 export interface ResolvedFrom { word: string; iso: string; label: string }
 
@@ -74,6 +78,7 @@ export interface DraftOp {
   args: Record<string, unknown>;
   source: OpSource;
   resolved_from?: Record<string, ResolvedFrom>;
+  hint?: OpHint;
   /** the texts THIS op's quote must come from (default: the card's `sourceTexts`): a column cell is checked against its own paper */
   sourceTexts?: string[];
 }
@@ -106,6 +111,7 @@ export async function createProposal(
       quote_verified: verified,
       status: "pending",
       ...(o.resolved_from && Object.keys(o.resolved_from).length ? { resolved_from: o.resolved_from } : {}),
+      ...(o.hint ? { hint: o.hint } : {}),
     };
   });
   const { data, error } = await db.from("proposals").insert({
@@ -120,6 +126,11 @@ export async function createProposal(
 /** True only when the lawyer's edit set or changed the `client` value itself (an edit of another field does not): only then may update_case replace an existing client. */
 export function clientByLawyer(edit: Record<string, unknown> | undefined, args: Record<string, unknown>): boolean {
   return !!edit && "client" in edit && edit.client !== args.client;
+}
+
+/** An edit that sets a field to null cleared it: the key is dropped. */
+export function withoutNulls(a: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(a).filter(([, v]) => v !== null));
 }
 
 export function withoutEdited(
@@ -181,7 +192,7 @@ export async function decideProposal(
     if (!chosen.has(o.op_id) || o.status !== "pending" && o.status !== "failed") continue;
     if (decision.mode === "reject") { o.status = "rejected"; continue; }
     const edit = decision.edits?.[o.op_id];
-    const args = edit ? { ...o.args, ...edit } : o.args;
+    const args = edit ? withoutNulls({ ...o.args, ...edit }) : o.args;
     const provenance: Provenance = {
       review_status: decision.mode === "suggest" ? "suggested" : "confirmed",
       created_by_kind: edit ? "lawyer" : "model",

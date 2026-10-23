@@ -86,3 +86,24 @@ export function caseLabel(c: { case_number: string | null; case_year: number | n
   if (c.case_number) return `الدعوى رقم ${c.case_number}`;
   return c.title || "دعوى بلا رقم";
 }
+
+// ---- money (PR 5, الحسابات) ----
+export const MONEY_METHOD: Record<E["money_method"], string> = {
+  cash: "كاش",
+  vodafone_cash: "فودافون كاش",
+  instapay: "إنستاباي",
+  bank_transfer: "تحويل بنكي",
+  cheque: "شيك",
+};
+export const MONEY_KIND: Record<E["money_kind"], string> = { receipt: "استلام", expense: "مصروف" };
+export const MONEY_CHARGE: Record<E["money_charge"], string> = { client: "على الموكل", office: "على المكتب" };
+export const FEE_KIND: Record<E["fee_kind"], string> = { fixed: "مبلغ ثابت", open: "مفتوحة" };
+
+/** «إخلاء لعدم سداد الأجرة»: the subject is the part of the title before « — » (the rest names the parties), else the case type */
+export function caseSubject(c: { title: string | null; case_type?: string | null }): string {
+  return (c.title?.split(" — ")[0] || c.case_type || "").trim() || "دعوى بلا عنوان";
+}
+/** «772 لسنة 2025» / «772» / null */
+export function caseNumberText(c: { case_number: string | null; case_year: number | null }): string | null {
+  return c.case_number ? (c.case_year ? `${c.case_number} لسنة ${c.case_year}` : c.case_number) : null;
+}

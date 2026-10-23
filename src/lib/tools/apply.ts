@@ -5,6 +5,7 @@ import "server-only";
  */
 import { formatDmy, parseDmy, todayIso } from "@/lib/dates";
 import { buildDeadlines } from "@/lib/deadlines/service";
+import { parseAmount } from "@/lib/money";
 import type { Db } from "@/lib/supabase/server";
 import type { Database } from "@/lib/db/types";
 import { WRITE_TOOL_ARGS, type WriteArgs, type WriteTool } from "./registry";
@@ -58,6 +59,13 @@ async function visibleClient(db: Db, id: string): Promise<string> {
   return id;
 }
 
+/** A case id must be one this lawyer can read (RLS); returns the client it belongs to (a movement's case must be of the movement's client). */
+async function visibleCase(db: Db, id: string): Promise<{ id: string; client_id: string | null }> {
+  const { data } = await db.from("cases").select("id, client_id").eq("id", id).maybeSingle();
+  if (!data) throw new Error("الدعوى غير موجودة");
+  return data;
+}
+
 function date(v: string | undefined) {
   const p = parseDmy(v);
   return p ? { iso: p.iso, precision: p.precision } : null;
@@ -93,7 +101,7 @@ function must<R extends { data: unknown; error: { message: string } | null }>(r:
 /** Puts the database back as it was before one applied op (a card is saved all or nothing). */
 export type Undo = () => Promise<void>;
 
-type Table = "clients" | "cases" | "case_parties" | "case_facts" | "case_requests" | "case_arguments" | "hearings" | "judgments" | "doc_columns" | "doc_column_cells" | "case_deadlines" | "documents";
+type Table = "clients" | "cases" | "case_parties" | "case_facts" | "case_requests" | "case_arguments" | "hearings" | "judgments" | "doc_columns" | "doc_column_cells" | "case_deadlines" | "documents" | "case_fees" | "account_movements";
 const del = (db: Db, table: Table, id: string): Undo => async () => { must(await db.from(table).delete().eq("id", id).select("id")); };
 
 /**
@@ -325,6 +333,46 @@ async function applyOpRaw(db: Db, tool: WriteTool, rawArgs: unknown, p: Provenan
         ...(answer ? span({ ...p, source_kind: "document", source_document_id: documentId }) : { source_char_start: null, source_char_end: null }),
       }).select("id").single());
       return { id: row.id, undo: del(db, "doc_column_cells", row.id), steps: rm("doc_column_cells", row.id) };
+    }
+    case "record_movement": {
+      const x = a as WriteArgs<"record_movement">;
+      // both ids must be ones this lawyer can read, and the case must be the client's own (a foreign key alone would accept any id)
+      const clientId = await visibleClient(db, resolveRef(x.client, refs)!);
+      const caseRef = resolveRef(x.case, refs);
+      let caseId: string | null = null;
+      if (caseRef) {
+        const c = await visibleCase(db, caseRef);
+        if (c.client_id !== clientId) throw new Error("الدعوى دي مش دعوى الموكل ده");
+        caseId = c.id;
+      }
+      // the amount was checked by the schema; it is read again here from the text, numeral by numeral, into whole piasters
+      const piasters = parseAmount(x.amount);
+      if (piasters === null) throw new Error("المبلغ غير واضح");
+      // a date the lawyer stated must be a full day; with none, the day is today in Cairo (worked out by code, shown on the card)
+      const d = x.date ? date(x.date) : null;
+      if (x.date && d?.precision !== "day") throw new Error("تاريخ غير واضح: لازم يوم/شهر/سنة");
+      const row = must(await db.from("account_movements").insert({
+        client_id: clientId, case_id: caseId, kind: x.kind, amount_piasters: piasters, method: x.method,
+        moved_on: d?.iso ?? todayIso(), charged_to: x.kind === "expense" ? x.charged_to ?? null : null, note: x.note?.trim() || null, ...prov(p),
+      }).select("id").single());
+      return { id: row.id, undo: del(db, "account_movements", row.id), steps: rm("account_movements", row.id) };
+    }
+    case "set_case_fee": {
+      const x = a as WriteArgs<"set_case_fee">;
+      const caseId = (await visibleCase(db, resolveRef(x.case, refs)!)).id;
+      const piasters = x.kind === "fixed" ? parseAmount(x.amount) : null;
+      if (x.kind === "fixed" && piasters === null) throw new Error("المبلغ غير واضح");
+      const cur = (await db.from("case_fees").select("id, kind, amount_piasters, updated_at, review_status").eq("case_id", caseId).maybeSingle()).data;
+      if (!cur) {
+        const row = must(await db.from("case_fees").insert({ case_id: caseId, kind: x.kind, amount_piasters: piasters, ...prov(p) }).select("id").single());
+        return { id: row.id, undo: del(db, "case_fees", row.id), steps: rm("case_fees", row.id) };
+      }
+      // a CONFIRMED fee is replaced only by a confirmed change (a «save as suggestion» must not weaken it: suggested rows count nowhere)
+      if (cur.review_status === "confirmed" && p.review_status !== "confirmed") throw new Error("فيه أتعاب مؤكدة للقضية دي: عدّلها بالتأكيد، مش كمقترح");
+      // a fee already set is changed in place; the undo puts the old kind, amount and status back
+      const before = { kind: cur.kind, amount_piasters: cur.amount_piasters, updated_at: cur.updated_at, review_status: cur.review_status };
+      must(await db.from("case_fees").update({ kind: x.kind, amount_piasters: piasters, updated_at: new Date().toISOString(), review_status: p.review_status }).eq("id", cur.id).select("id").single());
+      return { id: cur.id, undo: async () => { must(await db.from("case_fees").update(before).eq("id", cur.id).select("id").single()); }, steps: [back("case_fees", cur.id, before)] };
     }
     case "add_deadline": {
       const x = a as WriteArgs<"add_deadline">;

@@ -12,6 +12,7 @@
 import { z } from "zod";
 import { parseDmy } from "@/lib/dates";
 import type { Database } from "@/lib/db/types";
+import { parseAmount } from "@/lib/money";
 
 type E = Database["public"]["Enums"];
 const enumOf = <T extends string>(values: readonly T[]) => z.enum(values as [T, ...T[]]);
@@ -23,12 +24,22 @@ export const DECISIONS = ["postponed", "reserved_for_judgment", "judgment", "str
 export const JUDGMENT_KINDS = ["final", "preliminary", "interim"] as const satisfies readonly E["judgment_kind"][];
 export const DOC_TYPES = ["claim_sheet", "contract", "opponent_memo", "our_memo", "judgment", "power_of_attorney", "expert_report", "evidence", "correspondence", "id_document", "other"] as const satisfies readonly E["doc_type"][];
 
+export const MONEY_METHODS = ["cash", "vodafone_cash", "instapay", "bank_transfer", "cheque"] as const satisfies readonly E["money_method"][];
+export const MONEY_KINDS = ["receipt", "expense"] as const satisfies readonly E["money_kind"][];
+export const MONEY_CHARGES = ["client", "office"] as const satisfies readonly E["money_charge"][];
+export const FEE_KINDS = ["fixed", "open"] as const satisfies readonly E["fee_kind"][];
+
 const ref = (what: string) => z.string().min(1).describe(`${what}: uuid موجود، أو «@اسم» لعنصر في نفس البطاقة`);
 const selfRef = z.string().regex(/^[a-z0-9_]+$/i).optional().describe("اسم قصير لهذا العنصر ليُشار إليه بـ «@اسم» في نفس البطاقة");
 const quote = z.string().min(1).describe("النص الحرفي من رسالة المحامي أو من صفحة المستند الذي يثبت هذا العنصر");
 const dmy = (what: string) =>
   z.string().refine((s) => parseDmy(s) !== null, { message: "تاريخ غير واضح: اسأل المحامي عن التاريخ بصيغة يوم/شهر/سنة" })
     .describe(`${what} كما ذُكر حرفيًا بصيغة d/m/yyyy أو m/yyyy أو yyyy. إن لم يُذكر بوضوح فلا ترسله واسأل المحامي.`);
+
+/** An amount in EGP exactly as the lawyer said it («3000», «450.50»): a STRING, read digit by digit by `parseAmount` (never a float). Unclear → refused, the assistant asks. */
+const amount = (what: string) =>
+  z.string().refine((s) => parseAmount(s) !== null, { message: "المبلغ غير واضح: اسأل المحامي عن المبلغ بالجنيه ولا تخمّنه" })
+    .describe(`${what} بالجنيه المصري كما ذكره المحامي حرفيًا، أرقام فقط مثل "3000" أو "450.50". إن لم يُذكر رقمًا واضحًا فلا ترسله واسأل المحامي.`);
 
 export const WRITE_TOOL_ARGS = {
   create_client: z.object({
@@ -159,6 +170,31 @@ export const WRITE_TOOL_ARGS = {
     note: z.string().max(300).optional(),
     quote: quote.optional(),
   }).refine((a) => !a.answer || !!a.quote, { message: "الإجابة بدون اقتباس من الورقة", path: ["quote"] }),
+  record_movement: z.object({
+    client: ref("الموكل"),
+    case: ref("القضية (فقط إن ذكر المحامي القضية بوضوح؛ وإلا اتركها فارغة والنظام يقترح القضية للمحامي)").optional(),
+    general_account: z.boolean().default(false).describe("true فقط إن قال المحامي صراحة إنها على الحساب العام للموكل (ليست على قضية)"),
+    kind: enumOf(MONEY_KINDS).default("receipt").describe("receipt = استلمنا من الموكل مبلغًا، expense = مصروف (رسوم، إعلان، انتقال…)"),
+    amount: amount("المبلغ"),
+    method: enumOf(MONEY_METHODS).describe("طريقة الدفع كما قالها المحامي: كاش / فودافون كاش / إنستاباي / تحويل بنكي / شيك. إن لم يذكرها فاسأله ولا تخمّنها."),
+    date: dmy("تاريخ الاستلام أو الصرف").optional(),
+    charged_to: enumOf(MONEY_CHARGES).optional().describe("للمصروف فقط: على الموكل (client) أم على المكتب (office)؟ إن لم يقل فاسأله."),
+    note: z.string().max(300).optional().describe("ملاحظة قصيرة إن ذكرها المحامي (مثل «رسوم إعلان»)"),
+    quote,
+  }).superRefine((a, ctx) => {
+    if (a.kind === "expense" && !a.charged_to) ctx.addIssue({ code: "custom", path: ["charged_to"], message: "المصروف على الموكل ولا على المكتب؟ اسأل المحامي" });
+    if (a.kind === "receipt" && a.charged_to) ctx.addIssue({ code: "custom", path: ["charged_to"], message: "الاستلام ليس له «على من»: charged_to للمصروف فقط" });
+    if (a.case && a.general_account) ctx.addIssue({ code: "custom", path: ["general_account"], message: "إما قضية أو الحساب العام" });
+  }),
+  set_case_fee: z.object({
+    case: ref("القضية"),
+    kind: enumOf(FEE_KINDS).describe("fixed = أتعاب بمبلغ متفق عليه، open = مفتوحة بلا مبلغ (ولا باقي)"),
+    amount: amount("الأتعاب المتفق عليها").optional(),
+    quote,
+  }).superRefine((a, ctx) => {
+    if (a.kind === "fixed" && !a.amount) ctx.addIssue({ code: "custom", path: ["amount"], message: "الأتعاب الثابتة لازم لها مبلغ: اسأل المحامي" });
+    if (a.kind === "open" && a.amount) ctx.addIssue({ code: "custom", path: ["amount"], message: "الأتعاب المفتوحة بلا مبلغ" });
+  }),
   // Made ONLY by code (src/lib/deadlines/propose.ts) after a judgment is saved; internal like the two above. The args are the lawyer's
   // inputs (facts), never a number: `applyOp` reads the days from the article text and works out the last day itself.
   add_deadline: z.object({
@@ -195,14 +231,16 @@ export const WRITE_TOOL_DESCRIPTIONS: Record<WriteTool, string> = {
   attach_document: "اقتراح ربط مستند مرفوع بدعوى وتحديد نوعه.",
   add_doc_column: "عمود جديد في جدول مستندات الدعوى (من سؤال المحامي). يصنعه الكود فقط.",
   add_doc_cell: "خانة في عمود مستندات: إجابة السؤال من مستند واحد. يصنعها الكود فقط.",
+  record_movement: "اقتراح تسجيل استلام مبلغ من موكل، أو مصروف، في حساب الموكل (بالمبلغ والطريقة كما قالها المحامي حرفيًا).",
+  set_case_fee: "اقتراح تحديد أتعاب قضية: مبلغ ثابت، أو «مفتوحة» بلا مبلغ.",
   add_deadline: "ميعاد طعن (استئناف / نقض) يحسبه الكود من نص المادة بعد تسجيل حكم. يصنعه الكود فقط.",
 };
 
 /** Field list for rendering/editing a confirmation card generically. */
-export type FieldType = "text" | "longtext" | "date" | "number" | "bool" | "ref" | "readonly" | { enum: Record<string, string> };
+export type FieldType = "text" | "longtext" | "date" | "number" | "money" | "bool" | "ref" | "readonly" | { enum: Record<string, string> };
 export interface FieldSpec { key: string; label: string; type: FieldType }
 
-import { ARG_SIDE, CASE_STATUS, CLIENT_KIND, DECISION, DOC_TYPE, JUDGMENT_KIND, PARTY_ROLE, STAGE } from "@/lib/labels";
+import { ARG_SIDE, CASE_STATUS, CLIENT_KIND, DECISION, DOC_TYPE, FEE_KIND, JUDGMENT_KIND, MONEY_CHARGE, MONEY_KIND, MONEY_METHOD, PARTY_ROLE, STAGE } from "@/lib/labels";
 
 export const OP_TITLE: Record<WriteTool, string> = {
   create_client: "موكل جديد",
@@ -220,6 +258,8 @@ export const OP_TITLE: Record<WriteTool, string> = {
   add_doc_column: "عمود جديد",
   add_doc_cell: "خانة في العمود",
   add_deadline: "ميعاد طعن",
+  record_movement: "حركة في حساب الموكل",
+  set_case_fee: "أتعاب القضية",
 };
 
 export const OP_FIELDS: Record<WriteTool, FieldSpec[]> = {
@@ -329,6 +369,21 @@ export const OP_FIELDS: Record<WriteTool, FieldSpec[]> = {
     { key: "note", label: "ملاحظة", type: "readonly" },
   ],
   add_deadline: [], // drawn by DeadlineCard, not as fields
+  record_movement: [
+    { key: "kind", label: "النوع", type: { enum: MONEY_KIND } },
+    { key: "amount", label: "المبلغ", type: "money" },
+    { key: "method", label: "الطريقة", type: { enum: MONEY_METHOD } },
+    { key: "client", label: "من", type: "ref" },
+    { key: "case", label: "على قضية", type: "ref" },
+    { key: "date", label: "التاريخ", type: "date" },
+    { key: "charged_to", label: "المصروف", type: { enum: MONEY_CHARGE } },
+    { key: "note", label: "ملاحظة", type: "text" },
+  ],
+  set_case_fee: [
+    { key: "case", label: "القضية", type: "ref" },
+    { key: "kind", label: "الأتعاب", type: { enum: FEE_KIND } },
+    { key: "amount", label: "المبلغ", type: "money" },
+  ],
 };
 
 /** Tool specs for the provider (JSON Schema from zod). */

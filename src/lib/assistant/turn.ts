@@ -7,13 +7,15 @@ import "server-only";
  * Storage: assistant rows keep tool_calls = {calls, raw} (raw = provider parts incl. thought signatures,
  * sent back unchanged); tool rows keep tool_calls = {results}. A card's proposal points at its assistant row.
  */
+import { prepareMovement } from "@/lib/accounts";
+import { moneyNotInSource } from "@/lib/accounts-guard";
 import { formatDmy, normalizeDigits, parseDmy, todayIso } from "@/lib/dates";
 import type { Json } from "@/lib/db/types";
 import { caseLabel, DOC_TYPE } from "@/lib/labels";
 import { getLlm, LlmUnavailableError, SpendCapError, type ChatRequest, type LlmMessage, type LlmToolCall } from "@/lib/llm";
 import { UNAVAILABLE_TEXT } from "@/lib/llm/unavailable";
 import { DEFAULT_TITLE, titleFrom } from "@/lib/threads";
-import { createProposal, normalizeForMatch, type DraftOp, type Proposal, type ResolvedFrom } from "@/lib/proposals";
+import { createProposal, normalizeForMatch, type DraftOp, type OpHint, type Proposal, type ResolvedFrom } from "@/lib/proposals";
 import { findSpan } from "@/lib/quote-match";
 import { cairoDateOf, resolveRelativeDays, type RelativeDay } from "@/lib/relative-days";
 import type { Db } from "@/lib/supabase/server";
@@ -219,6 +221,8 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }, clock: 
         results.set(call.id, { error: `أداة غير معروفة: ${call.name}` });
         continue;
       }
+      // an amount sent as a JSON number is read through its text («3000» stays 3000; it is never a float on its way to the database)
+      if (typeof call.args.amount === "number") call.args = { ...call.args, amount: String(call.args.amount) };
       const parsed = WRITE_TOOL_ARGS[call.name].safeParse(call.args);
       if (!parsed.success) {
         results.set(call.id, { error: `لم يُقترح: ${parsed.error.issues.map((i) => `${i.path.join(".") || "args"}: ${i.message}`).join("؛ ")}. صحّح الاستدعاء إن كان الخطأ واضحًا، وإلا اسأل المحامي ولا تخمّن.` });
@@ -244,12 +248,28 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }, clock: 
         results.set(call.id, { error: `لم يُقترح: ${unsupported.join("؛ ")}. اسأل المحامي سؤال واحد قصير ومتخمّنش.` });
         continue;
       }
+      // money: the amount and the payment method must be in the lawyer's words (a number in words is not found: the assistant asks)
+      const moneyMissing = moneyNotInSource(call.name, call.args, [text, ...sourceTexts]);
+      if (moneyMissing.length) {
+        results.set(call.id, { error: `لم يُقترح: ${moneyMissing.join("؛ ")}. اسأل المحامي سؤال واحد قصير ومتخمّنش.` });
+        continue;
+      }
+      // a movement's case is decided by code (named / suggested / ask); a missing date becomes today
+      let args = call.args;
+      let hint: OpHint | undefined;
+      if (call.name === "record_movement") {
+        const prep = await prepareMovement(db, call.args, [text, ...sourceTexts]).catch((e) => ({ ok: false as const, error: `لم يُقترح: ${e instanceof Error ? e.message : String(e)}` }));
+        if (!prep.ok) { results.set(call.id, { error: prep.error }); continue; }
+        args = prep.args;
+        hint = prep.hint;
+      }
       const ref = call.args.ref;
       if (typeof ref === "string" && ref) refsInCard.add(ref);
       drafts.push({
         call,
         op: {
-          tool: call.name, args: call.args, source: sourceOf((call.args.quote as string | undefined) ?? null, text, userMsg.id, docPages),
+          ...(hint ? { hint } : {}),
+          tool: call.name, args, source: sourceOf((call.args.quote as string | undefined) ?? null, text, userMsg.id, docPages),
           resolved_from: fromRelativeWords(call.args, [text, ...sourceTexts], resolved),
         },
       });
@@ -358,6 +378,7 @@ function sourceOf(quote: string | null, lawyerText: string, messageId: string, p
 
 function firstCaseUuid(ops: DraftOp[]): string | null {
   for (const o of ops) {
+    if (o.tool === "record_movement" || o.tool === "set_case_fee") continue; // money cards belong to the client's chat, not to a case's
     const v = o.args.case;
     if (typeof v === "string" && UUID.test(v)) return v;
   }
@@ -438,7 +459,7 @@ async function loadCardNotes(db: Db, threadId: string): Promise<string[]> {
   return props.map((p, i) => {
     const ops = p.ops.map((o) => {
       const a = o.args as Record<string, unknown>;
-      const what = [a.name, a.case_number && `رقم ${a.case_number}${a.case_year ? ` لسنة ${a.case_year}` : ""}`, a.date, a.next_date && `القادمة ${a.next_date}`, typeof a.text === "string" ? a.text.slice(0, 40) : null]
+      const what = [a.name, a.amount && `${a.amount} ج.م`, a.case_number && `رقم ${a.case_number}${a.case_year ? ` لسنة ${a.case_year}` : ""}`, a.date, a.next_date && `القادمة ${a.next_date}`, typeof a.text === "string" ? a.text.slice(0, 40) : null]
         .filter(Boolean).join(" ");
       const ids = o.result_id ? ` (id = ${o.result_id}${next.has(o.result_id) ? `، الجلسة القادمة id = ${next.get(o.result_id)}` : ""})` : "";
       return `${o.op_id} ${o.tool} [${OP_TITLE[o.tool] ?? o.tool}${what ? `: ${what}` : ""}] → ${STATUS_NOTE[o.status] ?? o.status}${ids}${o.error ? ` — ${o.error}` : ""}`;
