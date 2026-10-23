@@ -267,14 +267,17 @@
   --container-messages: 720px;     /* the messages column, centered in the panel */
   --container-bubble: 88%;         /* a chat bubble's widest share of the column, on mobile */
   --container-bubble-sm: 72%;      /* the same on desktop */
+  --spacing-chat-top: 46px;        /* owner 2026-10-23: the chat panel's top edge sits 46px under the top bar, on the page content's first line */
+  --spacing-chat-bottom: 24px;     /* the chat panel ends 24px above the screen's bottom */
 }
 
 /* the chat panel's width: the page shrinks first (it keeps 896px), then the chat goes from 560 down to 480 (at 1440 it is 480).
    960 = the frame's two 20px margins + the 24px gap + the page's 896px. Below 1280 the chat is full screen and this is not used. */
 @utility chat-width { width: clamp(var(--container-chat-min), calc(100vw - 960px), var(--container-chat)); }
-/* under the 88px top bar: the chat panel starts 4px below it (top-23) and ends 20px above the screen's bottom (88 + 4 + 20 = 112px = 7rem);
-   the page column fills what is left under the bar (5.5rem = 88px) */
-@utility chat-height { height: calc(100dvh - 7rem); }
+/* the chat panel (desktop): sticky under the 88px (5.5rem) top bar. It starts chat-top (46px) below the bar, at rest (mt-chat-top) and while the
+   page scrolls (the sticky top = bar + chat-top), and ends chat-bottom (24px) above the screen's bottom: height = screen - bar - 46 - 24 */
+@utility chat-top { top: calc(5.5rem + var(--spacing-chat-top)); }
+@utility chat-height { height: calc(100dvh - 5.5rem - var(--spacing-chat-top) - var(--spacing-chat-bottom)); }
 @utility page-min-height { min-height: calc(100dvh - 5.5rem); }
 /* the top bar's brief label shows only when the page column has room for it (a 1920 screen and wider) */
 @theme { --breakpoint-3xl: 120rem; }

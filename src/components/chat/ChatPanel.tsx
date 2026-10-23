@@ -27,7 +27,7 @@ export function ChatPanel({ data }: { data: PanelData }) {
   const sheetHref = (() => { const p = new URLSearchParams(params.toString()); p.set("sheet", "1"); return `${path}?${p.toString()}`; })();
 
   return (
-    <aside aria-label="محادثة Clausia" className="flex min-w-0 flex-col max-xl:fixed max-xl:inset-0 xl:sticky xl:top-23 xl:chat-height xl:shrink-0 xl:chat-width">
+    <aside aria-label="محادثة Clausia" className="flex min-w-0 flex-col max-xl:fixed max-xl:inset-0 xl:sticky xl:mt-chat-top xl:chat-top xl:chat-height xl:shrink-0 xl:chat-width">
       <div className="flex min-h-0 flex-1 flex-col xl:overflow-hidden xl:rounded-xl xl:border xl:border-border-2 xl:bg-card-2 xl:shadow-card dark:xl:bg-card">
         {/* desktop header: the «C» mark, who this chat is about, the sessions of THIS context */}
         <div className="hidden items-center gap-2.5 border-b border-border-2 px-4.5 py-4 xl:flex">
