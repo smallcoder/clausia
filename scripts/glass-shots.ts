@@ -3,7 +3,7 @@
 //   Glass-M-<Home|Case|Sheet>-<light|dark>               the phone (390): Home chat, a case's chat, the page sheet open
 //   Glass-compare-<Home|Case>-1920-<light|dark>          the mockup (GlassSplit*) next to the real page
 //   Glass-nav-dark / Glass-composer-modes-dark           close-ups: the active state of the nav tabs and the composer modes (dark)
-//   Glass-focus-composer-mouse-<light|dark>, Glass-focus-composer-keyboard-<light|dark>, Glass-focus-input-keyboard-<light|dark>
+//   Glass-focus-composer-mouse-<light|dark>, Glass-focus-composer-keyboard-<light|dark>, Glass-focus-input-keyboard-<light|dark>, Glass-focus-input-mouse-<light|dark> (sign-in fields)
 //   Glass-bottom-page-<light|dark> / Glass-bottom-chat-<light|dark>   the end of a long page and of a long chat (the 42-message thread)
 //   Glass-topbar-scrolled-<light|dark>                   the page scrolled under the top bar
 // Needs the app running. Run: npx tsx --conditions=react-server --env-file=.env.local scripts/glass-shots.ts [baseUrl]
@@ -118,23 +118,21 @@ try {
       await shot(page, `Glass-focus-composer-keyboard-${t}`, await boxOf(page, ".focus-host", 16));
       await ctx.close();
     }
-    // an input focused by keyboard: the add-hearing form's first input (Roll page), found by Tab
+    // an input focused by keyboard (the sign-in page: the only page whose fields are visible without opening something) and by mouse
     {
-      const [ctx, page] = await ctxOf(1440, 900, dark);
-      await go(page, "/hearings");
-      const has = await page.locator("main input:visible, main select:visible").count();
-      if (has) {
-        const el = page.locator("main input:visible, main select:visible").first();
-        await el.scrollIntoViewIfNeeded();
-        await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
-        for (let i = 0; i < 80; i++) {
-          await page.keyboard.press("Tab");
-          if (await page.evaluate(() => ["INPUT", "SELECT"].includes(document.activeElement?.tagName ?? "") && !!document.activeElement?.closest("main"))) break;
-        }
-        await page.waitForTimeout(400);
-        const box = await page.evaluate(() => { const r = document.activeElement!.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; });
-        await shot(page, `Glass-focus-input-keyboard-${t}`, { x: Math.max(0, box.x - 24), y: Math.max(0, box.y - 24), width: box.width + 48, height: box.height + 48 });
-      } else console.log("no input on /hearings");
+      const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, colorScheme: dark ? "dark" : "light", locale: "ar-EG" });
+      await ctx.addInitScript((d) => { try { localStorage.setItem("clausia-theme", d ? "dark" : "light"); } catch { /* none */ } }, dark);
+      const page = await ctx.newPage();
+      await page.goto(`${BASE}/login`, { waitUntil: "load" });
+      await page.waitForTimeout(800);
+      for (let i = 0; i < 6; i++) { await page.keyboard.press("Tab"); if (await page.evaluate(() => document.activeElement?.tagName === "INPUT")) break; }
+      await page.waitForTimeout(400);
+      const box = await page.evaluate(() => { const r = document.activeElement!.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; });
+      await shot(page, `Glass-focus-input-keyboard-${t}`, { x: Math.max(0, box.x - 24), y: Math.max(0, box.y - 24), width: box.width + 48, height: box.height + 48 });
+      await page.locator('input[name="password"]').click();
+      await page.waitForTimeout(400);
+      const b2 = await page.evaluate(() => { const r = document.activeElement!.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; });
+      await shot(page, `Glass-focus-input-mouse-${t}`, { x: Math.max(0, b2.x - 24), y: Math.max(0, b2.y - 24), width: b2.width + 48, height: b2.height + 48 });
       await ctx.close();
     }
     // the page scrolled under the top bar

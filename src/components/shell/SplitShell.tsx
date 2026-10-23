@@ -48,7 +48,7 @@ export function SplitShell({ header, chat, account, children }: { header: ReactN
         )}>
           <div aria-hidden className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-border-strong xl:hidden" />
           <main className="flex w-full flex-1 flex-col pb-12 pt-3 xl:pb-page-end xl:pt-0">{children}</main>
-          <div className="sticky bottom-0 mt-4 flex items-center gap-2 bg-bg/60 px-4 pb-[calc(14px+env(safe-area-inset-bottom))] pt-3 xl:hidden" /* ds-allow: safe-area inset needs calc() */>
+          <div className="sticky bottom-0 glass-fill mt-4 flex items-center gap-2 px-4 pb-[calc(14px+env(safe-area-inset-bottom))] pt-3 xl:hidden" /* ds-allow: safe-area inset needs calc() */>
             {/* a page with edits waiting puts «أكّد · N» here (ConfirmBar): one bar with «رجوع للشات» */}
             <div id={CONFIRM_SLOT} className="min-w-0 flex-2 empty:hidden" />
             <Link href={closeHref(path, sp)} className="tap glass glass-icon flex h-control-xl min-w-0 flex-1 items-center justify-center rounded-full text-base font-semibold">رجوع للشات</Link>

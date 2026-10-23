@@ -78,7 +78,7 @@ async function contrastOf(page: Page, sel: string, opts: { which?: number; color
   const clip = { x: Math.max(0, Math.floor(info.x + ix)), y: Math.max(0, Math.floor(info.y + iy)), width: Math.max(1, Math.ceil(info.w - 2 * ix)), height: Math.max(1, Math.ceil(info.h - 2 * iy)) };
   const png = await page.screenshot({ clip });
   if (process.env.DUMP) (await import("node:fs")).writeFileSync(`/tmp/claude-501/dump-${sel.replace(/[^a-z]/gi, "").slice(0, 30)}.png`, png);
-  await style.evaluate((n) => n.remove());
+  await style.evaluate((n) => (n as HTMLElement).remove());
   await page.waitForTimeout(450); // colours transition back (150ms) before the next reading
   const ratios = await page.evaluate(async ([b64, f]) => {
     const img = new Image();
@@ -275,10 +275,14 @@ if (want("perf")) {
   ];
   for (const dark of [false, true]) {
     for (const [label, path, kind] of scenarios) {
-      for (const blur of [true, false]) {
+      for (const blur of [true, false, ...(kind === "page" && process.env.VARIANTS ? ["bar", "panel", "small"] : [])] as (boolean | string)[]) {
         const [ctx, page] = await ctxOf(1440, 900, dark);
         await go(page, path);
-        if (!blur) await page.addStyleTag({ content: "*,*::before,*::after{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}" });
+        const off = (sel: string) => page.addStyleTag({ content: `${sel}{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}` });
+        if (blur === false) await off("*,*::before,*::after");
+        if (blur === "bar") await off(".bar-solid::before");
+        if (blur === "panel") await off(".glass-xl");
+        if (blur === "small") await off(".glass");
         if (kind === "chat") {
           await page.evaluate(() => {
             const ol = document.querySelector("aside ol")!;
@@ -315,7 +319,7 @@ if (want("perf")) {
           const s = [...deltas].sort((a, b) => a - b);
           return { frames: deltas.length, max, avg: deltas.reduce((a, b) => a + b, 0) / deltas.length, p95: s[Math.floor(s.length * 0.95)], worst: s[s.length - 1], over20: deltas.filter((d) => d > 20).length, over33: deltas.filter((d) => d > 33.4).length };
         }, kind);
-        console.log(`${dark ? "dark " : "light"} ${label.padEnd(58)} blur ${blur ? "ON " : "off"}  scrolled ${Math.round(r.max)}px  frames ${r.frames}  avg ${r.avg.toFixed(1)}  p95 ${r.p95.toFixed(1)}  worst ${r.worst.toFixed(1)}  >20ms ${r.over20}  >33ms ${r.over33}`);
+        console.log(`${dark ? "dark " : "light"} ${label.padEnd(58)} blur ${blur === true ? "ON " : blur === false ? "off" : "off:" + blur}  scrolled ${Math.round(r.max)}px  frames ${r.frames}  avg ${r.avg.toFixed(1)}  p95 ${r.p95.toFixed(1)}  worst ${r.worst.toFixed(1)}  >20ms ${r.over20}  >33ms ${r.over33}`);
         await ctx.close();
       }
     }

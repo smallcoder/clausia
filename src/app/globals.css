@@ -79,7 +79,7 @@
   --pill-on-shadow: var(--tab-shadow);
   /* focus: a soft ring that fades in (mouse), a slightly stronger one for the keyboard */
   --focus-ring: rgba(18,26,43,0.12);
-  --focus-ring-key: rgba(18,26,43,0.45);
+  --focus-ring-key: rgba(18,26,43,0.55);
   /* the fade behind the composer, skeletons, the sheet backdrop */
   --fade: linear-gradient(to top, #ECEEF2 55%, rgba(236,238,242,0));
   --skel: rgba(18,26,43,0.06);
@@ -363,6 +363,8 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-even
 .glass-icon { color: var(--glass-icon); }
 /* the muted text step (--text-3) is a little stronger on glass, which is lighter or darker than the page colour behind it */
 .glass, .glass-flat, .glass-xl, .glass-below-xl { --text-3: var(--glass-text-3); }
+/* just the frosted fill (no edge, no shadow): a bar that sticks to the edge of a glass sheet and has its scrolling content under it */
+.glass-fill { background: var(--glass-bg); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
 .glass-flat { background: var(--glass-flat-bg); border: var(--glass-border); box-shadow: var(--glass-shadow); }
 /* glass only from 1280 (the desktop chat panel; the phone's chat is the whole screen) / only below 1280 (the page sheet) */
 @media (min-width: 80rem) { .glass-xl { background: var(--glass-bg); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); border: var(--glass-border); box-shadow: var(--glass-shadow); } }
