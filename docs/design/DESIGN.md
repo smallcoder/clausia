@@ -95,7 +95,8 @@ The `.tap` areas stay 44px (`globals.css`): the control sizes above are the draw
 | hairline | `rgba(18,26,43,0.06)` | `rgba(255,255,255,0.06)` |
 | brand mark, selected tab or filter or day | ink `#141C2E`, gold letter | `#222C44` mark, `#26314B` selected |
 | primary button (send, save, record) | ink `#141C2E`, white text | `#F2F2F4`, ink text |
-| gold (needs action) | `#897038` | `#D6C08F` |
+| gold (needs action): large text and text on a white card | `#897038` (4.73:1 on white) | `#D6C08F` |
+| gold-text-small: small text on the page, on glass, on card-2, on the gold wash | `#7A6330` (4.95:1 on the page) | `#D6C08F` (same as gold) |
 
 - Never use a gold fill, a gradient or a glow on buttons. Gold is used for text, small dots, thin outlines and big light numbers only.
 - Status uses a small dot plus a word: needs decision is gold, reserved is muted, active is green (`#1F7A4A` light, `#7FD3A4` dark), and against-us is red (`#A23B3B` light, `#E9A0A0` dark).
@@ -109,7 +110,7 @@ Every colour literal lives in `globals.css`. Light values are on `:root`; dark v
 | text | `text`, `title`, `text-2`, `text-3` (muted), `text-4` (faint) |
 | lines | `border`, `border-2` (hairline), `border-strong` (hover outline) |
 | ink | `ink-solid` (ink in both themes, for print on the paper thumb), `mark-bg`, `mark-fg`, `selected`, `on-selected`, `primary`, `on-primary` |
-| gold (needs action) | `gold`, `gold-bg` (10% wash), `gold-edge` (30% outline / ring) |
+| gold (needs action) | `gold` (large text, or text on a white card), `gold-text-small` (small text anywhere else), `gold-bg` (10% wash), `gold-edge` (30% outline / ring) |
 | status | `good`, `good-bg`, `bad`, `bad-bg` |
 | paper thumbnail | `paper-thumb`, `paper-thumb-ink` |
 | shadows | `shadow-card`, `shadow-soft`, `shadow-pop`, `shadow-mark`, `primary-shadow`, `tab-shadow`, `mark-shadow` |
