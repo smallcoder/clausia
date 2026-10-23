@@ -117,6 +117,11 @@ export async function createProposal(
 }
 
 /** The «بكرة = …» notes that still hold after an edit: a field whose value the lawyer changed loses its note. */
+/** True only when the lawyer's edit set or changed the `client` value itself (an edit of another field does not): only then may update_case replace an existing client. */
+export function clientByLawyer(edit: Record<string, unknown> | undefined, args: Record<string, unknown>): boolean {
+  return !!edit && "client" in edit && edit.client !== args.client;
+}
+
 export function withoutEdited(
   resolved: Record<string, ResolvedFrom> | undefined, args: Record<string, unknown>, edit: Record<string, unknown>,
 ): Record<string, ResolvedFrom> | undefined {
@@ -180,7 +185,7 @@ export async function decideProposal(
     const provenance: Provenance = {
       review_status: decision.mode === "suggest" ? "suggested" : "confirmed",
       created_by_kind: edit ? "lawyer" : "model",
-      client_by_lawyer: !!edit && "client" in edit && edit.client !== o.args.client,
+      client_by_lawyer: clientByLawyer(edit, o.args),
       source_kind: o.source.kind,
       source_message_id: o.source.message_id ?? null,
       source_document_id: o.source.document_id ?? null,
