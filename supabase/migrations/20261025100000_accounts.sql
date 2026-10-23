@@ -1,4 +1,4 @@
--- PR 5 (الحسابات): NOT APPLIED YET. Applied by hand: scripts/sql.sh -f <this file>. The way back is 20261025100000_accounts_down.sql (never run by a tool).
+-- PR 5 (الحسابات): APPLIED to the project database (by hand, after a read-only dry run and a rolled-back rehearsal: scripts/sql.sh -f <this file>). The way back is 20261025100000_accounts_down.sql (never run by a tool).
 --
 -- ADDITIVE ONLY: two new tables, four new enums, two new trigger functions. No existing table, column, row, policy or function is touched.
 --

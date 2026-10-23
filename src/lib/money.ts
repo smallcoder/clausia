@@ -66,11 +66,23 @@ export function sumPiasters(values: number[]): number {
 const SCALE: [RegExp, number][] = [[/^\s*(?:ألف|الف|آلاف|الاف)/, 1000], [/^\s*مليون/, 1_000_000]];
 
 /**
+ * A number that is part of a date («23/10», «23/10/2026», «23-10-2026», «23.10.2026») or of a case number («772 لسنة 2025», «772/2025», «رقم 772», «لسنة 2025»)
+ * is not an amount: «الجلسة 23/10» must not make 23 look stated. Decimals like «3.5» or «450.50» are untouched (a dot date needs three parts).
+ */
+export function withoutDatesAndCaseNumbers(src: string): string {
+  return src
+    .replace(/\d+\s*لسنة\s*\d+|لسنة\s*\d+|رقم\s*\d+/g, " ")
+    .replace(/(?<![\d/])\d{1,6}\s*\/\s*\d{4}(?![\d/])/g, " ") // 772/2025
+    .replace(/(?<![\d/.-])\d{1,2}\s*\/\s*\d{1,2}(?:\s*\/\s*\d{2,4})?(?![\d/])/g, " ") // 23/10, 23/10/2026
+    .replace(/(?<![\d.-])\d{1,2}\s*[-.]\s*\d{1,2}\s*[-.]\s*\d{2,4}(?![\d])/g, " "); // 23-10-2026, 23.10.2026
+}
+
+/**
  * Every amount written in a text, in piasters: «3000», «3,000», «٣٠٠٠», «3.5 ألف» (= 3,500), «2 مليون». Used by the never-guess check: a proposed
  * amount must be one of these. A number spelled in words («ثلاثة آلاف») is NOT found, so the assistant has to ask.
  */
 export function amountsIn(text: string): number[] {
-  const src = normalizeDigits(text).replace(/٬/g, ",").replace(/،/g, ",").replace(/٫/g, ".");
+  const src = withoutDatesAndCaseNumbers(normalizeDigits(text)).replace(/٬/g, ",").replace(/،/g, ",").replace(/٫/g, ".");
   const out: number[] = [];
   for (const m of src.matchAll(/\d[\d,]*(?:\.\d+)?/g)) {
     const raw = m[0].replace(/,+$/, "");

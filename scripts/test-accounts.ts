@@ -59,7 +59,19 @@ eq(amountsIn("استلمت من عادل 3000 فودافون كاش"), [300000],
 eq(amountsIn("دفع ٣٬٥٠٠ جنيه"), [350000], "amounts in Arabic numerals with grouping");
 eq(amountsIn("دفع 3.5 ألف"), [350000], "«3.5 ألف» = 3,500 (integer maths on the text)");
 eq(amountsIn("دفع 2 مليون"), [200000000], "«2 مليون»");
-eq(amountsIn("القضية 772 لسنة 2025 ودفع 3000"), [77200, 202500, 300000], "case number and year are numbers too (the check only asks «is this amount stated»)");
+eq(amountsIn("القضية 772 لسنة 2025 ودفع 3000"), [300000], "a case number and its year («772 لسنة 2025») are not amounts");
+eq(amountsIn("الجلسة 23/10 واستلمت 3000"), [300000], "«23/10» (a date) does not make 23 look stated");
+eq(amountsIn("الجلسة 23/10/2026"), [], "«23/10/2026» is a date, not amounts");
+eq(amountsIn("الجلسة ٢٣/١٠/٢٠٢٦ وبعدها ٣٠٠٠"), [300000], "a date in Arabic numerals is not amounts");
+eq(amountsIn("بتاريخ 23-10-2026 دفع 450.50"), [45050], "a hyphen date is not amounts; 450.50 stays");
+eq(amountsIn("تاريخ 23.10.2026 ودفع 3.5 ألف"), [350000], "a dot date is not amounts; «3.5 ألف» stays");
+eq(amountsIn("دعوى 772/2025 دفع 3000"), [300000], "«772/2025» (number/year) is not amounts");
+eq(amountsIn("قضية رقم 4512 دفع 3000"), [300000], "«رقم 4512» is not an amount");
+eq(amountsIn("دفع 4512 في قضية رقم 4512"), [451200], "a number said as an amount is still found, even if the case number is the same");
+eq(amountsIn("دفع 3,000.50"), [300050], "3,000.50 is untouched by the date rules");
+check(!amountStated("23", ["الجلسة 23/10"]), "amountStated: 23 is not stated by «23/10»");
+check(!amountStated("2025", ["دعوى 772 لسنة 2025"]), "amountStated: the year of a case is not an amount");
+check(!amountStated("772", ["دعوى 772 لسنة 2025"]), "amountStated: the number of a case is not an amount");
 eq(amountsIn("دفع ثلاثة آلاف"), [], "an amount in words is NOT found");
 check(amountStated("3000", ["استلمت من عادل 3000 فودافون كاش"]), "amountStated: 3000 is in the lawyer's words");
 check(amountStated("3000.00", ["استلمت 3,000 جنيه"]), "amountStated: 3000.00 ≡ 3,000");
@@ -113,7 +125,7 @@ function fakeDb(rows: Rows) {
     from(table: string) {
       const list = rows[table] ?? [];
       const q: Record<string, unknown> = {};
-      for (const m of ["select", "eq", "neq", "in", "is", "order", "limit", "not", "or", "gte", "lte"]) q[m] = () => q;
+      for (const m of ["select", "eq", "neq", "in", "is", "order", "limit", "not", "or", "gte", "lte", "range"]) q[m] = () => q;
       for (const m of ["insert", "update", "delete", "upsert"]) q[m] = (payload?: Record<string, unknown>) => { writes.push({ op: m, table, payload }); return q; };
       const first = () => (writes.some((w) => w.table === table && w.op === "insert") ? { id: "new-row-id" } : list[0] ?? null);
       q.single = async () => ({ data: first(), error: null });
@@ -157,7 +169,8 @@ console.log("\n-- (c) an unclear amount is refused --");
   eq(moneyNotInSource("record_movement", { ...base, method: "instapay" }, ["دفع 3000 إنستا باي"]), [], "«إنستا باي» is InstaPay");
   eq(moneyNotInSource("record_movement", { ...base, method: "bank_transfer" }, ["حوّل 3000 تحويل بنكي"]), [], "«تحويل بنكي»");
   eq(moneyNotInSource("record_movement", { ...base, method: "cheque" }, ["جاب شيك بـ 3000"]), [], "«شيك»");
-  eq(moneyNotInSource("record_movement", { ...base, amount: "3000" }, ["القضية 3000 لسنة 2025 فودافون"]).length, 0, "(known limit) a number that is a case number also counts as stated; the card shows the amount for the lawyer to see");
+  eq(moneyNotInSource("record_movement", { ...base, amount: "3000" }, ["القضية 3000 لسنة 2025 فودافون"]).length, 1, "a case number («3000 لسنة 2025») is NOT an amount: refused");
+  eq(moneyNotInSource("record_movement", { ...base, amount: "23" }, ["الجلسة 23/10 فودافون"]).length, 1, "«23/10» does not state the amount 23");
   eq(moneyNotInSource("set_case_fee", { case: CASE_A, kind: "fixed", amount: "15000" }, ["اتفقنا على 15,000 جنيه أتعاب"]), [], "set_case_fee: 15,000 is stated");
   check(moneyNotInSource("set_case_fee", { case: CASE_A, kind: "fixed", amount: "15000" }, ["اتفقنا على أتعاب"]).length === 1, "set_case_fee: an amount not stated is refused");
   eq(moneyNotInSource("add_fact", { amount: "9" }, ["x"]), [], "other tools are untouched");
@@ -232,6 +245,18 @@ console.log("\n-- (d) record_movement and set_case_fee through applyOp --");
   eq(w3[0]?.payload, { kind: "fixed", amount_piasters: 1500000, updated_at: "2026-10-01T00:00:00Z", review_status: "confirmed" }, "undo() restores the old fee (and its status)");
 }
 
+{
+  const row = { id: U(7), kind: "fixed", amount_piasters: 1500000, updated_at: "2026-10-01T00:00:00Z", review_status: "confirmed" };
+  const { db, writes } = fakeDb({ cases: [{ id: CASE_A, client_id: CLIENT }], case_fees: [row] });
+  const m = await rejects(applyOp(db, "set_case_fee", { case: CASE_A, kind: "open", quote: "x" }, { ...MANUAL, review_status: "suggested" }));
+  check(m !== null && /مؤكدة/.test(m) && writes.length === 0, "a confirmed fee is NOT replaced by a «suggest» change (refused, nothing written)", String(m));
+  const ok2 = await rejects(applyOp(db, "set_case_fee", { case: CASE_A, kind: "open", quote: "x" }, MANUAL));
+  check(ok2 === null && writes.some((w) => w.op === "update"), "a confirmed change may replace it");
+  const { db: d2, writes: w2 } = fakeDb({ cases: [{ id: CASE_A, client_id: CLIENT }], case_fees: [{ ...row, review_status: "suggested" }] });
+  const ok3 = await rejects(applyOp(d2, "set_case_fee", { case: CASE_A, kind: "open", quote: "x" }, { ...MANUAL, review_status: "suggested" }));
+  check(ok3 === null && w2.some((w) => w.op === "update"), "a SUGGESTED fee may be replaced by another suggestion");
+}
+
 // ---------------------------------------------------------------- (e) prepareMovement
 console.log("\n-- (e) prepareMovement: the case is named, suggested or asked; the date becomes today --");
 {
@@ -248,8 +273,16 @@ console.log("\n-- (e) prepareMovement: the case is named, suggested or asked; th
   check(r.ok && /عليها باقي/.test(r.hint.note ?? ""), "… with the sentence saying why", r.ok ? r.hint.note ?? "" : "");
   check(r.ok && r.hint.cases.length === 2 && r.hint.cases.find((c) => c.id === CASE_A)?.remaining === 600000, "… and both cases to change the choice, with the balance (6,000 = 600000)");
   check(r.ok && r.args.date === formatDmy(todayIso()) && r.hint.today, "no date said → today's date, marked as the default");
-  const named = await prepareMovement(db, { ...base, case: CASE_B, date: "1/10/2026" });
-  check(named.ok && named.args.case === CASE_B && !named.hint.today && named.hint.note === null, "a case the lawyer named is kept, no «why» sentence, the stated date is kept");
+  const named = await prepareMovement(db, { ...base, case: CASE_B, date: "1/10/2026" }, ["استلمت 3000 فودافون كاش على قضية 4512"]);
+  check(named.ok && named.args.case === CASE_B && !named.hint.today && named.hint.note === null && named.hint.suggested === false, "a case the lawyer named (by its number) is kept, not marked, no «why» sentence, the stated date is kept");
+  const bySubject = await prepareMovement(db, { ...base, case: CASE_B }, ["استلمت 3000 فودافون كاش على صحة توقيع"]);
+  check(bySubject.ok && bySubject.hint.suggested === false, "a case named by its subject is not marked either");
+  const unnamed = await prepareMovement(db, { ...base, case: CASE_B }, ["استلمت من عادل 3000 فودافون كاش"]);
+  check(unnamed.ok && unnamed.args.case === CASE_B && unnamed.hint.suggested === true && /ما سمّيتهاش/.test(unnamed.hint.note ?? ""), "the assistant gave a case the lawyer did not name, with 2 open cases: the card still shows it, marked as a suggestion", unnamed.ok ? unnamed.hint.note ?? "" : unnamed.error);
+  check(r.ok && r.hint.suggested === true, "the code's own suggestion is marked too");
+  const { db: one0 } = fakeDb({ clients: [{ id: CLIENT }], cases: [rows.cases[0]], case_fees: [], account_movements: [] });
+  const o0 = await prepareMovement(one0, { ...base, case: CASE_A }, ["استلمت 3000 فودافون كاش"]);
+  check(o0.ok && o0.hint.suggested === false, "one open case only: a given case is not marked (nothing was chosen between several)");
   const general = await prepareMovement(db, { ...base, general_account: true });
   check(general.ok && !("case" in general.args) && !("general_account" in general.args), "«الحساب العام» → no case on the card");
 
@@ -276,6 +309,44 @@ console.log("\n-- (e) prepareMovement: the case is named, suggested or asked; th
   check(y.ok && y.case === null, "resolveMovementCase: general_account settles it");
   const z = resolveMovementCase({ case: "b" }, [ch("a", true, money(null)), ch("b", true, money(null))]);
   check(z.ok && z.case === "b", "resolveMovementCase: a named case settles it");
+}
+
+// ---------------------------------------------------------------- (g) a failed read throws; a long list is never summed partly
+console.log("\n-- (g) read errors and the row cap --");
+{
+  /** a Db whose tables answer with `rows` or with an error */
+  const mk = (tables: Record<string, { rows?: Record<string, unknown>[]; error?: string; endless?: boolean }>) => ({
+    from(table: string) {
+      const t = tables[table] ?? { rows: [] };
+      const q: Record<string, unknown> = {};
+      for (const m of ["select", "eq", "neq", "in", "is", "order", "limit", "not", "range"]) q[m] = () => q;
+      const res = () => (t.error ? { data: null, error: { message: t.error } } : { data: t.endless ? Array.from({ length: 1000 }, (_, i) => ({ id: String(i), case_id: "c", amount_piasters: 1 })) : t.rows ?? [], error: null });
+      q.maybeSingle = async () => ({ ...res(), data: (res().data as unknown[] | null)?.[0] ?? null });
+      q.then = (r: (v: unknown) => unknown) => Promise.resolve(res()).then(r);
+      return q;
+    },
+  }) as unknown as Db;
+  const { listBalances, getAccounts } = await import("@/lib/accounts");
+  const aCase = { id: CASE_A, client_id: CLIENT, title: "إخلاء", case_type: null, case_number: "772", case_year: 2025, status: "active", created_at: "2026-01-01" };
+  const good = { cases: { rows: [aCase] }, case_fees: { rows: [{ case_id: CASE_A, amount_piasters: 1500000 }] }, account_movements: { rows: [{ case_id: CASE_A, amount_piasters: 900000 }] }, clients: { rows: [{ id: CLIENT, name: "عادل" }] } };
+  const okRows = await listBalances(mk(good));
+  eq(okRows.map((r) => [r.client, r.remaining]), [["عادل", 600000]], "listBalances: 15,000 − 9,000 = 6,000 owed");
+  for (const t of ["cases", "case_fees", "account_movements", "clients"]) {
+    const m = await rejects(listBalances(mk({ ...good, [t]: { error: "boom" } })));
+    check(m !== null && /boom/.test(m), `listBalances: a failed read of ${t} THROWS (it never looks like «nobody owes»)`, String(m).slice(0, 60));
+  }
+  const cap = await rejects(listBalances(mk({ ...good, account_movements: { endless: true } })));
+  check(cap !== null && /مش هعرض أو أجمع جزء/.test(cap), "listBalances: a list that never ends is refused with a message, not summed partly", String(cap).slice(0, 70));
+  for (const t of ["clients", "cases", "account_movements"]) {
+    const m = await rejects(getAccounts(mk({ clients: { rows: [{ id: CLIENT }] }, cases: { rows: [aCase] }, account_movements: { rows: [] }, case_fees: { rows: [] }, [t]: { error: "boom" } }), CLIENT));
+    check(m !== null && /boom/.test(m), `getAccounts: a failed read of ${t} THROWS`, String(m).slice(0, 60));
+  }
+  const m2 = await rejects(getAccounts(mk({ clients: { rows: [{ id: CLIENT }] }, cases: { rows: [aCase] }, case_fees: { error: "boom" } }), CLIENT));
+  check(m2 !== null && /boom/.test(m2), "getAccounts: a failed read of the fees THROWS");
+  const e = await getAccounts(mk({ clients: { rows: [] } }), CLIENT);
+  check(e === null, "getAccounts: a client that is not visible is null (not an error)");
+  const pm = await prepareMovement(mk({ clients: { error: "boom" } }), { ...base }).catch((x) => ({ ok: false as const, error: String(x) }));
+  check(!pm.ok, "prepareMovement: a failed read is an error, not an empty case list");
 }
 
 // ---------------------------------------------------------------- (f) live, read-only

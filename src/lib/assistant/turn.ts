@@ -258,7 +258,7 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }, clock: 
       let args = call.args;
       let hint: OpHint | undefined;
       if (call.name === "record_movement") {
-        const prep = await prepareMovement(db, call.args);
+        const prep = await prepareMovement(db, call.args, [text, ...sourceTexts]).catch((e) => ({ ok: false as const, error: `لم يُقترح: ${e instanceof Error ? e.message : String(e)}` }));
         if (!prep.ok) { results.set(call.id, { error: prep.error }); continue; }
         args = prep.args;
         hint = prep.hint;

@@ -367,7 +367,9 @@ async function applyOpRaw(db: Db, tool: WriteTool, rawArgs: unknown, p: Provenan
         const row = must(await db.from("case_fees").insert({ case_id: caseId, kind: x.kind, amount_piasters: piasters, ...prov(p) }).select("id").single());
         return { id: row.id, undo: del(db, "case_fees", row.id), steps: rm("case_fees", row.id) };
       }
-      // a fee already set is changed in place; the undo puts the old kind and amount back
+      // a CONFIRMED fee is replaced only by a confirmed change (a «save as suggestion» must not weaken it: suggested rows count nowhere)
+      if (cur.review_status === "confirmed" && p.review_status !== "confirmed") throw new Error("فيه أتعاب مؤكدة للقضية دي: عدّلها بالتأكيد، مش كمقترح");
+      // a fee already set is changed in place; the undo puts the old kind, amount and status back
       const before = { kind: cur.kind, amount_piasters: cur.amount_piasters, updated_at: cur.updated_at, review_status: cur.review_status };
       must(await db.from("case_fees").update({ kind: x.kind, amount_piasters: piasters, updated_at: new Date().toISOString(), review_status: p.review_status }).eq("id", cur.id).select("id").single());
       return { id: cur.id, undo: async () => { must(await db.from("case_fees").update(before).eq("id", cur.id).select("id").single()); }, steps: [back("case_fees", cur.id, before)] };

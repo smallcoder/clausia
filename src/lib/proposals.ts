@@ -48,7 +48,7 @@ export interface ProposalOp {
   hint?: OpHint;
 }
 
-export interface OpHint { cases: { id: string; label: string; name: string; remaining: number | null }[]; note: string | null; today: boolean }
+export interface OpHint { cases: { id: string; label: string; name: string; remaining: number | null }[]; note: string | null; today: boolean; suggested?: boolean }
 
 export interface ResolvedFrom { word: string; iso: string; label: string }
 

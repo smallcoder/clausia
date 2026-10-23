@@ -39,6 +39,29 @@ export interface ClientAccounts {
   suggestion: { id: string | null; why: SuggestWhy };
 }
 
+const PAGE = 1000; // the API returns at most this many rows per request
+const MAX_PAGES = 50;
+
+/** A failed read must never look like «nobody owes anything»: it throws. */
+function ok<T>(r: { data: T | null; error: { message: string } | null }, what: string): T | null {
+  if (r.error) throw new Error(`تعذّر قراءة ${what}: ${r.error.message}`);
+  return r.data;
+}
+
+/**
+ * Every row of a list, page by page (the API stops at 1000 rows a request, and a sum over a cut list would be wrong). A read error throws;
+ * a list longer than MAX_PAGES pages throws too, saying so, instead of returning part of it.
+ */
+async function all<T>(what: string, page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>): Promise<T[]> {
+  const out: T[] = [];
+  for (let i = 0; i < MAX_PAGES; i++) {
+    const rows = ok(await page(i * PAGE, i * PAGE + PAGE - 1), what) ?? [];
+    out.push(...rows);
+    if (rows.length < PAGE) return out;
+  }
+  throw new Error(`${what}: أكتر من ${PAGE * MAX_PAGES} صف، مش هعرض أو أجمع جزء منهم`);
+}
+
 const MOVE_COLS = "id, case_id, kind, amount_piasters, method, moved_on, charged_to, note, review_status, created_by_kind, created_at";
 
 type MoveRow = { id: string; case_id: string | null; kind: E["money_kind"]; amount_piasters: number; method: E["money_method"]; moved_on: string; charged_to: E["money_charge"] | null; note: string | null; review_status: E["item_status"]; created_by_kind: E["actor_kind"]; created_at: string };
@@ -49,18 +72,18 @@ const toMove = (r: MoveRow): Move & { created_by_kind: E["actor_kind"] } => ({
 
 /** The client's cases with fees and receipts, ready to list. Null when the client is not visible (RLS) or rejected. */
 export async function getAccounts(db: Db, clientId: string): Promise<ClientAccounts | null> {
-  const { data: client } = await db.from("clients").select("id").eq("id", clientId).neq("review_status", "rejected").maybeSingle();
+  const client = ok(await db.from("clients").select("id").eq("id", clientId).neq("review_status", "rejected").maybeSingle(), "الموكل");
   if (!client) return null;
-  const [{ data: cases }, { data: movRows }] = await Promise.all([
-    db.from("cases").select("id, title, case_type, case_number, case_year, status, created_at").eq("client_id", clientId).neq("review_status", "rejected").order("created_at", { ascending: false }),
-    db.from("account_movements").select(MOVE_COLS).eq("client_id", clientId).neq("review_status", "rejected").order("moved_on", { ascending: false }).order("created_at", { ascending: false }).limit(1000),
+  const [cases, movRows] = await Promise.all([
+    all("قضايا الموكل", (a, b) => db.from("cases").select("id, title, case_type, case_number, case_year, status, created_at").eq("client_id", clientId).neq("review_status", "rejected").order("created_at", { ascending: false }).order("id").range(a, b)),
+    all("حركات الموكل", (a, b) => db.from("account_movements").select(MOVE_COLS).eq("client_id", clientId).neq("review_status", "rejected").order("moved_on", { ascending: false }).order("created_at", { ascending: false }).order("id").range(a, b)),
   ]);
-  const ids = (cases ?? []).map((c) => c.id);
-  const { data: feeRows } = ids.length ? await db.from("case_fees").select("case_id, kind, amount_piasters").in("case_id", ids).eq("review_status", "confirmed") : { data: [] };
-  const fees = new Map<string, Fee>((feeRows ?? []).map((f) => [f.case_id, { kind: f.kind, amount: f.amount_piasters === null ? null : fromDb(f.amount_piasters) }]));
+  const ids = cases.map((c) => c.id);
+  const feeRows = ids.length ? await all("أتعاب القضايا", (a, b) => db.from("case_fees").select("case_id, kind, amount_piasters").in("case_id", ids).eq("review_status", "confirmed").order("id").range(a, b)) : [];
+  const fees = new Map<string, Fee>(feeRows.map((f) => [f.case_id, { kind: f.kind, amount: f.amount_piasters === null ? null : fromDb(f.amount_piasters) }]));
 
-  const moves = (movRows ?? []).map((r) => toMove(r as MoveRow));
-  const rows: AccountCase[] = (cases ?? []).map((c) => ({
+  const moves = movRows.map((r) => toMove(r as MoveRow));
+  const rows: AccountCase[] = cases.map((c) => ({
     id: c.id, subject: caseSubject(c), number: caseNumberText(c), short: c.case_number ? (c.case_year ? `${c.case_number}/${c.case_year}` : c.case_number) : null,
     status: c.status, open: !FINISHED.includes(c.status),
     money: caseMoney(fees.get(c.id) ?? null, moves.filter((m) => m.case_id === c.id)),
@@ -89,23 +112,25 @@ export interface ClientBalance {
 
 /** «مين عليه فلوس؟»: every client with a fixed fee not fully paid, the biggest balance first. Only fixed fees count (an open fee has no balance). */
 export async function listBalances(db: Db, clientId?: string): Promise<ClientBalance[]> {
-  let q = db.from("cases").select("id, client_id, title, case_type, case_number, case_year").not("client_id", "is", null).neq("review_status", "rejected");
-  if (clientId) q = q.eq("client_id", clientId);
-  const { data: cases } = await q;
-  const ids = (cases ?? []).map((c) => c.id);
+  const cases = await all("القضايا", (a, b) => {
+    let q = db.from("cases").select("id, client_id, title, case_type, case_number, case_year").not("client_id", "is", null).neq("review_status", "rejected");
+    if (clientId) q = q.eq("client_id", clientId);
+    return q.order("id").range(a, b);
+  });
+  const ids = cases.map((c) => c.id);
   if (!ids.length) return [];
-  const [{ data: fees }, { data: receipts }, { data: clients }] = await Promise.all([
-    db.from("case_fees").select("case_id, amount_piasters").in("case_id", ids).eq("kind", "fixed").eq("review_status", "confirmed"),
-    db.from("account_movements").select("case_id, amount_piasters").in("case_id", ids).eq("kind", "receipt").eq("review_status", "confirmed").limit(5000),
-    db.from("clients").select("id, name").in("id", [...new Set((cases ?? []).map((c) => c.client_id!))]).neq("review_status", "rejected"),
+  const [fees, receipts, clients] = await Promise.all([
+    all("الأتعاب", (a, b) => db.from("case_fees").select("case_id, amount_piasters").in("case_id", ids).eq("kind", "fixed").eq("review_status", "confirmed").order("id").range(a, b)),
+    all("المدفوعات", (a, b) => db.from("account_movements").select("case_id, amount_piasters").in("case_id", ids).eq("kind", "receipt").eq("review_status", "confirmed").order("id").range(a, b)),
+    all("الموكلين", (a, b) => db.from("clients").select("id, name").in("id", [...new Set(cases.map((c) => c.client_id!))]).neq("review_status", "rejected").order("id").range(a, b)),
   ]);
-  const name = new Map((clients ?? []).map((c) => [c.id, c.name]));
+  const name = new Map(clients.map((c) => [c.id, c.name]));
   const out = new Map<string, ClientBalance>();
-  for (const f of fees ?? []) {
-    const c = (cases ?? []).find((x) => x.id === f.case_id);
+  for (const f of fees) {
+    const c = cases.find((x) => x.id === f.case_id);
     if (!c?.client_id || !name.has(c.client_id) || f.amount_piasters === null) continue;
     const agreed = fromDb(f.amount_piasters);
-    const m = caseMoney({ kind: "fixed", amount: agreed }, (receipts ?? []).filter((r) => r.case_id === c.id).map((r) => ({ id: "", case_id: c.id, kind: "receipt" as const, amount: fromDb(r.amount_piasters), method: "", moved_on: "", charged_to: null, note: null, review_status: "confirmed" as const, created_at: "" })));
+    const m = caseMoney({ kind: "fixed", amount: agreed }, receipts.filter((r) => r.case_id === c.id).map((r) => ({ id: "", case_id: c.id, kind: "receipt" as const, amount: fromDb(r.amount_piasters), method: "", moved_on: "", charged_to: null, note: null, review_status: "confirmed" as const, created_at: "" })));
     if (!m.remaining) continue;
     const row = out.get(c.client_id) ?? { client_id: c.client_id, client: name.get(c.client_id)!, remaining: 0, cases: [] };
     row.remaining += m.remaining;
@@ -122,15 +147,15 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * assistant is told to ask), a date the lawyer did not say becomes today (Cairo), and the card gets the client's cases to change the choice.
  * An error here is returned to the assistant as the tool result.
  */
-export async function prepareMovement(db: Db, args: Record<string, unknown>): Promise<{ ok: true; args: Record<string, unknown>; hint: MoneyHint } | { ok: false; error: string }> {
+export async function prepareMovement(db: Db, args: Record<string, unknown>, texts: string[] = []): Promise<{ ok: true; args: Record<string, unknown>; hint: MoneyHint } | { ok: false; error: string }> {
   const client = String(args.client ?? "");
   let choices: CaseChoice[] = [];
   if (UUID.test(client)) {
     const acc = await getAccounts(db, client);
     if (!acc) return { ok: false, error: "لم يُقترح: الموكل غير موجود" };
-    choices = acc.cases.map((c) => ({ id: c.id, open: c.open, money: c.money, label: caseChoiceLabel(c), name: [c.subject, c.short].filter(Boolean).join(" · ") }));
+    choices = acc.cases.map((c) => ({ id: c.id, open: c.open, money: c.money, label: caseChoiceLabel(c), name: [c.subject, c.short].filter(Boolean).join(" · "), subject: c.subject, number: c.short?.split("/")[0] ?? null }));
   }
-  const r = resolveMovementCase({ case: typeof args.case === "string" ? args.case : undefined, general_account: args.general_account === true }, choices);
+  const r = resolveMovementCase({ case: typeof args.case === "string" ? args.case : undefined, general_account: args.general_account === true }, choices, texts);
   if (!r.ok) return r;
   const out: Record<string, unknown> = { ...args };
   delete out.general_account;

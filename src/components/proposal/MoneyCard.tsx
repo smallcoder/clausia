@@ -108,7 +108,7 @@ export function MoneyCard({ proposal: p, lookup, edits, setEdit, pending, error,
               : <span className="font-num">{String(v.date ?? "")}</span>}
             {dateIsDefault && !editing ? <span className="mt-0.5 block text-sm font-normal text-text-3">النهارده</span> : null}
           </> },
-          { key: "case", wide: true, label: <label htmlFor={`${o.op_id}-case`}>على قضية</label>, node: hint ? (
+          { key: "case", wide: true, label: <><label htmlFor={`${o.op_id}-case`}>على قضية</label>{hint?.suggested && caseId === String(o.args.case ?? "") ? <span className="ms-2 font-semibold text-gold">اقتراح</span> : null}</>, node: hint ? (
             <select id={`${o.op_id}-case`} value={caseId} onChange={(e) => setEdit(o.op_id, "case", e.target.value || null)} className="min-h-11 w-full rounded-md border border-border bg-field px-2.5 py-1.5 text-base font-semibold text-text">
               <option value="">{GENERAL}</option>
               {hint.cases.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
@@ -150,7 +150,7 @@ export function MoneyCard({ proposal: p, lookup, edits, setEdit, pending, error,
                   : <>المبلغ أكبر من الباقي على {picked!.name} بـ <bdi className="font-num">{formatEgp(-after)}</bdi>.</>}
               </p>
             ) : null}
-            {!o.quote_verified ? <p className="border-t border-border-2 px-4 py-2.5 text-sm font-medium text-gold-text-small sm:px-5.5">ما لقيتش كلامك ده في المحادثة، راجع المبلغ</p> : null}
+            {!o.quote_verified ? <p className="border-t border-border-2 px-4 py-2.5 text-sm font-medium text-gold sm:px-5.5">ما لقيتش كلامك ده في المحادثة، راجع المبلغ</p> : null}
             {o.status === "failed" && o.error ? <p className="mx-4 my-3 rounded-md bg-bad-bg px-3 py-2 text-sm text-bad sm:mx-5.5">{o.error}</p> : null}
           </div>
         );
