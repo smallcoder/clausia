@@ -353,6 +353,13 @@ body {
 .text-doc { font-family: var(--font-naskh), serif; line-height: 1.9; }
 }
 
+/* the sticky top bar: clear at rest (the page's soft light shows through, no seam), the page colour once the page has scrolled 40px,
+   so content never shows through it. Scroll-driven (no script); a browser without it keeps the bar clear. */
+@keyframes bar-solid { from { background-color: transparent; } to { background-color: var(--bg); } }
+@supports (animation-timeline: scroll()) {
+  .bar-solid { animation: bar-solid linear both; animation-timeline: scroll(root); animation-range: 0 40px; }
+}
+
 /* Numbers (dates, case numbers) stay left-to-right inside RTL text */
 .num { direction: ltr; unicode-bidi: isolate; font-variant-numeric: tabular-nums; }
 
