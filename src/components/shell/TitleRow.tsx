@@ -55,7 +55,7 @@ function Stat({ s }: { s: TitleStatData }) {
   const body = (
     <>
       <div className={`stat-num text-xl sm:text-page-stat sm:font-normal sm:tracking-normal ${gold ? "text-gold" : "text-title"}`}>{typeof s.value === "number" ? two(s.value) : s.value}</div>
-      <div className={`mt-1.5 flex items-center gap-1.25 text-xs leading-[15px] sm:mt-0 sm:text-sm sm:leading-[17px] ${gold ? "text-gold" : "text-text-3"} ${s.current ? "font-semibold text-title underline decoration-2 underline-offset-4" : ""}`}>
+      <div className={`mt-1.5 flex items-center gap-1.25 text-xs leading-[15px] sm:mt-0 sm:text-sm sm:leading-[17px] ${gold ? "text-gold-on-ambient" : "text-text-3"} ${s.current ? "font-semibold text-title underline decoration-2 underline-offset-4" : ""}`}>
         {gold ? <span aria-hidden className="size-dot rounded-full bg-gold sm:size-1.5" /> : null}
         {s.mobileLabel ? <><span className="sm:hidden">{s.mobileLabel}</span><span className="hidden sm:inline">{s.label}</span></> : s.label}
       </div>

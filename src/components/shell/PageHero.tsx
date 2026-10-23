@@ -25,7 +25,7 @@ export function StatTile({ s }: { s: HeroStat }) {
   const body = (
     <>
       <div className={`stat-num text-xl sm:text-2xl ${gold ? "text-gold" : "text-title"}`}>{typeof s.value === "number" ? two(s.value) : s.value}</div>
-      <div className={`mt-2 flex items-center gap-1.5 text-sm ${gold ? "font-semibold text-gold" : "text-text-3"}`}>
+      <div className={`mt-2 flex items-center gap-1.5 text-sm ${gold ? "font-semibold text-gold-text-small" : "text-text-3"}`}>
         {gold ? <span aria-hidden className="size-1.5 rounded-full bg-gold" /> : null}{s.label}
       </div>
     </>
@@ -87,8 +87,8 @@ export function PageHero({ back, action, eyebrow, title, subtitle, stats, classN
 /** v2 status: a small dot + a word. needs decision = gold · today = gold outline · active = green · reserved/done = muted · against us = red */
 export function StatusChip({ tone, children }: { tone: "good" | "warn" | "neutral" | "bad" | "accent"; children: ReactNode }) {
   if (tone === "accent")
-    return <span className="inline-flex h-5.5 items-center rounded-full border border-gold-edge px-2.5 text-xs font-bold text-gold">{children}</span>;
-  const c = { good: ["bg-good", "text-good"], warn: ["bg-gold", "text-gold"], neutral: ["bg-text-4", "text-text-3"], bad: ["bg-bad", "text-bad"] }[tone];
+    return <span className="inline-flex h-5.5 items-center rounded-full border border-gold-edge px-2.5 text-xs font-bold text-gold-text-small">{children}</span>;
+  const c = { good: ["bg-good", "text-good"], warn: ["bg-gold", "text-gold-text-small"], neutral: ["bg-text-4", "text-text-3"], bad: ["bg-bad", "text-bad"] }[tone];
   return (
     <span className={`inline-flex items-center gap-1.5 text-sm font-semibold ${c[1]}`}>
       <span aria-hidden className={`size-1.5 rounded-full ${c[0]}`} />{children}
@@ -102,7 +102,7 @@ export function ClausiaSays({ children, label, size = "lg" }: { children: ReactN
     <div className="flex items-start gap-3">
       <span className={`mark font-num inline-flex shrink-0 items-center justify-center font-black shadow-mark ${size === "lg" ? "size-mark-lg rounded-sm text-base" : "size-mark rounded-sm text-sm"}`}>C</span>
       <div className="min-w-0 flex-1 pt-0.5">
-        {label ? <div className="text-sm font-bold text-gold">{label}</div> : null}
+        {label ? <div className="text-sm font-bold text-gold-text-small">{label}</div> : null}
         <div className={`leading-[1.85] text-text-3 ${size === "lg" ? "text-md sm:text-lg" : "text-md"}`}>{children}</div>
       </div>
     </div>

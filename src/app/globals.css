@@ -41,8 +41,10 @@
   --on-selected: #FFFFFF;
   --primary: #141C2E;                    /* send, save, record */
   --on-primary: #FFFFFF;
-  /* gold: needs action (text, dots, thin outlines, big light numbers; never a fill on buttons) */
-  --gold: #644D21;                       /* 4.5:1 for small text on bg, card, card-2 and the gold wash */
+  /* gold: needs action (text, dots, thin outlines, big light numbers; never a fill on buttons). Three text tokens: text-gold for large text (24px+, or 18.66px bold) and for any text on a white card; text-gold-text-small for small text on glass, on card-2, on the gold wash and on a flat page; text-gold-on-ambient for small text straight on the ambient page shapes. */
+  --gold: #897038;                       /* large text (24px+, or 18.66px bold) and any text on a white card (bg-card): 4.73:1 on white */
+  --gold-text-small: #7A6330;            /* small text on the page background, on glass, on card-2 and on the gold wash: 4.95:1 on bg. Dark mode: the same as --gold */
+  --gold-on-ambient: #644D21;            /* only for small gold text sitting straight on the ambient page background (no card or glass under it): the shapes darken the page, 4.5:1 there */
   --gold-bg: rgba(137,112,56,0.10);
   --gold-edge: rgba(137,112,56,0.3);
   /* status */
@@ -115,6 +117,8 @@
   --primary: #F2F2F4;
   --on-primary: #111113;
   --gold: #D6C08F;
+  --gold-text-small: var(--gold);
+  --gold-on-ambient: var(--gold);
   --gold-bg: rgba(214,192,143,0.10);
   --gold-edge: rgba(214,192,143,0.3);
   --good: #7FD3A4;
@@ -175,6 +179,8 @@
   --primary: #F2F2F4;
   --on-primary: #111113;
   --gold: #D6C08F;
+  --gold-text-small: var(--gold);
+  --gold-on-ambient: var(--gold);
   --gold-bg: rgba(214,192,143,0.10);
   --gold-edge: rgba(214,192,143,0.3);
   --good: #7FD3A4;
@@ -235,6 +241,8 @@
   --color-primary: var(--primary);
   --color-on-primary: var(--on-primary);
   --color-gold: var(--gold);
+  --color-gold-text-small: var(--gold-text-small);
+  --color-gold-on-ambient: var(--gold-on-ambient);
   --color-gold-bg: var(--gold-bg);
   --color-gold-edge: var(--gold-edge);
   --color-mark-fg: var(--mark-fg);

@@ -49,7 +49,7 @@ function Card({ c }: { c: BriefCard }) {
 }
 
 function Pieces({ parts }: { parts: BriefLine["long"] }) {
-  return <>{parts.map((p, i) => (p.gold ? <span key={i} className="font-semibold text-gold">{p.text}</span> : <span key={i}>{p.text}</span>))}</>;
+  return <>{parts.map((p, i) => (p.gold ? <span key={i} className="font-semibold text-gold-text-small">{p.text}</span> : <span key={i}>{p.text}</span>))}</>;
 }
 
 export function BriefView({ date, word, eyebrow, cards, line, memo, whatsapp }: {

@@ -40,7 +40,7 @@ export default function LoginPage() {
             {mode === "in" ? "دخول" : "إنشاء حساب ومكتب"}
           </button>
         </form>
-        <button onClick={() => setMode(mode === "in" ? "up" : "in")} className="mt-4 min-h-11 w-full text-center text-base font-semibold text-gold hover:opacity-80">
+        <button onClick={() => setMode(mode === "in" ? "up" : "in")} className="mt-4 min-h-11 w-full text-center text-base font-semibold text-gold-on-ambient hover:opacity-80">
           {mode === "in" ? "مكتب جديد؟ أنشئ حسابًا" : "لديك حساب؟ سجّل الدخول"}
         </button>
       </div>

@@ -74,7 +74,7 @@ export function ColumnHead({ id, title, suggested }: { id: string; title: string
   return (
     <>
       <span className="min-w-0">{title}</span>
-      {suggested ? <span className="inline-flex items-center gap-1 text-xs text-gold"><span aria-hidden className="size-dot rounded-full bg-gold" />مقترح</span> : null}
+      {suggested ? <span className="inline-flex items-center gap-1 text-xs text-gold-text-small"><span aria-hidden className="size-dot rounded-full bg-gold" />مقترح</span> : null}
       <button ref={btn} type="button" aria-label={`خيارات عمود ${title}`} aria-haspopup="menu" aria-expanded={open}
         onClick={() => { setPos(null); setConfirming(false); setOpen((o) => !o); }}
         className="tap -me-1.5 ms-auto inline-flex size-9 shrink-0 items-center justify-center rounded-full text-text-3 transition hover:bg-card hover:text-text">

@@ -26,7 +26,7 @@ export function DeadlineRows({ rows, today }: { rows: RollDeadline[]; today: str
                 <CalendarClock size={18} strokeWidth={1.9} />
               </span>
               <span className="min-w-0 flex-1">
-                <span className={cx("block text-md font-bold", last ? "text-gold" : "text-text")}>
+                <span className={cx("block text-md font-bold", last ? "text-gold-text-small" : "text-text")}>
                   {last ? `آخر يوم لميعاد ${KIND[d.kind]}` : `تنبيه: فاضل ${nDays(d.days_before)} على آخر يوم ${KIND[d.kind]}`}
                 </span>
                 <span className="mt-0.5 block truncate text-base text-text-2">{d.case_title}{d.case_number ? <> · <span className="num font-num">{d.case_number}</span></> : null}</span>

@@ -7,7 +7,7 @@ export { editsLabel };
 
 /** The small «مقترح» tag on a highlighted field. */
 export const SuggestedTag = ({ children = "مقترح" }: { children?: ReactNode }) => (
-  <span className="inline-flex h-4.5 items-center rounded-sm bg-gold-edge/60 px-1.75 text-xs font-bold text-gold">{children}</span>
+  <span className="inline-flex h-4.5 items-center rounded-sm bg-gold-edge/60 px-1.75 text-xs font-bold text-gold-text-small">{children}</span>
 );
 
 /** The old value, struck through, in the faint text colour. */
@@ -18,10 +18,10 @@ export function Change({ old, next, className = "" }: { old: ReactNode; next: Re
   return (
     <span className={className}>
       {old ? <><Was>{old}</Was> <span aria-hidden className="text-text-3">←</span> </> : null}
-      <b className="font-bold text-gold">{next}</b>
+      <b className="font-bold text-gold-text-small">{next}</b>
     </span>
   );
 }
 
 /** «مقترح من المحادثة · مستني تأكيدك»: the line under a new row that is waiting for the lawyer. */
-export const WaitingLine = () => <span className="mt-0.5 block text-xs text-gold">مقترح من المحادثة · مستني تأكيدك</span>;
+export const WaitingLine = () => <span className="mt-0.5 block text-xs text-gold-text-small">مقترح من المحادثة · مستني تأكيدك</span>;

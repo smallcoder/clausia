@@ -17,7 +17,7 @@ const CHIP = "inline-flex h-6 items-center gap-1.25 whitespace-nowrap rounded-fu
 /** A label with no panel behind it: «من رسالتك», or a paper source that has no paper id. */
 export function SourceLabel({ children, className }: { children: string; className?: string }) {
   return (
-    <span className={cx(CHIP, "border-gold-edge text-gold", className)}>
+    <span className={cx(CHIP, "border-gold-edge text-gold-on-ambient", className)}>
       <File aria-hidden className="size-3 shrink-0" strokeWidth={1.8} />{children}
     </span>
   );
@@ -32,7 +32,7 @@ export function SourceChip({ cite, className }: { cite: CiteSource; className?: 
     <button type="button" data-cite-id={cite.id} aria-current={on ? "true" : undefined}
       aria-label={`افتح ${cite.label} في الورقة`}
       onClick={() => { closeSheet(); open(cite); }}
-      className={cx("tap", CHIP, "transition-colors", on ? "border-transparent bg-selected text-on-selected" : "border-gold-edge text-gold hover:bg-gold-bg", className)}>
+      className={cx("tap", CHIP, "transition-colors", on ? "border-transparent bg-selected text-on-selected" : "border-gold-edge text-gold-on-ambient hover:bg-gold-bg", className)}>
       <File aria-hidden className="size-3 shrink-0" strokeWidth={1.8} />{cite.label}
     </button>
   );

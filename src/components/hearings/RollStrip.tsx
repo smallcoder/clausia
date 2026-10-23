@@ -332,7 +332,7 @@ export function RollStrip({ center, selected, focusDay, today, counts, pinned, o
         </div>
         {todayOut ? (
           <button type="button" onClick={() => { pick(today, "today"); bring(tileOf(weekStart(today)) ? weekStart(today) : today, "start"); }}
-            className="tap fade-enter inline-flex h-7 items-center rounded-full border border-gold-edge px-3 text-sm font-semibold text-gold transition hover:bg-gold-bg">
+            className="tap fade-enter inline-flex h-7 items-center rounded-full border border-gold-edge px-3 text-sm font-semibold text-gold-text-small transition hover:bg-gold-bg">
             النهارده
           </button>
         ) : null}
@@ -360,7 +360,7 @@ export function RollStrip({ center, selected, focusDay, today, counts, pinned, o
                     on ? "text-on-selected duration-200 delay-100" : "text-text duration-0 hover:bg-card-2",
                     solid && "bg-selected shadow-[0_4px_10px_-4px_var(--backdrop)]",
                     !on && d === today && "ring-1 ring-inset ring-gold-edge")}>
-                  <span className={cx("block text-xs transition-colors sm:text-sm", on ? "text-on-selected/80 duration-200 delay-100" : cx("duration-0", d === today ? "font-semibold text-gold" : "text-text-3"))}>
+                  <span className={cx("block text-xs transition-colors sm:text-sm", on ? "text-on-selected/80 duration-200 delay-100" : cx("duration-0", d === today ? "font-semibold text-gold-text-small" : "text-text-3"))}>
                     <span className="sm:hidden">{WEEKDAY_SHORT[wd]}</span><span className="hidden sm:inline">{WEEKDAY_LONG[wd]}</span>
                   </span>
                   <span className={cx("font-num mt-0.5 block text-lg leading-[1.1] sm:mt-0.75 sm:text-xl", on ? "font-medium" : "font-light")}>{Number(d.slice(8))}</span>

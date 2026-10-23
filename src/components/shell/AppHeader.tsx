@@ -77,7 +77,7 @@ export function AppHeader({ initials, officeName, email, alerts, userId, holiday
       <div className="flex items-center gap-2.5 justify-self-end">
         {brief ? (
           <Link href={brief.href} onClick={() => { void askPermission(); opened(brief); }}
-            className="tap glass hidden h-9 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold text-gold transition hover:opacity-80 3xl:inline-flex">
+            className="tap glass hidden h-9 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold text-gold-text-small transition hover:opacity-80 3xl:inline-flex">
             <span aria-hidden className="size-1.5 rounded-full bg-gold" />{brief.label}
           </Link>
         ) : null}

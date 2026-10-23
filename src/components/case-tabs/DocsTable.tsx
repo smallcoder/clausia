@@ -66,7 +66,7 @@ function ConfirmCell({ cellId }: { cellId: string }) {
   return (
     <form action={confirmCellAction} className="mt-1.5">
       <input type="hidden" name="cell_id" value={cellId} />
-      <button className="tap inline-flex h-chip items-center gap-1.5 rounded-full border border-gold-edge px-3 text-xs font-semibold text-gold transition hover:bg-gold-bg">
+      <button className="tap inline-flex h-chip items-center gap-1.5 rounded-full border border-gold-edge px-3 text-xs font-semibold text-gold-text-small transition hover:bg-gold-bg">
         <Check aria-hidden size={13} strokeWidth={2.2} />أكّد
       </button>
     </form>

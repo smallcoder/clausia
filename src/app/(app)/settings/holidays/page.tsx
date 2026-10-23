@@ -11,7 +11,7 @@ import { addHolidayAction, approveHolidayAction, approveReportAction, deleteHoli
 import { HolidayForm } from "./HolidayForm";
 
 const BTN = "tap inline-flex h-8 items-center rounded-full border border-border-2 px-3 text-sm text-text-2 transition hover:text-text";
-const BTN_GOLD = "tap inline-flex h-8 items-center rounded-full border border-gold-edge px-3 text-sm font-semibold text-gold transition hover:bg-gold-bg";
+const BTN_GOLD = "tap inline-flex h-8 items-center rounded-full border border-gold-edge px-3 text-sm font-semibold text-gold-text-small transition hover:bg-gold-bg";
 const REPORT: Record<string, { tone: "warn" | "good" | "bad"; label: string }> = { pending: { tone: "warn", label: "مستني المراجعة" }, approved: { tone: "good", label: "اتعتمد" }, rejected: { tone: "bad", label: "اترفض" } };
 
 export default async function HolidaysPage() {

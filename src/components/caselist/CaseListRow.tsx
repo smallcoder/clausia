@@ -43,7 +43,7 @@ export interface RowFlags { decision: boolean; review: boolean; againstUs: boole
 
 /** dot + word: desktop 12.5px, 7px gap, 6px dot; mobile 10.5px, 4px gap, 5px dot (docs/design/*Cases.dc.html) */
 function Tag({ tone, children }: { tone: "warn" | "neutral" | "bad"; children: React.ReactNode }) {
-  const [dot, text] = { warn: ["bg-gold", "text-gold"], neutral: ["bg-text-3", "text-text-3"], bad: ["bg-bad", "text-bad"] }[tone];
+  const [dot, text] = { warn: ["bg-gold", "text-gold-text-small"], neutral: ["bg-text-3", "text-text-3"], bad: ["bg-bad", "text-bad"] }[tone];
   return (
     <span className={`inline-flex items-center gap-1 text-xs font-semibold leading-[15px] md:gap-1.75 md:text-sm md:leading-[17px] ${text}`}>
       <span aria-hidden className={`size-dot shrink-0 rounded-full md:size-1.5 ${dot}`} />{children}
@@ -66,7 +66,7 @@ export function CaseListRow({ r, today, flags }: { r: CaseRow; today: string; fl
   const title = caseTitle(r);
   const where = [r.court, r.circuit].filter(Boolean).join(" · ");
   const next = r.next_hearing ? dateLabel(r.next_hearing, today) : null;
-  const nextCls = next?.today ? "font-bold text-text" : flags.decision && !next ? "font-medium text-gold" : "font-medium text-text-3";
+  const nextCls = next?.today ? "font-bold text-text" : flags.decision && !next ? "font-medium text-gold-text-small" : "font-medium text-text-3";
   const nextText = next ? <DateText value={next.text} /> : <span aria-label="لا جلسة جاية">—</span>;
   const marker = <Marker r={r} f={flags} />;
   return (

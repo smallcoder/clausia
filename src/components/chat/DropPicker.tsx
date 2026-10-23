@@ -25,7 +25,7 @@ export function DropPicker({ fileName, onPick, onCancel }: { fileName: string; o
         </div>
         <ul className="max-h-52 overflow-y-auto overscroll-contain py-1">
           <li>
-            <button type="button" onClick={() => onPick(null)} className="tap flex min-h-11 w-full items-center gap-2 px-4 text-start text-base font-bold text-gold transition hover:bg-gold-bg">
+            <button type="button" onClick={() => onPick(null)} className="tap flex min-h-11 w-full items-center gap-2 px-4 text-start text-base font-bold text-gold-text-small transition hover:bg-gold-bg">
               <span aria-hidden>+</span>قضية جديدة
             </button>
           </li>
