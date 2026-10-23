@@ -21,7 +21,7 @@ import { AskTarget } from "./AskTarget";
 import { Change, SuggestedTag, Was } from "./Suggest";
 import { specSheet, statusTone, whoLine } from "./case-view";
 
-const TONE = { good: ["bg-good", "text-good"], warn: ["bg-gold", "text-gold-text-small"], neutral: ["bg-text-4", "text-text-3"] } as const;
+const TONE = { good: ["bg-good", "text-good"], warn: ["bg-gold", "text-gold-on-ambient"], neutral: ["bg-text-4", "text-text-3"] } as const;
 
 /** Mockup: 28px outlined pill (content box, so 30px with its hairline), 6px dot, 12.5px semibold word. */
 function StatusPill({ status }: { status: string }) {
@@ -112,7 +112,7 @@ export function CaseHeader({ cf, caseId, stats, edits }: { cf: CaseFile; caseId:
       {/* who: mobile = eyebrow + status, name, «ضد» below; desktop = eyebrow, then name + «ضد» on one line */}
       <div className="px-1 pt-4.5 sm:mt-5.5 sm:px-2 sm:pt-0">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-semibold text-gold-text-small">{who.client ? "موكلنا" : "القضية"}</span>
+          <span className="text-sm font-semibold text-gold-on-ambient">{who.client ? "موكلنا" : "القضية"}</span>
           <span className="sm:hidden"><StatusSlot status={cf.case.status} proposed={proposedStatus} /></span>
         </div>
         <h1 className="mt-1.5 text-xl font-bold leading-[1.2] text-title sm:mt-1 sm:text-2xl sm:leading-[1.15]">
@@ -201,7 +201,7 @@ export function CaseSubHeader({ cf, caseId, crumb, title, stats = [], action, ey
         </nav>
       </div>
       {eyebrow ? (
-        <p className="hidden px-2 text-sm font-semibold text-gold-text-small sm:-mb-4 sm:mt-3 sm:block">
+        <p className="hidden px-2 text-sm font-semibold text-gold-on-ambient sm:-mb-4 sm:mt-3 sm:block">
           {who.client ?? who.fallback}{who.client && who.opponent ? <span> ضد </span> : null}{who.client && who.opponent ? who.opponent : null}
         </p>
       ) : null}

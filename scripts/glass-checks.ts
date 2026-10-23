@@ -192,6 +192,7 @@ if (want("faint")) {
     ["gold small", ".text-gold"],
     ["gold large", ".text-gold", true],
     ["gold-text-small", ".text-gold-text-small"],
+    ["gold-on-ambient", ".text-gold-on-ambient"],
     ["chat text-3", "aside .text-text-3"],
     ["chat text-2", "aside .text-text-2"],
   ];
@@ -242,7 +243,7 @@ if (want("faint")) {
 //   --gold            large text (≥3) and text on a white card (4.5)
 //   --gold-text-small small text on the page, on glass, on card-2 and on the tinted surfaces (4.5)
 // A probe is a fixed box with the surface's own classes and a text span in it; the span's text is hidden and the pixels behind it are measured
-// (the same way as the other rows). KNOWN FAILS in light (PR gold-two-tokens, see its body): small gold-text-small straight on the ambient shapes (desktop page column, phone chat) is 3.2-4.4, not the flat-bg 4.95. «page» probes hide the page content first, so only the background shapes are behind the text; the worst of a grid of points is kept.
+// (the same way as the other rows). gold-text-small must NOT be used straight on the ambient shapes (3.2-4.4 in light, not the flat-bg 4.95): that surface takes gold-on-ambient. «page» probes hide the page content first, so only the background shapes are behind the text; the worst of a grid of points is kept.
 if (want("gold")) {
   console.log("== gold tokens: probes (AA: 4.5 small text, 3 large text; worst = 2nd percentile pixel)");
   const fails: string[] = [];
@@ -264,6 +265,7 @@ if (want("gold")) {
     return r;
   };
   const SMALL = "text-sm font-semibold text-gold-text-small";
+  const AMBIENT = "text-sm font-semibold text-gold-on-ambient";
   const GOLD_SMALL = "text-sm font-semibold text-gold";
   const GOLD_LARGE = "font-num text-2xl font-extralight text-gold";
   for (const dark of [false, true]) {
@@ -276,7 +278,7 @@ if (want("gold")) {
     const [ctx, page] = await ctxOf(1440, 900, dark);
     await go(page, `/?s=${longThread}`);
     // 1. the page background (ambient shapes): worst of a grid, content hidden
-    for (const [name, span, min] of [["gold-text-small on the page bg (page column, left of the chat)", SMALL, 4.5], ["gold (small) on the page bg (page column): NOT allowed, for comparison", GOLD_SMALL, 4.5], ["gold LARGE on the page bg (page column; no site sits on bare bg, the sweep covers the real ones)", GOLD_LARGE, 3]] as const) {
+    for (const [name, span, min] of [["gold-text-small on bare page bg (page column): NOT allowed there, use gold-on-ambient", SMALL, 4.5], ["gold-on-ambient on the page bg (page column, left of the chat)", AMBIENT, 4.5], ["gold (small) on the page bg (page column): NOT allowed, for comparison", GOLD_SMALL, 4.5], ["gold LARGE on the page bg (page column; no site sits on bare bg, the sweep covers the real ones)", GOLD_LARGE, 3]] as const) {
       let worst: { worst: number; median: number } | null = null;
       for (const x of [60, 260, 460, 660, 860]) for (const y of [120, 330, 540, 760]) {
         const r = await probe(page, name, { wrap: "", span, x, y, min, hideContent: true }, t);
@@ -291,6 +293,8 @@ if (want("gold")) {
       ["gold LARGE on card-2", "bg-card-2", GOLD_LARGE, 3],
       ["gold-text-small on card", "bg-card", SMALL, 4.5],
       ["gold-text-small on card-2", "bg-card-2", SMALL, 4.5],
+      ["gold-on-ambient on card (components on several surfaces)", "bg-card", AMBIENT, 4.5],
+      ["gold-on-ambient on card-2", "bg-card-2", AMBIENT, 4.5],
     ] as const) {
       const r = await probe(page, name, { wrap, span, x: 700, y: 400, min }, t);
       row(name, r, min);
@@ -299,6 +303,8 @@ if (want("gold")) {
     const tinted: [string, string, string, string, number][] = [
       // [label, wrap classes, span classes, wrap extra style, min]
       ["gold-text-small on gold-wash over card", "bg-card", `gold-wash rounded-md px-2 py-1 ${SMALL}`, "", 4.5],
+      ["gold-on-ambient on gold-wash over card", "bg-card", `gold-wash rounded-md px-2 py-1 ${AMBIENT}`, "", 4.5],
+      ["gold-on-ambient on hover:bg-gold-bg over card (SourceChip)", "bg-card", `rounded-full bg-gold-bg px-3 py-1 ${AMBIENT}`, "", 4.5],
       ["gold-text-small on gold-wash over card-2", "bg-card-2", `gold-wash rounded-md px-2 py-1 ${SMALL}`, "", 4.5],
       ["gold-text-small on gold-wash over the page", "", `gold-wash rounded-md px-2 py-1 ${SMALL}`, "", 4.5],
       ["gold-text-small «مقترح» tag (gold-edge/60) over card", "bg-card", "inline-flex h-4.5 items-center rounded-sm bg-gold-edge/60 px-1.75 text-xs font-bold text-gold-text-small", "", 4.5],
@@ -320,9 +326,11 @@ if (want("gold")) {
       ["gold-text-small on the chat panel (glass-xl), over the chat", "glass-xl rounded-xl", 1000, 640],
       ["gold-text-small on glass (top bar, composer, toast), over the page", "glass rounded-full", 160, 700],
       ["gold-text-small on glass, over the chat", "glass rounded-full", 1000, 760],
+      ["gold-on-ambient on the chat panel (glass-xl), over the chat", "glass-xl rounded-xl", 1000, 640],
+      ["gold-on-ambient on glass, over the page", "glass rounded-full", 160, 700],
       ["gold-text-small on glass, over the top ambient", "glass rounded-full", 300, 150],
     ] as const) {
-      const r = await probe(page, name, { wrap, span: SMALL, x, y, min: 4.5 }, t);
+      const r = await probe(page, name, { wrap, span: name.includes("gold-on-ambient") ? AMBIENT : SMALL, x, y, min: 4.5 }, t);
       row(name, r, 4.5);
     }
     // 5. the top bar scrolled over the dark ink card (worst case under the glass)
@@ -349,13 +357,13 @@ if (want("gold")) {
     await mctx.close();
     const [m2, p2] = await ctxOf(390, 844, dark);
     await go(p2, `/?s=${longThread}`);
-    {
+    for (const [name, span, info] of [["phone: gold-text-small on the page bg (NOT allowed there, use gold-on-ambient)", SMALL, true], ["phone: gold-on-ambient on the page bg (the chat sits on it)", AMBIENT, false]] as const) {
       let worst: { worst: number; median: number } | null = null;
-      for (const y of [60, 200, 400, 600, 780]) {
-        const r = await probe(p2, "phone chat", { wrap: "", span: SMALL, x: 120, y, min: 4.5, hideContent: true }, t);
+      for (const x of [60, 180, 290]) for (const y of [60, 200, 400, 600, 780]) {
+        const r = await probe(p2, "phone chat", { wrap: "", span, x, y, min: 4.5, hideContent: true }, t);
         if (r && (!worst || r.worst < worst.worst)) worst = r;
       }
-      row("phone: gold-text-small on the page bg (the chat sits on it)", worst, 4.5);
+      if (info) console.log(`${t} ${name.padEnd(64)} ${fmt(worst)}  (info)`); else row(name, worst, 4.5);
     }
     await m2.close();
   }

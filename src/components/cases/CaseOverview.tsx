@@ -75,7 +75,7 @@ function Summary({ cf, hs, today, className, edits }: { cf: CaseFile; hs: Hearin
   const proposed = typeof next === "string" && next.trim() !== (cf.case.summary ?? "").trim() ? next : null;
   const was = cf.case.summary?.trim() || null;
   if (proposed) cf = { ...cf, case: { ...cf.case, summary: proposed } };
-  const segs = summarySegments(cf, hs, today).map((s, i) => s.gold ? <span key={i} className="font-semibold text-gold-text-small">{s.text}</span> : <span key={i}>{s.text}</span>);
+  const segs = summarySegments(cf, hs, today).map((s, i) => s.gold ? <span key={i} className="font-semibold text-gold-on-ambient">{s.text}</span> : <span key={i}>{s.text}</span>);
   const own = cf.case.summary?.trim();
   return (
     <AskTarget item={{ kind: "summary", id: cf.case.id, label: own || "ملخص القضية" }} className={`flex items-start gap-2.5 px-1 lg:gap-3.5 lg:px-2 ${className}`}>
@@ -87,7 +87,7 @@ function Summary({ cf, hs, today, className, edits }: { cf: CaseFile; hs: Hearin
             {was ? <p className="mt-1 text-base leading-[1.8] text-text-4 line-through">{was}</p> : null}
           </div>
         ) : null}
-        <div className={`hidden text-sm font-semibold text-gold-text-small lg:block ${proposed ? "lg:hidden" : ""}`}>ملخص Clausia</div>
+        <div className={`hidden text-sm font-semibold text-gold-on-ambient lg:block ${proposed ? "lg:hidden" : ""}`}>ملخص Clausia</div>
         <p className="mt-0.5 text-base leading-[1.8] text-text lg:hidden">{own ? (/[.!؟]$/u.test(own) ? own : `${own}.`) : segs}</p>
         <p className="mt-1 hidden text-lg leading-[1.85] text-text lg:block">{segs}</p>
       </div>
