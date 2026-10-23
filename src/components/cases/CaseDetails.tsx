@@ -14,7 +14,7 @@ function Row({ label, value, children }: { label: string; value: React.ReactNode
   return (
     <li>
       <details className="group">
-        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-5 py-3 hover:bg-card-2/60 [&::-webkit-details-marker]:hidden">
+        <summary className="flex min-h-12 list-none items-center justify-between gap-3 px-5 py-3 hover:bg-card-2/60 [&::-webkit-details-marker]:hidden">
           <span className="shrink-0 text-md text-text">{label}</span>
           <span className="flex min-w-0 items-center gap-1.5 text-base text-text-3">
             <span className="truncate">{value}</span>

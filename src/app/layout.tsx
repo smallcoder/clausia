@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Noto_Naskh_Arabic } from "next/font/google";
+import { FocusModality } from "@/components/shell/FocusModality";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], weight: ["400", "600", "700", "800", "900"], variable: "--font-inter", display: "swap" });
@@ -25,7 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
-      <body className="min-h-dvh">{children}</body>
+      <body className="min-h-dvh"><FocusModality />{children}</body>
     </html>
   );
 }

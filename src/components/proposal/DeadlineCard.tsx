@@ -22,7 +22,9 @@ import type { Proposal } from "@/lib/proposals";
 
 const CHIP = "tap inline-flex h-6 items-center gap-1.25 whitespace-nowrap rounded-full border border-gold-edge px-2.25 text-xs font-semibold leading-[normal] text-gold transition-colors hover:bg-gold-bg";
 const PILL = "tap inline-flex h-8 items-center rounded-full px-3.25 text-sm transition";
-const PILL_ON = "bg-selected font-semibold text-on-selected shadow-(--tab-shadow)";
+/** a chosen pill (segment): .pill-on; an action pill («احسب», «يوم قبلها») keeps the ink fill */
+const PILL_ON = "pill-on";
+const PILL_ACT = "bg-selected font-semibold text-on-selected shadow-(--tab-shadow)";
 const PILL_OFF = "border border-border-2 text-text-3 hover:text-text";
 
 function ArticleChip({ a, onOpen }: { a: ArticleRef; onOpen: (a: ArticleRef) => void }) {
@@ -205,7 +207,7 @@ export function DeadlineCard({ proposal, entry }: { proposal: Proposal; entry: D
           <div className="mt-2 flex items-center gap-2">
             <input id={`svc-${p.id}`} value={service} onChange={(e) => setService(e.target.value)} inputMode="numeric" dir="ltr" placeholder="5/11/2026" autoComplete="off"
               className="font-num h-11 w-40 rounded-full border border-border bg-field px-4 text-base text-text placeholder:text-text-4" />
-            <button type="submit" disabled={pending || !service.trim()} className={cx(PILL, "h-11 px-4.5", PILL_ON, "disabled:opacity-50")}>احسب</button>
+            <button type="submit" disabled={pending || !service.trim()} className={cx(PILL, "h-11 px-4.5", PILL_ACT, "disabled:opacity-50")}>احسب</button>
           </div>
           {card.startError ? <p className="mt-2 text-sm text-bad">{card.startError}</p> : <p className="mt-2 text-sm text-text-3">اكتبه زي ما هو على ورقة الإعلان. مش هخمّنه.</p>}
         </form>
@@ -227,7 +229,7 @@ export function DeadlineCard({ proposal, entry }: { proposal: Proposal; entry: D
             <span className="inline-flex items-center gap-1.5">
               <input value={custom} onChange={(e) => setCustom(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addCustom(); } }} inputMode="numeric" dir="ltr" aria-label="كام يوم قبلها" placeholder="10" autoFocus
                 className="font-num h-8 w-16 rounded-full border border-border bg-field px-3 text-sm text-text placeholder:text-text-4" />
-              <button type="button" onClick={addCustom} className={cx(PILL, PILL_ON)}>يوم قبلها</button>
+              <button type="button" onClick={addCustom} className={cx(PILL, PILL_ACT)}>يوم قبلها</button>
             </span>
           )}
         </div>

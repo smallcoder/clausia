@@ -109,7 +109,7 @@ export async function DocumentsLegacy({ caseId }: { caseId: string }) {
               {ps.length ? (
                 <li>
                   <details className="group/text" open={ps.length <= 3}>
-                    <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-5 py-2 hover:bg-card-2/60 [&::-webkit-details-marker]:hidden">
+                    <summary className="flex min-h-12 list-none items-center justify-between gap-3 px-5 py-2 hover:bg-card-2/60 [&::-webkit-details-marker]:hidden">
                       <span className="text-md text-text">النص المستخرج</span>
                       <span className="flex items-center gap-1.5 text-sm text-text-3">
                         {pagesLabel(ps.length)}
@@ -119,7 +119,7 @@ export async function DocumentsLegacy({ caseId }: { caseId: string }) {
                     <div className="space-y-2.5 px-4 pb-4 sm:px-5">
                       {ps.map((p) => (
                         <details key={p.page_no} open={p.page_no === ps[0].page_no} className="group/page overflow-hidden rounded-md border border-border-2 bg-card-2">
-                          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 py-2 [&::-webkit-details-marker]:hidden">
+                          <summary className="flex min-h-11 list-none items-center gap-2 px-4 py-2 [&::-webkit-details-marker]:hidden">
                             <span className="shrink-0 text-sm font-bold text-text">صفحة <span className="font-num">{p.page_no}</span></span>
                             <span className="text-doc min-w-0 flex-1 truncate text-sm text-text-3">{firstWords(p.text)}…</span>
                             <ChevronDown aria-hidden size={15} strokeWidth={2} className="shrink-0 text-text-4 transition-transform group-open/page:rotate-180" />

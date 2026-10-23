@@ -61,12 +61,25 @@
   --shadow-soft: 0 1px 2px rgba(18,26,43,0.04);
   --shadow-pop: 0 2px 4px rgba(18,26,43,0.05), 0 22px 44px -20px rgba(18,26,43,0.32);
   --shadow-mark: 0 4px 10px rgba(18,26,43,0.25);
-  /* glass (floating controls only) */
-  --glass-bg: linear-gradient(180deg, rgba(255,255,255,0.78) 0%, rgba(255,255,255,0.52) 55%, rgba(255,255,255,0.6) 100%);
-  --glass-filter: blur(24px) saturate(190%) brightness(1.04);
+  /* ambient shapes behind the whole app (fixed, soft, not animated): navy top-left, champagne bottom-left (behind the chat), light accents elsewhere.
+     Each is a circle gradient: centre offset from the edges, radius = half the box's diagonal, clear from 65% (the mockups' 900/760/700/600px blobs). */
+  --ambient: radial-gradient(circle 636px at left 290px top 190px, rgba(38,49,75,0.26), transparent 65%), radial-gradient(circle 537px at left 560px bottom 60px, rgba(214,192,143,0.70), transparent 65%), radial-gradient(circle 495px at right 150px bottom 50px, rgba(38,49,75,0.12), transparent 65%), radial-gradient(circle 424px at right 680px top -60px, rgba(214,192,143,0.32), transparent 65%);
+  /* glass (floating surfaces: chat panel, top bar, composer, sessions list, sheets, undo toast; and the round controls): white 55% to 30%, no tint colour */
+  --glass-bg: linear-gradient(180deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.30) 100%);
+  --glass-filter: blur(44px) saturate(180%);
   --glass-border: 1px solid rgba(255,255,255,0.95);
-  --glass-shadow: 0 0 0 0.5px rgba(18,26,43,0.10), inset 0 1.5px 0 #FFFFFF, inset 0 -10px 18px -12px rgba(18,26,43,0.12), inset 1px 0 0 rgba(255,255,255,0.7), 0 2px 4px rgba(18,26,43,0.05), 0 22px 44px -20px rgba(18,26,43,0.32);
+  --glass-shadow: 0 0 0 0.5px rgba(18,26,43,0.08), inset 0 1px 0 #FFFFFF, inset 0 -18px 30px -24px rgba(18,26,43,0.10), 0 2px 4px rgba(18,26,43,0.04), 0 28px 56px -30px rgba(18,26,43,0.32);
   --glass-icon: #5F636A;
+  --glass-text-3: #50545C;
+  /* a control that sits on a card or inside a glass panel: the chip colour with the glass edge, no blur of its own (blur is for the few fixed panels) */
+  --glass-flat-bg: var(--chip);
+  /* the active tab / mode / segment: a solid ink pill in light, a champagne frame in dark */
+  --pill-on-bg: var(--selected);
+  --pill-on-fg: var(--on-selected);
+  --pill-on-shadow: var(--tab-shadow);
+  /* focus: a soft ring that fades in (mouse), a slightly stronger one for the keyboard */
+  --focus-ring: rgba(18,26,43,0.12);
+  --focus-ring-key: rgba(18,26,43,0.55);
   /* the fade behind the composer, skeletons, the sheet backdrop */
   --fade: linear-gradient(to top, #ECEEF2 55%, rgba(236,238,242,0));
   --skel: rgba(18,26,43,0.06);
@@ -113,11 +126,19 @@
   --shadow-soft: inset 0 1px 0 rgba(255,255,255,0.04);
   --shadow-pop: 0 24px 50px -22px rgba(0,0,0,0.85);
   --shadow-mark: 0 4px 12px rgba(0,0,0,0.4);
-  --glass-bg: radial-gradient(140% 100% at 18% 0%, rgba(255,255,255,0.15), rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.04) 100%), rgba(32,37,50,0.5);
-  --glass-filter: blur(30px) saturate(160%) brightness(1.08);
-  --glass-border: 1px solid rgba(255,255,255,0.09);
-  --glass-shadow: inset 1.5px 1.5px 0 rgba(255,255,255,0.28), inset -1px -1px 0 rgba(255,255,255,0.06), 0 24px 50px -22px rgba(0,0,0,0.85);
-  --glass-icon: #9A9AA0;
+  --ambient: radial-gradient(circle 636px at left 290px top 190px, rgba(64,86,140,0.38), transparent 65%), radial-gradient(circle 537px at left 560px bottom 60px, rgba(214,192,143,0.14), transparent 65%), radial-gradient(circle 495px at right 150px bottom 50px, rgba(64,86,140,0.16), transparent 65%), radial-gradient(circle 424px at right 680px top -60px, rgba(214,192,143,0.07), transparent 65%);
+  --glass-bg: linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.035) 100%), rgba(24,27,35,0.42);
+  --glass-filter: blur(44px) saturate(180%);
+  --glass-border: 1px solid rgba(255,255,255,0.10);
+  --glass-shadow: inset 0 1px 0 rgba(255,255,255,0.20), inset 1px 0 0 rgba(255,255,255,0.05), 0 28px 56px -30px rgba(0,0,0,0.9);
+  --glass-icon: #B2B4BB;
+  --glass-text-3: #AEB2BC;
+  --glass-flat-bg: var(--chip);
+  --pill-on-bg: rgba(214,192,143,0.08);
+  --pill-on-fg: var(--gold);
+  --pill-on-shadow: inset 0 0 0 1px rgba(214,192,143,0.55);
+  --focus-ring: rgba(214,192,143,0.25);
+  --focus-ring-key: rgba(214,192,143,0.7);
   --fade: linear-gradient(to top, #14161C 55%, rgba(20,22,28,0));
   --skel: rgba(255,255,255,0.06);
   --skel-hi: rgba(255,255,255,0.06);
@@ -162,11 +183,19 @@
   --shadow-soft: inset 0 1px 0 rgba(255,255,255,0.04);
   --shadow-pop: 0 24px 50px -22px rgba(0,0,0,0.85);
   --shadow-mark: 0 4px 12px rgba(0,0,0,0.4);
-  --glass-bg: radial-gradient(140% 100% at 18% 0%, rgba(255,255,255,0.15), rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.04) 100%), rgba(32,37,50,0.5);
-  --glass-filter: blur(30px) saturate(160%) brightness(1.08);
-  --glass-border: 1px solid rgba(255,255,255,0.09);
-  --glass-shadow: inset 1.5px 1.5px 0 rgba(255,255,255,0.28), inset -1px -1px 0 rgba(255,255,255,0.06), 0 24px 50px -22px rgba(0,0,0,0.85);
-  --glass-icon: #9A9AA0;
+  --ambient: radial-gradient(circle 636px at left 290px top 190px, rgba(64,86,140,0.38), transparent 65%), radial-gradient(circle 537px at left 560px bottom 60px, rgba(214,192,143,0.14), transparent 65%), radial-gradient(circle 495px at right 150px bottom 50px, rgba(64,86,140,0.16), transparent 65%), radial-gradient(circle 424px at right 680px top -60px, rgba(214,192,143,0.07), transparent 65%);
+  --glass-bg: linear-gradient(180deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.035) 100%), rgba(24,27,35,0.42);
+  --glass-filter: blur(44px) saturate(180%);
+  --glass-border: 1px solid rgba(255,255,255,0.10);
+  --glass-shadow: inset 0 1px 0 rgba(255,255,255,0.20), inset 1px 0 0 rgba(255,255,255,0.05), 0 28px 56px -30px rgba(0,0,0,0.9);
+  --glass-icon: #B2B4BB;
+  --glass-text-3: #AEB2BC;
+  --glass-flat-bg: var(--chip);
+  --pill-on-bg: rgba(214,192,143,0.08);
+  --pill-on-fg: var(--gold);
+  --pill-on-shadow: inset 0 0 0 1px rgba(214,192,143,0.55);
+  --focus-ring: rgba(214,192,143,0.25);
+  --focus-ring-key: rgba(214,192,143,0.7);
   --fade: linear-gradient(to top, #14161C 55%, rgba(20,22,28,0));
   --skel: rgba(255,255,255,0.06);
   --skel-hi: rgba(255,255,255,0.06);
@@ -206,6 +235,8 @@
   --color-paper-thumb: var(--paper-thumb);
   --color-paper-thumb-ink: var(--paper-thumb-ink);
   --color-backdrop: var(--backdrop);
+  --color-focus: var(--focus-ring);
+  --color-focus-key: var(--focus-ring-key);
   /* system Arabic font (SF Arabic on Apple), as in the mockups; no bundled Arabic web font */
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Arabic", "SF Pro Text", system-ui, sans-serif;
   --font-num: -apple-system, "SF Pro Display", system-ui, var(--font-inter), sans-serif;
@@ -308,9 +339,6 @@
 
 html { background-color: var(--bg); }
 body {
-  background-color: var(--bg);
-  background-image: var(--bg-image);
-  background-repeat: no-repeat;
   color: var(--text);
   font-family: var(--font-sans);
   font-size: var(--text-md);
@@ -319,17 +347,30 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* The ambient background: fixed behind everything (z -1 under the body's content; the body paints no background of its own), soft, not animated, never takes a pointer.
+   The page's own soft light (--bg-image) sits under the shapes. */
+body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: var(--ambient), var(--bg-image); background-repeat: no-repeat; }
+
 /* Numbers: SF Pro Display / Inter, tabular */
 .font-num { font-family: -apple-system, "SF Pro Display", system-ui, var(--font-inter), sans-serif; font-variant-numeric: tabular-nums; }
 /* The Clausia «C» mark (logo tile, Clausia avatar): ink in light, champagne in dark */
 .mark { background: var(--mark-bg); color: var(--mark-fg); }
 :root[data-theme="dark"] .mark { box-shadow: 0 0 0 1px rgba(255,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.1); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .mark { box-shadow: 0 0 0 1px rgba(255,255,255,0.08), inset 0 1px 0 rgba(255,255,255,0.1); } }
-/* Glass: floating controls only (top bar, tab capsule, composer, round buttons, chips) */
+/* Glass: the few floating surfaces only (top bar on scroll, chat panel, composer, sessions list, sheets, undo toast) and the round controls over them.
+   Never per message or card: a control that sits on a card or inside a glass panel uses .glass-flat (no blur). */
 .glass { background: var(--glass-bg); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); border: var(--glass-border); box-shadow: var(--glass-shadow); }
 .glass-icon { color: var(--glass-icon); }
-/* glass only below 1280 (the phone's composer floats over the chat; on desktop the same box is a solid white panel part) */
+/* the muted text step (--text-3) is a little stronger on glass, which is lighter or darker than the page colour behind it */
+.glass, .glass-flat, .glass-xl, .glass-below-xl { --text-3: var(--glass-text-3); }
+/* just the frosted fill (no edge, no shadow): a bar that sticks to the edge of a glass sheet and has its scrolling content under it */
+.glass-fill { background: var(--glass-bg); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
+.glass-flat { background: var(--glass-flat-bg); border: var(--glass-border); box-shadow: var(--glass-shadow); }
+/* glass only from 1280 (the desktop chat panel; the phone's chat is the whole screen) / only below 1280 (the page sheet) */
+@media (min-width: 80rem) { .glass-xl { background: var(--glass-bg); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); border: var(--glass-border); box-shadow: var(--glass-shadow); } }
 @media (max-width: 79.99rem) { .glass-below-xl { background: var(--glass-bg); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); border: var(--glass-border); box-shadow: var(--glass-shadow); } }
+/* the active tab / composer mode / segment (AppHeader, CaseTabs, composer, filter chips, choices): ink pill in light, champagne frame in dark (tokens --pill-on-*) */
+.pill-on { background: var(--pill-on-bg); color: var(--pill-on-fg); box-shadow: var(--pill-on-shadow); font-weight: 600; }
 /* invisible 44px tap area around a control drawn smaller (owner decision: draw as the mockup, tap at 44px) */
 @layer components {
   /* layered, so utilities like sr-only / absolute still win over position: relative */
@@ -353,11 +394,12 @@ body {
 .text-doc { font-family: var(--font-naskh), serif; line-height: 1.9; }
 }
 
-/* the sticky top bar: clear at rest (the page's soft light shows through, no seam), the page colour once the page has scrolled 40px,
-   so content never shows through it. Scroll-driven (no script); a browser without it keeps the bar clear. */
-@keyframes bar-solid { from { background-color: transparent; } to { background-color: var(--bg); } }
+/* the sticky top bar: clear at rest (the page's soft light shows through, no seam); once the page has scrolled 40px a glass layer fades in behind it
+   (the same 44px blur as the other panels, so content under it is smeared, not readable). Scroll-driven (no script); a browser without it keeps the bar clear. */
+.bar-solid::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0; background: var(--glass-bg), color-mix(in srgb, var(--bg) 50%, transparent); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); box-shadow: inset 0 -1px 0 var(--border-2); }
+@keyframes bar-solid { to { opacity: 1; } }
 @supports (animation-timeline: scroll()) {
-  .bar-solid { animation: bar-solid linear both; animation-timeline: scroll(root); animation-range: 0 40px; }
+  .bar-solid::before { animation: bar-solid linear both; animation-timeline: scroll(root); animation-range: 0 40px; }
 }
 
 /* Numbers (dates, case numbers) stay left-to-right inside RTL text */
@@ -413,7 +455,36 @@ body {
   }
 }
 
-:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: var(--radius-sm); }
-/* a box that only receives focus from code (the paper panel when it opens) shows no ring; the source chip is a pill, its ring stays one */
+/*
+ * Focus: never a hard border or outline. A soft ring (ink 12% in light, champagne 25% in dark) fades in over 150ms when a field is focused with the mouse;
+ * the keyboard gets a slightly stronger one. The ring is an outline, so it follows the radius and never fights a box-shadow.
+ * Text fields: :focus (mouse and keyboard); html[data-input="key"] (FocusModality.tsx) says the last input was the keyboard.
+ * Everything else (links, buttons, chips, tabs, cards, menu items): the ring on :focus-visible only, so a click leaves no ring behind.
+ * .bare-field: a field that draws no ring itself because its box does (the composer's input; its .focus-host box rings while the input has focus).
+ */
+@keyframes focus-in { from { outline-color: transparent; } }
+:focus-visible { outline: 3px solid var(--focus-ring-key); outline-offset: 2px; }
+:is(input:not([type="checkbox"], [type="radio"], [type="file"]), textarea, select):focus:not(.bare-field) { outline: 3px solid var(--focus-ring); outline-offset: 0; animation: focus-in 150ms ease-out; }
+html[data-input="key"] :is(input:not([type="checkbox"], [type="radio"], [type="file"]), textarea, select):focus-visible:not(.bare-field) { outline-color: var(--focus-ring-key); }
+.bare-field:focus-visible { outline: none; }
+.focus-host:has(.bare-field:focus) { outline: 3px solid var(--focus-ring); outline-offset: 0; animation: focus-in 150ms ease-out; }
+html[data-input="key"] .focus-host:has(.bare-field:focus-visible) { outline-color: var(--focus-ring-key); }
+/* a box that only receives focus from code (the paper panel when it opens) shows no ring */
 [tabindex="-1"]:focus-visible { outline: none; }
-[data-cite-id]:focus-visible { border-radius: calc(infinity * 1px); }
+
+/* Cursor: one rule for the whole app. Links, buttons, tabs, menu items, labels, summaries, selects and role=button are clickable; disabled is not-allowed (it comes last, so it wins). */
+:where(button, a[href], [role="button"], [role="tab"], [role="menuitem"], [role="option"], label[for], summary, select, input[type="checkbox"], input[type="radio"], input[type="file"]) { cursor: pointer; }
+:where([disabled], [aria-disabled="true"]) { cursor: not-allowed; }
+
+/* the page's end: 48px under the last card, plus the home-indicator inset on a phone */
+@utility pb-page-end { padding-bottom: calc(3rem + env(safe-area-inset-bottom)); }
+
+/* reduced transparency: glass becomes a solid surface (the tokens turn solid, so every glass user follows); the ambient shapes stay, they are not see-through UI */
+@media (prefers-reduced-transparency: reduce) {
+  :root, :root[data-theme="dark"], :root:not([data-theme="light"]) {
+    --glass-bg: var(--card);
+    --glass-filter: none;
+    --glass-flat-bg: var(--card);
+  }
+  .bar-solid::before { background: var(--bg); }
+}

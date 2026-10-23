@@ -26,7 +26,7 @@ export function casesHref(sp: ListParams, patch: Partial<ListParams>) {
 function Capsule({ on, to, children }: { on: boolean; to: string; children: React.ReactNode }) {
   return (
     <Link href={to} aria-current={on ? "true" : undefined} className="tap group inline-flex shrink-0 items-center">
-      <span className={`inline-flex h-8 items-center whitespace-nowrap rounded-full px-3.25 text-sm transition sm:h-chip sm:px-3.75 ${on ? "bg-selected font-semibold text-on-selected shadow-[var(--tab-shadow)]" : "font-medium glass-icon group-hover:text-text"}`}>
+      <span className={`inline-flex h-8 items-center whitespace-nowrap rounded-full px-3.25 text-sm transition sm:h-chip sm:px-3.75 ${on ? "pill-on" : "font-medium glass-icon group-hover:text-text"}`}>
         {/* one inline run, so the spaces around «·» survive (bare flex items trim them) */}
         <span>{children}</span>
       </span>

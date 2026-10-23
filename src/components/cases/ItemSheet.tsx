@@ -29,7 +29,7 @@ export function TapItem({ id, title, row, children, className = "", tight = fals
       <div className={`relative ${tight ? "" : "min-h-11"} w-full text-start transition-colors hover:bg-card-2/60 has-focus-visible:bg-card-2/60 ${className}`}>
         <div id={`row-${id}`}>{row}</div>
         <button type="button" onClick={() => ref.current?.showModal()} aria-haspopup="dialog" aria-labelledby={`row-${id}`}
-          className="absolute inset-0 size-full cursor-pointer rounded-[inherit]" /* ds-allow: the stretched button takes its row's radius */ />
+          className="absolute inset-0 size-full rounded-[inherit]" /* ds-allow: the stretched button takes its row's radius */ />
       </div>
       <dialog ref={ref} aria-label={title}
         onClick={(e) => { if (e.target === e.currentTarget) close(); }}
@@ -94,7 +94,7 @@ export function SheetEditText({ table, id, caseId, initial }: { table: string; i
     <form action={action} className="space-y-2">
       <Hidden v={{ table, id, case_id: caseId }} />
       <textarea name="value" defaultValue={initial} rows={4} autoFocus aria-label="نص البند"
-        className="text-doc block w-full resize-y rounded-md border border-border bg-field px-3.5 py-2.5 text-md text-text focus:outline-none focus:border-gold" />
+        className="text-doc block w-full resize-y rounded-md border border-border bg-field px-3.5 py-2.5 text-md text-text" />
       {state?.error ? <p className="text-sm text-bad">{state.error}</p> : null}
       <div className="flex gap-2">
         <button disabled={pending} className="bg-primary-fill h-11 flex-1 rounded-full text-md font-bold disabled:opacity-50">{pending ? "بيتحفظ…" : "حفظ"}</button>

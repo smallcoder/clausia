@@ -40,15 +40,15 @@ export function SplitShell({ header, chat, account, children }: { header: ReactN
       {header}
       <div className="xl:flex xl:items-start xl:gap-6">
         {/* the page: a column on desktop, a bottom sheet below 1280 (only when it is open) */}
-        {open ? <Link href={closeHref(path, sp)} aria-label="رجوع للشات" className="fade-enter fixed inset-0 z-30 bg-backdrop xl:hidden" /> : null}
+        {open ? <Link href={closeHref(path, sp)} aria-label="رجوع للشات" className="fixed inset-0 z-30 xl:hidden" /> : null}
         <div className={cx(
           "min-w-0 flex-1 flex-col xl:flex xl:page-min-height",
-          "max-xl:fixed max-xl:inset-x-0 max-xl:bottom-0 max-xl:top-48 max-xl:z-40 max-xl:overflow-y-auto max-xl:overscroll-contain max-xl:rounded-t-xl max-xl:bg-bg max-xl:shadow-pop",
+          "max-xl:fixed max-xl:inset-x-0 max-xl:bottom-0 max-xl:top-48 max-xl:z-40 max-xl:overflow-y-auto max-xl:overscroll-contain max-xl:rounded-t-xl glass-below-xl",
           open ? "sheet-enter flex" : "max-xl:hidden",
         )}>
           <div aria-hidden className="mx-auto mt-2 h-1.5 w-10 shrink-0 rounded-full bg-border-strong xl:hidden" />
-          <main className="flex w-full flex-1 flex-col pt-3 xl:pt-0">{children}</main>
-          <div className="sticky bottom-0 mt-4 flex items-center gap-2 bg-bg px-4 pb-[calc(14px+env(safe-area-inset-bottom))] pt-3 xl:hidden" /* ds-allow: safe-area inset needs calc() */>
+          <main className="flex w-full flex-1 flex-col pb-12 pt-3 xl:pb-page-end xl:pt-0">{children}</main>
+          <div className="sticky bottom-0 glass-fill mt-4 flex items-center gap-2 px-4 pb-[calc(14px+env(safe-area-inset-bottom))] pt-3 xl:hidden" /* ds-allow: safe-area inset needs calc() */>
             {/* a page with edits waiting puts «أكّد · N» here (ConfirmBar): one bar with «رجوع للشات» */}
             <div id={CONFIRM_SLOT} className="min-w-0 flex-2 empty:hidden" />
             <Link href={closeHref(path, sp)} className="tap glass glass-icon flex h-control-xl min-w-0 flex-1 items-center justify-center rounded-full text-base font-semibold">رجوع للشات</Link>

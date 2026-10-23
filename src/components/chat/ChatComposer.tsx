@@ -58,7 +58,7 @@ export function ChatComposer({ id, value, onChange, onSend, onFile, sending, bus
             <button type="button" onClick={onDismissError} className="shrink-0 text-sm leading-4 underline">إخفاء</button>
           </p>
         ) : null}
-        <div className="glass-below-xl rounded-xl px-2 pb-2 pt-1.75 xl:border xl:border-border-2 xl:bg-card xl:px-2.5 xl:pb-2.5 xl:pt-2 xl:shadow-soft">
+        <div className="glass focus-host rounded-xl px-2 pb-2 pt-1.75 xl:px-2.5 xl:pb-2.5 xl:pt-2">
           {context}
           <div role="tablist" aria-label="نوع الطلب" className="flex gap-0.5 border-b border-border-2 pb-1.25 xl:pb-1.5">
             {CHAT_MODES.map((m) => {
@@ -67,7 +67,7 @@ export function ChatComposer({ id, value, onChange, onSend, onFile, sending, bus
               return (
                 <button key={m} type="button" role="tab" aria-selected={on} onClick={() => onMode(m)}
                   className={cx("tap inline-flex h-6.5 items-center gap-1 rounded-full px-2.25 text-xs font-semibold transition xl:h-7 xl:gap-1.25 xl:px-2.5 xl:text-sm",
-                    on ? "bg-selected text-on-selected shadow-[var(--tab-shadow)]" : "text-glass-icon hover:text-text")}>
+                    on ? "pill-on" : "text-glass-icon hover:text-text")}>
                   <Icon aria-hidden size={13} strokeWidth={1.9} />{MODE_LABEL[m]}
                 </button>
               );
@@ -76,14 +76,14 @@ export function ChatComposer({ id, value, onChange, onSend, onFile, sending, bus
           <div className="flex items-center gap-1.5 px-1 pt-2 xl:gap-2">
             <input ref={fileRef} type="file" accept="application/pdf,image/*" className="sr-only" id={`file-${id}`} onChange={(e) => onFile(e.target.files?.[0])} />
             <label htmlFor={`file-${id}`} aria-label="إرفاق ورقة (PDF أو صورة)" title="إرفاق ورقة (PDF أو صورة)"
-              className={cx("tap inline-flex size-8.5 shrink-0 cursor-pointer items-center justify-center rounded-full border border-border-2 text-glass-icon transition hover:text-text max-xl:order-first xl:order-2 xl:size-9", busy && "pointer-events-none opacity-50")}>
+              className={cx("tap inline-flex size-8.5 shrink-0 items-center justify-center rounded-full border border-border-2 text-glass-icon transition hover:text-text max-xl:order-first xl:order-2 xl:size-9", busy && "pointer-events-none opacity-50")}>
               <Plus aria-hidden size={18} strokeWidth={1.8} />
             </label>
             <textarea ref={boxRef} value={value} onChange={(e) => onChange(e.target.value)} onKeyDown={onKey} rows={1}
               placeholder={placeholder} aria-label="رسالة لـ Clausia"
-              className="block max-h-32 min-h-8.5 min-w-0 flex-1 resize-none bg-transparent px-0.5 py-1.5 text-md leading-[1.5] text-text placeholder:text-text-4 focus:outline-none [field-sizing:content] xl:order-1 xl:min-h-9" />
+              className="block max-h-32 min-h-8.5 min-w-0 flex-1 resize-none bg-transparent px-0.5 py-1.5 text-md leading-[1.5] text-text placeholder:text-text-4 [field-sizing:content] bare-field xl:order-1 xl:min-h-9" />
             <button type="button" onClick={onSend} disabled={!value.trim() || sending} aria-label="إرسال"
-              className="tap bg-primary-fill inline-flex size-8.5 shrink-0 items-center justify-center rounded-full transition disabled:cursor-not-allowed order-last xl:size-9">
+              className="tap bg-primary-fill inline-flex size-8.5 shrink-0 items-center justify-center rounded-full transition order-last xl:size-9">
               <ArrowUp aria-hidden size={18} strokeWidth={2.4} />
             </button>
           </div>

@@ -60,7 +60,7 @@ export function SessionsMenu({ sessions, currentId }: { sessions: Session[]; cur
         <List aria-hidden size={16} strokeWidth={1.9} />
       </button>
       {open ? (
-        <div className="absolute end-0 top-11 z-20 max-h-96 w-80 overflow-y-auto rounded-lg border border-border-2 bg-card p-1.5 shadow-pop">
+        <div className="absolute end-0 top-11 z-20 max-h-96 w-80 overflow-y-auto rounded-lg glass p-1.5">
           <SessionList sessions={sessions} currentId={currentId} hrefFor={(id) => withSession(path, sp, id)} onPick={() => setOpen(false)} />
         </div>
       ) : null}

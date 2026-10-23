@@ -135,10 +135,10 @@ function Paper({ source, close }: { source: CiteSource; close: () => void }) {
         </div>
         <div className="flex shrink-0 gap-1.5">
           {total > 1 ? (
-            <label className={cx(PILL, "tap relative cursor-pointer has-focus-visible:outline-2 has-focus-visible:outline-gold")}>
+            <label className={cx(PILL, "tap relative has-focus-visible:outline-3 has-focus-visible:outline-focus-key")}>
               صفحة <span className="font-num -ms-1">{cur}</span>
               <select aria-label="اختار الصفحة" value={cur} onChange={(e) => setPage(Number(e.target.value))}
-                className="absolute inset-0 size-full cursor-pointer opacity-0">
+                className="absolute inset-0 size-full opacity-0">
                 {pages.map((_, i) => <option key={i} value={i + 1}>صفحة {i + 1}{i + 1 === target.page && target.span ? " · فيها الجملة" : ""}</option>)}
               </select>
             </label>

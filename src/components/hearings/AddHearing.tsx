@@ -8,7 +8,7 @@ import { useActionState, useState } from "react";
 import { DateText, cx } from "@/components/ui";
 import { addHearingAction, type HearingFormState } from "./actions";
 
-const input = "h-11 w-full rounded-md border border-border bg-field px-3 text-md text-text placeholder:text-text-4 focus:border-gold focus:outline-none";
+const input = "h-11 w-full rounded-md border border-border bg-field px-3 text-md text-text placeholder:text-text-4";
 
 export function AddHearing({ caseId }: { caseId: string }) {
   const [open, setOpen] = useState(false);

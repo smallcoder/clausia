@@ -51,7 +51,7 @@ function Items({ row, items, kind }: { row: DocRow; items: CellItem[]; kind: str
       {vals(g.slice(0, VISIBLE))}
       {g.length > VISIBLE ? (
         <details className="group/more space-y-2.5">
-          <summary className="tap inline-flex cursor-pointer list-none items-center text-xs font-semibold text-text-3 hover:text-text group-open/more:hidden [&::-webkit-details-marker]:hidden">
+          <summary className="tap inline-flex list-none items-center text-xs font-semibold text-text-3 hover:text-text group-open/more:hidden [&::-webkit-details-marker]:hidden">
             و <span className="font-num mx-1">{g.length - VISIBLE}</span> كمان
           </summary>
           {vals(g.slice(VISIBLE))}
