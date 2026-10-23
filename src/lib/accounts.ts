@@ -56,7 +56,7 @@ export async function getAccounts(db: Db, clientId: string): Promise<ClientAccou
     db.from("account_movements").select(MOVE_COLS).eq("client_id", clientId).neq("review_status", "rejected").order("moved_on", { ascending: false }).order("created_at", { ascending: false }).limit(1000),
   ]);
   const ids = (cases ?? []).map((c) => c.id);
-  const { data: feeRows } = ids.length ? await db.from("case_fees").select("case_id, kind, amount_piasters").in("case_id", ids).neq("review_status", "rejected") : { data: [] };
+  const { data: feeRows } = ids.length ? await db.from("case_fees").select("case_id, kind, amount_piasters").in("case_id", ids).eq("review_status", "confirmed") : { data: [] };
   const fees = new Map<string, Fee>((feeRows ?? []).map((f) => [f.case_id, { kind: f.kind, amount: f.amount_piasters === null ? null : fromDb(f.amount_piasters) }]));
 
   const moves = (movRows ?? []).map((r) => toMove(r as MoveRow));
@@ -95,7 +95,7 @@ export async function listBalances(db: Db, clientId?: string): Promise<ClientBal
   const ids = (cases ?? []).map((c) => c.id);
   if (!ids.length) return [];
   const [{ data: fees }, { data: receipts }, { data: clients }] = await Promise.all([
-    db.from("case_fees").select("case_id, amount_piasters").in("case_id", ids).eq("kind", "fixed").neq("review_status", "rejected"),
+    db.from("case_fees").select("case_id, amount_piasters").in("case_id", ids).eq("kind", "fixed").eq("review_status", "confirmed"),
     db.from("account_movements").select("case_id, amount_piasters").in("case_id", ids).eq("kind", "receipt").eq("review_status", "confirmed").limit(5000),
     db.from("clients").select("id, name").in("id", [...new Set((cases ?? []).map((c) => c.client_id!))]).neq("review_status", "rejected"),
   ]);

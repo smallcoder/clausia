@@ -362,14 +362,14 @@ async function applyOpRaw(db: Db, tool: WriteTool, rawArgs: unknown, p: Provenan
       const caseId = (await visibleCase(db, resolveRef(x.case, refs)!)).id;
       const piasters = x.kind === "fixed" ? parseAmount(x.amount) : null;
       if (x.kind === "fixed" && piasters === null) throw new Error("المبلغ غير واضح");
-      const cur = (await db.from("case_fees").select("id, kind, amount_piasters, updated_at").eq("case_id", caseId).maybeSingle()).data;
+      const cur = (await db.from("case_fees").select("id, kind, amount_piasters, updated_at, review_status").eq("case_id", caseId).maybeSingle()).data;
       if (!cur) {
         const row = must(await db.from("case_fees").insert({ case_id: caseId, kind: x.kind, amount_piasters: piasters, ...prov(p) }).select("id").single());
         return { id: row.id, undo: del(db, "case_fees", row.id), steps: rm("case_fees", row.id) };
       }
       // a fee already set is changed in place; the undo puts the old kind and amount back
-      const before = { kind: cur.kind, amount_piasters: cur.amount_piasters, updated_at: cur.updated_at };
-      must(await db.from("case_fees").update({ kind: x.kind, amount_piasters: piasters, updated_at: new Date().toISOString() }).eq("id", cur.id).select("id").single());
+      const before = { kind: cur.kind, amount_piasters: cur.amount_piasters, updated_at: cur.updated_at, review_status: cur.review_status };
+      must(await db.from("case_fees").update({ kind: x.kind, amount_piasters: piasters, updated_at: new Date().toISOString(), review_status: p.review_status }).eq("id", cur.id).select("id").single());
       return { id: cur.id, undo: async () => { must(await db.from("case_fees").update(before).eq("id", cur.id).select("id").single()); }, steps: [back("case_fees", cur.id, before)] };
     }
     case "add_deadline": {

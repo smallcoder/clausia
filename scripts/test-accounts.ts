@@ -222,14 +222,14 @@ console.log("\n-- (d) record_movement and set_case_fee through applyOp --");
   await applyOp(d2, "set_case_fee", { case: CASE_A, kind: "open", quote: "x" }, MANUAL);
   const ins2 = w2.find((w) => w.op === "insert")?.payload;
   eq([ins2?.kind, ins2?.amount_piasters], ["open", null], "an open fee has no amount (null)");
-  const { db: d3, writes: w3 } = fakeDb({ cases: [{ id: CASE_A, client_id: CLIENT }], case_fees: [{ id: U(7), kind: "fixed", amount_piasters: 1500000, updated_at: "2026-10-01T00:00:00Z" }] });
+  const { db: d3, writes: w3 } = fakeDb({ cases: [{ id: CASE_A, client_id: CLIENT }], case_fees: [{ id: U(7), kind: "fixed", amount_piasters: 1500000, updated_at: "2026-10-01T00:00:00Z", review_status: "confirmed" }] });
   const r3 = await applyOp(d3, "set_case_fee", { case: CASE_A, kind: "open", quote: "x" }, MANUAL);
   const upd = w3.find((w) => w.op === "update")?.payload;
   eq([upd?.kind, upd?.amount_piasters], ["open", null], "an existing fee is changed in place (to open)");
-  eq(r3.steps?.[0], { op: "restore", table: "case_fees", id: U(7), cols: { kind: "fixed", amount_piasters: 1500000, updated_at: "2026-10-01T00:00:00Z" }, after: r3.steps?.[0].after }, "its undo puts the old kind and amount back");
+  eq(r3.steps?.[0], { op: "restore", table: "case_fees", id: U(7), cols: { kind: "fixed", amount_piasters: 1500000, updated_at: "2026-10-01T00:00:00Z", review_status: "confirmed" }, after: r3.steps?.[0].after }, "its undo puts the old kind and amount back");
   w3.length = 0;
   await r3.undo();
-  eq(w3[0]?.payload, { kind: "fixed", amount_piasters: 1500000, updated_at: "2026-10-01T00:00:00Z" }, "undo() restores the old fee");
+  eq(w3[0]?.payload, { kind: "fixed", amount_piasters: 1500000, updated_at: "2026-10-01T00:00:00Z", review_status: "confirmed" }, "undo() restores the old fee (and its status)");
 }
 
 // ---------------------------------------------------------------- (e) prepareMovement

@@ -58,7 +58,7 @@ export function MoneyCard({ proposal: p, lookup, edits, setEdit, pending, error,
             <Printer aria-hidden size={15} strokeWidth={1.9} />اطبع الإيصال
           </Link>
         ) : null}
-        {first?.tool === "record_movement" && first.args.client ? (
+        {first?.tool === "record_movement" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(first.args.client)) ? (
           <Link href={`/clients/${String(first.args.client)}?tab=accounts`} className="inline-flex min-h-11 shrink-0 items-center rounded-full px-3 font-semibold text-text-2 hover:text-text">افتح الحسابات ←</Link>
         ) : null}
       </div>
