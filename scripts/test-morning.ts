@@ -6,7 +6,7 @@ import type { HearingWithCase } from "../src/lib/hearings";
 import { addDaysIso, formatDmy } from "../src/lib/dates";
 import { buildMorning, builtLine, clockHm, clockStamp, FROM_CHAT, FROM_MANUAL, nCases, nNewDocs, QUIET, sentenceText, type NewDoc } from "../src/lib/morning/build";
 import { buildChips, GENERIC_CHIPS } from "../src/lib/morning/chips";
-import { conflictNotice, dateConflicts, dateFreeKey, dismissalId, hearingNotice, MAX_NOTICES, MIN_KEY, noticedHeading, pickNotices, type NoticeFact } from "../src/lib/morning/notices";
+import { conflictNotice, dateConflicts, dateFreeKey, dismissalId, distinctiveWords, hearingNotice, MAX_NOTICES, MIN_KEY, noticedHeading, pickNotices, type NoticeFact } from "../src/lib/morning/notices";
 
 let failed = 0;
 function check(name: string, ok: boolean, detail = "") {
@@ -125,6 +125,17 @@ const fact = (o: Partial<NoticeFact> & { id: string }): NoticeFact => ({
   ]).length === 1);
   check("Arabic-Indic digits and hamza forms don't matter", dateKeyEq("أنذر المستأجر بتاريخ ١٥/٣/٢٠٢٦ على يد محضر", "انذر المستأجر بتاريخ 15/4/2026 علي يد محضر"));
 
+  // stock court events repeat in every case: two of them are two events, never one event with two dates (review of PR #116)
+  const pair = (id: string, textA: string, textB: string) => dateConflicts([
+    fact({ id: `${id}1`, text: textA, fact_date: "2026-03-05", source_document_id: "doc-A" }),
+    fact({ id: `${id}2`, text: textB, fact_date: "2026-04-09", source_document_id: "doc-B" }),
+  ]);
+  check("no conflict: «تم تأجيل الدعوى لجلسة 5/3/2026» vs «… 9/4/2026»", pair("p", "تم تأجيل الدعوى لجلسة 5/3/2026", "تم تأجيل الدعوى لجلسة 9/4/2026").length === 0);
+  check("no conflict: «صدر حكم ابتدائي في الدعوى بتاريخ 5/3/2026» vs «… 9/4/2026»", pair("q", "صدر حكم ابتدائي في الدعوى بتاريخ 5/3/2026", "صدر حكم ابتدائي في الدعوى بتاريخ 9/4/2026").length === 0);
+  check("no conflict: a stock text with a few more stock words (قرار المحكمة بنظر الدعوى وتحديد جلسة)", pair("r", "قرار المحكمة بنظر الدعوى وتحديد جلسة 5/3/2026 للحضور", "قرار المحكمة بنظر الدعوى وتحديد جلسة 9/4/2026 للحضور").length === 0);
+  check("the stock-word check keeps a specific object: «تأجيل الدعوى … لتقديم أصل عقد الإيجار» still matches", pair("s", "تم تأجيل الدعوى لجلسة 5/3/2026 لتقديم أصل عقد الإيجار", "تم تأجيل الدعوى لجلسة 9/4/2026 لتقديم أصل عقد الإيجار").length === 1);
+  check("a name and an amount are distinctive (not stock)", distinctiveWords("حكم المحكمة على الشركة بسداد 350,000 جنيه بتاريخ 5/3/2026").length >= 2);
+  check("a date's digits are not distinctive", distinctiveWords("صدر حكم في الدعوى بتاريخ 5/3/2026").length === 0);
   check("different events do not match", dateConflicts([a, fact({ id: "f3", text: "امتنع المستأجر عن سداد الأجرة الشهرية اعتبارًا من يناير", fact_date: "2026-01-01", source_document_id: "doc-B" })]).length === 0);
   check("same paper twice does not match", dateConflicts([a, { ...b, source_document_id: "doc-A" }]).length === 0);
   check("same date does not match", dateConflicts([a, { ...b, fact_date: "2026-03-15" }]).length === 0);

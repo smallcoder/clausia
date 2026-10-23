@@ -11,7 +11,13 @@
  *        2. their `fact_date` differs,
  *        3. their texts are equal once the dates are taken out of them (numeric dates like 15/3/2026, «15 مارس 2026», the
  *           fact's own `date_text`) and the rest is normalised with `normalizeForMatch` (digits, diacritics, hamza and ة/ه,
- *           spacing and punctuation ignored), and what is left is at least MIN_KEY letters (so a two-word fact never matches).
+ *           spacing and punctuation ignored), and what is left is at least MIN_KEY letters (so a two-word fact never matches),
+ *        4. the text is about a SPECIFIC event, not a stock one that repeats in every case («تم تأجيل الدعوى لجلسة …»,
+ *           «صدر حكم ابتدائي في الدعوى بتاريخ …»: two such facts are two events, never one event with two dates). The text,
+ *           with its dates out, must keep at least MIN_DISTINCT distinctive words: a word that is not a stock court word
+ *           (تأجيل، جلسة، حكم، قرار، الدعوى، إعلان، صدر، تم …, see STOCK) and not a small function word (في، على، من …),
+ *           with a prefix (ال، ب، ل، و) not counted. Names, numbers and amounts count (the digits of a date are already out),
+ *           and so do specific nouns such as عقد or إنذار with their object («أنذر المستأجر على يد محضر …»).
  *      One card per (case, text); it shows the first two facts that differ. Action: «شوف الورقتين» = one chip per paper.
  *
  *  «تجاهل» is per lawyer (`dismissed_notices`): a dismissed card is filtered out here and never comes back.
@@ -52,13 +58,42 @@ const DATE_PATTERNS = [
   /\b\d{1,2}\s*[/\-.]\s*\d{4}\b/g, // 3/2026
 ];
 
-/** The fact's text without its dates, normalised for matching. */
-export function dateFreeKey(text: string, dateText?: string | null): string {
+/** The fact's text with its dates taken out (not normalised). */
+function withoutDates(text: string, dateText?: string | null): string {
   let t = normalizeDigits(text);
   const own = dateText?.trim();
   if (own) t = t.split(normalizeDigits(own)).join(" ");
   for (const re of DATE_PATTERNS) t = t.replace(re, " ");
-  return normalizeForMatch(t);
+  return t;
+}
+
+/** The fact's text without its dates, normalised for matching. */
+export function dateFreeKey(text: string, dateText?: string | null): string {
+  return normalizeForMatch(withoutDates(text, dateText));
+}
+
+/** the distinctive words needed for a match: one specific word is not an event, two make it a specific one */
+export const MIN_DISTINCT = 2;
+
+/** Stock words of court papers (court events that repeat in every case) and small function words, stored as normalizeForMatch writes them. */
+const STOCK = new Set([
+  // court events and papers
+  "تأجيل", "تأجيله", "جلسة", "جلسات", "حكم", "الحكم", "قرار", "القرار", "الدعوى", "دعوى", "إعلان", "إعلانه", "المحكمة", "محكمة", "نظر", "تحديد", "تقرر",
+  "صدر", "صدور", "حضور", "حضر", "ابتدائي", "ابتدائيا", "استئناف", "نهائي", "الطعن", "طعن", "مذكرة", "قيد", "رقم", "تاريخ", "بتاريخ", "يوم", "موعد", "لنظر", "للنظر",
+  // small function words
+  "تم", "في", "على", "علي", "من", "إلى", "الى", "عن", "أن", "ان", "أو", "او", "ثم", "كان", "كانت", "هذا", "هذه", "ذلك", "قد", "لا", "لم", "مع", "بعد", "قبل", "حتى", "فيها", "فيه", "به", "بها", "له", "لها",
+].map(normalizeForMatch));
+
+/** the leading prefixes that stick to a word: وال بال لل ال و ب ل */
+const PREFIX = /^(?:وال|بال|لل|ال|و|ب|ل)/;
+
+/** The words of the fact (dates out) that are neither stock court words nor function words. Names, numbers and specific nouns stay. */
+export function distinctiveWords(text: string, dateText?: string | null): string[] {
+  return withoutDates(text, dateText).split(/\s+/).map(normalizeForMatch).filter((w) => {
+    if (!w) return false;
+    const bare = w.replace(PREFIX, "");
+    return !STOCK.has(w) && !(bare && STOCK.has(bare));
+  });
 }
 
 /** The conflicts of a case's facts (see the rule in the file header). Pure. */
@@ -67,7 +102,7 @@ export function dateConflicts(facts: NoticeFact[]): { key: string; caseId: strin
   for (const f of facts) {
     if (!f.source_document_id || !f.fact_date || f.date_precision !== "day") continue;
     const k = dateFreeKey(f.text, f.date_text);
-    if (k.length < MIN_KEY) continue;
+    if (k.length < MIN_KEY || distinctiveWords(f.text, f.date_text).length < MIN_DISTINCT) continue;
     const g = `${f.case_id}|${k}`;
     (groups.get(g) ?? groups.set(g, []).get(g)!).push(f);
   }
