@@ -11,6 +11,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { createPortal } from "react-dom";
 import { useCite, type CiteSource } from "@/components/cite/context";
 import { DocTypeSelect } from "@/components/documents/DocTypeSelect";
+import { DateText } from "@/components/ui";
 
 const ITEM = "flex min-h-11 w-full items-center px-4 text-base text-text hover:bg-card-2 disabled:text-text-4 disabled:hover:bg-transparent";
 
@@ -68,7 +69,7 @@ export function DocMenu({ documentId, caseId, name, fileName, docType, meta, has
           className="fixed z-40 w-72 max-w-[calc(100vw-1rem)] overflow-hidden rounded-md border border-border-2 bg-card py-1 shadow-pop" /* ds-allow: a share of the screen width (vw), not a length: the menu never passes the screen edge */>
           <div className="border-b border-border-2 px-4 pb-2.5 pt-2">
             <p className="truncate text-base font-semibold text-text" dir="auto">{fileName}</p>
-            {meta ? <p className="mt-0.5 text-xs text-text-3">{meta}</p> : null}
+            {meta ? <p className="mt-0.5 text-xs text-text-3"><DateText value={meta} /></p> : null}
           </div>
           <div className="flex min-h-12 items-center justify-between gap-3 px-4 py-1">
             <span className="text-base text-text">النوع</span>

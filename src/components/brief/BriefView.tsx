@@ -6,6 +6,7 @@
 import type { ReactNode } from "react";
 import type { BriefCard, BriefLine } from "@/lib/brief/build";
 import { BriefComposer, BriefSeen, BriefSettings } from "./BriefClient";
+import { DateText } from "@/components/ui";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -64,7 +65,7 @@ export function BriefView({ date, word, eyebrow, cards, line, memo, whatsapp }: 
     <div className="mx-auto flex w-full max-w-page flex-1 flex-col px-4 pt-3 sm:px-10 sm:pt-6">
       <header className="flex items-end justify-between gap-6 px-1 leading-[normal] sm:px-2">
         <div className="min-w-0">
-          <div className="text-sm font-semibold text-text-3">{eyebrow}</div>
+          <div className="text-sm font-semibold text-text-3"><DateText value={eyebrow} /></div>
           <h1 className="mt-1.5 text-xl font-bold leading-[1.2] text-title sm:text-2xl">تحضير جلسات {word}</h1>
         </div>
         <div className="hidden shrink-0 items-center gap-2.5 sm:flex">

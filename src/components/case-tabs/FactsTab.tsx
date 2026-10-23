@@ -2,7 +2,7 @@
 import { editItemText } from "@/app/(app)/cases/actions";
 import { InlineEdit } from "@/components/cases/InlineEdit";
 import { ReviewButtons } from "@/components/cases/ReviewButtons";
-import { Badge, EmptyState, SourceBadge, cx } from "@/components/ui";
+import { Badge, DateText, EmptyState, SourceBadge, cx } from "@/components/ui";
 import { compareFacts } from "@/lib/case-file";
 import { formatDmy } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
@@ -24,8 +24,8 @@ export async function FactsTab({ caseId }: { caseId: string }) {
           <li key={f.id} className="relative">
             <span className={cx("absolute -start-[1.6rem] top-1.5 size-2.5 rounded-full border-2 border-bg", suggested ? "bg-gold" : "bg-primary")} /* ds-allow: the dot sits on the rail 1.6rem out (25.6px, no 0.25 step) */ />
             <div className="flex flex-wrap items-baseline gap-x-2">
-              <span className={cx("font-semibold", dated ? "num text-text" : "text-text-4")}>{dated ? formatDmy(f.fact_date, f.date_precision) : "تاريخ غير محدد"}</span>
-              {f.date_text && f.date_text !== formatDmy(f.fact_date, f.date_precision) ? <span className="text-base leading-[1.55] text-text-4">«{f.date_text}»</span> : null}
+              <span className={cx("font-semibold", dated ? "text-text" : "text-text-4")}><DateText value={dated ? formatDmy(f.fact_date, f.date_precision) : "تاريخ غير محدد"} /></span>
+              {f.date_text && f.date_text !== formatDmy(f.fact_date, f.date_precision) ? <span className="text-base leading-[1.55] text-text-4">«<DateText value={f.date_text} />»</span> : null}
               {f.date_precision === "month" || f.date_precision === "year" ? <Badge>{f.date_precision === "month" ? "بالشهر" : "بالسنة"}</Badge> : null}
             </div>
             <div className={cx("mt-1.5 rounded-lg p-4", suggested ? "bg-gold-bg ring-1 ring-gold/25" : "bg-card shadow-soft")}>

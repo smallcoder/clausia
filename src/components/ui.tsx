@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 import { ChevronLeft, Inbox, type LucideIcon } from "lucide-react";
 import { SourceChip } from "@/components/cite/SourceChip";
-import { formatDmy, type DatePrecision } from "@/lib/dates";
+import { formatDmy, isNumericDate, splitNumbers, type DatePrecision } from "@/lib/dates";
 
 export function cx(...c: (string | false | null | undefined)[]) {
   return c.filter(Boolean).join(" ");
@@ -146,9 +146,17 @@ export function PageSkeleton({ rows = 5, cards = 1 }: { rows?: number; cards?: n
   );
 }
 
-/** d/m/yyyy, numbers kept LTR. */
-export function DateText({ iso, precision = "day", className }: { iso: string | null | undefined; precision?: DatePrecision; className?: string }) {
-  return <span className={cx("num", className)}>{formatDmy(iso, precision)}</span>;
+/**
+ * A date label, drawn by what it is (decided per value, never per column):
+ *  - only a number, a date or a time («22/10/2026», «9:00») → numbers font, dir="ltr";
+ *  - anything with a word («النهارده», «بكرة», «الأحد 25», «جلسة 22/10») → the Arabic font, dir="rtl", and each number
+ *    inside is wrapped in <bdi> so it keeps its order without flipping the sentence.
+ * Pass `iso` (shown as d/m/yyyy, see `formatDmy`) or a ready label in `value`. Put NO font or direction on the cell around it.
+ */
+export function DateText({ iso, precision = "day", value, className }: { iso?: string | null; precision?: DatePrecision; value?: string | null; className?: string }) {
+  const text = value ?? formatDmy(iso, precision);
+  if (isNumericDate(text)) return <span dir="ltr" className={cx("font-num text-end", className)}>{text}</span>;
+  return <span dir="rtl" className={cx("font-sans", className)}>{splitNumbers(text).map((p, i) => (p.num ? <bdi key={i}>{p.text}</bdi> : p.text))}</span>;
 }
 
 /**

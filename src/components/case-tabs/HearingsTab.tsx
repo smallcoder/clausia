@@ -7,7 +7,7 @@ import { DecisionBadge } from "@/components/hearings/HearingItem";
 import { RecordDecision } from "@/components/hearings/RecordDecision";
 import { SourceChip } from "@/components/cite/SourceChip";
 import { Panel, StatusChip } from "@/components/shell/PageHero";
-import { cx } from "@/components/ui";
+import { DateText, cx } from "@/components/ui";
 import { formatDayLabel, formatDmy, todayIso } from "@/lib/dates";
 import { DOC_TYPE } from "@/lib/labels";
 import { caseHearings } from "@/lib/hearings";
@@ -50,8 +50,8 @@ function HearingRow({ h, today, nextUp, last, caseId, names }: { h: Row; today: 
   return (
     <li id={`h-${h.id}`} className="flex scroll-mt-24 gap-2.5 sm:gap-3.5">
       <span className="w-17 shrink-0 pt-px sm:w-21">
-        <span className="num font-num block text-sm font-semibold leading-[22px] text-title">{formatDmy(h.hearing_date)}</span>
-        <span className="block text-xs text-text-4">{formatDayLabel(h.hearing_date).split(" ")[0]}</span>
+        <DateText iso={h.hearing_date} className="block text-sm font-semibold leading-[22px] text-title" />
+        <DateText value={formatDayLabel(h.hearing_date).split(" ")[0]} className="block text-xs text-text-4" />
       </span>
       <span className="flex w-2.5 shrink-0 flex-col items-center sm:w-3" aria-hidden>
         <span className={cx("mt-2 size-dot-lg shrink-0 rounded-full", dot)} />
@@ -74,7 +74,7 @@ function HearingRow({ h, today, nextUp, last, caseId, names }: { h: Row; today: 
           {decided && decided.id !== own?.id ? <><span className="text-sm text-text-4">القرار:</span><SourceChip cite={decided} /></> : null}
           {h.next_hearing_id ? (
             <a href={`#h-${h.next_hearing_id}`} className="inline-flex min-h-11 items-center text-sm font-semibold text-text-2 hover:text-text hover:underline sm:min-h-8">
-              الجلسة التالية&nbsp;<span className="num font-num">{formatDmy(h.next_date)}</span>&nbsp;←
+              الجلسة التالية&nbsp;<DateText iso={h.next_date} />&nbsp;←
             </a>
           ) : null}
         </div>

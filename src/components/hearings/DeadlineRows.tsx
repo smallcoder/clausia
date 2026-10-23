@@ -4,7 +4,7 @@
  */
 import { CalendarClock } from "lucide-react";
 import Link from "next/link";
-import { cx } from "@/components/ui";
+import { DateText, cx } from "@/components/ui";
 import { formatDayLabel } from "@/lib/dates";
 import { daysBetween } from "@/lib/deadlines/compute";
 import type { RollDeadline } from "@/lib/deadlines/types";
@@ -30,7 +30,7 @@ export function DeadlineRows({ rows, today }: { rows: RollDeadline[]; today: str
                   {last ? `آخر يوم لميعاد ${KIND[d.kind]}` : `تنبيه: فاضل ${nDays(d.days_before)} على آخر يوم ${KIND[d.kind]}`}
                 </span>
                 <span className="mt-0.5 block truncate text-base text-text-2">{d.case_title}{d.case_number ? <> · <span className="num font-num">{d.case_number}</span></> : null}</span>
-                {!last ? <span className="block text-sm text-text-3">آخر يوم: {formatDayLabel(d.last_day)}{d.last_day >= today ? <> · فاضل <span className="font-num">{daysBetween(today, d.last_day)}</span> يوم</> : null}</span> : null}
+                {!last ? <span className="block text-sm text-text-3">آخر يوم: <DateText value={formatDayLabel(d.last_day)} />{d.last_day >= today ? <> · <DateText value={`فاضل ${daysBetween(today, d.last_day)} يوم`} /></> : null}</span> : null}
               </span>
             </Link>
           </li>

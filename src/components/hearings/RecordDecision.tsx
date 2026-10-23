@@ -6,8 +6,7 @@
  * The next date is parsed with parseDmy on the server and is required when the hearing was postponed — never guessed.
  */
 import { useActionState, useState } from "react";
-import { cx } from "@/components/ui";
-import { formatDmy } from "@/lib/dates";
+import { DateText, cx } from "@/components/ui";
 import { DECISION } from "@/lib/labels";
 import { recordDecisionAction, type HearingFormState } from "./actions";
 import { useDecisionNotice } from "./DecisionNotices";
@@ -48,7 +47,7 @@ export function RecordDecision({ hearingId, caseId, hearingDate, label, compact 
     return (
       <p className="mt-2 rounded-md bg-good-bg px-4 py-2.5 text-base text-good" role="status">
         تم حفظ القرار.
-        {state.nextDate ? <> الجلسة القادمة: <span className="num font-num font-bold">{formatDmy(state.nextDate)}</span></> : null}
+        {state.nextDate ? <> الجلسة القادمة: <DateText iso={state.nextDate} className="font-bold" /></> : null}
       </p>
     );
   }

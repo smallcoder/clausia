@@ -9,7 +9,7 @@ import { ChevronLeft, X } from "lucide-react";
 import Link from "next/link";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { StatusChip } from "@/components/shell/PageHero";
-import { cx } from "@/components/ui";
+import { DateText, cx } from "@/components/ui";
 import { formatDayLabel, formatDmy } from "@/lib/dates";
 import { circuitNumber, courtOf, type HearingWithCase } from "@/lib/hearings";
 import { DECISION } from "@/lib/labels";
@@ -55,7 +55,7 @@ function RowStatus({ h, today, showToday }: { h: HearingWithCase; today: string;
   return (
     <StatusChip tone={s.tone}>
       {s.label}
-      {s.next ? <>&nbsp;← <span className="num font-num">{s.next}</span></> : null}
+      {s.next ? <>&nbsp;← <DateText value={s.next} /></> : null}
     </StatusChip>
   );
 }
@@ -71,7 +71,7 @@ export function RollRow({ h, today, showDate = false, showCourt = false, showTod
   const open = useContext(Ctx);
   const num = caseNumber(h);
   const need = h.purpose?.trim() || null;
-  const date = showDate ? <span className="num font-num">{formatDmy(h.hearing_date)}</span> : null;
+  const date = showDate ? <DateText iso={h.hearing_date} /> : null;
   const court = showCourt ? courtOf(h) : null;
   const status = <RowStatus h={h} today={today} showToday={showToday} />;
   return (
@@ -173,7 +173,7 @@ function Sheet({ h, today, onClose }: { h: HearingWithCase; today: string; onClo
             <div className="truncate text-sm font-semibold text-text-3">{[courtOf(h), h.location?.trim() || c.circuit?.trim()].filter(Boolean).join(" · ")}</div>
             <h2 id="roll-sheet-title" className="mt-0.5 text-lg font-bold leading-snug text-title">{hearingTitle(h)}</h2>
             <div className="mt-1 text-sm text-text-3">
-              {num ? <><span>{num}</span> · </> : null}جلسة {formatDayLabel(h.hearing_date)}
+              {num ? <><span>{num}</span> · </> : null}جلسة <DateText value={formatDayLabel(h.hearing_date)} />
             </div>
           </div>
           <button ref={closeBtn} type="button" onClick={onClose} aria-label="إغلاق"
@@ -185,7 +185,7 @@ function Sheet({ h, today, onClose }: { h: HearingWithCase; today: string; onClo
         <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4 sm:px-6">
           <div className="flex flex-wrap items-center gap-3">
             {saved ? <StatusChip tone="neutral">{DECISION[saved.decision as keyof typeof DECISION] ?? "تم الحفظ"}</StatusChip> : (
-              <StatusChip tone={s.tone}>{s.label}{s.next ? <>&nbsp;← <span className="num font-num">{s.next}</span></> : null}</StatusChip>
+              <StatusChip tone={s.tone}>{s.label}{s.next ? <>&nbsp;← <DateText value={s.next} /></> : null}</StatusChip>
             )}
             {h.review_status === "suggested" ? <StatusChip tone="warn">مقترحة</StatusChip> : null}
           </div>
@@ -197,13 +197,13 @@ function Sheet({ h, today, onClose }: { h: HearingWithCase; today: string; onClo
             <div className="space-y-1.5 rounded-lg border border-border-2 bg-card-2 px-4 py-3 text-base text-text-2">
               <div><span className="text-text-3">القرار: </span><span className="font-semibold text-text">{DECISION[h.decision_type]}</span></div>
               {h.decision_text ? <p className="text-doc text-md text-text">{h.decision_text}</p> : null}
-              {h.next_date ? <div><span className="text-text-3">الجلسة القادمة: </span><span className="num font-semibold text-text">{formatDayLabel(h.next_date)}</span></div> : null}
+              {h.next_date ? <div><span className="text-text-3">الجلسة القادمة: </span><DateText value={formatDayLabel(h.next_date)} className="font-semibold text-text" /></div> : null}
               {h.next_requirements ? <div><span className="text-text-3">المطلوب لها: </span>{h.next_requirements}</div> : null}
             </div>
           ) : saved ? (
             <div role="status" className="rounded-lg bg-good-bg px-4 py-3 text-base text-good">
               <div className="font-bold">اتسجّل القرار.</div>
-              {saved.nextDate ? <div className="mt-0.5">الجلسة القادمة: <span className="num font-semibold">{formatDayLabel(saved.nextDate)}</span> — اتضافت للرول.</div> : null}
+              {saved.nextDate ? <div className="mt-0.5">الجلسة القادمة: <DateText value={formatDayLabel(saved.nextDate)} className="font-semibold" /> — اتضافت للرول.</div> : null}
             </div>
           ) : canDecide ? (
             <RecordDecision layout="sheet" hearingId={h.id} caseId={c.id} hearingDate={h.hearing_date} label={label}

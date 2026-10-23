@@ -5,8 +5,7 @@
  */
 import { Plus } from "lucide-react";
 import { useActionState, useState } from "react";
-import { cx } from "@/components/ui";
-import { formatDmy } from "@/lib/dates";
+import { DateText, cx } from "@/components/ui";
 import { addHearingAction, type HearingFormState } from "./actions";
 
 const input = "h-11 w-full rounded-md border border-border bg-field px-3 text-md text-text placeholder:text-text-4 focus:border-gold focus:outline-none";
@@ -25,7 +24,7 @@ export function AddHearing({ caseId }: { caseId: string }) {
   const saved = state?.ok ? state : null;
   const err = state && !state.ok ? state : null;
   const savedLine = saved?.nextDate
-    ? <span className="text-sm text-good" role="status">أضيفت جلسة <span className="num font-num font-bold">{formatDmy(saved.nextDate)}</span></span>
+    ? <span className="text-sm text-good" role="status">أضيفت جلسة <DateText iso={saved.nextDate} className="font-bold" /></span>
     : null;
 
   if (!open) {

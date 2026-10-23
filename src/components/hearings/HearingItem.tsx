@@ -5,6 +5,7 @@ import type { HearingWithCase } from "@/lib/hearings";
 import { formatDmy } from "@/lib/dates";
 import { CASE_STATUS, DECISION, PARTY_ROLE, caseLabel } from "@/lib/labels";
 import { RecordDecision } from "./RecordDecision";
+import { DateText } from "@/components/ui";
 
 /**
  * The one status chip for a hearing, everywhere: before today and undecided → gold «محتاجة قرار»;
@@ -18,7 +19,7 @@ export function DecisionBadge({ h, today }: { h: { decision_type: HearingWithCas
   return (
     <StatusChip tone="neutral">
       {DECISION[h.decision_type]}
-      {h.next_date ? <>&nbsp;←&nbsp;<span className="num font-num">{formatDmy(h.next_date)}</span></> : null}
+      {h.next_date ? <>&nbsp;←&nbsp;<DateText iso={h.next_date} /></> : null}
     </StatusChip>
   );
 }
@@ -42,7 +43,7 @@ export function HearingItem({ h, today, showCourt = false, showCircuit = true, s
         </div>
       </div>
       <dl className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-sm text-text-3">
-        {showDate ? <div><dt className="sr-only">التاريخ</dt><dd className="num font-num font-semibold text-text">{formatDmy(h.hearing_date)}</dd></div> : null}
+        {showDate ? <div><dt className="sr-only">التاريخ</dt><dd className="font-semibold text-text"><DateText iso={h.hearing_date} /></dd></div> : null}
         {showCourt ? <div><dt className="sr-only">المحكمة</dt><dd>{c.court ?? "محكمة غير محددة"}</dd></div> : null}
         {showCircuit && c.circuit ? <div><dt className="sr-only">الدائرة</dt><dd>{c.circuit}</dd></div> : null}
         <div>

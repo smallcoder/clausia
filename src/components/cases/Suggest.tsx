@@ -14,7 +14,7 @@ export const SuggestedTag = ({ children = "مقترح" }: { children?: ReactNode
 export const Was = ({ children }: { children: ReactNode }) => <span className="font-normal text-text-4 line-through">{children}</span>;
 
 /** «22/10/2026 ← 5/12/2026»: the old value struck (when there is one), an arrow, the new value in gold. */
-export function Change({ old, next, className = "" }: { old: string | null; next: string; className?: string }) {
+export function Change({ old, next, className = "" }: { old: ReactNode; next: ReactNode; className?: string }) {
   return (
     <span className={className}>
       {old ? <><Was>{old}</Was> <span aria-hidden className="text-text-3">←</span> </> : null}

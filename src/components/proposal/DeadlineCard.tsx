@@ -12,7 +12,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useUndoToast } from "@/components/shell/UndoToast";
-import { cx } from "@/components/ui";
+import { DateText, cx } from "@/components/ui";
 import { decideProposalAction } from "@/lib/assistant/actions";
 import { previewDeadlinesAction } from "@/lib/deadlines/actions";
 import type { DeadlineCardEntry } from "@/lib/deadlines/cards";
@@ -74,7 +74,7 @@ function DaysLeft({ row, today }: { row: DeadlineRowView; today: string }) {
   return (
     <div className={cx("inline-flex items-center gap-1.5 text-base font-semibold", tone)}>
       <span aria-hidden className={cx("size-dot rounded-full", dot)} />
-      {left < 0 ? `فات الميعاد من ${nDays(-left)}` : left === 0 ? "آخر يوم النهارده" : <>فاضل <span className="font-num">{left}</span> يوم</>}
+      <DateText value={left < 0 ? `فات الميعاد من ${nDays(-left)}` : left === 0 ? "آخر يوم النهارده" : `فاضل ${left} يوم`} />
     </div>
   );
 }
@@ -82,7 +82,7 @@ function DaysLeft({ row, today }: { row: DeadlineRowView; today: string }) {
 function Row({ row, card, onOpen }: { row: DeadlineCardData["rows"][number]; card: DeadlineCardData; onOpen: (a: ArticleRef) => void }) {
   const afterAppeal = row.kind === "cassation" && card.rows.some((r) => r.kind === "appeal");
   const title = row.kind === "appeal" ? "استئناف" : "نقض";
-  const days = row.days !== null ? <><span className="font-num">{row.days}</span> يوم</> : "راجع المادة";
+  const days = row.days !== null ? <DateText value={`${row.days} يوم`} /> : "راجع المادة";
   let main: React.ReactNode;
   let side: React.ReactNode = null;
   let mainTone = "text-title";
@@ -91,7 +91,7 @@ function Row({ row, card, onOpen }: { row: DeadlineCardData["rows"][number]; car
     side = <div className="inline-flex items-center gap-1.5 text-base font-semibold text-text-3"><span aria-hidden className="size-dot rounded-full bg-text-4" />بعد الاستئناف</div>;
   } else if (row.state === "ready" && row.last_day) {
     mainTone = "text-gold";
-    main = <>{formatDayLabel(row.last_day)}</>;
+    main = <DateText value={formatDayLabel(row.last_day)} />;
     side = <DaysLeft row={row} today={card.today} />;
   } else if (row.state === "need_service_date") {
     main = "محتاج تاريخ إعلان الحكم";
@@ -110,9 +110,9 @@ function Row({ row, card, onOpen }: { row: DeadlineCardData["rows"][number]; car
         </div>
         <div className="min-w-0 flex-1 border-e border-border-2 pe-4.5">
           <div className="text-sm text-text-3">آخر يوم</div>
-          <div className={cx("font-num mt-0.5 text-lg font-normal", mainTone)}>{main}</div>
+          <div className={cx("mt-0.5 text-lg font-normal", mainTone)}>{main}</div>
           {row.state === "ready" && row.review_holidays ? <div className="mt-1 text-sm font-semibold text-gold">راجع الإجازات: مفيش إجازات معتمدة للسنة دي</div> : null}
-          {row.state === "ready" && row.moved && row.raw_last_day ? <div className="mt-1 text-sm text-text-3">الميعاد الأصلي {formatDayLabel(row.raw_last_day)}، اتمد لأول يوم عمل بعده</div> : null}
+          {row.state === "ready" && row.moved && row.raw_last_day ? <div className="mt-1 text-sm text-text-3">الميعاد الأصلي <DateText value={formatDayLabel(row.raw_last_day)} />، اتمد لأول يوم عمل بعده</div> : null}
         </div>
         <div className="flex shrink-0 flex-col items-start gap-1.5">
           {side}
@@ -173,7 +173,7 @@ export function DeadlineCard({ proposal, entry }: { proposal: Proposal; entry: D
         <span aria-hidden className="mark inline-flex size-9 shrink-0 items-center justify-center rounded-md"><CalendarDays size={18} strokeWidth={2} /></span>
         <div className="min-w-0 flex-1">
           <div className="truncate text-md font-bold text-text">مواعيد الطعن · {card.caseTitle}</div>
-          <div className="mt-0.5 text-sm text-text-3">{card.judgmentLabel} · {when}{formatDayLabel(card.judgmentDate)}{card.caseNumber ? <> · {card.caseNumber}</> : null}</div>
+          <div className="mt-0.5 text-sm text-text-3">{card.judgmentLabel} · {when}<DateText value={formatDayLabel(card.judgmentDate)} />{card.caseNumber ? <> · {card.caseNumber}</> : null}</div>
         </div>
       </div>
       <div className="px-5.5 pb-3.5 text-sm leading-[1.8] text-text-3">
