@@ -366,6 +366,18 @@ body {
 body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: var(--ambient), var(--bg-image); background-repeat: no-repeat; }
 @media (min-width: 80rem) { body::before { background: var(--ambient-xl), var(--bg-image); background-repeat: no-repeat; } }
 
+/* The printable receipt (PR 5): always ink on white paper, in the light or the dark theme (it is a paper, like the paper thumbnails). The office's own style comes in PR 6. */
+.receipt-paper {
+  --card: #FFFFFF; --text: #121A2B; --title: #0F1626; --text-2: #2A2D31; --text-3: #52565D; --text-4: #62666E;
+  --border: rgba(18,26,43,0.08); --border-2: rgba(18,26,43,0.06); --border-strong: rgba(18,26,43,0.14);
+  color: var(--text);
+}
+@media print {
+  @page { size: A5; margin: 12mm; }
+  html, body { background: #FFFFFF; min-height: 0; }
+  body::before { display: none; }
+}
+
 /* Numbers: SF Pro Display / Inter, tabular */
 .font-num { font-family: -apple-system, "SF Pro Display", system-ui, var(--font-inter), sans-serif; font-variant-numeric: tabular-nums; }
 /* The Clausia «C» mark (logo tile, Clausia avatar): ink in light, champagne in dark */

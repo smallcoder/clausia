@@ -39,6 +39,114 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_movements: {
+        Row: {
+          amount_piasters: number
+          case_id: string | null
+          charged_to: Database["public"]["Enums"]["money_charge"] | null
+          client_id: string
+          created_at: string
+          created_by: string | null
+          created_by_kind: Database["public"]["Enums"]["actor_kind"]
+          id: string
+          kind: Database["public"]["Enums"]["money_kind"]
+          method: Database["public"]["Enums"]["money_method"]
+          moved_on: string
+          note: string | null
+          office_id: string
+          review_status: Database["public"]["Enums"]["item_status"]
+          source_char_end: number | null
+          source_char_start: number | null
+          source_document_id: string | null
+          source_kind: Database["public"]["Enums"]["source_kind"]
+          source_message_id: string | null
+          source_page: number | null
+          source_quote: string | null
+        }
+        Insert: {
+          amount_piasters: number
+          case_id?: string | null
+          charged_to?: Database["public"]["Enums"]["money_charge"] | null
+          client_id: string
+          created_at?: string
+          created_by?: string | null
+          created_by_kind?: Database["public"]["Enums"]["actor_kind"]
+          id?: string
+          kind: Database["public"]["Enums"]["money_kind"]
+          method: Database["public"]["Enums"]["money_method"]
+          moved_on: string
+          note?: string | null
+          office_id?: string
+          review_status?: Database["public"]["Enums"]["item_status"]
+          source_char_end?: number | null
+          source_char_start?: number | null
+          source_document_id?: string | null
+          source_kind?: Database["public"]["Enums"]["source_kind"]
+          source_message_id?: string | null
+          source_page?: number | null
+          source_quote?: string | null
+        }
+        Update: {
+          amount_piasters?: number
+          case_id?: string | null
+          charged_to?: Database["public"]["Enums"]["money_charge"] | null
+          client_id?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_kind?: Database["public"]["Enums"]["actor_kind"]
+          id?: string
+          kind?: Database["public"]["Enums"]["money_kind"]
+          method?: Database["public"]["Enums"]["money_method"]
+          moved_on?: string
+          note?: string | null
+          office_id?: string
+          review_status?: Database["public"]["Enums"]["item_status"]
+          source_char_end?: number | null
+          source_char_start?: number | null
+          source_document_id?: string | null
+          source_kind?: Database["public"]["Enums"]["source_kind"]
+          source_message_id?: string | null
+          source_page?: number | null
+          source_quote?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_movements_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_movements_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_movements_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_movements_source_document_id_fkey"
+            columns: ["source_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_movements_source_message_id_fkey"
+            columns: ["source_message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       app_admins: {
         Row: {
           created_at: string
@@ -341,6 +449,95 @@ export type Database = {
           },
           {
             foreignKeyName: "case_facts_source_message_id_fkey"
+            columns: ["source_message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      case_fees: {
+        Row: {
+          amount_piasters: number | null
+          case_id: string
+          created_at: string
+          created_by: string | null
+          created_by_kind: Database["public"]["Enums"]["actor_kind"]
+          id: string
+          kind: Database["public"]["Enums"]["fee_kind"]
+          office_id: string
+          review_status: Database["public"]["Enums"]["item_status"]
+          source_char_end: number | null
+          source_char_start: number | null
+          source_document_id: string | null
+          source_kind: Database["public"]["Enums"]["source_kind"]
+          source_message_id: string | null
+          source_page: number | null
+          source_quote: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_piasters?: number | null
+          case_id: string
+          created_at?: string
+          created_by?: string | null
+          created_by_kind?: Database["public"]["Enums"]["actor_kind"]
+          id?: string
+          kind: Database["public"]["Enums"]["fee_kind"]
+          office_id?: string
+          review_status?: Database["public"]["Enums"]["item_status"]
+          source_char_end?: number | null
+          source_char_start?: number | null
+          source_document_id?: string | null
+          source_kind?: Database["public"]["Enums"]["source_kind"]
+          source_message_id?: string | null
+          source_page?: number | null
+          source_quote?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_piasters?: number | null
+          case_id?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_kind?: Database["public"]["Enums"]["actor_kind"]
+          id?: string
+          kind?: Database["public"]["Enums"]["fee_kind"]
+          office_id?: string
+          review_status?: Database["public"]["Enums"]["item_status"]
+          source_char_end?: number | null
+          source_char_start?: number | null
+          source_document_id?: string | null
+          source_kind?: Database["public"]["Enums"]["source_kind"]
+          source_message_id?: string | null
+          source_page?: number | null
+          source_quote?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_fees_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: true
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_fees_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_fees_source_document_id_fkey"
+            columns: ["source_document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_fees_source_message_id_fkey"
             columns: ["source_message_id"]
             isOneToOne: false
             referencedRelation: "chat_messages"
@@ -1974,6 +2171,7 @@ export type Database = {
         | "correspondence"
         | "id_document"
         | "other"
+      fee_kind: "fixed" | "open"
       hearing_decision:
         | "postponed"
         | "reserved_for_judgment"
@@ -1984,6 +2182,14 @@ export type Database = {
         | "other"
       item_status: "suggested" | "confirmed" | "rejected"
       judgment_kind: "final" | "preliminary" | "interim"
+      money_charge: "client" | "office"
+      money_kind: "receipt" | "expense"
+      money_method:
+        | "cash"
+        | "vodafone_cash"
+        | "instapay"
+        | "bank_transfer"
+        | "cheque"
       party_role:
         | "plaintiff"
         | "defendant"
@@ -2159,6 +2365,7 @@ export const Constants = {
         "id_document",
         "other",
       ],
+      fee_kind: ["fixed", "open"],
       hearing_decision: [
         "postponed",
         "reserved_for_judgment",
@@ -2170,6 +2377,15 @@ export const Constants = {
       ],
       item_status: ["suggested", "confirmed", "rejected"],
       judgment_kind: ["final", "preliminary", "interim"],
+      money_charge: ["client", "office"],
+      money_kind: ["receipt", "expense"],
+      money_method: [
+        "cash",
+        "vodafone_cash",
+        "instapay",
+        "bank_transfer",
+        "cheque",
+      ],
       party_role: [
         "plaintiff",
         "defendant",

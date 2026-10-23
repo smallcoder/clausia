@@ -3,7 +3,9 @@ import "server-only";
  * READ tools: run at once inside the chat loop (no card). RLS-bound client, so results are always the
  * lawyer's own office. Results are compact JSON for the model; text from documents is wrapped as data.
  */
+import { listBalances } from "@/lib/accounts";
 import { formatDmy, normalizeDigits } from "@/lib/dates";
+import { formatEgp } from "@/lib/money";
 import { caseLabel } from "@/lib/labels";
 import type { Db } from "@/lib/supabase/server";
 import type { ToolSpec } from "@/lib/llm";
@@ -28,6 +30,11 @@ export const READ_TOOL_SPECS: ToolSpec[] = [
     name: "list_hearings",
     description: "جلسات دعوى بمعرفاتها وتواريخها وقراراتها. استخدمها قبل record_decision لمعرفة معرف الجلسة.",
     parameters: { type: "object", properties: { case_id: { type: "string" } }, required: ["case_id"] },
+  },
+  {
+    name: "list_balances",
+    description: "مين عليه فلوس؟ الموكلون اللي عليهم باقي أتعاب (قضايا بأتعاب ثابتة لم تُدفع كاملة)، الأكبر أولًا، والباقي لكل قضية. الأرقام محسوبة بالكود: انقلها كما هي ولا تجمع أو تطرح بنفسك. القضايا ذات الأتعاب «المفتوحة» أو غير المحددة ليس لها باقي. اختياري: client_id لموكل واحد.",
+    parameters: { type: "object", properties: { client_id: { type: "string", description: "معرف موكل (اختياري)" } } },
   },
   {
     name: "get_document_text",
@@ -72,6 +79,18 @@ export async function runReadTool(db: Db, name: string, args: Record<string, unk
       const { data, error } = await db.from("hearings").select("id, hearing_date, purpose, decision_type, decision_text, next_requirements, next_hearing_id, review_status").eq("case_id", id).order("hearing_date");
       if (error) return { error: error.message };
       return { hearings: (data ?? []).map((h) => ({ id: h.id, date: d(h.hearing_date), purpose: h.purpose, decision: h.decision_type, decision_text: h.decision_text, next_requirements: h.next_requirements, next_hearing_id: h.next_hearing_id, review_status: h.review_status })) };
+    }
+    case "list_balances": {
+      const id = args.client_id === undefined || args.client_id === null || args.client_id === "" ? undefined : String(args.client_id);
+      if (id && !UUID.test(id)) return { error: "client_id غير صالح" };
+      const rows = await listBalances(db, id);
+      return {
+        note: "الأرقام بالجنيه المصري، محسوبة بالكود من الأتعاب المتفق عليها والمدفوع. ما لم يظهر هنا فليس عليه باقي (أو أتعابه مفتوحة / غير محددة).",
+        clients: rows.map((r) => ({
+          client_id: r.client_id, client: r.client, remaining: formatEgp(r.remaining),
+          cases: r.cases.map((c) => ({ case_id: c.case_id, case: c.label, agreed: formatEgp(c.agreed), paid: formatEgp(c.paid), remaining: formatEgp(c.remaining) })),
+        })),
+      };
     }
     case "get_document_text": {
       const id = String(args.document_id ?? "");

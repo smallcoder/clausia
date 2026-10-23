@@ -1,5 +1,5 @@
 /**
- * A client's three tabs (`?tab=`): «القضايا» (a table: case, role, next hearing, status; a finished case is faded), «الحسابات» (قريباً: PR 5)
+ * A client's three tabs (`?tab=`): «القضايا» (a table: case, role, next hearing, status; a finished case is faded), «الحسابات» (the money: src/components/accounts)
  * and «الأوراق» (the papers saved on the client, shared by all their cases). The tab is the address, so it can be linked and back works.
  */
 import { FileText } from "lucide-react";
@@ -102,16 +102,6 @@ export function CasesTable({ cases, today }: { cases: ClientCase[]; today: strin
           );
         })}
       </ul>
-    </section>
-  );
-}
-
-/** «الحسابات»: the fees and payments come in PR 5 */
-export function AccountsSoon() {
-  return (
-    <section className="rounded-xl border border-border-2 bg-card px-6 py-12 text-center shadow-card">
-      <h2 className="text-lg font-bold text-title">الحسابات</h2>
-      <p className="mt-1.5 text-md text-text-3">قريباً</p>
     </section>
   );
 }
