@@ -667,6 +667,7 @@ export type Database = {
           id: string
           office_id: string
           role: Database["public"]["Enums"]["chat_role"]
+          sources: Json | null
           thread_id: string
           tool_calls: Json | null
         }
@@ -678,6 +679,7 @@ export type Database = {
           id?: string
           office_id?: string
           role: Database["public"]["Enums"]["chat_role"]
+          sources?: Json | null
           thread_id: string
           tool_calls?: Json | null
         }
@@ -689,6 +691,7 @@ export type Database = {
           id?: string
           office_id?: string
           role?: Database["public"]["Enums"]["chat_role"]
+          sources?: Json | null
           thread_id?: string
           tool_calls?: Json | null
         }
@@ -757,6 +760,44 @@ export type Database = {
           },
           {
             foreignKeyName: "chat_threads_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_turn_steps: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string
+          office_id: string
+          seq: number
+          turn_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label: string
+          office_id?: string
+          seq: number
+          turn_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string
+          office_id?: string
+          seq?: number
+          turn_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_turn_steps_office_id_fkey"
             columns: ["office_id"]
             isOneToOne: false
             referencedRelation: "offices"

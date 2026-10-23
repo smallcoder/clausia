@@ -10,7 +10,7 @@ import { confirmCell, editCell, removeColumn, renameColumn } from "../src/lib/do
 import { dismissReminder, dueReminders, setBriefReminder, undoReminder } from "../src/lib/brief/reminders";
 import { remindInstant } from "../src/lib/brief/time";
 import { todayIso } from "../src/lib/dates";
-import { moveThreadToCase } from "../src/lib/threads";
+import { createThread, moveThreadToCase } from "../src/lib/threads";
 import { createProposal, decideProposal } from "../src/lib/proposals";
 import { undoConfirm } from "../src/lib/undo";
 import { loadCardRows, loadPendingEdits } from "../src/lib/pending-edits";
@@ -475,6 +475,38 @@ const rows = (r: { data: { id: string }[] | null }) => r.data ?? [];
     check("undo: DEMO can undo its own confirm; both events are logged with who did it", uA.ok && gone?.length === 0 && evs2?.map((e) => e.action).join() === "confirm,undo" && evs2.every((e) => e.created_by === uidA2));
   } finally {
     await A.from("cases").delete().eq("id", tc!.id); // its proposals and events go with it
+  }
+}
+
+// ---------- live steps and the «استخدمت:» footer (PR 4) ----------
+{
+  const turn = crypto.randomUUID();
+  const uidA = (await A.auth.getUser()).data.user!.id;
+  const thread = await createThread(A as unknown as Db, { title: "اختبار الشفافية RLS" });
+  try {
+    const { error: sErr } = await A.from("chat_turn_steps").insert({ turn_id: turn, seq: 1, label: "بقرا ملف القضية…" });
+    check("steps: DEMO records a step of its own turn", !sErr, sErr?.message);
+    const { data: bSteps } = await B.from("chat_turn_steps").select("seq").eq("turn_id", turn);
+    const { data: bAll } = await B.from("chat_turn_steps").select("id").eq("office_id", officeA);
+    check("steps: OTHER cannot read DEMO's steps (by turn id, or by office)", (bSteps?.length ?? 0) === 0 && (bAll?.length ?? 0) === 0);
+    const bIns = await B.from("chat_turn_steps").insert({ office_id: officeA, turn_id: turn, seq: 2, label: "x" }).select("id");
+    const bAs = await B.from("chat_turn_steps").insert({ turn_id: turn, seq: 3, label: "x", created_by: uidA }).select("id");
+    check("steps: OTHER cannot write a step into DEMO's office, or in DEMO's name", !!bIns.error && !!bAs.error);
+    const bDel = await B.from("chat_turn_steps").delete().eq("turn_id", turn).select("id");
+    check("steps: OTHER cannot remove DEMO's steps", (bDel.data?.length ?? 0) === 0);
+    const { data: aSteps } = await A.from("chat_turn_steps").select("seq, label").eq("turn_id", turn);
+    check("steps: DEMO still has its step", aSteps?.length === 1 && aSteps[0].label === "بقرا ملف القضية…");
+    const { data: aDel } = await A.from("chat_turn_steps").delete().eq("turn_id", turn).select("id");
+    check("steps: DEMO removes its own steps", aDel?.length === 1);
+
+    const { data: msg } = await A.from("chat_messages").insert({ thread_id: thread, role: "assistant", content: "رد", sources: [{ document_id: "00000000-0000-4000-8000-000000000001", pages: [2], quote: null, start: null, end: null }] }).select("id").single();
+    const { data: bMsg } = await B.from("chat_messages").select("id, sources").eq("id", msg!.id);
+    const bUp = await B.from("chat_messages").update({ sources: [] }).eq("id", msg!.id).select("id");
+    const { data: aMsg } = await A.from("chat_messages").select("sources").eq("id", msg!.id).single();
+    check("footer: OTHER cannot read or change the sources saved with DEMO's answer", (bMsg?.length ?? 0) === 0 && (bUp.data?.length ?? 0) === 0 && Array.isArray(aMsg?.sources) && aMsg.sources.length === 1);
+  } finally {
+    await A.from("chat_turn_steps").delete().eq("turn_id", turn);
+    await A.from("chat_threads").delete().eq("id", thread);
   }
 }
 

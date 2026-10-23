@@ -1,13 +1,14 @@
 import "server-only";
 /** Server part of a session: loads the visible messages, their cards, the thread's papers and the names the cards need. */
 import { buildProposalLookup } from "@/lib/assistant/lookup";
+import { pagesText, parseSources } from "@/lib/assistant/sources";
 import { loadCardRows } from "@/lib/pending-edits";
 import type { EditRow } from "@/lib/edits";
 import { loadDeadlineCards, type DeadlineCardEntry } from "@/lib/deadlines/cards";
 import { DOC_TYPE } from "@/lib/labels";
 import type { Proposal } from "@/lib/proposals";
 import type { Db } from "@/lib/supabase/server";
-import type { ChatItem, ThreadDoc } from "./ChatThread";
+import type { ChatItem, ThreadDoc, UsedSource } from "./ChatThread";
 
 export interface ThreadData {
   items: ChatItem[];
@@ -33,9 +34,14 @@ export interface ThreadData {
 
 const isOpen = (s: string) => s === "pending" || s === "failed";
 
+/** A paper's name in a chip: its type («صحيفة دعوى») when known, else its file name. */
+function paperName(d: { file_name: string; doc_type: string | null }): string {
+  return d.doc_type && d.doc_type !== "other" && d.doc_type in DOC_TYPE ? DOC_TYPE[d.doc_type as keyof typeof DOC_TYPE] : d.file_name;
+}
+
 export async function loadThread(db: Db, threadId: string): Promise<ThreadData> {
   const [{ data: rows }, { data: props }, { data: docRows }] = await Promise.all([
-    db.from("chat_messages").select("id, role, content, attachments, created_at").eq("thread_id", threadId).neq("role", "tool").order("created_at").limit(400),
+    db.from("chat_messages").select("id, role, content, attachments, sources, created_at").eq("thread_id", threadId).neq("role", "tool").order("created_at").limit(400),
     db.from("proposals").select("*").eq("thread_id", threadId).order("created_at"),
     db.from("documents").select("id, file_name, title, doc_type, page_count, read_status, mime_type").eq("thread_id", threadId),
   ]);
@@ -57,6 +63,19 @@ export async function loadThread(db: Db, threadId: string): Promise<ThreadData> 
     if (d.doc_type && d.doc_type !== "other") lookup[d.id] = DOC_TYPE[d.doc_type];
   }
 
+  // «استخدمت:» names: a paper of this thread is already loaded; one read from the case's other papers is looked up (RLS)
+  const stored = new Map((rows ?? []).filter((r) => r.role === "assistant").map((r) => [r.id, parseSources(r.sources)]));
+  const names = new Map<string, string>((docRows ?? []).map((d) => [d.id, paperName(d)]));
+  const missing = [...new Set([...stored.values()].flat().map((x) => x.document_id))].filter((id) => !names.has(id));
+  if (missing.length) {
+    const { data } = await db.from("documents").select("id, file_name, doc_type").in("id", missing);
+    for (const d of data ?? []) names.set(d.id, paperName(d));
+  }
+  const usedOf = (messageId: string): UsedSource[] => (stored.get(messageId) ?? []).map((x, i) => ({
+    key: `${messageId}:${i}`, documentId: x.document_id, page: x.pages[0], quote: x.quote, start: x.start, end: x.end,
+    label: `${names.get(x.document_id) ?? "الورقة"} · ${pagesText(x.pages)}`,
+  }));
+
   const items: ChatItem[] = [];
   for (const r of rows ?? []) {
     const cards = byMessage.get(r.id) ?? [];
@@ -65,10 +84,10 @@ export async function loadThread(db: Db, threadId: string): Promise<ThreadData> 
     items.push({
       id: r.id, role: r.role === "user" ? "user" : "assistant", content: r.content, createdAt: r.created_at,
       attachments: att.map((a) => ({ documentId: a.document_id ?? "", fileName: a.file_name ?? "مستند" })),
-      proposals: cards,
+      proposals: cards, used: usedOf(r.id),
     });
   }
-  for (const p of orphans) items.push({ id: `p-${p.id}`, role: "assistant", content: "", createdAt: p.created_at, attachments: [], proposals: [p] });
+  for (const p of orphans) items.push({ id: `p-${p.id}`, role: "assistant", content: "", createdAt: p.created_at, attachments: [], proposals: [p], used: [] });
   items.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
   // Cards are made in tool rounds with no text; the model's explanation comes in a later round of the same turn.
