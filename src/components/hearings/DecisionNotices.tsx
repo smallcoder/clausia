@@ -4,7 +4,7 @@
  * «بلا قرار» list, so the inline form unmounts). Wrap a list with <DecisionNotices>; RecordDecision reports here.
  */
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
-import { formatDmy } from "@/lib/dates";
+import { DateText } from "@/components/ui";
 
 export interface Notice { id: number; label: string; nextDate: string | null }
 const Ctx = createContext<((n: Omit<Notice, "id">) => void) | null>(null);
@@ -21,7 +21,7 @@ export function DecisionNotices({ children }: { children: ReactNode }) {
             <li key={n.id} role="status" className="flex items-start justify-between gap-3 rounded-md border border-good/20 bg-good-bg px-3 py-2 text-base leading-[1.55] text-good">
               <span>
                 <span className="block">تم حفظ قرار {n.label}</span>
-                {n.nextDate ? <span className="block">الجلسة القادمة: <span className="num font-semibold">{formatDmy(n.nextDate)}</span></span> : null}
+                {n.nextDate ? <span className="block">الجلسة القادمة: <DateText iso={n.nextDate} className="font-semibold" /></span> : null}
               </span>
               <button type="button" onClick={() => setItems((xs) => xs.filter((x) => x.id !== n.id))} className="shrink-0 text-sm leading-[1.45] underline" aria-label="إخفاء">إخفاء</button>
             </li>

@@ -24,7 +24,7 @@ import { arDate, arDayMonth, nCourts, nHearings, WEEKDAY_LONG, weekdayOf } from 
 import { DeadlineRows } from "@/components/hearings/DeadlineRows";
 import { StatusChip } from "@/components/shell/PageHero";
 import type { TitleStatData } from "@/components/shell/TitleRow";
-import { cx } from "@/components/ui";
+import { DateText, cx } from "@/components/ui";
 import { addDaysIso, formatDmy, parseDmy } from "@/lib/dates";
 import type { RollDeadline } from "@/lib/deadlines/types";
 import { courtOf, groupBy, nextUndecided, weekStart, type HearingWithCase } from "@/lib/hearings";
@@ -227,7 +227,7 @@ export function RollDay({ today, from, to, rows, deadlines = [], pill, undecided
   );
   const eyebrow = view === "week"
     ? <>أسبوع {arDayMonth(wk)} – {arDayMonth(addDaysIso(wk, 6))}</>
-    : <><span className="sm:hidden">{arDate(date, false)}</span><span className="hidden sm:inline">{arDate(date)}</span></>;
+    : <><span className="sm:hidden"><DateText value={arDate(date, false)} /></span><span className="hidden sm:inline"><DateText value={arDate(date)} /></span></>;
 
   const layer = (s: Sel) => <Content s={s} today={today} cache={cache} select={select} />;
   const slide = (dir: number): CSSProperties => ({ ["--roll-dx" as string]: `${dir >= 0 ? 10 : -10}px` });
@@ -282,7 +282,7 @@ function Content({ s, today, cache, select }: { s: Sel; today: string; cache: Ca
           <section key={d.key}>
             <div className="flex items-baseline justify-between gap-3 px-1 pb-3.5 sm:px-2">
               <h2 className="flex items-center gap-2.5 text-lg font-bold text-title">
-                <a href={href({ date: d.key, view: "day" })} onClick={select({ date: d.key, view: "day" })} className="hover:underline">{WEEKDAY_LONG[weekdayOf(d.key)]} {arDayMonth(d.key)}</a>
+                <a href={href({ date: d.key, view: "day" })} onClick={select({ date: d.key, view: "day" })} className="hover:underline"><DateText value={`${WEEKDAY_LONG[weekdayOf(d.key)]} ${arDayMonth(d.key)}`} /></a>
                 {d.key === today ? <StatusChip tone="accent">النهارده</StatusChip> : null}
               </h2>
               <span className="text-sm text-text-3">{nHearings(d.items.length)}</span>
@@ -309,7 +309,7 @@ function Content({ s, today, cache, select }: { s: Sel; today: string; cache: Ca
   return (
     <>
       <div className="hidden items-baseline justify-between gap-3 px-2 pb-3.5 sm:flex">
-        <h2 className="text-lg font-bold text-title">{dayName(date, today)}</h2>
+        <h2 className="text-lg font-bold text-title"><DateText value={dayName(date, today)} /></h2>
         {dayRows.length ? <span className="text-sm text-text-3">{nHearings(dayRows.length)} · {nCourts(nCourt)}</span> : null}
       </div>
       <DeadlineRows rows={cache.deadlines(date)} today={today} />
@@ -317,8 +317,8 @@ function Content({ s, today, cache, select }: { s: Sel; today: string; cache: Ca
         <Timeline rows={dayRows} today={today} next={nx?.h} label={nextLabel} />
       ) : (
         <Empty>
-          مفيش جلسات {date === today ? "النهارده" : `يوم ${dayName(date, today)}`}.
-          {upcoming ? <> <Link href={href({ date: upcoming.hearing_date, view: "day" })} onClick={select({ date: upcoming.hearing_date, view: "day" })} className="font-semibold text-text hover:underline">أقرب جلسة: {dayName(upcoming.hearing_date, today)} ←</Link></> : null}
+          مفيش جلسات {date === today ? "النهارده" : <>يوم <DateText value={dayName(date, today)} /></>}.
+          {upcoming ? <> <Link href={href({ date: upcoming.hearing_date, view: "day" })} onClick={select({ date: upcoming.hearing_date, view: "day" })} className="font-semibold text-text hover:underline">أقرب جلسة: <DateText value={dayName(upcoming.hearing_date, today)} /> ←</Link></> : null}
         </Empty>
       )}
     </>
@@ -338,8 +338,8 @@ function says({ date, view }: Sel, today: string, cache: Cache): ReactNode {
   }
   const dayRows = cache.day(date);
   const nCourt = new Set(dayRows.map(courtOf)).size;
-  if (!dayRows.length) return <>مفيش جلسات {date === today ? "النهارده" : `يوم ${dayName(date, today)}`}.</>;
+  if (!dayRows.length) return <>مفيش جلسات {date === today ? "النهارده" : <>يوم <DateText value={dayName(date, today)} /></>}.</>;
   if (date === today) return <>بعد كل جلسة، اكتبلي القرار زي ما سمعته، وأنا أسجّله وأعمل الجلسة الجاية.</>;
-  if (date < today) return <>{dayName(date, today)} كان فيه {nHearings(dayRows.length)} في {nCourts(nCourt)}.{pending(dayRows) ? <> منها {nHearings(pending(dayRows))} لسه محتاجة قرار — اضغط عليها وسجّله.</> : null}</>;
-  return <>{dayName(date, today)} فيه {nHearings(dayRows.length)} في {nCourts(nCourt)}.</>;
+  if (date < today) return <><DateText value={dayName(date, today)} /> كان فيه {nHearings(dayRows.length)} في {nCourts(nCourt)}.{pending(dayRows) ? <> منها {nHearings(pending(dayRows))} لسه محتاجة قرار — اضغط عليها وسجّله.</> : null}</>;
+  return <><DateText value={dayName(date, today)} /> فيه {nHearings(dayRows.length)} في {nCourts(nCourt)}.</>;
 }

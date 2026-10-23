@@ -7,8 +7,7 @@ import { List, Plus } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { cx } from "@/components/ui";
-import { formatDmy } from "@/lib/dates";
+import { DateText, cx } from "@/components/ui";
 import { shortDay, withSession, type Session } from "./panel-types";
 
 export function SessionList({ sessions, currentId, hrefFor, onPick }: {
@@ -29,8 +28,8 @@ export function SessionList({ sessions, currentId, hrefFor, onPick }: {
         <li key={s.id}>
           <Link href={hrefFor(s.id)} onClick={onPick} aria-current={s.id === currentId ? "true" : undefined}
             className={cx("flex min-h-11 items-center justify-between gap-3 rounded-md px-3 py-2 transition hover:bg-card-2", s.id === currentId && "bg-card-2")}>
-            <span className="min-w-0 truncate text-base font-semibold text-text">{s.hearingDate ? `جلسة ${shortDay(s.hearingDate)}` : s.title}</span>
-            <span className="num font-num shrink-0 text-sm text-text-4">{formatDmy(s.day)}</span>
+            <span className="min-w-0 truncate text-base font-semibold text-text">{s.hearingDate ? <DateText value={`جلسة ${shortDay(s.hearingDate)}`} /> : s.title}</span>
+            <DateText iso={s.day} className="shrink-0 text-sm text-text-4" />
           </Link>
         </li>
       ))}

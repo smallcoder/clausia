@@ -19,7 +19,7 @@ import { useCite, type CiteSource } from "@/components/cite/context";
 import { SourceChip, SourceLabel } from "@/components/cite/SourceChip";
 import { Was } from "@/components/cases/Suggest";
 import { useUndoToast } from "@/components/shell/UndoToast";
-import { cx } from "@/components/ui";
+import { cx, DateText } from "@/components/ui";
 import { decideProposalAction } from "@/lib/assistant/actions";
 import { CASE_STATUS, DECISION, DOC_TYPE, PARTY_ROLE, STAGE } from "@/lib/labels";
 import { editsLabel, type EditRow } from "@/lib/edits";
@@ -393,7 +393,7 @@ export function ProposalCard({ proposal: initial, lookup = {}, rows = {} }: {
                             <div key={f.key} className="contents">
                               <dt className="text-text-3">{f.label}</dt>
                               <dd className="min-w-0 break-words text-text">
-                                {f.type === "date" || f.type === "number" ? <span className="num">{v}</span> : v}
+                                {f.type === "date" ? <DateText value={String(v)} /> : f.type === "number" ? <span className="num">{v}</span> : v}
                                 {notes[f.key] ? <span className="mt-0.5 block text-sm font-semibold text-text-2">{notes[f.key]}</span> : null}
                               </dd>
                             </div>

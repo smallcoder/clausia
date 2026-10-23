@@ -8,8 +8,8 @@ import { SourceChip } from "@/components/cite/SourceChip";
 import { aboutItem, citeOf, sourceText } from "@/components/cases/case-view";
 import { Panel, StatusChip } from "@/components/shell/PageHero";
 import type { CaseFile } from "@/lib/case-file";
-import { formatDmy } from "@/lib/dates";
 import { JUDGMENT_KIND } from "@/lib/labels";
+import { DateText } from "@/components/ui";
 
 type Judgment = CaseFile["judgments"][number];
 
@@ -30,7 +30,7 @@ export function JudgmentsTab({ cf, caseId }: { cf: CaseFile; caseId: string }) {
           return (
             <li key={j.id} id={`item-${j.id}`} className="scroll-mt-24 space-y-3 px-4 py-4 sm:px-6">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span className="text-md font-bold text-text">{j.date ? <>حكم <span className="num font-num">{formatDmy(j.date)}</span></> : "حكم (التاريخ مش متسجل)"}</span>
+                <span className="text-md font-bold text-text">{j.date ? <>حكم <DateText iso={j.date} /></> : "حكم (التاريخ مش متسجل)"}</span>
                 <StatusChip tone="neutral">{JUDGMENT_KIND[j.kind as keyof typeof JUDGMENT_KIND] ?? j.kind}</StatusChip>
                 {outcome ? <StatusChip tone={outcome.tone}>{outcome.label}</StatusChip> : null}
                 {suggested ? <Suggested /> : null}
@@ -40,7 +40,7 @@ export function JudgmentsTab({ cf, caseId }: { cf: CaseFile; caseId: string }) {
                 <p className="text-doc mt-1 text-md text-text">{j.operative_text}</p>
               </div>
               <p className="text-base text-text-2">
-                {j.appeal_deadline ? <>آخر ميعاد للطعن: <span className="num font-num font-bold">{formatDmy(j.appeal_deadline)}</span> <span className="text-text-4">· كما ذكره المحامي</span>{j.appeal_deadline_note ? <span className="mt-1 block text-text-4">{j.appeal_deadline_note}</span> : null}</>
+                {j.appeal_deadline ? <>آخر ميعاد للطعن: <DateText iso={j.appeal_deadline} className="font-bold" /> <span className="text-text-4">· كما ذكره المحامي</span>{j.appeal_deadline_note ? <span className="mt-1 block text-text-4">{j.appeal_deadline_note}</span> : null}</>
                   : <span className="text-text-4">ميعاد الطعن مش متسجل. Clausia مش بيحسبه؛ قوله لـ Clausia لو عايز تسجله.</span>}
               </p>
               <div className="flex flex-wrap items-center justify-between gap-2">

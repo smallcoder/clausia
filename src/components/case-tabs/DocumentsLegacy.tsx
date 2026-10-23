@@ -8,6 +8,7 @@ import { Panel, StatusChip } from "@/components/shell/PageHero";
 import { formatDmy } from "@/lib/dates";
 import { DOC_TYPE, READ_STATUS } from "@/lib/labels";
 import { createClient } from "@/lib/supabase/server";
+import { DateText } from "@/components/ui";
 
 const STATUS_TONE = { pending: "neutral", reading: "neutral", done: "good", failed: "bad" } as const;
 
@@ -89,7 +90,7 @@ export async function DocumentsLegacy({ caseId }: { caseId: string }) {
               <li className="flex min-h-12 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-5 py-1.5">
                 <span className="min-w-0">
                   <span className="block truncate text-md text-text" dir="auto">{d.file_name}</span>
-                  <span className="block text-sm text-text-4">{meta}</span>
+                  <span className="block text-sm text-text-4"><DateText value={meta} /></span>
                 </span>
                 <span className="flex shrink-0 items-center gap-2">
                   <a href={`/api/documents/${d.id}`} target="_blank" rel="noopener" className="bg-primary-fill inline-flex h-11 items-center rounded-full px-5 text-base font-bold">فتح</a>

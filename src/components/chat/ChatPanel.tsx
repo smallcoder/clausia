@@ -14,6 +14,7 @@ import { ChatThread } from "./ChatThread";
 import { ContextPicker } from "./ContextPicker";
 import { SessionsMenu } from "./Sessions";
 import { shortDay, type PanelData } from "./panel-types";
+import { DateText } from "@/components/ui";
 
 export function ChatPanel({ data }: { data: PanelData }) {
   const { context, sessions, threadId, hearing, thread, moveOffer, chips, morning, starter } = data;
@@ -35,7 +36,7 @@ export function ChatPanel({ data }: { data: PanelData }) {
           <div className="min-w-0 flex-1 leading-[normal]">
             <div className="text-md font-bold text-title">Clausia</div>
             <div className="mt-px flex items-center gap-1.5 text-sm text-text-2">
-              <span aria-hidden className="size-dot shrink-0 rounded-full bg-gold" /><span className="truncate">{sub}</span>
+              <span aria-hidden className="size-dot shrink-0 rounded-full bg-gold" /><span className="truncate"><DateText value={sub} /></span>
             </div>
           </div>
           <SessionsMenu sessions={sessions} currentId={threadId} />
@@ -60,7 +61,7 @@ export function ChatPanel({ data }: { data: PanelData }) {
               <span aria-hidden className="mark inline-flex size-mark-lg shrink-0 items-center justify-center rounded-sm"><FolderClosed size={16} strokeWidth={1.9} /></span>
               <span className="min-w-0 flex-1 leading-[normal]">
                 <span className="block truncate text-base font-bold text-text">{context.strip.title}</span>
-                {context.strip.meta ? <span className="mt-px block truncate text-sm text-text-3">{context.strip.meta}</span> : null}
+                {context.strip.meta ? <span className="mt-px block truncate text-sm text-text-3"><DateText value={context.strip.meta} /></span> : null}
               </span>
               <span className="text-sm font-semibold text-gold">افتح</span>
             </Link>

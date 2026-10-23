@@ -8,7 +8,7 @@ import { CellCite } from "@/components/cite/SourceChip";
 import { ColumnHead } from "@/components/documents/ColumnHead";
 import { DocMenu } from "@/components/documents/DocMenu";
 import { DocThumb, pagesLabel } from "@/components/documents/DocThumb";
-import { cx } from "@/components/ui";
+import { DateText, cx } from "@/components/ui";
 import { formatDmy } from "@/lib/dates";
 import { confirmCellAction, editCellAction } from "@/lib/doc-columns/actions";
 import { READ_STATUS } from "@/lib/labels";
@@ -121,7 +121,7 @@ export function DocsTable({ rows, columns }: { rows: DocRow[]; columns: TableCol
                 <DocThumb className="w-6.5 shrink-0" />
                 <div className="min-w-0">
                   <p className="text-base font-bold leading-6 text-text">{r.name}</p>
-                  {meta ? <p className="mt-0.5 text-xs text-text-3">{meta}</p> : null}
+                  {meta ? <p className="mt-0.5 text-xs text-text-3"><DateText value={meta} /></p> : null}
                   {r.info && r.info.readStatus !== "done" ? (
                     <p role="status" className={cx("mt-0.5 text-xs font-semibold", r.info.readStatus === "failed" ? "text-bad" : "text-text-3")}>
                       {r.info.readStatus === "failed" ? "ما اتقرتش" : READ_STATUS[r.info.readStatus]}

@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { SourceChip, SourceLabel } from "@/components/cite/SourceChip";
 import { OpenHearing, RollSheet } from "@/components/hearings/RollSheet";
-import { cx } from "@/components/ui";
+import { DateText, cx } from "@/components/ui";
 import { formatDmy } from "@/lib/dates";
 import { builtLine, clockStamp, QUIET } from "@/lib/morning/build";
 import { dismissNoticeAction } from "@/lib/morning/actions";
@@ -51,7 +51,7 @@ function Card({ n, kicker, gold, onIgnore, children }: { n: Notice; kicker: stri
 function HearingCard({ n, onIgnore }: { n: HearingNotice; onIgnore: () => void }) {
   return (
     <Card n={n} kicker={n.title} gold onIgnore={onIgnore}>
-      <p className="mt-0.75 text-base leading-[1.65] text-text">{n.text}</p>
+      <p className="mt-0.75 text-base leading-[1.65] text-text"><DateText value={n.text} /></p>
       {n.source ? <p className="mt-1.5"><Source s={n.source} /></p> : null}
     </Card>
   );
@@ -60,7 +60,7 @@ function HearingCard({ n, onIgnore }: { n: HearingNotice; onIgnore: () => void }
 function ConflictCard({ n, onIgnore }: { n: ConflictNotice; onIgnore: () => void }) {
   return (
     <Card n={n} kicker={n.title} onIgnore={onIgnore}>
-      <p className="mt-0.75 text-base leading-[1.65] text-text">{n.text}</p>
+      <p className="mt-0.75 text-base leading-[1.65] text-text"><DateText value={n.text} /></p>
       {n.quote ? <p className="mt-1 line-clamp-2 text-sm leading-[1.6] text-text-3" dir="auto">«{n.quote}»</p> : null}
       <p className="mt-1.5 flex flex-wrap items-center gap-1.5">
         <span className="text-sm font-semibold text-text-2">شوف الورقتين:</span>
@@ -97,18 +97,18 @@ export function MorningBlock({ data }: { data: MorningData }) {
   return (
     <RollSheet today={today}>
       <div className="flex flex-col gap-4">
-        <p className="text-center text-xs leading-[normal] text-text-4">النهارده · <span className="num font-num">{stamp.time}</span> {stamp.period}</p>
+        <p className="text-center text-xs leading-[normal] text-text-4"><DateText value={`النهارده · ${stamp.time} ${stamp.period}`} /></p>
         {/* the phone has no page beside the chat, so the greeting is on top of it (the desktop page carries it) */}
         <h1 className="text-xl font-bold leading-[1.2] text-title xl:hidden"><Greeting text={greeting} /></h1>
 
         <div className="min-w-0 text-md leading-[1.9] text-text">
           {brief.empty ? <p>{QUIET}</p> : brief.sentences.map((s, i) => (
             <p key={i} className={i ? "mt-1" : undefined}>
-              {s.parts.map((p, j) => (p.gold ? <span key={j} className="font-semibold text-gold">{p.text}</span> : <span key={j}>{p.text}</span>))}
+              {s.parts.map((p, j) => (p.gold ? <DateText key={j} value={p.text} className="font-semibold text-gold" /> : <DateText key={j} value={p.text} />))}
               {s.sources.map((src, k) => <Source key={k} s={src} className="ms-1 align-[2px]" />)}
             </p>
           ))}
-          {line ? <p className="mt-1 text-xs leading-[normal] text-text-4">{line}</p> : null}
+          {line ? <p className="mt-1 text-xs leading-[normal] text-text-4"><DateText value={line} /></p> : null}
         </div>
 
         {notices.length ? (

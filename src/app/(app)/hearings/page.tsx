@@ -14,6 +14,7 @@ import { deadlinesInRange } from "@/lib/deadlines/roll";
 import type { RollDeadline } from "@/lib/deadlines/types";
 import { courtOf, hearingsInRange, undecidedPastCount, undecidedPastHearings, weekStart, type HearingWithCase } from "@/lib/hearings";
 import { createClient } from "@/lib/supabase/server";
+import { DateText } from "@/components/ui";
 
 const SIDE_ROWS = 3;
 /** weeks of rows rendered on each side of the chosen week (the client keeps this buffer while scrolling) */
@@ -36,7 +37,7 @@ function SideCard({ count, rows }: { count: number; rows: HearingWithCase[] }) {
           <li key={h.id} className="flex items-center gap-3 border-t border-border-2 py-3.5">
             <div className="min-w-0 flex-1">
               <div className="truncate text-base font-semibold text-text">{hearingTitle(h)}</div>
-              <div className="mt-0.75 truncate text-sm text-text-3">{courtOf(h)} · <span className="num font-num">{shortDm(h.hearing_date)}</span></div>
+              <div className="mt-0.75 truncate text-sm text-text-3">{courtOf(h)} · <DateText value={shortDm(h.hearing_date)} /></div>
             </div>
             <OpenHearing h={h} label={`سجّل قرار جلسة ${hearingTitle(h)} يوم ${formatDmy(h.hearing_date)}`}
               className="bg-primary-fill tap inline-flex h-8 shrink-0 items-center rounded-full px-3.5 text-sm font-semibold transition hover:opacity-90">
