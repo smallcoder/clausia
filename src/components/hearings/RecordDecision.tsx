@@ -13,7 +13,7 @@ import { useDecisionNotice } from "./DecisionNotices";
 
 const sheetInput = "h-11 w-full rounded-md border border-border bg-field px-3 text-md text-text placeholder:text-text-4";
 
-export function RecordDecision({ hearingId, caseId, hearingDate, label, compact = false, layout = "inline", onSaved, onCancel }: {
+export function RecordDecision({ hearingId, caseId, hearingDate, label, compact = false, layout = "inline", cancelLabel = "إلغاء", onSaved, onCancel }: {
   hearingId: string;
   caseId: string;
   hearingDate: string;
@@ -21,6 +21,8 @@ export function RecordDecision({ hearingId, caseId, hearingDate, label, compact 
   compact?: boolean;
   /** "sheet": open at once, larger stacked fields (the roll's decision sheet / panel) */
   layout?: "inline" | "sheet";
+  /** the text of the button next to «حفظ القرار» (the decision flow says «بعدين») */
+  cancelLabel?: string;
   onSaved?: (r: { label: string; nextDate: string | null; decision: string }) => void;
   onCancel?: () => void;
 }) {
@@ -113,7 +115,7 @@ export function RecordDecision({ hearingId, caseId, hearingDate, label, compact 
           </button>
           {cancel ? (
             <button type="button" onClick={cancel} disabled={pending} className="inline-flex h-11 items-center rounded-full border border-border bg-card-2 px-5 text-md text-text-2">
-              إلغاء
+              {cancelLabel}
             </button>
           ) : null}
         </div>

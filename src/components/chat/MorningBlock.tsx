@@ -116,7 +116,7 @@ export function MorningBlock({ data }: { data: MorningData }) {
             <h2 className="text-sm font-bold leading-[normal] text-title">{noticedHeading(notices.length)}</h2>
             {notices.map((n) => (n.kind === "hearing_decision" ? <HearingCard key={id(n)} n={n} onIgnore={() => ignore(n)} /> : <ConflictCard key={id(n)} n={n} onIgnore={() => ignore(n)} />))}
             {moreUndecided > 0 ? (
-              <Link href="/hearings?filter=undecided" className="tap inline-flex w-fit items-center text-sm font-semibold text-text-2 hover:text-text">
+              <Link href="/agenda?decide=1" className="tap inline-flex w-fit items-center text-sm font-semibold text-text-2 hover:text-text">
                 وفيه {nHearings(moreUndecided)} كمان فاتت من غير قرار ←
               </Link>
             ) : null}

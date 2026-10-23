@@ -51,7 +51,7 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
         title="القضايا"
         stats={[
           { value: counts.total, label: "قضية", mobileLabel: "قضية عندك", href: "/cases" },
-          { value: week, label: "جلسة الأسبوع ده", mobileLabel: "جلسات الأسبوع", href: "/hearings?view=week" },
+          { value: week, label: "جلسة الأسبوع ده", mobileLabel: "جلسات الأسبوع", href: "/agenda?view=week" },
           { value: decision.size, label: "محتاجة قرار", highlight: true, href: "/cases?decision=1" },
         ]}
       >

@@ -20,6 +20,7 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { cx } from "@/components/ui";
+import { agendaHref } from "@/components/agenda/url";
 import { addDaysIso, formatDmy } from "@/lib/dates";
 import { weekStart } from "@/lib/hearings";
 import { arDayMonth, arMonthYear, dayCount, WEEKDAY_LONG, WEEKDAY_SHORT, weekdayOf } from "./roll-text";
@@ -32,7 +33,7 @@ const DRAG_THRESHOLD = 6;
 
 export const stripRange = (center: string) => ({ first: addDaysIso(center, -STRIP_WEEKS * 7), last: addDaysIso(center, STRIP_WEEKS * 7 + 6) });
 export const reducedMotion = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-const dayHref = (iso: string) => `/hearings?view=day&date=${formatDmy(iso)}`;
+const dayHref = (iso: string) => agendaHref(iso);
 
 export type SelectHow = "tap" | "key" | "today";
 
@@ -337,7 +338,7 @@ export function RollStrip({ center, selected, focusDay, today, counts, pinned, o
           </button>
         ) : null}
       </div>
-      <nav aria-label="أيام الرول" className="relative mt-2 sm:overflow-hidden sm:rounded-xl sm:border sm:border-border-2 sm:bg-card sm:shadow-card">
+      <nav aria-label="أيام الأجندة" className="relative mt-2 sm:overflow-hidden sm:rounded-xl sm:border sm:border-border-2 sm:bg-card sm:shadow-card">
         <button type="button" onClick={() => step(-1)} aria-label="الأسبوع اللي فات" aria-disabled={!vis.canPrev || undefined} className={cx(arrow, "start-1.5")}><ChevronRight size={16} strokeWidth={1.9} aria-hidden /></button>
         <div ref={scroller} data-roll-scroller
           className="no-scrollbar edge-fade @container snap-x snap-mandatory overflow-x-auto overscroll-x-contain sm:scroll-px-12 sm:data-[dragging]:cursor-grabbing"

@@ -25,7 +25,7 @@ function hearing(o: { id?: string; court?: string | null; circuit?: string | nul
     source_char_start: null, source_char_end: null, decision_source_kind: null, decision_source_document_id: null, decision_source_page: null,
     decision_source_quote: null, decision_source_char_start: null, decision_source_char_end: null, next_date: null,
     case: { id: `c-${o.id ?? "h1"}`, case_number: o.number ?? "8833", case_year: 2024, title: o.title === undefined ? "صحة ونفاذ عقد بيع" : o.title, court: o.court === undefined ? "محكمة استئناف القاهرة" : o.court,
-      circuit: o.circuit === undefined ? "الدائرة 7 مدني" : o.circuit, client_role: null, status: "active", client_name: o.client === undefined ? "كريم المثالي" : o.client, case_type: null },
+      circuit: o.circuit === undefined ? "الدائرة 7 مدني" : o.circuit, client_role: null, status: "active", client_name: o.client === undefined ? "كريم المثالي" : o.client, case_type: null, opponent: null },
   };
 }
 const prev = (o: Partial<PrevHearing> = {}): PrevHearing => ({ id: "p1", hearing_date: "2026-10-20", decision_type: "postponed", decision_text: "للاطلاع والمذكرات", next_requirements: "مذكرة الدفاع", ...o });

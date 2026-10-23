@@ -14,7 +14,7 @@ export function StatsCard({ openCases, weekHearings, className = "" }: { openCas
         <span className={NUM}>{openCases}</span>
         <span className={LABEL}>قضية مفتوحة</span>
       </Link>
-      <Link href="/hearings" className="block flex-1 border-s border-border-2 ps-4 3xl:ps-5">
+      <Link href="/agenda" className="block flex-1 border-s border-border-2 ps-4 3xl:ps-5">
         <span className={NUM}>{weekHearings}</span>
         <span className={LABEL}>{weekLabel(weekHearings)}</span>
       </Link>

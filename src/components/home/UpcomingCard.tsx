@@ -1,7 +1,7 @@
 /**
  * «الجلسات الجاية» (docs/design/split/Split*Home): a solid card, one row per hearing — the day (gold for today and tomorrow),
  * «client — subject», where it is (court · circuit), and what is needed on the end side. A hearing has a date but no time in
- * the data, so the mockup's «9 ص» under the day is left out. The next 5 from today; «الرول كله» opens the roll.
+ * the data, so the mockup's «9 ص» under the day is left out. The next 5 from today; «الأجندة كلها» opens the agenda.
  */
 import Link from "next/link";
 import type { HearingWithCase } from "@/lib/hearings";
@@ -29,13 +29,13 @@ export function UpcomingCard({ rows, today, className = "" }: { rows: HearingWit
     <section aria-label="الجلسات الجاية" className={`min-w-0 rounded-xl border border-border-2 bg-card px-4.5 py-1.5 shadow-card md:px-6.5 ${className}`}>
       <div className="flex items-baseline justify-between pb-2.5 pt-4">
         <h2 className="text-base font-bold leading-[normal] text-text">الجلسات الجاية</h2>
-        <Link href="/hearings" className="tap text-sm leading-[normal] text-text-3 hover:text-text">الرول كله</Link>
+        <Link href="/agenda" className="tap text-sm leading-[normal] text-text-3 hover:text-text">الأجندة كلها</Link>
       </div>
       {rows.length ? rows.map((h) => <Row key={h.id} h={h} today={today} />) : (
         <div className="border-t border-border-2 py-5 md:py-6">
           <div className="text-md font-semibold text-text">مفيش جلسات جاية</div>
           <div className="mt-1 text-sm text-text-3">
-            <Link href="/hearings" className="font-semibold text-text-2 hover:text-text">افتح الرول ←</Link>
+            <Link href="/agenda" className="font-semibold text-text-2 hover:text-text">افتح الأجندة ←</Link>
           </div>
         </div>
       )}

@@ -3,7 +3,7 @@
  * The appeal-deadlines card (docs/design/next/Deadline{Light,Dark}.dc.html): «مواعيد الطعن · <case>» with a row per period
  * (استئناف: days, last day, days left, the article chip; نقض: «بعد الاستئناف»), the note about art. 18, the reminders, and the two buttons.
  * Everything on it is computed by CODE on the server from the article text (src/lib/deadlines); the card only draws it and sends
- * the lawyer's inputs back: «مستعجل؟», «الحكم مش حضوري» + the date the judgment was served, the reminders. «حطهم في الرول» saves
+ * the lawyer's inputs back: «مستعجل؟», «الحكم مش حضوري» + the date the judgment was served, the reminders. «حطهم في الأجندة» saves
  * (decideProposalAction → applyOp('add_deadline'), which recomputes); nothing is saved before that tap.
  * An article chip opens the verbatim article text in a small panel; an article LawMill does not have says so.
  */
@@ -239,13 +239,13 @@ export function DeadlineCard({ proposal, entry }: { proposal: Proposal; entry: D
 
       {done ? (
         <div className="flex items-center justify-between gap-3 border-t border-border-2 px-5.5 py-4 text-base">
-          <span className="font-semibold text-good">اتحطت في الرول، وهنبّهك قبلها.</span>
-          {main.last_day ? <Link href={`/hearings?view=day&date=${formatDmy(main.last_day)}`} className="tap inline-flex items-center font-semibold text-text hover:underline">افتح الرول ←</Link> : null}
+          <span className="font-semibold text-good">اتحطت في الأجندة، وهنبّهك قبلها.</span>
+          {main.last_day ? <Link href={`/agenda?view=day&date=${formatDmy(main.last_day)}`} className="tap inline-flex items-center font-semibold text-text hover:underline">افتح الأجندة ←</Link> : null}
         </div>
       ) : (
         <div className="flex gap-2 border-t border-border-2 px-5.5 pb-4 pt-3.5">
           <button type="button" disabled={pending || !canSave} onClick={save}
-            className="bg-primary-fill h-11 flex-1 rounded-full text-md font-bold transition disabled:opacity-50">حطهم في الرول</button>
+            className="bg-primary-fill h-11 flex-1 rounded-full text-md font-bold transition disabled:opacity-50">حطهم في الأجندة</button>
           <button type="button" disabled={pending} onClick={() => { const next = basis === "service_date" ? "judgment_date" : "service_date"; setBasis(next); recompute({ basis: next, service, urgent }); }}
             className="tap h-11 rounded-full border border-border-2 px-4.5 text-base text-text-3 transition hover:text-text disabled:opacity-50">
             {basis === "service_date" ? "الحكم حضوري" : "الحكم مش حضوري"}

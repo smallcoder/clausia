@@ -14,6 +14,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useDraft } from "@/components/chat/draft";
 import { shortDay } from "@/components/chat/panel-types";
+import { AGENDA, DECIDE_HREF } from "@/components/agenda/url";
 import { DateText, cx } from "@/components/ui";
 import { askPermission } from "@/lib/brief/notify";
 import type { SideCase, SideData, SideSession } from "@/lib/sidebar";
@@ -24,14 +25,14 @@ import { useBriefBell } from "./useBriefBell";
 
 const NAV = [
   { href: "/", label: "الرئيسية", Icon: House },
-  { href: "/hearings", label: "الأجندة", Icon: CalendarDays },
+  { href: AGENDA, label: "الأجندة", Icon: CalendarDays },
   { href: "/clients", label: "الموكلين", Icon: Users },
   { href: "/library", label: "المكتبة", Icon: BookOpen },
 ];
 
 /** Which nav item the path belongs to (the brief is an agenda page; the chat threads opened from it are Home). */
 function activeNav(path: string): string | null {
-  if (path.startsWith("/hearings") || path.startsWith("/brief")) return "/hearings";
+  if (path.startsWith(AGENDA) || path.startsWith("/brief")) return AGENDA;
   if (path.startsWith("/clients")) return "/clients";
   if (path.startsWith("/library")) return "/library";
   if (path === "/" || path.startsWith("/chat")) return "/";
@@ -152,7 +153,7 @@ export function Sidebar({ data, initials, displayName, officeName, email, alerts
         <ul className="flex flex-col gap-0.5 px-2.5">
           {NAV.map(({ href, label: text, Icon }) => {
             const on = onNav === href;
-            const badge = href === "/hearings" && alerts > 0 ? alerts : 0;
+            const badge = href === AGENDA && alerts > 0 ? alerts : 0;
             return (
               <li key={href}>
                 <Link href={navHref(href)} onClick={showPage} aria-current={on ? "page" : undefined} title={text}
@@ -253,7 +254,7 @@ export function Sidebar({ data, initials, displayName, officeName, email, alerts
             <span className={cx("min-w-0 flex-1 truncate text-base font-semibold text-text", label)}>{displayName || officeName}</span>
           </button>
           {/* the bell asks for notification permission when it is tapped (never on load); with a brief ready it opens it */}
-          <Link href={brief ? brief.href : "/hearings?filter=undecided"} onClick={() => { void askPermission(); if (brief) opened(brief); showPage(); }}
+          <Link href={brief ? brief.href : DECIDE_HREF} onClick={() => { void askPermission(); if (brief) opened(brief); showPage(); }}
             aria-label={brief ? brief.label : attention ?? "التنبيهات"} title={brief ? brief.label : attention ?? "التنبيهات"}
             className="tap relative inline-flex size-control shrink-0 items-center justify-center rounded-full text-text-3 transition hover:text-text">
             <Bell aria-hidden size={18} strokeWidth={1.8} />

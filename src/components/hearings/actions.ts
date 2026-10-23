@@ -43,7 +43,7 @@ const str = (fd: FormData, k: string) => {
 
 function revalidate(caseId?: string) {
   revalidatePath("/");
-  revalidatePath("/hearings");
+  revalidatePath("/agenda");
   if (caseId) revalidatePath(`/cases/${caseId}`);
 }
 
