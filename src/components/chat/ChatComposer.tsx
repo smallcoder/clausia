@@ -6,13 +6,13 @@
  * Presentational: ChatThread owns the text and the sending.
  */
 import { ArrowUp, File, ListChecks, Plus, Scale, User, type LucideIcon } from "lucide-react";
-import { useEffect, type KeyboardEvent, type RefObject } from "react";
+import { useEffect, type KeyboardEvent, type ReactNode, type RefObject } from "react";
 import { cx } from "@/components/ui";
 import { CHAT_MODES, MODE_LABEL, type ChatMode } from "@/lib/assistant/modes";
 
 const MODE_ICON: Record<ChatMode, LucideIcon> = { ask: User, rulings: Scale, draft: File, analyze: ListChecks };
 
-export function ChatComposer({ id, value, onChange, onSend, onFile, sending, busy, status, error, onDismissError, placeholder, mode, onMode, boxRef, fileRef }: {
+export function ChatComposer({ id, value, onChange, onSend, onFile, sending, busy, status, error, onDismissError, placeholder, mode, onMode, boxRef, fileRef, context }: {
   /** unique per page (the file input's id) */
   id: string;
   value: string;
@@ -31,6 +31,8 @@ export function ChatComposer({ id, value, onChange, onSend, onFile, sending, bus
   onMode: (m: ChatMode) => void;
   boxRef: RefObject<HTMLTextAreaElement | null>;
   fileRef: RefObject<HTMLInputElement | null>;
+  /** a slot above the mode tabs, inside the box: the context chips («اسأل Clausia») */
+  context?: ReactNode;
 }) {
   // grow the input with its text where `field-sizing: content` is unsupported (iOS Safari); max-h-32 caps it
   useEffect(() => {
@@ -57,6 +59,7 @@ export function ChatComposer({ id, value, onChange, onSend, onFile, sending, bus
           </p>
         ) : null}
         <div className="glass-below-xl rounded-xl px-2 pb-2 pt-1.75 xl:border xl:border-border-2 xl:bg-card xl:px-2.5 xl:pb-2.5 xl:pt-2 xl:shadow-soft">
+          {context}
           <div role="tablist" aria-label="نوع الطلب" className="flex gap-0.5 border-b border-border-2 pb-1.25 xl:pb-1.5">
             {CHAT_MODES.map((m) => {
               const Icon = MODE_ICON[m];

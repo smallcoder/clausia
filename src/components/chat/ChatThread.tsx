@@ -12,6 +12,7 @@ import { DeadlineCard } from "@/components/proposal/DeadlineCard";
 import { ProposalCard } from "@/components/proposal/ProposalCard";
 import type { DeadlineCardEntry } from "@/lib/deadlines/cards";
 import { useReadProgress } from "@/components/documents/useReadProgress";
+import { AskChips } from "./AskChips";
 import { ChatComposer } from "./ChatComposer";
 import { useDraft } from "./draft";
 import { shortDay, withSession } from "./panel-types";
@@ -63,7 +64,7 @@ export function ChatThread({ threadId, caseId, hearing, items, lookup, rows = {}
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
-  const { text, setText, mode, setMode } = useDraft();
+  const { text, setText, mode, setMode, chips: askChips, addChip, removeChip, clearChips, focusTick } = useDraft();
   const [error, setError] = useState<string | null>(null);
   const [sending, startSend] = useTransition();
   const [uploading, startUpload] = useTransition();
@@ -77,6 +78,11 @@ export function ChatThread({ threadId, caseId, hearing, items, lookup, rows = {}
   useEffect(() => {
     if (starter && applied.current !== starter) { applied.current = starter; setText(starter); }
   }, [starter, setText]);
+
+  // «اسأل Clausia» put a chip in the composer (or «عدّل في المحادثة» asked for the cursor): the cursor goes in the box
+  useEffect(() => {
+    if (focusTick) boxRef.current?.focus();
+  }, [focusTick]);
 
   // keep the latest message in view: the panel's own scroll area (not the window)
   useEffect(() => {
@@ -95,17 +101,19 @@ export function ChatThread({ threadId, caseId, hearing, items, lookup, rows = {}
     const t = (quick ?? text).trim();
     if (!t || sending) return;
     setError(null);
-    if (quick === undefined) setText("");
+    // the chips go with the lawyer's own message (not with a quick answer) and are used up by it
+    const asked = quick === undefined ? askChips : [];
+    if (quick === undefined) { setText(""); clearChips(); }
     startSend(async () => {
       addOptimistic(t);
       let err: string | undefined;
       let saved = false; // the lawyer's message is in the thread
       if (threadId) {
-        const r = await sendMessageAction(threadId, t, mode);
+        const r = await sendMessageAction(threadId, t, mode, asked);
         err = r.error;
         saved = !!r.saved;
       } else {
-        const r = await composerSendAction({ caseId, hearingId: hearing?.id }, t, mode);
+        const r = await composerSendAction({ caseId, hearingId: hearing?.id }, t, mode, asked);
         err = r.error;
         saved = !!r.threadId;
         if (r.threadId) open(r.threadId);
@@ -113,7 +121,7 @@ export function ChatThread({ threadId, caseId, hearing, items, lookup, rows = {}
       if (err) {
         setError(err);
         // not in the thread (session expired, thread missing…): give the text back instead of losing it
-        if (!saved) setText((cur) => cur || t);
+        if (!saved) { setText((cur) => cur || t); asked.forEach(addChip); }
       }
       router.refresh();
     });
@@ -217,7 +225,8 @@ export function ChatThread({ threadId, caseId, hearing, items, lookup, rows = {}
 
       <ChatComposer id="panel" value={text} onChange={setText} onSend={() => send()} onFile={onFile}
         sending={sending} busy={busy} status={status} error={error} onDismissError={() => setError(null)}
-        placeholder={modePlaceholder(mode, !!caseId)} mode={mode} onMode={setMode} boxRef={boxRef} fileRef={fileRef} />
+        placeholder={modePlaceholder(mode, !!caseId)} mode={mode} onMode={setMode} boxRef={boxRef} fileRef={fileRef}
+        context={<AskChips chips={askChips} onRemove={removeChip} />} />
     </>
   );
 }

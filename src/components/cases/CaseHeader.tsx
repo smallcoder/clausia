@@ -17,6 +17,7 @@ import type { CaseFile } from "@/lib/case-file";
 import type { PendingEdits } from "@/lib/edits";
 import { CASE_STATUS } from "@/lib/labels";
 import { CaseMenu } from "./CaseMenu";
+import { AskTarget } from "./AskTarget";
 import { Change, SuggestedTag, Was } from "./Suggest";
 import { specSheet, statusTone, whoLine } from "./case-view";
 
@@ -49,7 +50,8 @@ const ROUND = "tap glass glass-icon inline-flex size-control-lg shrink-0 items-c
 
 /** Desktop mockup card, stats part: 0 24px each, a hairline on the start side except the first; 32px light number,
  *  11.5px label 7px below (a 5px gold dot when it needs action). Gold only when the count is above zero. */
-function StatCell({ s, first }: { s: HeroStat; first: boolean }) {
+const STAT_FIELD: Record<string, string> = { "وقائع": "facts", "مستندات": "documents", "محتاجة مراجعة": "review" };
+function StatCell({ s, first, caseId }: { s: HeroStat; first: boolean; caseId: string }) {
   const gold = s.highlight && Number(s.value) > 0;
   const body = (
     <>
@@ -60,12 +62,20 @@ function StatCell({ s, first }: { s: HeroStat; first: boolean }) {
     </>
   );
   const cls = `block min-w-0 px-6 ${first ? "" : "border-s border-border-2"}`;
-  if (!s.href) return <div className={cls}>{body}</div>;
+  const ask = { kind: "field" as const, id: caseId, field: STAT_FIELD[s.label] ?? "stat", label: `${s.label} · ${s.value}` };
+  // «اسأل Clausia» sits beside the link (not inside it)
+  if (!s.href) return <AskTarget item={ask} className="min-w-0"><div className={cls}>{body}</div></AskTarget>;
   // a same-page hash (e.g. #item-…) must fire hashchange so the item sheet opens: plain <a>
-  return s.href.includes("#")
-    ? <a href={s.href} className={`${cls} transition hover:opacity-80`}>{body}</a>
-    : <Link href={s.href} className={`${cls} transition hover:opacity-80`}>{body}</Link>;
+  return (
+    <AskTarget item={ask} className="min-w-0">
+      {s.href.includes("#")
+        ? <a href={s.href} className={`${cls} transition hover:opacity-80`}>{body}</a>
+        : <Link href={s.href} className={`${cls} transition hover:opacity-80`}>{body}</Link>}
+    </AskTarget>
+  );
 }
+
+const SPEC_FIELD = ["case_number", "court", "circuit", "case_type"];
 
 export function CaseHeader({ cf, caseId, stats, edits }: { cf: CaseFile; caseId: string; stats: HeroStat[]; edits?: PendingEdits }) {
   const who = whoLine(cf);
@@ -77,6 +87,8 @@ export function CaseHeader({ cf, caseId, stats, edits }: { cf: CaseFile; caseId:
   const proposedStatus = patch?.status && patch.status !== cf.case.status ? patch.status : null;
   const full = (s: (typeof spec)[number]) => (s.value ? `${s.value}${s.extra ? ` · ${s.extra}` : ""}` : null);
   const number = spec[0].value;
+  /** «اسأل Clausia» on a spec cell: the case's field and what it says now */
+  const askOf = (i: number) => ({ kind: "field" as const, id: caseId, field: SPEC_FIELD[i], label: `${spec[i].label} · ${full(spec[i]) ?? "غير مسجل"}` });
   const empty = (fem?: boolean) => (fem ? "مش متسجلة" : "مش متسجل");
   return (
     <header className="leading-[1.35]">
@@ -113,14 +125,14 @@ export function CaseHeader({ cf, caseId, stats, edits }: { cf: CaseFile; caseId:
       {/* below lg: the 2×2 spec card (mobile mockup) */}
       <dl className="mt-4 grid grid-cols-2 overflow-hidden rounded-lg border border-border-2 bg-card shadow-card lg:hidden">
         {spec.map((s, i) => (
-          <div key={s.label} className={`min-w-0 border-border-2 px-3.5 py-3 ${i % 2 === 0 ? "border-e" : ""} ${i >= 2 ? "border-t" : ""} ${changed(i) ? "gold-wash" : ""}`}>
+          <AskTarget key={s.label} inside item={askOf(i)} className={`min-w-0 border-border-2 px-3.5 py-3 ${i % 2 === 0 ? "border-e" : ""} ${i >= 2 ? "border-t" : ""} ${changed(i) ? "gold-wash" : ""}`}>
             <dt className={changed(i) ? "flex items-center gap-1.5 text-xs text-gold" : "text-xs text-text-4"}>{s.short}{changed(i) ? <SuggestedTag /> : null}</dt>
             {/* long court / type names stay one line with «…», the full name in the tooltip (owner decision) */}
             <dd title={s.clip && s.value ? s.value : undefined}
               className={`mt-1 text-base leading-[1.4] ${s.clip ? "truncate" : ""} ${s.value ? "font-semibold text-text" : "text-text-4"}`}>
               {changed(i) && after ? <Change old={s.value ? s.mobile ?? s.value : null} next={after[i].mobile ?? after[i].value ?? empty(s.fem)} /> : s.value ? s.mobile ?? s.value : empty(s.fem)}
             </dd>
-          </div>
+          </AskTarget>
         ))}
       </dl>
 
@@ -131,17 +143,17 @@ export function CaseHeader({ cf, caseId, stats, edits }: { cf: CaseFile; caseId:
         <div className="grid grid-cols-2 gap-y-4 rounded-xl border border-border-2 bg-card py-5 shadow-card @3xl:grid-cols-4 @3xl:gap-y-0 @7xl:grid-cols-[repeat(4,minmax(0,1fr))_1px_repeat(3,minmax(0,0.7fr))] @7xl:items-stretch">
           <dl className="contents">
             {spec.map((s, i) => (
-              <div key={s.label} className={`min-w-0 px-6 ${i % 2 ? "border-s border-border-2" : ""} ${i >= 2 ? "border-t border-border-2 pt-4" : ""} @3xl:border-t-0 @3xl:pt-0 ${i > 0 ? "@3xl:border-s @3xl:border-border-2" : ""} ${changed(i) ? "gold-wash rounded-lg py-3" : ""}`}>
+              <AskTarget key={s.label} item={askOf(i)} className={`min-w-0 px-6 ${i % 2 ? "border-s border-border-2" : ""} ${i >= 2 ? "border-t border-border-2 pt-4" : ""} @3xl:border-t-0 @3xl:pt-0 ${i > 0 ? "@3xl:border-s @3xl:border-border-2" : ""} ${changed(i) ? "gold-wash rounded-lg py-3" : ""}`}>
                 <dt className={changed(i) ? "flex items-center gap-1.5 text-xs leading-4 text-gold" : "text-xs leading-4 text-text-4"}>{s.label}{changed(i) ? <SuggestedTag /> : null}</dt>
                 <dd className={`mt-1.75 text-md leading-[1.4] ${s.value ? "font-semibold text-text" : "text-text-4"}`}>
                   {changed(i) && after ? <Change old={full(s)} next={full(after[i]) ?? empty(s.fem)} /> : <>{s.value ?? empty(s.fem)}{s.value && s.extra ? ` · ${s.extra}` : null}</>}
                 </dd>
-              </div>
+              </AskTarget>
             ))}
           </dl>
           <div aria-hidden className="-my-1 hidden bg-border-2 @7xl:block" />
           <div className="col-span-full grid grid-cols-3 border-t border-border-2 pt-4 @7xl:contents">
-            {stats.map((s, i) => <StatCell key={s.label} s={s} first={i === 0} />)}
+            {stats.map((s, i) => <StatCell key={s.label} s={s} first={i === 0} caseId={caseId} />)}
           </div>
         </div>
       </div>

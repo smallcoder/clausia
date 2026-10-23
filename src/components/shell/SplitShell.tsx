@@ -16,6 +16,7 @@ import type { ReactNode } from "react";
 import { CitePanel } from "@/components/cite/CitePanel";
 import { CONFIRM_SLOT } from "@/components/cases/ConfirmBar";
 import { DraftProvider, type Account } from "@/components/chat/draft";
+import { closeHref } from "@/components/shell/close-href";
 import { UndoToastProvider } from "@/components/shell/UndoToast";
 import { cx } from "@/components/ui";
 
@@ -23,15 +24,6 @@ function sheetOpen(path: string, sp: URLSearchParams): boolean {
   if (sp.get("sheet") === "1") return true;
   if (path === "/") return false;
   return !(/^\/cases\/[^/]+\/?$/.test(path) && !sp.get("tab"));
-}
-
-/** Where «رجوع للشات» goes: the case's own page (its chat) or Home, keeping the open session. */
-function closeHref(path: string, sp: URLSearchParams): string {
-  const m = path.match(/^\/cases\/([^/]+)/);
-  const keep = new URLSearchParams();
-  for (const k of m ? ["s", "hearing"] : ["s"]) { const v = sp.get(k); if (v) keep.set(k, v); }
-  const q = keep.toString();
-  return `${m ? `/cases/${m[1]}` : "/"}${q ? `?${q}` : ""}`;
 }
 
 export function SplitShell({ header, chat, account, children }: { header: ReactNode; chat: ReactNode; account: Account; children: ReactNode }) {
