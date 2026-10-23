@@ -27,8 +27,8 @@
   --text: #121A2B;
   --title: #0F1626;
   --text-2: #2A2D31;
-  --text-3: #6A6E76;                     /* muted */
-  --text-4: #9A9EA6;                     /* faint */
+  --text-3: #52565D;                     /* muted */
+  --text-4: #62666E;                     /* faint (4.5:1 on bg, card, card-2) */
   /* lines */
   --border: rgba(18,26,43,0.08);
   --border-2: rgba(18,26,43,0.06);       /* hairline */
@@ -42,7 +42,7 @@
   --primary: #141C2E;                    /* send, save, record */
   --on-primary: #FFFFFF;
   /* gold: needs action (text, dots, thin outlines, big light numbers; never a fill on buttons) */
-  --gold: #897038;
+  --gold: #644D21;                       /* 4.5:1 for small text on bg, card, card-2 and the gold wash */
   --gold-bg: rgba(137,112,56,0.10);
   --gold-edge: rgba(137,112,56,0.3);
   /* status */
@@ -73,6 +73,8 @@
   --glass-shadow: 0 0 0 0.5px rgba(18,26,43,0.08), inset 0 1px 0 #FFFFFF, inset 0 -18px 30px -24px rgba(18,26,43,0.10), 0 2px 4px rgba(18,26,43,0.04), 0 28px 56px -30px rgba(18,26,43,0.32);
   --glass-icon: #5F636A;
   --glass-text-3: #50545C;
+  --glass-text-4: #50545C;
+  --ambient-text-4: #484C54;
   /* a control that sits on a card or inside a glass panel: the chip colour with the glass edge, no blur of its own (blur is for the few fixed panels) */
   --glass-flat-bg: var(--chip);
   /* the active tab / mode / segment: a solid ink pill in light, a champagne frame in dark */
@@ -101,8 +103,8 @@
   --text: #ECEDF0;
   --title: #FFFFFF;
   --text-2: #D3D5DA;
-  --text-3: #8C909A;
-  --text-4: #6A6E78;
+  --text-3: #A2A6B0;
+  --text-4: #8C909A;
   --border: rgba(255,255,255,0.08);
   --border-2: rgba(255,255,255,0.06);
   --border-strong: rgba(255,255,255,0.16);
@@ -136,6 +138,8 @@
   --glass-shadow: inset 0 1px 0 rgba(255,255,255,0.20), inset 1px 0 0 rgba(255,255,255,0.05), 0 28px 56px -30px rgba(0,0,0,0.9);
   --glass-icon: #B2B4BB;
   --glass-text-3: #AEB2BC;
+  --glass-text-4: #A8ACB6;
+  --ambient-text-4: #A8ACB6;
   --glass-flat-bg: var(--chip);
   --pill-on-bg: rgba(214,192,143,0.08);
   --pill-on-fg: var(--gold);
@@ -159,8 +163,8 @@
   --text: #ECEDF0;
   --title: #FFFFFF;
   --text-2: #D3D5DA;
-  --text-3: #8C909A;
-  --text-4: #6A6E78;
+  --text-3: #A2A6B0;
+  --text-4: #8C909A;
   --border: rgba(255,255,255,0.08);
   --border-2: rgba(255,255,255,0.06);
   --border-strong: rgba(255,255,255,0.16);
@@ -194,6 +198,8 @@
   --glass-shadow: inset 0 1px 0 rgba(255,255,255,0.20), inset 1px 0 0 rgba(255,255,255,0.05), 0 28px 56px -30px rgba(0,0,0,0.9);
   --glass-icon: #B2B4BB;
   --glass-text-3: #AEB2BC;
+  --glass-text-4: #A8ACB6;
+  --ambient-text-4: #A8ACB6;
   --glass-flat-bg: var(--chip);
   --pill-on-bg: rgba(214,192,143,0.08);
   --pill-on-fg: var(--gold);
@@ -366,14 +372,13 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-even
    Never per message or card: a control that sits on a card or inside a glass panel uses .glass-flat (no blur). */
 .glass { background: var(--glass-bg); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); border: var(--glass-border); box-shadow: var(--glass-shadow); }
 .glass-icon { color: var(--glass-icon); }
-/* the muted text step (--text-3) is a little stronger on glass, which is lighter or darker than the page colour behind it */
-.glass, .glass-flat, .glass-xl, .glass-below-xl { --text-3: var(--glass-text-3); }
-/* just the frosted fill (no edge, no shadow): a bar that sticks to the edge of a glass sheet and has its scrolling content under it */
-.glass-fill { background: var(--glass-bg); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); }
+/* the muted and faint text steps (--text-3, --text-4) are a little stronger on glass, which is lighter or darker than the page colour behind it */
+.glass, .glass-flat, .glass-xl { --text-3: var(--glass-text-3); --text-4: var(--glass-text-4); }
+/* .on-ambient: small faint text that sits straight on the background shapes (top bar, the phone's chat, the line under the composer), where the page is darker or tinted */
+.on-ambient { --text-4: var(--ambient-text-4); }
 .glass-flat { background: var(--glass-flat-bg); border: var(--glass-border); box-shadow: var(--glass-shadow); }
-/* glass only from 1280 (the desktop chat panel; the phone's chat is the whole screen) / only below 1280 (the page sheet) */
+/* glass only from 1280 (the desktop chat panel; the phone's chat is the whole screen; the page sheet below 1280 is solid) */
 @media (min-width: 80rem) { .glass-xl { background: var(--glass-bg); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); border: var(--glass-border); box-shadow: var(--glass-shadow); } }
-@media (max-width: 79.99rem) { .glass-below-xl { background: var(--glass-bg); -webkit-backdrop-filter: var(--glass-filter); backdrop-filter: var(--glass-filter); border: var(--glass-border); box-shadow: var(--glass-shadow); } }
 /* the active tab / composer mode / segment (AppHeader, CaseTabs, composer, filter chips, choices): ink pill in light, champagne frame in dark (tokens --pill-on-*) */
 .pill-on { background: var(--pill-on-bg); color: var(--pill-on-fg); box-shadow: var(--pill-on-shadow); font-weight: 600; }
 /* invisible 44px tap area around a control drawn smaller (owner decision: draw as the mockup, tap at 44px) */

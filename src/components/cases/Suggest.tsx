@@ -7,7 +7,7 @@ export { editsLabel };
 
 /** The small «مقترح» tag on a highlighted field. */
 export const SuggestedTag = ({ children = "مقترح" }: { children?: ReactNode }) => (
-  <span className="inline-flex h-4.5 items-center rounded-sm bg-gold-edge px-1.75 text-xs font-bold text-gold">{children}</span>
+  <span className="inline-flex h-4.5 items-center rounded-sm bg-gold-edge/60 px-1.75 text-xs font-bold text-gold">{children}</span>
 );
 
 /** The old value, struck through, in the faint text colour. */
