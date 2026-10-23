@@ -11,8 +11,8 @@ reject (`decideProposal`). Only then `applyOp` (`src/lib/tools/apply.ts`) insert
 | tool | what | key args |
 |---|---|---|
 | create_client | new client | name, kind, phone, ref |
-| create_case | new case | client (uuid or @ref), case_number, case_year, court, circuit, case_type, stage, previous_stage_case, client_role, facts_date, ref |
-| update_case | change case fields | case + fields |
+| create_case | new case | client (REQUIRED: uuid or @ref), case_number, case_year, court, circuit, case_type, stage, previous_stage_case, client_role, facts_date, ref |
+| update_case | change case fields | case + fields; `client` fills a case that has none (a model card cannot change an existing client) |
 | add_party | party with role | case, name, role, is_our_client |
 | add_fact | dated fact | case, date (d/m/yyyy, m/yyyy, yyyy), date_text, text |
 | add_request | client request | case, text, kind |
