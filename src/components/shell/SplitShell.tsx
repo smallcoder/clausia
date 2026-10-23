@@ -1,8 +1,8 @@
 "use client";
 /**
  * The chat-first split layout (docs/design/split/*). One centered frame (max 1600, 20px margins):
- *   desktop (≥1280): the top bar spans the whole frame; under it the page column on the start side (right in RTL) and the
- *   chat panel on the end side (left), always open (560px, 480 at 1440; the page shrinks first), a 24px gap between them.
+ *   desktop (≥1280): the top bar spans the whole frame; under it the chat panel on the right (under the logo) and
+ *   the page column on the left (under the account icons), always open (560px, 480 at 1440; the page shrinks first), a 24px gap between them.
  *   below 1280 (phone / tablet): the chat is the whole screen; the page opens as a bottom sheet over it.
  * The chat panel arrives as the @chat slot (it knows the context and the session from the URL); the composer's draft
  * lives here, so it survives moving between pages.
@@ -38,7 +38,8 @@ export function SplitShell({ header, chat, account, children }: { header: ReactN
       <div className="xl:px-5">
       <div className="xl:mx-auto xl:w-full xl:max-w-frame">
       {header}
-      <div className="xl:flex xl:items-start xl:gap-6">
+      {/* flipped on desktop (row-reverse): the page is first in the DOM (phone and tab order unchanged) and sits on the left, the chat on the right */}
+      <div className="xl:flex xl:flex-row-reverse xl:items-start xl:gap-6">
         {/* the page: a column on desktop, a bottom sheet below 1280 (only when it is open) */}
         {open ? <Link href={closeHref(path, sp)} aria-label="رجوع للشات" className="fixed inset-0 z-30 xl:hidden" /> : null}
         <div className={cx(

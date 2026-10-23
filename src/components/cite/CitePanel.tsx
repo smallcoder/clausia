@@ -2,7 +2,7 @@
 /**
  * The paper panel (docs/design/next/Cite{Light,Dark}.dc.html): header (paper thumb, file name, «صفحة 2 من 4 · الجملة
  * المستخدمة متعلّمة», the page control, «اقفل»), the page text on a white sheet with the sentence marked, and a footer line
- * naming the item taken from it. Desktop: an aside (floating over the page column, beside the chat panel).
+ * naming the item taken from it. Desktop: an aside (floating over the page column (left), beside the chat panel (right)).
  * Mobile: a bottom sheet.
  *
  * The page text is read with the lawyer's own session (loadCitePaper). The sentence is the span stored when the item was
@@ -47,7 +47,7 @@ export function CitePanel() {
   if (desktop) {
     return (
       <PanelShell label={label} close={close} modal={false}
-        className="fixed bottom-6 start-10 top-25 z-50 flex w-160 flex-col overflow-hidden rounded-xl border border-border-2 bg-card shadow-card">
+        className="fixed bottom-6 end-10 top-25 z-50 flex w-160 flex-col overflow-hidden rounded-xl border border-border-2 bg-card shadow-card">
         <Paper key={active.id} source={active} close={close} />
       </PanelShell>
     );

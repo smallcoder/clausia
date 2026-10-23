@@ -1,7 +1,7 @@
 "use client";
 /**
- * The chat panel (docs/design/split/*): the app's chat, always there. Desktop: a rounded panel on the end side with its
- * own header (the «C» mark, who this chat is about, the sessions button). Phone: the whole screen — a header with the
+ * The chat panel (docs/design/split/*): the app's chat, always there. Desktop: a rounded panel on the right (under the logo) with its
+ * own header (who this chat is about; the title opens the sessions list; no brand, it is in the top bar). Phone: the whole screen — a header with the
  * context pill (opens the context picker) and round buttons for the Roll and Cases, and inside a case a small case strip
  * with «افتح» (it opens the page as a sheet). Data comes from the @chat slot (panel-data.ts) for the current URL.
  */
@@ -13,8 +13,16 @@ import { moveThreadAction } from "@/lib/assistant/actions";
 import { ChatThread } from "./ChatThread";
 import { ContextPicker } from "./ContextPicker";
 import { SessionsMenu } from "./Sessions";
-import { shortDay, type PanelData } from "./panel-types";
+import type { PanelData } from "./panel-types";
 import { DateText } from "@/components/ui";
+import { formatDmy } from "@/lib/dates";
+
+/** «محادثة واحدة» · «محادثتان» · «3 محادثات» · «11 محادثة» */
+function sessionsCount(n: number): string {
+  if (n === 1) return "محادثة واحدة";
+  if (n === 2) return "محادثتان";
+  return n <= 10 ? `${n} محادثات` : `${n} محادثة`;
+}
 
 export function ChatPanel({ data }: { data: PanelData }) {
   const { context, sessions, threadId, hearing, thread, moveOffer, chips, morning, starter } = data;
@@ -24,23 +32,15 @@ export function ChatPanel({ data }: { data: PanelData }) {
   const [picker, setPicker] = useState(false);
 
   const who = context.kind === "case" ? `في قضية ${context.name}` : "محادثة عامة";
-  const sub = hearing ? `${who} · جلسة ${shortDay(hearing.date)}` : who;
+  // the small line under the title, from the sessions list the panel already has (never invented: none = no line)
+  const sub = sessions.length ? `${sessionsCount(sessions.length)}${caseId ? " في القضية" : ""} · آخر محادثة ${formatDmy(sessions[0].day)}` : null;
   const sheetHref = (() => { const p = new URLSearchParams(params.toString()); p.set("sheet", "1"); return `${path}?${p.toString()}`; })();
 
   return (
     <aside aria-label="محادثة Clausia" className="flex min-w-0 flex-col max-xl:fixed max-xl:inset-0 xl:sticky xl:mt-chat-top xl:chat-top xl:chat-height xl:shrink-0 xl:chat-width">
       <div className="flex min-h-0 flex-1 flex-col xl:overflow-hidden xl:rounded-xl glass-xl">
-        {/* desktop header: the «C» mark, who this chat is about, the sessions of THIS context */}
-        <div className="hidden items-center gap-2.5 border-b border-border-2 px-4.5 py-4 xl:flex">
-          <span aria-hidden className="mark font-num inline-flex size-mark-lg shrink-0 items-center justify-center rounded-sm text-base font-extrabold">C</span>
-          <div className="min-w-0 flex-1 leading-[normal]">
-            <div className="text-md font-bold text-title">Clausia</div>
-            <div className="mt-px flex items-center gap-1.5 text-sm text-text-2">
-              <span aria-hidden className="size-dot shrink-0 rounded-full bg-gold" /><span className="truncate"><DateText value={sub} /></span>
-            </div>
-          </div>
-          <SessionsMenu sessions={sessions} currentId={threadId} />
-        </div>
+        {/* desktop header: who this chat is about (the brand is in the top bar); the title opens the sessions of THIS context */}
+        <SessionsMenu sessions={sessions} currentId={threadId} title={who} sub={sub} />
 
         {/* phone header: the context pill + round buttons for the Roll and the Cases */}
         <div className="flex items-center gap-2 px-3.5 pb-2.5 pt-[calc(14px+env(safe-area-inset-top))] xl:hidden" /* ds-allow: safe-area inset needs calc() */>
