@@ -28,7 +28,7 @@ import { arDayMonth, arMonthYear, nHearings, WEEKDAY_LONG, weekdayOf } from "@/c
 import { StatusChip } from "@/components/shell/PageHero";
 import { PageTitle, TitleRow } from "@/components/shell/TitleRow";
 import { DateText, cx } from "@/components/ui";
-import { addDaysIso, formatDmy, parseDmy } from "@/lib/dates";
+import { addDaysIso, parseDmy } from "@/lib/dates";
 import type { RollDeadline } from "@/lib/deadlines/types";
 import { weekStart, type HearingWithCase } from "@/lib/hearings";
 
@@ -51,11 +51,9 @@ function readUrl(search: string | URLSearchParams, today: string): Sel {
 }
 /** the address bar for a selection: view and date set, the chat's session and anything else kept, the decision flow's flag dropped */
 function urlFor(s: Sel): string {
-  const u = new URLSearchParams(window.location.search);
-  u.set("view", s.view);
-  u.set("date", formatDmy(s.date));
-  u.delete("decide");
-  return `${AGENDA}?${u}`;
+  const rest = new URLSearchParams(window.location.search);
+  for (const k of ["view", "date", "decide"]) rest.delete(k);
+  return `${agendaHref(s.date, s.view)}${rest.size ? `&${rest}` : ""}`; // the date is written as the lawyer reads it (d/m/yyyy), like every link to the agenda
 }
 
 /** The per-day rows and which weeks (by Saturday) are loaded. Mutable; `ver` re-renders. */
@@ -261,10 +259,7 @@ export function AgendaView({ today, from, to, rows, deadlines = [], undecided, u
   return (
     <>
       <TitleRow className="flex items-end justify-between gap-4 px-1 pt-3 leading-[normal] sm:justify-start sm:gap-5">
-        <div className="min-w-0">
-          <div className="text-sm font-semibold text-text-3 sm:hidden"><DateText value={arMonthYear(date)} /></div>
-          <PageTitle className="mt-1 sm:mt-0">الأجندة</PageTitle>
-        </div>
+        <PageTitle className="min-w-0">الأجندة</PageTitle>
         {switcher}
         {arrows("hidden sm:flex")}
         <a href={agendaHref(today, view)} onClick={select({ date: today, view })}
@@ -284,7 +279,6 @@ export function AgendaView({ today, from, to, rows, deadlines = [], undecided, u
             <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-gold" />
             <span className="min-w-0">
               <b className="font-bold text-gold-on-ambient">{nHearings(undecided)} فاتت</b> لسه قرارها متسجلش
-              <span className="hidden sm:inline"> · </span>
             </span>
           </span>
           <span className="inline-flex shrink-0 items-center gap-1 font-bold text-gold-on-ambient">

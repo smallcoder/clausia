@@ -47,10 +47,10 @@ export function MonthGrid({ date, today, counts, onPick }: { date: string; today
             const chosen = d === date;
             return (
               <a key={d} href={agendaHref(d)} onClick={(e) => onPick(d, e)} aria-current={d === today ? "date" : chosen ? "true" : undefined}
-                className={cx("rounded-lg py-2 text-center transition sm:py-3",
+                className={cx("rounded-lg py-2 text-center transition sm:py-2.5",
                   chosen ? "bg-selected text-on-selected" : cx(inMonth ? "text-text" : "text-text-3", "hover:bg-card-2"),
                   !chosen && d === today && "ring-1 ring-inset ring-gold-edge")}>
-                <span className={cx("font-num block text-lg leading-[1.1] sm:text-xl", chosen ? "font-medium" : "font-light")}>{Number(d.slice(8))}</span>
+                <span className={cx("font-num block text-lg leading-[1.1]", chosen ? "font-medium" : "font-light")}>{Number(d.slice(8))}</span>
                 <span aria-hidden className="mt-1.25 flex h-1 justify-center gap-0.5 sm:mt-1.5 sm:h-dot sm:gap-0.75">
                   {Array.from({ length: Math.min(n ?? 0, 5) }, (_, i) => <span key={i} className={cx("size-1 rounded-full sm:size-dot", chosen ? "bg-on-selected/85" : "bg-text-4")} />)}
                 </span>

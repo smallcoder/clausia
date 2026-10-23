@@ -1,0 +1,22 @@
+// scratch: one screenshot. npx tsx --env-file=.env.local scripts/agenda-quick.ts <path> <width> <light|dark> <out.png> [base]
+import { chromium } from "@playwright/test";
+const [path, w, scheme, out, base = "http://localhost:3101"] = process.argv.slice(2);
+const browser = await chromium.launch();
+const l = await browser.newContext();
+const lp = await l.newPage();
+await lp.goto(`${base}/login`);
+await lp.fill('input[name="email"]', process.env.DEMO_EMAIL!);
+await lp.fill('input[name="password"]', process.env.DEMO_PASSWORD!);
+await Promise.all([lp.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 90_000 }), lp.click('button:has-text("دخول")')]);
+const state = await l.storageState();
+const W = Number(w);
+const touch = W < 600;
+const ctx = await browser.newContext({ storageState: state, viewport: { width: W, height: touch ? 844 : 1000 }, deviceScaleFactor: touch ? 2 : 1, hasTouch: touch, isMobile: touch, locale: "ar-EG", timezoneId: "Africa/Cairo", colorScheme: scheme === "dark" ? "dark" : "light" });
+await ctx.addInitScript((d) => { try { localStorage.setItem("clausia-theme", d ? "dark" : "light"); } catch { /* none */ } }, scheme === "dark");
+const page = await ctx.newPage();
+page.on("console", (m) => { if (m.type() === "error") console.log("console error:", m.text().slice(0, 300)); });
+page.on("pageerror", (e) => console.log("page error:", e.message.slice(0, 300)));
+await page.goto(`${base}${path}`, { waitUntil: "load", timeout: 120_000 });
+await page.waitForTimeout(3000);
+await page.screenshot({ path: out });
+await browser.close();
