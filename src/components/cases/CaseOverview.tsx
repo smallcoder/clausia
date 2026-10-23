@@ -535,13 +535,14 @@ export function CaseOverview({ cf, hs, today, caseId, edits }: { cf: CaseFile; h
             { key: "parties", label: "الأطراف", count: parties },
           ]} />
           <Seg k="facts" className="order-5 lg:order-none"><Facts cf={cf} caseId={caseId} edits={edits} /></Seg>
-          <Sides cf={cf} caseId={caseId} edits={edits} className="order-6 lg:order-none" />
         </div>
         <div className="contents lg:flex lg:min-w-0 lg:flex-col lg:gap-4.5">
           <HearingCard cf={cf} hs={hs} today={today} caseId={caseId} edits={edits} className="order-1 lg:order-none" />
           <Seg k="parties" className="order-5 lg:order-none"><Parties cf={cf} caseId={caseId} edits={edits} /></Seg>
           <Seg k="docs" className="order-5 lg:order-none"><Docs cf={cf} caseId={caseId} /></Seg>
         </div>
+        {/* desktop: its own full-width row under the two columns (two equal cards, mockup Sides*); phone: after the facts, as before */}
+        <Sides cf={cf} caseId={caseId} edits={edits} className="order-6 lg:order-none lg:col-span-2" />
       </div>
     </TabScope>
   );
