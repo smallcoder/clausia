@@ -1,6 +1,6 @@
 // The chat-first split layout, against a running server (default http://localhost:4500), logged in as the demo user. NO model call:
 // the sessions it needs are made with the demo login (RLS client) and removed again at the end.
-// Checks: one composer on every page; the frame (1600) and the chat panel's width at 1440 (480) / 1920 and 2560 (560), the top bar across the frame above both, and full screen below 1280; the context (case vs general)
+// Checks: one composer on every page; the frame (1600) and the chat panel's width at 1440 (480) / 1920 and 2560 (560), the top bar across the frame above both, the chat panel's top edge 46px under the bar (on the page content's first line) and its bottom 24px above the screen's bottom, at rest and while the page scrolls, and full screen below 1280; the context (case vs general)
 // and its sessions only; ?hearing= opens that hearing's session; the old URLs (/chat, /chat/<id>, ?tab=chat) still land; the phone's sheet
 // (closed on Home and a case, open on the Roll, «افتح» opens, «رجوع للشات» closes) and the two-step context picker; the draft survives a page change.
 // Run: npx tsx --env-file=.env.local scripts/test-split-layout.ts [baseUrl]
@@ -54,6 +54,20 @@ async function login(browser: Browser) {
 
 const box = (page: Page, sel: string) => page.locator(sel).first().boundingBox();
 const visible = (page: Page, sel: string) => page.locator(sel).first().isVisible();
+/** the first text line inside <main> (the topmost visible text node's line box) */
+const firstLine = (page: Page) => page.evaluate(() => {
+  const w = document.createTreeWalker(document.querySelector("main")!, NodeFilter.SHOW_TEXT);
+  let best: { top: number; bottom: number; text: string } | null = null;
+  for (let n = w.nextNode(); n; n = w.nextNode()) {
+    const text = (n.textContent ?? "").trim();
+    const el = n.parentElement!;
+    if (!text || getComputedStyle(el).visibility === "hidden") continue;
+    const r = document.createRange(); r.selectNodeContents(n);
+    const b = r.getBoundingClientRect();
+    if (b.width && b.height && (!best || b.top < best.top)) best = { top: b.top, bottom: b.bottom, text: text.slice(0, 20) };
+  }
+  return best;
+});
 
 const browser = await chromium.launch();
 try {
@@ -79,6 +93,11 @@ try {
     const hdr = await box(page, "header");
     check("the top bar spans the whole frame (1600 wide, its start edge on the chat's)", !!hdr && !!aside && Math.abs(hdr.width - 1600) <= 1 && Math.abs(hdr.x - aside.x) <= 1, `${hdr?.x} / ${hdr?.width}`);
     check("the chat panel sits below the top bar", !!hdr && !!aside && aside.y >= hdr.y + hdr.height, `${aside?.y} vs ${hdr ? hdr.y + hdr.height : "?"}`);
+    check("the chat panel's top edge is 46px under the top bar", !!hdr && !!aside && Math.abs(aside.y - (hdr.y + hdr.height + 46)) <= 1, `${aside?.y} vs bar bottom ${hdr ? hdr.y + hdr.height : "?"}`);
+    check("1920: the chat panel ends 24px above the screen's bottom", !!aside && Math.abs(aside.y + aside.height - (1080 - 24)) <= 1, `${aside ? aside.y + aside.height : "?"} of 1080`);
+    // the page content's first line (the breadcrumb on a case page): the chat's top edge falls inside that line
+    const line = await firstLine(page);
+    check("the chat's top edge lines up with the breadcrumb line (inside its text line)", !!line && !!aside && aside.y >= line.top - 1 && aside.y <= line.bottom + 1, `${aside?.y} vs line ${line?.top}..${line?.bottom} («${line?.text}»)`);
     const pg = await box(page, "main");
     check("the page is right of the chat with a 24px gap and ends on the top bar's far edge", !!pg && !!aside && !!hdr && Math.abs(pg.x - (aside.x + aside.width + 24)) <= 1 && Math.abs(pg.x + pg.width - (hdr.x + hdr.width)) <= 1, `${pg?.x} / ${pg?.width}`);
     await ctx.close();
@@ -88,6 +107,7 @@ try {
     await go(page, "/");
     const aside = await box(page, 'aside[aria-label="محادثة Clausia"]');
     check("1440: the chat panel is 480 wide", !!aside && Math.abs(aside.width - 480) <= 1, `${aside?.width}`);
+    check("1440: top edge 134 (46 under the 88px bar), bottom 24 above the screen's bottom (876 of 900)", !!aside && Math.abs(aside.y - 134) <= 1 && Math.abs(aside.y + aside.height - 876) <= 1, `${aside?.y}..${aside ? aside.y + aside.height : "?"}`);
     await ctx.close();
   }
   {
@@ -95,6 +115,19 @@ try {
     await go(page, "/");
     const aside = await box(page, 'aside[aria-label="محادثة Clausia"]');
     check("2560: the chat panel is 560 and the frame stays 1600 (panel starts at 480)", !!aside && Math.abs(aside.width - 560) <= 1 && Math.abs(aside.x - 480) <= 1, `${aside?.width} @ ${aside?.x}`);
+    await ctx.close();
+  }
+
+  // the panel stays put while the page scrolls (a short window, so the Cases page is taller than the screen)
+  {
+    const { ctx, page } = await open(1920, 700);
+    await go(page, "/cases");
+    const before = await box(page, 'aside[aria-label="محادثة Clausia"]');
+    await page.evaluate(() => window.scrollTo(0, 300));
+    await page.waitForTimeout(300);
+    const after = await box(page, 'aside[aria-label="محادثة Clausia"]');
+    check("the page really scrolled", (await page.evaluate(() => window.scrollY)) >= 250);
+    check("while the page scrolls the chat panel stays at top 134 and ends 24 above the bottom (676 of 700)", !!before && !!after && Math.abs(before.y - 134) <= 1 && Math.abs(after.y - 134) <= 1 && Math.abs(after.y + after.height - 676) <= 1, `${before?.y} → ${after?.y}..${after ? after.y + after.height : "?"}`);
     await ctx.close();
   }
 
@@ -163,7 +196,7 @@ try {
     const { ctx, page } = await open(1000, 800);
     await go(page, "/");
     const a = await box(page, 'aside[aria-label="محادثة Clausia"]');
-    check("below 1280 the chat is full screen", !!a && a.width >= 999 && a.height >= 799, `${a?.width}x${a?.height}`);
+    check("below 1280 the chat is full screen (no top margin, no bottom margin)", !!a && a.width >= 999 && a.height >= 799 && a.y === 0, `${a?.width}x${a?.height} @ ${a?.y}`);
     await ctx.close();
   }
   {
