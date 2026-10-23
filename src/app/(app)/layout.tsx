@@ -1,9 +1,9 @@
 import { redirect } from "next/navigation";
 import { CiteProvider } from "@/components/cite/CiteProvider";
-import { AppHeader } from "@/components/shell/AppHeader";
-import { SplitShell } from "@/components/shell/SplitShell";
+import { AppShell } from "@/components/shell/AppShell";
 import { deadlinesEnabled } from "@/lib/flags";
 import { undecidedPastCount } from "@/lib/hearings";
+import { loadSidebar } from "@/lib/sidebar";
 import { createClient, getSession } from "@/lib/supabase/server";
 
 function initialsOf(name: string) {
@@ -12,24 +12,25 @@ function initialsOf(name: string) {
 }
 
 /**
- * Shell: the chat-first split layout (docs/design/split). The top bar spans the whole frame (1600), above the chat and the page; each page owns its width
- * (1280px of content, up to its column); the chat panel is the @chat slot, always open on desktop (SplitShell).
+ * Shell: the sidebar layout (docs/design/ia). The sidebar and the chat (the @chat slot) are one glass surface on the right; the page is the column beside it
+ * (AppShell). The sidebar's lists are read here, once per full render, with the lawyer's own client.
  */
 export default async function AppLayout({ children, chat }: { children: React.ReactNode; chat: React.ReactNode }) {
   const db = await createClient();
   const session = await getSession(db);
   if (!session) redirect("/login");
-  const [{ data: office }, alerts] = await Promise.all([
+  const [{ data: office }, alerts, side] = await Promise.all([
     db.from("offices").select("name").eq("id", session.officeId).single(),
     undecidedPastCount(db).catch(() => 0),
+    loadSidebar(db).catch(() => ({ cases: [], general: [] })),
   ]);
-  const email = session.user.email ?? "";
+  const displayName = session.displayName || "";
   return (
     <CiteProvider>
-      <SplitShell chat={chat} account={{ officeName: office?.name ?? "", email }}
-        header={<AppHeader initials={initialsOf(session.displayName || "أ ت")} officeName={office?.name ?? ""} email={email} alerts={alerts} userId={session.user.id} holidays={deadlinesEnabled()} />}>
+      <AppShell user={{ id: session.user.id, initials: initialsOf(displayName || "أ ت"), displayName, officeName: office?.name ?? "", email: session.user.email ?? "" }}
+        side={side} alerts={alerts} holidays={deadlinesEnabled()} chat={chat}>
         {children}
-      </SplitShell>
+      </AppShell>
     </CiteProvider>
   );
 }

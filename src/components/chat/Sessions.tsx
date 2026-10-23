@@ -3,7 +3,7 @@
  * Chat sessions of ONE context: the list (with «+ محادثة جديدة» on top) and the desktop button + menu in the panel header.
  * Each session has an auto title (its first message, about 40 characters) and a date; a hearing's session reads «جلسة 22/10».
  */
-import { ChevronDown, List, Plus } from "lucide-react";
+import { ChevronDown, FolderClosed, List, Maximize2, Minimize2, Plus } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -40,9 +40,13 @@ export function SessionList({ sessions, currentId, hrefFor, onPick }: {
 
 /**
  * The chat panel's desktop header: the context title (a button, with a chevron) and a small line under it. The title and the
- * list button on the end side open the same menu: this context's sessions only.
+ * list button on the end side open the same menu: this context's sessions only. Next to it: expand (full-screen chat) / shrink,
+ * and in full screen inside a case «افتح ملف القضية» (it brings the page back).
  */
-export function SessionsMenu({ sessions, currentId, title, sub }: { sessions: Session[]; currentId: string | null; title: string; sub: string | null }) {
+export function SessionsMenu({ sessions, currentId, title, sub, full, onFull, inCase }: {
+  sessions: Session[]; currentId: string | null; title: string; sub: string | null;
+  full: boolean; onFull: (v: boolean) => void; inCase: boolean;
+}) {
   const path = usePathname();
   const params = useSearchParams();
   const [open, setOpen] = useState(false);
@@ -56,6 +60,7 @@ export function SessionsMenu({ sessions, currentId, title, sub }: { sessions: Se
     return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", esc); };
   }, [open]);
   const sp = new URLSearchParams(params.toString());
+  const round = "tap inline-flex size-8.5 shrink-0 items-center justify-center rounded-full border border-border-2 text-glass-icon transition hover:text-text";
   return (
     <div ref={box} className="relative hidden items-center gap-2.5 border-b border-border-2 px-4.5 py-4 xl:flex">
       <div className="min-w-0 flex-1 leading-[normal]">
@@ -70,8 +75,15 @@ export function SessionsMenu({ sessions, currentId, title, sub }: { sessions: Se
           </div>
         ) : null}
       </div>
-      <button type="button" onClick={() => setOpen(!open)} aria-label="محادثات" aria-expanded={open} title="محادثات"
-        className="tap inline-flex size-8.5 shrink-0 items-center justify-center rounded-full border border-border-2 text-glass-icon transition hover:text-text">
+      {full && inCase ? (
+        <button type="button" onClick={() => onFull(false)} className="tap inline-flex h-8.5 shrink-0 items-center gap-1.5 rounded-full border border-border-2 px-3 text-sm font-semibold text-text-2 transition hover:text-text">
+          <FolderClosed aria-hidden size={14} strokeWidth={1.9} />افتح ملف القضية
+        </button>
+      ) : null}
+      <button type="button" onClick={() => onFull(!full)} aria-label={full ? "صغّر الشات" : "كبّر الشات"} title={full ? "صغّر الشات" : "كبّر الشات"} className={round}>
+        {full ? <Minimize2 aria-hidden size={15} strokeWidth={1.9} /> : <Maximize2 aria-hidden size={15} strokeWidth={1.9} />}
+      </button>
+      <button type="button" onClick={() => setOpen(!open)} aria-label="محادثات" aria-expanded={open} title="محادثات" className={round}>
         <List aria-hidden size={16} strokeWidth={1.9} />
       </button>
       {open ? (
