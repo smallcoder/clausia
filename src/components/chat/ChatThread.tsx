@@ -198,7 +198,7 @@ export function ChatThread({ threadId, caseId, hearing, items, lookup, rows = {}
                     {m.proposals.map((p, i) => (
                       <div key={p.id} className={cx((m.content.trim() || i > 0) && "mt-3.5")}>
                         {p.ops.some((o) => o.tool === "add_deadline")
-                          ? (deadlines[p.id] ? <DeadlineCard proposal={p} entry={deadlines[p.id]} /> : null) // flag off: no card
+                          ? (deadlines[p.id] ? <DeadlineCard key={`${p.id}:${p.status}`} proposal={p} entry={deadlines[p.id]} /> : null) // flag off: no card; keyed by status so «تراجع» resets the card
                           : <ProposalCard proposal={p} lookup={lookup} rows={rows} />}
                       </div>
                     ))}
