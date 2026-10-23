@@ -90,15 +90,15 @@ try {
     const side = await box(page, 'nav[aria-label="القائمة"]');
     check("1920: the chat is 480 wide", !!aside && Math.abs(aside.width - 480) <= 1, `${aside?.width}`);
     check("1920: the sidebar is 264 wide and the chat is attached to it with no gap (the sidebar is on the right)", !!aside && !!side && Math.abs(side.width - 264) <= 1 && Math.abs(aside.x + aside.width - side.x) <= 1, `${side?.x}/${side?.width} vs ${aside?.x}/${aside?.width}`);
-    check("1920: the frame is 1800 centered (the surface ends at 1860)", !!side && Math.abs(side.x + side.width - 1860) <= 1, `${side ? side.x + side.width : "?"}`);
+    check("1920: the frame is 1800 centered (the surface ends at 1860, its 1px border takes one: the sidebar ends at 1859)", !!side && Math.abs(side.x + side.width - 1859) <= 1, `${side ? side.x + side.width : "?"}`);
     check("no top bar", (await page.locator("header").count()) === 0);
-    check("1920: the surface starts 24px under the top and ends 24px above the screen's bottom (24..1056)", !!aside && Math.abs(aside.y - 24) <= 1 && Math.abs(aside.y + aside.height - 1056) <= 1, `${aside?.y}..${aside ? aside.y + aside.height : "?"}`);
+    check("1920: the surface starts 24px under the top and ends 24px above the screen's bottom (the chat is inside the 1px border: 25..1055)", !!aside && Math.abs(aside.y - 25) <= 1 && Math.abs(aside.y + aside.height - 1055) <= 1, `${aside?.y}..${aside ? aside.y + aside.height : "?"}`);
     const pg = await box(page, "main");
     check("the page is on the left: from the frame's start (60) up to the chat", !!pg && !!aside && Math.abs(pg.x - 60) <= 1 && Math.abs(pg.x + pg.width - aside.x) <= 1, `${pg?.x} / ${pg?.width}`);
     await page.click('button[aria-label="كبّر الشات"]');
     await page.waitForTimeout(300);
     const full = await box(page, 'aside[aria-label="محادثة Clausia"]');
-    check("full screen: the page is hidden and the chat fills the frame (1536 wide)", !(await visible(page, "main")) && !!full && Math.abs(full.width - 1536) <= 1, `${full?.width}`);
+    check("full screen: the page is hidden and the chat fills the frame (1800 - 264 - the 2px border = 1534 wide)", !(await visible(page, "main")) && !!full && Math.abs(full.width - 1534) <= 1, `${full?.width}`);
     await page.reload({ waitUntil: "load" });
     await page.waitForTimeout(1200);
     check("full screen is remembered after a reload", !(await visible(page, "main")));
@@ -113,14 +113,14 @@ try {
     const aside = await box(page, 'aside[aria-label="محادثة Clausia"]');
     const side = await box(page, 'nav[aria-label="القائمة"]');
     check("1440: the chat is 480 wide and the sidebar is 72 (icons)", !!aside && !!side && Math.abs(aside.width - 480) <= 1 && Math.abs(side.width - 72) <= 1, `${aside?.width} / ${side?.width}`);
-    check("1440: top edge 24, bottom 24 above the screen's bottom (876 of 900)", !!aside && Math.abs(aside.y - 24) <= 1 && Math.abs(aside.y + aside.height - 876) <= 1, `${aside?.y}..${aside ? aside.y + aside.height : "?"}`);
+    check("1440: top edge 25, bottom 25 above the screen's bottom (inside the 1px border: 875 of 900)", !!aside && Math.abs(aside.y - 25) <= 1 && Math.abs(aside.y + aside.height - 875) <= 1, `${aside?.y}..${aside ? aside.y + aside.height : "?"}`);
     await ctx.close();
   }
   {
     const { ctx, page } = await open(2560, 1440);
     await go(page, "/");
     const aside = await box(page, 'aside[aria-label="محادثة Clausia"]');
-    check("2560: the chat is 480 and the frame stays 1800 (the chat starts at 1436)", !!aside && Math.abs(aside.width - 480) <= 1 && Math.abs(aside.x - 1436) <= 1, `${aside?.width} @ ${aside?.x}`);
+    check("2560: the chat is 480 and the frame stays 1800 (the chat starts at 1435)", !!aside && Math.abs(aside.width - 480) <= 1 && Math.abs(aside.x - 1435) <= 1, `${aside?.width} @ ${aside?.x}`);
     await ctx.close();
   }
 
@@ -133,7 +133,7 @@ try {
     await page.waitForTimeout(300);
     const after = await box(page, 'aside[aria-label="محادثة Clausia"]');
     check("the page really scrolled", (await page.evaluate(() => window.scrollY)) >= 250);
-    check("while the page scrolls the chat stays at top 24 and ends 24 above the bottom (676 of 700)", !!before && !!after && Math.abs(before.y - 24) <= 1 && Math.abs(after.y - 24) <= 1 && Math.abs(after.y + after.height - 676) <= 1, `${before?.y} → ${after?.y}`);
+    check("while the page scrolls the chat stays at top 25 and ends 25 above the bottom (675 of 700, inside the 1px border)", !!before && !!after && Math.abs(before.y - 25) <= 1 && Math.abs(after.y - 25) <= 1 && Math.abs(after.y + after.height - 675) <= 1, `${before?.y} → ${after?.y}`);
     await ctx.close();
   }
 
