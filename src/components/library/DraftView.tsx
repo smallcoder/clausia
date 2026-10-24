@@ -9,6 +9,7 @@
 import { ChevronRight, Download } from "lucide-react";
 import Link from "next/link";
 import { Fragment } from "react";
+import { OfficeStyleUpload } from "@/components/library/OfficeStyleUpload";
 import { DateText } from "@/components/ui";
 import { PLACEHOLDER, needsFromLawyer } from "@/lib/library/fill";
 import type { DraftFull } from "@/lib/library/list";
@@ -25,7 +26,13 @@ function WithBlanks({ text, labels }: { text: string; labels: Map<string, string
   );
 }
 
-export function DraftView({ draft, backHref, downloadHref }: { draft: DraftFull; backHref: string; downloadHref?: string }) {
+/**
+ * `hasStyle`: the office has given its paper («ورق المكتب»). When it has not (and the draft is not from the lawyer's own Word template, which keeps its own
+ * formatting), the first thing is the ask: upload any Word file from his work. `word`: he came here from «تنزيل Word» (the highlight on the ask).
+ */
+export function DraftView({ draft, backHref, hasStyle = false, word = false }: { draft: DraftFull; backHref: string; hasStyle?: boolean; word?: boolean }) {
+  const downloadHref = `/api/drafts/${draft.id}/docx`;
+  const ask = !hasStyle && !draft.own_template;
   const labels = new Map(draft.fill.missing.map((m) => [m.key, m.label]));
   const need = needsFromLawyer(draft.fill);
   const toConfirm = draft.fill.lawyer.filter((l) => l.state === "needs_confirmation");
@@ -34,13 +41,22 @@ export function DraftView({ draft, backHref, downloadHref }: { draft: DraftFull;
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <Link href={backHref} className="tap inline-flex min-h-11 items-center gap-1 text-base font-semibold text-text-2 hover:text-text"><ChevronRight aria-hidden size={18} strokeWidth={2} />المذكرات والأحكام</Link>
         <span className="ms-auto flex flex-wrap items-center gap-2">
-          {downloadHref ? (
-            <a href={downloadHref} className="bg-primary-fill inline-flex h-11 items-center gap-2 rounded-full px-5 text-base font-bold transition"><Download aria-hidden size={16} strokeWidth={2} />تنزيل Word</a>
-          ) : (
-            <span aria-disabled className="inline-flex h-11 items-center gap-2 rounded-full border border-border-2 px-5 text-base font-medium text-text-4"><Download aria-hidden size={16} strokeWidth={2} />تنزيل Word · قريباً</span>
-          )}
+          <a href={downloadHref} className="bg-primary-fill inline-flex h-11 items-center gap-2 rounded-full px-5 text-base font-bold transition"><Download aria-hidden size={16} strokeWidth={2} />تنزيل Word</a>
         </span>
       </div>
+
+      {ask ? (
+        <section id="word" aria-label="ورق المكتب" className={word ? "rounded-xl border border-gold bg-card px-5 py-5 shadow-card sm:px-8" : "rounded-xl border border-gold-edge bg-card px-5 py-5 shadow-card sm:px-8"}>
+          <h2 className="text-md font-bold text-title">عشان تنزّل المسودة على ورق مكتبك</h2>
+          <p className="mt-1.5 max-w-2xl text-base leading-7 text-text-3">
+            ارفع أي ملف Word من شغلك (مذكرة أو خطاب أو صحيفة قديمة). Clausia بتاخد منه الرأس والتذييل والخط والهوامش وتطبقهم على كل مسودة وعلى الإيصالات. نص الملف نفسه مش بيتنقل. تقدر تغيّره بعدين من «ورق المكتب» في قايمة الحساب.
+          </p>
+          <div className="mt-3 flex flex-wrap items-start gap-x-4 gap-y-1">
+            <OfficeStyleUpload />
+            <a href={`${downloadHref}?plain=1`} className="tap inline-flex min-h-11 items-center text-base font-semibold text-text-2 underline underline-offset-4 hover:text-text">نزّلها من غير ورق المكتب</a>
+          </div>
+        </section>
+      ) : null}
 
       <section className="rounded-xl border border-border-2 bg-card shadow-card" aria-label={draft.title}>
         <header className="border-b border-border-2 px-5 py-4 sm:px-8">

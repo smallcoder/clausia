@@ -28,6 +28,7 @@ export const MONEY_METHODS = ["cash", "vodafone_cash", "instapay", "bank_transfe
 export const MONEY_KINDS = ["receipt", "expense"] as const satisfies readonly E["money_kind"][];
 export const MONEY_CHARGES = ["client", "office"] as const satisfies readonly E["money_charge"][];
 export const FEE_KINDS = ["fixed", "open"] as const satisfies readonly E["fee_kind"][];
+export const TEMPLATE_CATEGORIES = ["claim", "appeal", "memo", "notice", "contract"] as const satisfies readonly E["template_category"][];
 
 const ref = (what: string) => z.string().min(1).describe(`${what}: uuid موجود، أو «@اسم» لعنصر في نفس البطاقة`);
 const selfRef = z.string().regex(/^[a-z0-9_]+$/i).optional().describe("اسم قصير لهذا العنصر ليُشار إليه بـ «@اسم» في نفس البطاقة");
@@ -204,6 +205,27 @@ export const WRITE_TOOL_ARGS = {
     requests: z.string().max(4000).optional().describe("الطلبات — فقط إن طلب المحامي صراحةً أن تكتبها له. اتركها فارغة وإلا."),
     quote,
   }),
+  // The two below are the lawyer's OWN uploads of a Word file (PR 6b: «ورق المكتب» and «+ ارفع صيغة مكتبك»), saved by the server actions through applyOp
+  // with MANUAL provenance; the model never makes them (INTERNAL_TOOLS). The file itself is already in the documents bucket under {office}/…
+  set_office_style: z.object({
+    file_name: z.string().min(1).max(200),
+    storage_path: z.string().regex(/^[0-9a-f-]{36}\/office-style\/[0-9a-f-]{36}\/[A-Za-z0-9._-]+\.docx$/i),
+    style: z.object({
+      header: z.object({ lines: z.array(z.string().max(300)).max(30), picture: z.boolean() }),
+      footer: z.object({ lines: z.array(z.string().max(300)).max(30), picture: z.boolean() }),
+      fonts: z.object({ body: z.string().max(100).nullable(), size: z.number().int().nullable() }),
+      margins: z.object({ top: z.number().int().nullable(), bottom: z.number().int().nullable(), left: z.number().int().nullable(), right: z.number().int().nullable(), header: z.number().int().nullable(), footer: z.number().int().nullable() }),
+      page: z.object({ w: z.number().int().nullable(), h: z.number().int().nullable() }),
+    }),
+  }),
+  add_office_template: z.object({
+    office: z.string().uuid(),
+    name: z.string().trim().min(2).max(120),
+    category: enumOf(TEMPLATE_CATEGORIES),
+    description: z.string().max(300).optional(),
+    storage_path: z.string().regex(/^[0-9a-f-]{36}\/templates\/[0-9a-f-]{36}\/[A-Za-z0-9._-]+\.docx$/i),
+    body: z.object({ version: z.literal(1), blocks: z.array(z.unknown()).max(200) }).passthrough(), // checked again against the template shape in applyOp
+  }),
   // Made ONLY by code (src/lib/deadlines/propose.ts) after a judgment is saved; internal like the two above. The args are the lawyer's
   // inputs (facts), never a number: `applyOp` reads the days from the article text and works out the last day itself.
   add_deadline: z.object({
@@ -222,7 +244,7 @@ export type WriteArgs<T extends WriteTool> = z.infer<(typeof WRITE_TOOL_ARGS)[T]
 export const WRITE_TOOLS = Object.keys(WRITE_TOOL_ARGS) as WriteTool[];
 export const isWriteTool = (n: string): n is WriteTool => n in WRITE_TOOL_ARGS;
 /** Tools only code may propose (see above): not offered to the model, refused if it calls them. */
-export const INTERNAL_TOOLS = ["add_doc_column", "add_doc_cell", "add_deadline"] as const satisfies readonly WriteTool[];
+export const INTERNAL_TOOLS = ["add_doc_column", "add_doc_cell", "add_deadline", "set_office_style", "add_office_template"] as const satisfies readonly WriteTool[];
 export const isInternalTool = (n: string): boolean => (INTERNAL_TOOLS as readonly string[]).includes(n);
 
 export const WRITE_TOOL_DESCRIPTIONS: Record<WriteTool, string> = {
@@ -243,6 +265,8 @@ export const WRITE_TOOL_DESCRIPTIONS: Record<WriteTool, string> = {
   record_movement: "اقتراح تسجيل استلام مبلغ من موكل، أو مصروف، في حساب الموكل (بالمبلغ والطريقة كما قالها المحامي حرفيًا).",
   set_case_fee: "اقتراح تحديد أتعاب قضية: مبلغ ثابت، أو «مفتوحة» بلا مبلغ.",
   add_deadline: "ميعاد طعن (استئناف / نقض) يحسبه الكود من نص المادة بعد تسجيل حكم. يصنعه الكود فقط.",
+  set_office_style: "ورق المكتب: الرأس والتذييل والخط والهوامش من ملف Word رفعه المحامي. يحفظه الكود فقط.",
+  add_office_template: "صيغة مكتب من ملف Word رفعه المحامي. يحفظها الكود فقط.",
   create_draft: "اقتراح مسودة من صيغة لقضية (مثل «صحيفة استئناف لقضية كريم»). الكود هو اللي بيملا البيانات من ملف القضية ويكتب مصدر كل بيان؛ أنت بتختار الصيغة والقضية بس. الأسباب والطلبات بتتساب فاضية للمحامي إلا لو طلب منك تكتبها.",
 };
 
@@ -271,6 +295,8 @@ export const OP_TITLE: Record<WriteTool, string> = {
   record_movement: "حركة في حساب الموكل",
   set_case_fee: "أتعاب القضية",
   create_draft: "مسودة من صيغة",
+  set_office_style: "ورق المكتب",
+  add_office_template: "صيغة المكتب",
 };
 
 export const OP_FIELDS: Record<WriteTool, FieldSpec[]> = {
@@ -396,6 +422,8 @@ export const OP_FIELDS: Record<WriteTool, FieldSpec[]> = {
     { key: "amount", label: "المبلغ", type: "money" },
   ],
   create_draft: [], // drawn by DraftCard, not as fields
+  set_office_style: [], // the lawyer's own upload: never a card
+  add_office_template: [],
 };
 
 /** Tool specs for the provider (JSON Schema from zod). */

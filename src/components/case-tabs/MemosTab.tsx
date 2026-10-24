@@ -13,8 +13,8 @@ import { DOC_TYPE } from "@/lib/labels";
 import type { DraftFull, DraftSummary } from "@/lib/library/list";
 
 /** `drafts`: the case's drafts from the library, newest first; `draft`: the one opened with `?draft=` (read only; the editor is PR 7). */
-export function MemosTab({ cf, caseId, drafts = [], draft = null }: { cf: CaseFile; caseId: string; drafts?: DraftSummary[]; draft?: DraftFull | null }) {
-  if (draft) return <DraftView draft={draft} backHref={`/cases/${caseId}?tab=memos`} />;
+export function MemosTab({ cf, caseId, drafts = [], draft = null, hasStyle = false, word = false }: { cf: CaseFile; caseId: string; drafts?: DraftSummary[]; draft?: DraftFull | null; hasStyle?: boolean; word?: boolean }) {
+  if (draft) return <DraftView draft={draft} backHref={`/cases/${caseId}?tab=memos`} hasStyle={hasStyle} word={word} />;
   const docs = memoDocs(cf);
   const judgments = cf.judgments.length + cf.pending_suggestions.filter((p) => p.table === "judgments").length;
   if (!docs.length && !judgments && !drafts.length) {

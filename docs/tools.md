@@ -29,6 +29,8 @@ Money tools (`record_movement`, `set_case_fee`): the amount must be one the lawy
 
 Drafts (`create_draft`): the model picks the template (`search_templates`) and the case; CODE fills the template from the case file (`src/lib/library/fill.ts`) and the card (`DraftCard`) shows each filled value with its source and what is still missing. The legal grounds and the requests stay empty unless the lawyer asked for them (refused otherwise: `src/lib/library/guards.ts`), and then carry no number or date of the model's own and are marked «محتاجة تأكيدك». Nothing is saved before «أكّد»; the undo deletes the draft.
 
+Two more write tools are the lawyer's OWN uploads of a Word file, never the model's (`INTERNAL_TOOLS`): `set_office_style` («ورق المكتب») and `add_office_template` («+ ارفع صيغة مكتبك»). The server actions upload the file to the documents bucket and call `applyOp` with MANUAL provenance (undo: delete the row / put the old style back).
+
 Every write op carries `quote`: exact words from the lawyer's message or the document page. The server
 checks the quote against the source text (`verifyQuote`); unverified ops show a warning on the card.
 Dates must parse as d/m/yyyy (or m/yyyy, yyyy) — otherwise the tool returns an error and the model must ask.
