@@ -13,6 +13,7 @@ import JSZip from "jszip";
 import type { DraftBody, Mark } from "@/lib/library/types";
 import { DOCX_MIME, DocxError, escapeXml, openDocx, partText, printedText } from "./docx";
 import { readOfficeStyle } from "./office-style";
+import { replaceSpans, spans } from "./scan";
 
 export { DOCX_MIME };
 /** what stands for a value the file did not have (and for any placeholder left in a text) */
@@ -162,9 +163,7 @@ export async function scrub(zip: JSZip, title: string, opts: { keepNotes?: boole
   // values: the sample's own), and track changes (the draft starts clean). The relationships of the settings (they only point at those) go with them.
   const settings = await partText(zip, "word/settings.xml");
   if (settings) {
-    zip.file("word/settings.xml", settings
-      .replace(/<w:docVars\b[^>]*\/>|<w:docVars\b[^>]*>[\s\S]*?<\/w:docVars>/g, "")
-      .replace(/<w:mailMerge\b[^>]*\/>|<w:mailMerge\b[^>]*>[\s\S]*?<\/w:mailMerge>/g, "")
+    zip.file("word/settings.xml", replaceSpans(replaceSpans(settings, "w:docVars", () => ""), "w:mailMerge", () => "")
       .replace(/<w:(?:attachedTemplate|trackRevisions)\b[^>]*\/>/g, "")
       .replace(/<w:\w+\b[^>]*\sr:id="[^"]*"[^>]*\/>/g, "")); // anything else that still names a relationship we are about to drop
   }
@@ -193,8 +192,8 @@ async function onOfficePaper(blocks: ExportBlock[], title: string, office: Uint8
   const close = doc.lastIndexOf("</w:body>");
   if (open < 0 || close < open) throw new DocxError("ملف ورق المكتب شكله غير مفهوم");
   // the section of the body (header / footer references, margins, paper): the last one of the file, kept exactly
-  const sects = [...doc.slice(open, close).matchAll(/<w:sectPr(?:\s[^>]*)?(?:\/>|>[\s\S]*?<\/w:sectPr>)/g)];
-  const sect = sects.length ? sects[sects.length - 1][0] : DEFAULT_SECT;
+  const sects = spans(doc.slice(open, close), "w:sectPr");
+  const sect = sects.length ? sects[sects.length - 1].text : DEFAULT_SECT;
   const paras = blocks.map((b) => paragraph(b, style.fonts.body, style.fonts.size ?? DEFAULT_SIZE)).join("");
   zip.file("word/document.xml", `${doc.slice(0, open)}<w:body>${paras}${sect}${doc.slice(close)}`);
   await scrub(zip, title);

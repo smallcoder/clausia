@@ -7,6 +7,7 @@
  * Pure code: no server imports, so the tests and the browser-side checks can use it.
  */
 import JSZip from "jszip";
+import { replaceSpans, spans, textParts } from "./scan";
 
 export const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 /** the biggest Word file we open (the storage bucket allows 25 MB; a letterhead and a few pages are far below this) */
@@ -71,9 +72,36 @@ export async function openDocx(bytes: Uint8Array | ArrayBuffer): Promise<JSZip> 
   return zip;
 }
 
+/** the biggest `word/document.xml`, and any other XML part, that the readers parse (a letterhead and a few pages are far below: 4 MB is thousands of pages of text) */
+export const MAX_DOCUMENT_XML = 4 * 1024 * 1024;
+export const MAX_OTHER_XML = 3 * 1024 * 1024;
+const TOO_BIG = "ملف Word ده كبير زيادة عن اللزوم";
+
+/**
+ * Is every `<` closed by a `>` before the next `<`? Word never writes anything else (a `<` inside text or an attribute is escaped). One pass. It is what keeps
+ * every `[^>]*` of the readers inside ITS OWN tag: with it a tag can not run on to the end of the part, so no regex of the readers can cost more than one pass
+ * (80,000 `<w:a ` with no `>` after them would otherwise make each of them read to the end: the square of the size).
+ */
+export function wellFormedTags(xml: string): boolean {
+  let i = xml.indexOf("<");
+  while (i >= 0) {
+    const gt = xml.indexOf(">", i + 1);
+    if (gt < 0) return false;
+    const next = xml.indexOf("<", i + 1);
+    if (next >= 0 && next < gt) return false;
+    i = next;
+  }
+  return true;
+}
+
+/** A part as text. The size is capped and the tags must be well formed (see above): a part that is not is refused with a plain sentence, before any reader sees it. */
 export async function partText(zip: JSZip, name: string): Promise<string | null> {
   const bytes = await readPart(zip, name);
-  return bytes ? new TextDecoder("utf-8").decode(bytes) : null;
+  if (!bytes) return null;
+  if (bytes.length > (name === "word/document.xml" ? MAX_DOCUMENT_XML : MAX_OTHER_XML)) throw new DocxError(TOO_BIG);
+  const text = new TextDecoder("utf-8").decode(bytes);
+  if (!wellFormedTags(text)) throw new DocxError("ده مش ملف Word (.docx) سليم");
+  return text;
 }
 
 /** characters XML 1.0 does not allow (most control characters) and lone surrogates: dropped from any text that goes into a part */
@@ -92,17 +120,11 @@ export function attr(tag: string, name: string): string | null {
 
 /** The paragraphs of a part: each one's text (runs joined, tabs as a space, line breaks as a newline). Empty paragraphs are kept as "". */
 export function paragraphsOf(xml: string): string[] {
-  const out: string[] = [];
-  for (const m of xml.matchAll(/<w:p[\s>][\s\S]*?<\/w:p>/g)) {
-    const p = m[0];
+  return spans(xml, "w:p").map((p) => {
     let text = "";
-    for (const r of p.matchAll(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>|<w:tab\s*\/>|<w:br\s*\/>|<w:cr\s*\/>/g)) {
-      if (r[1] !== undefined) text += unescapeXml(r[1]);
-      else text += r[0].startsWith("<w:tab") ? " " : "\n";
-    }
-    out.push(text);
-  }
-  return out;
+    textParts(p.text, (kind, t) => { text += kind === "t" ? unescapeXml(t) : kind === "tab" ? " " : "\n"; });
+    return text;
+  });
 }
 
 /** a paragraph-level check that a part has pictures (a logo in a letterhead) */
@@ -120,8 +142,8 @@ export function relationships(xml: string | null): Map<string, { type: string; t
 
 /** The section properties of the BODY (the last `sectPr` of the document: the earlier ones are inside paragraphs, they belong to earlier sections). */
 export function bodySectPr(documentXml: string): string | null {
-  const all = [...documentXml.matchAll(/<w:sectPr(?:\s[^>]*)?(?:\/>|>[\s\S]*?<\/w:sectPr>)/g)];
-  return all.length ? all[all.length - 1][0] : null;
+  const all = spans(documentXml, "w:sectPr");
+  return all.length ? all[all.length - 1].text : null;
 }
 
 /**
@@ -131,9 +153,7 @@ export function bodySectPr(documentXml: string): string | null {
 export function printedText(xml: string): string {
   let s = xml
     .replace(/<w:(?:del|moveFrom)\s[^>]*\/>/g, "").replace(/<w:(?:ins|moveTo)\s[^>]*\/>/g, "") // a tracked paragraph mark
-    .replace(/<w:(del|moveFrom)\s[^>]*>[\s\S]*?<\/w:\1>/g, "")
-    .replace(/<\/?w:(?:ins|moveTo)(?:\s[^>]*)?>/g, "")
-    .replace(/<w:(rPr|pPr|sectPr|tblPr|tcPr|trPr|numPr)Change\b[^>]*>[\s\S]*?<\/w:\1Change>/g, "");
-  s = s.replace(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g, (run) => (/<w:vanish(?:\s+w:val="(?:1|true|on)")?\s*\/>/.test(run) && !/<w:r[\s>]/.test(run.slice(4)) ? "" : run));
-  return s;
+    .replace(/<\/?w:(?:ins|moveTo)(?:\s[^>]*)?>/g, "");
+  for (const tag of ["w:del", "w:moveFrom", "w:rPrChange", "w:pPrChange", "w:sectPrChange", "w:tblPrChange", "w:tcPrChange", "w:trPrChange", "w:numPrChange"]) s = replaceSpans(s, tag, () => "");
+  return replaceSpans(s, "w:r", (run) => (/<w:vanish(?:\s+w:val="(?:1|true|on)")?\s*\/>/.test(run) && !/<w:r[\s>]/.test(run.slice(4)) ? "" : run));
 }

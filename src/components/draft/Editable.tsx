@@ -117,6 +117,7 @@ export function Editable({ block, labels, className, hint, label, onChange, onSp
       onInput={() => { const next = read(); last.current = next; onChange(next); }}
       onKeyDown={onKey}
       onFocus={() => onFocus(id)}
+      onDrop={(e) => e.preventDefault()} // a drop would put the browser's own markup (a picture, a link, styled text, a moved locked box) into the box: not allowed
       onPaste={(e) => { e.preventDefault(); document.execCommand("insertText", false, e.clipboardData.getData("text/plain")); }}
       onClick={(e) => {
         // a click on a quotation selects all of it (so the toolbar can lift it); the text of a quotation is never typed into

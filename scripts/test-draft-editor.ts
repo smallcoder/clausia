@@ -20,7 +20,7 @@ import type { Db } from "@/lib/supabase/server";
 import { applyOp, MANUAL } from "@/lib/tools/apply";
 import { INTERNAL_TOOLS, writeToolSpecs } from "@/lib/tools/registry";
 import { buildDocx, exportBlocks } from "@/lib/word/build";
-import { DocxError, MAX_PART_BYTES, openDocx, partText } from "@/lib/word/docx";
+import { DocxError, MAX_DOCUMENT_XML, MAX_PART_BYTES, openDocx, partText, wellFormedTags } from "@/lib/word/docx";
 import { importWordDraft } from "@/lib/word/import";
 import { readWordBody } from "@/lib/word/read-body";
 
@@ -384,6 +384,84 @@ const SAMPLE = [
   check(!noCase.ok && /غير موجودة/.test(noCase.error), "importWordDraft: a case this lawyer can not read → not found, nothing written");
   const empty = await importWordDraft(f.db, CASE, new FormData());
   check(!empty.ok, "importWordDraft: no file is refused");
+}
+
+// ---------------------------------------------------------------- (e2) files made to be slow
+console.log("\n-- (e2) evil files: each is read in one pass, or refused, fast --");
+{
+  const SLOW_MS = 200;
+  /** runs `f`; true when it finished within SLOW_MS (whether it returned or threw a DocxError: both are fine, a hang is not) */
+  const fast = async (f: () => Promise<unknown>): Promise<{ ms: number; out: string }> => {
+    const t = performance.now();
+    let out = "ok";
+    try { await f(); } catch (e) { out = e instanceof DocxError ? `refused: ${e.message}` : `OTHER ${String(e)}`; }
+    return { ms: performance.now() - t, out };
+  };
+  const open = async (body: string, extra: Record<string, string> = {}) => openDocx(await docx(body, extra));
+  const size = (n: number) => `${(n / 1048576).toFixed(1)} MB`;
+
+  // 80,000 unclosed <w:p><w:r> (a tiny zip): was 16 s
+  const unclosed = "<w:p><w:r>".repeat(80_000);
+  const zipA = await docx(unclosed);
+  check(zipA.length < 20_000, "the file is tiny in the zip", `${zipA.length} bytes, ${size(unclosed.length)} of XML`);
+  const a = await fast(async () => readWordBody(await openDocx(zipA)));
+  check(a.ms < SLOW_MS, "80,000 unclosed <w:p><w:r>: read (or refused) in under 200 ms", `${a.ms.toFixed(0)} ms, ${a.out}`);
+  // the same shapes, closed paragraphs holding unclosed runs and unclosed <w:t>
+  const b = await fast(async () => readWordBody(await open(`<w:p>${"<w:r>".repeat(80_000)}</w:p>`)));
+  check(b.ms < SLOW_MS, "one paragraph with 80,000 unclosed <w:r>", `${b.ms.toFixed(0)} ms, ${b.out}`);
+  const c = await fast(async () => readWordBody(await open(`<w:p><w:r>${"<w:t>".repeat(80_000)}</w:r></w:p>`)));
+  check(c.ms < SLOW_MS, "80,000 unclosed <w:t>", `${c.ms.toFixed(0)} ms, ${c.out}`);
+  const d = await fast(async () => readWordBody(await open("<w:tbl>".repeat(80_000) + "<w:p><w:r><w:t>x</w:t></w:r></w:p>")));
+  check(d.ms < SLOW_MS, "80,000 unclosed <w:tbl>", `${d.ms.toFixed(0)} ms, ${d.out}`);
+  const e = await fast(async () => readWordBody(await open("<mc:AlternateContent>".repeat(80_000) + "<w:drawing>".repeat(40_000) + "<w:pict>".repeat(40_000))));
+  check(e.ms < SLOW_MS, "unclosed AlternateContent / drawing / pict", `${e.ms.toFixed(0)} ms, ${e.out}`);
+  const f = await fast(async () => readWordBody(await open(`<w:p>${"<w:del w:id=\"1\"><w:r>".repeat(60_000)}</w:p>`)));
+  check(f.ms < SLOW_MS, "60,000 unclosed tracked deletions", `${f.ms.toFixed(0)} ms, ${f.out}`);
+  // tags that never close their `<` (every [^>]* of every reader would run to the end): refused before any reader sees them
+  const g = await fast(async () => readWordBody(await open("<w:a ".repeat(80_000))));
+  check(g.ms < SLOW_MS && /سليم/.test(g.out), "80,000 `<w:a ` with no `>` at all: refused as not a good Word file", `${g.ms.toFixed(0)} ms, ${g.out}`);
+  const h = await fast(async () => readWordBody(await open(`<w:p><w:r><w:t>x</w:t></w:r></w:p>${"<w:pStyle w:val=\"x\" ".repeat(60_000)}`)));
+  check(h.ms < SLOW_MS && /سليم/.test(h.out), "tags that open inside tags: refused", `${h.ms.toFixed(0)} ms, ${h.out}`);
+  eq(wellFormedTags("<a x='1'><b/>text &gt; more</b></a>"), true, "a well-formed part passes the tag check");
+  eq([wellFormedTags("<a <b>"), wellFormedTags("<a"), wellFormedTags("<a>x<b")], [false, false, false], "…a `<` that is not closed before the next `<` or the end fails it");
+  // too many paragraphs, and a document part that is too big
+  const many = await fast(async () => readWordBody(await open("<w:p></w:p>".repeat(25_000))));
+  check(many.ms < SLOW_MS && /طويل/.test(many.out), "25,000 paragraphs: refused (the cap is 20,000)", `${many.ms.toFixed(0)} ms, ${many.out}`);
+  const big = "<w:p><w:r><w:t>x</w:t></w:r></w:p>".repeat(MAX_DOCUMENT_XML / 34 + 1000);
+  const bigZip = await docx(big);
+  check(bigZip.length < 100_000, "a document part over the cap is tiny in the zip", `${size(big.length)} of XML, ${bigZip.length} bytes`);
+  const bigRun = await fast(async () => readWordBody(await openDocx(bigZip)));
+  check(bigRun.ms < SLOW_MS && /كبير/.test(bigRun.out), "…and is refused as too big before it is parsed", `${bigRun.ms.toFixed(0)} ms, ${bigRun.out}`);
+  // the other readers: header / footer / styles (the office style), the paragraphs reader, the tracked-change scrub, the template reader and filler
+  const hdr = await fast(async () => {
+    const z = await docx(para(r("x")), { "word/header1.xml": `${H}<w:hdr xmlns:w="${W}">${"<w:p><w:r>".repeat(80_000)}</w:hdr>`, "word/_rels/document.xml.rels": `${H}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/></Relationships>` });
+    const zip = await openDocx(z);
+    const { readOfficeStyle } = await import("@/lib/word/office-style");
+    await readOfficeStyle(zip);
+  });
+  check(hdr.ms < SLOW_MS, "an office style whose header has 80,000 unclosed paragraphs", `${hdr.ms.toFixed(0)} ms, ${hdr.out}`);
+  const sty = await fast(async () => {
+    const { readOfficeStyle } = await import("@/lib/word/office-style");
+    await readOfficeStyle(await open(para(r("x")), { "word/styles.xml": `${H}<w:styles xmlns:w="${W}">${'<w:style w:styleId="Normal">'.repeat(60_000)}</w:styles>` }));
+  });
+  check(sty.ms < SLOW_MS, "styles with 60,000 unclosed <w:style>", `${sty.ms.toFixed(0)} ms, ${sty.out}`);
+  const para1 = await fast(async () => { const { paragraphsOf, printedText } = await import("@/lib/word/docx"); paragraphsOf(unclosed); printedText(unclosed + "<w:del w:id=\"1\">".repeat(60_000) + "<w:rPrChange w:id=\"1\">".repeat(30_000)); });
+  check(para1.ms < SLOW_MS, "paragraphsOf and printedText on unclosed paragraphs, runs, deletions and property changes", `${para1.ms.toFixed(0)} ms`);
+  const tpl = await fast(async () => {
+    const { extractTemplateBody, fillDocxTemplate } = await import("@/lib/word/template");
+    const z = await open(unclosed + "<w:p><w:r><w:t>{{court}}</w:t></w:r></w:p>");
+    await extractTemplateBody(z);
+    await fillDocxTemplate(await open("<w:p>" + "<w:r><w:t>{{x}}</w:t></w:r>".repeat(20_000) + "</w:p>"), () => "v", "t");
+  });
+  check(tpl.ms < 1500, "the template reader and filler on unclosed paragraphs and a paragraph of 20,000 runs with a placeholder each", `${tpl.ms.toFixed(0)} ms, ${tpl.out}`);
+  const scr = await fast(async () => {
+    const { buildDocx } = await import("@/lib/word/build");
+    await buildDocx({ version: 1, blocks: [{ t: "p", text: "x" }] }, { title: "t", office: await docx(para(r("x")), { "word/settings.xml": `${H}<w:settings xmlns:w="${W}">${"<w:docVars>".repeat(60_000)}${"<w:mailMerge>".repeat(30_000)}</w:settings>` }) });
+  });
+  check(scr.ms < 1500, "the export's scrub of settings with unclosed docVars / mailMerge", `${scr.ms.toFixed(0)} ms, ${scr.out}`);
+  // what a normal file does is unchanged (the earlier sections read the sample, export and import with the new scanner)
+  const norm = await readWordBody(await open(para(r("فقرة عادية")) + para(r("ثانية"))));
+  eq(norm.blocks.map((x) => x.text), ["فقرة عادية", "ثانية"], "a normal file reads as before");
 }
 
 // ---------------------------------------------------------------- (f) the Word export
