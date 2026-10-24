@@ -1473,8 +1473,6 @@ export type Database = {
           },
         ]
       }
-      // HAND-WRITTEN from supabase/migrations/20261027100000_draft_versions.sql (PR 7): the migration is not applied yet, so `npm run db:types` cannot emit it.
-      // Same shape as the generator's. After the owner applies the migration, `npm run db:types` replaces this block with the generated one.
       draft_versions: {
         Row: {
           body: Json
