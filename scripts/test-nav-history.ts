@@ -85,6 +85,30 @@ await page.goBack();
 await page.waitForURL((u) => u.search.includes("tab=facts"));
 await checkTab(page, "documents -> Back", "facts");
 
+// a modified click (Ctrl / Cmd / Shift) opens elsewhere and Next skips the navigation: nothing optimistic may stay on this page
+console.log("modified clicks: nothing changes on this page");
+const ctx = page.context();
+async function closeNewTabs() { for (const p of ctx.pages()) if (p !== page) await p.close(); }
+for (const [name, modifiers] of [["Ctrl-click", ["Control"]], ["Meta-click", ["Meta"]], ["Shift-click", ["Shift"]]] as const) {
+  await page.goto(`${BASE}/`);
+  await page.waitForSelector("main");
+  await settled(page);
+  await page.click('nav[aria-label="القائمة"] a[title="الأجندة"]', { modifiers: [...modifiers] });
+  await page.waitForTimeout(300);
+  await closeNewTabs();
+  await checkNav(page, `${name} on Agenda (still Home)`, "الرئيسية");
+  if (new URL(page.url()).pathname !== "/") fail(`${name}: the address changed to ${page.url()}`);
+
+  await page.goto(`${BASE}${caseHref}`);
+  await page.waitForSelector('nav[aria-label="أقسام القضية"]');
+  await settled(page);
+  await page.click(`nav[aria-label="أقسام القضية"] a:has-text("${TAB_LABEL.facts}")`, { modifiers: [...modifiers] });
+  await page.waitForTimeout(300);
+  await closeNewTabs();
+  await checkTab(page, `${name} on الوقائع (still الجلسات)`, "hearings");
+  if (new URL(page.url()).search.includes("tab=")) fail(`${name}: the address changed to ${page.url()}`);
+}
+
 await browser.close();
 console.log(failures ? `FAIL (${failures})` : "PASS");
 process.exit(failures ? 1 : 0);

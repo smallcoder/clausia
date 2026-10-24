@@ -8,7 +8,7 @@ import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { useTabs } from "@/components/cases/CaseTabs";
 import { TABS, tabHref, type TabKey } from "@/components/cases/dossier";
-import { LinkPending } from "@/components/shell/LinkPending";
+import { isPlainClick, LinkPending } from "@/components/shell/LinkPending";
 
 export function CaseTabBar({ caseId, active: current, counts, keep }: {
   caseId: string; active: TabKey; counts: Record<TabKey, { text: string; gold: boolean }>;
@@ -24,7 +24,7 @@ export function CaseTabBar({ caseId, active: current, counts, keep }: {
       {TABS.map((t) => {
         const is = t.key === active;
         return (
-          <Link key={t.key} ref={is ? on : undefined} href={tabHref(caseId, t.key, keep)} scroll={false} onClick={() => click(t.key)} aria-current={is ? "page" : undefined}
+          <Link key={t.key} ref={is ? on : undefined} href={tabHref(caseId, t.key, keep)} scroll={false} onClick={(e) => { if (isPlainClick(e)) click(t.key); }} aria-current={is ? "page" : undefined}
             className={`tap relative -mb-px flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-3 text-base transition-colors sm:px-4 sm:text-md ${is ? "border-title font-bold text-title" : "border-transparent font-medium text-text-3 hover:text-text"}`}>
             {t.label}
             <span className="font-num text-sm text-text-3">{counts[t.key].text}</span>

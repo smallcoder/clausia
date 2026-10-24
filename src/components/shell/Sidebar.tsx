@@ -19,7 +19,7 @@ import { DateText, cx } from "@/components/ui";
 import { askPermission } from "@/lib/brief/notify";
 import type { SideCase, SideData, SideSession } from "@/lib/sidebar";
 import { ClausiaMark } from "./ClausiaMark";
-import { LinkPending } from "./LinkPending";
+import { isPlainClick, LinkPending } from "./LinkPending";
 import { useShell } from "./ShellContext";
 import { ThemeToggle } from "./ThemeToggle";
 import { useBriefBell } from "./useBriefBell";
@@ -164,7 +164,7 @@ export function Sidebar({ data, initials, displayName, officeName, email, alerts
             const badge = href === AGENDA && alerts > 0 ? alerts : 0;
             return (
               <li key={href} className="relative">
-                <Link href={navHref(href)} onClick={() => { showPage(); setClicked(href); }} aria-current={on ? "page" : undefined} title={text}
+                <Link href={navHref(href)} onClick={(e) => { if (!isPlainClick(e)) return; showPage(); setClicked(href); }} aria-current={on ? "page" : undefined} title={text}
                   className={cx(row, "relative h-control px-3 text-base", railCenter, on ? "side-on font-semibold" : "font-medium", badge > 0 && "pe-12 rail:pe-0")}>
                   <Icon aria-hidden size={17} strokeWidth={1.8} className="shrink-0" />
                   <span className={cx("flex-1", label)}>{text}</span>
