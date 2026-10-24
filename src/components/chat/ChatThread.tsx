@@ -212,13 +212,13 @@ export function ChatThread({ threadId, caseId, clientId = null, hearing, items, 
   const answers = lastSpoken?.role === "assistant" && !busy ? quickAnswers(lastSpoken.content) : [];
   const reading = useReadProgress(uploading);
   const step = useTurnSteps(sending ? turn : null); // the real step Clausia is on; none yet: the plain waiting line
-  const status = sending ? (step ?? "Clausia بيكتب…") : uploading ? reading : null;
+  const status = sending ? (step ?? "Clausia بيفكّر…") : uploading ? reading : null;
 
   /** the empty chat's first line (also what stands in for the brief when it could not be built) */
   const greeting = shown.length === 0 ? (
     <ClausiaLine>
-              <p>{hearing ? `جلسة ${shortDay(hearing.date)}: قول لي حصل إيه فيها، أو ارفع ورقة منها.` : caseId ? "اكتب لي اللي استجد في القضية دي، أو ارفع ورقة." : clientId ? "اسألني عن الموكل ده وقضاياه، أو قول لي على قضية جديدة ليه." : "أهلًا. احكي لي عن الموكل أو القضية، أو ارفع الصحيفة."} هجهّز لك اللي هيتحفظ في بطاقة، ومش هيتحفظ حاجة قبل ما تأكد.</p>
-            </ClausiaLine>
+      <p>{hearing ? `جلسة ${shortDay(hearing.date)}: قول لي حصل إيه فيها، أو ارفع ورقة منها.` : caseId ? "اكتب لي اللي استجد في القضية دي، أو ارفع ورقة." : clientId ? "اسألني عن الموكل ده وقضاياه، أو قول لي على قضية جديدة ليه." : "أهلًا. احكي لي عن الموكل أو القضية، أو ارفع الصحيفة."} هجهّز لك اللي هيتحفظ في بطاقة، ومش هيتحفظ حاجة قبل ما تأكد.</p>
+    </ClausiaLine>
   ) : null;
   const chipRow = (list: Chip[]) => list.length && !busy ? (
     <div className="flex flex-wrap gap-1.5">

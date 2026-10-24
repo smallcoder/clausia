@@ -71,10 +71,13 @@ export function Sidebar({ data, initials, displayName, officeName, email, alerts
   const { items: briefItems, opened } = useBriefBell(userId, path);
   const brief = briefItems[0];
   const caseId = path.match(/^\/cases\/([^/]+)/)?.[1] ?? null;
-  // the clicked nav item is active at once (not when the page arrives); it is only valid for the address it was clicked on
+  // the clicked nav item is active at once (not when the page arrives); the click is forgotten as soon as the address changes
+  // (the page landed, or Back / Forward), so the highlight always follows the address
   const address = `${path}?${sp.toString()}`;
-  const [clicked, setClicked] = useState<{ at: string; href: string } | null>(null);
-  const onNav = clicked?.at === address ? clicked.href : activeNav(path);
+  const [clicked, setClicked] = useState<string | null>(null);
+  const [seen, setSeen] = useState(address);
+  if (seen !== address) { setSeen(address); setClicked(null); }
+  const onNav = clicked ?? activeNav(path);
   /** a general chat keeps its open session when the lawyer moves between the nav pages (a case's sessions are its own) */
   const general = !caseId && !/^\/clients\/[^/]+/.test(path) ? sp.get("s") : null;
   const navHref = (href: string) => (general ? `${href}?s=${general}` : href);
@@ -161,7 +164,7 @@ export function Sidebar({ data, initials, displayName, officeName, email, alerts
             const badge = href === AGENDA && alerts > 0 ? alerts : 0;
             return (
               <li key={href} className="relative">
-                <Link href={navHref(href)} onClick={() => { showPage(); setClicked({ at: address, href }); }} aria-current={on ? "page" : undefined} title={text}
+                <Link href={navHref(href)} onClick={() => { showPage(); setClicked(href); }} aria-current={on ? "page" : undefined} title={text}
                   className={cx(row, "relative h-control px-3 text-base", railCenter, on ? "side-on font-semibold" : "font-medium", badge > 0 && "pe-12 rail:pe-0")}>
                   <Icon aria-hidden size={17} strokeWidth={1.8} className="shrink-0" />
                   <span className={cx("flex-1", label)}>{text}</span>

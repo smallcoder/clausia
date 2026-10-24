@@ -3,7 +3,7 @@
  * Live steps while Clausia works: «بقرا الصحيفة ص 2…». Polls GET /api/chat/steps for the turn this browser started (the steps are
  * written by the server only when a read tool or a card really runs). A read takes a fraction of a second, so the steps are
  * queued and each one stays on screen a moment (DWELL) before the next. When the queue is empty it returns null and the chat
- * says «Clausia بيكتب…»: no step is ever shown that did not run, and none is made up to fill the wait.
+ * says «Clausia بيفكّر…»: no step is ever shown that did not run, and none is made up to fill the wait.
  */
 import { useEffect, useState } from "react";
 import type { TurnSteps } from "@/app/api/chat/steps/route";

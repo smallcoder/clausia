@@ -1,6 +1,6 @@
-// Chat send feedback (owner item 5): after the lawyer taps send, the message bubble and the «Clausia بيكتب…» line must be on screen at once,
-// before the server answers. This run NEVER lets a send through: every server-action POST (the chat's sends are server actions, posted to the page
-// with a `Next-Action` header) is aborted in the browser by page.route, and the script fails if none was aborted (then it would prove nothing).
+// Chat send feedback (owner item 5): after the lawyer taps send, the message bubble and the «Clausia بيفكّر…» line must be on screen at once,
+// before the server answers. This run NEVER lets a send through: EVERY POST (the chat's sends are server actions, which are POSTs) is aborted in the browser by
+// page.route, whatever its headers, and the script fails if none was aborted (then it would prove nothing).
 //   npx next build && npx next start -p 3417
 //   npx tsx --env-file=.env.local scripts/test-chat-send-feedback.ts 3417
 import { chromium } from "@playwright/test";
@@ -25,12 +25,10 @@ const box = page.locator('textarea[aria-label="رسالة لـ Clausia"]');
 await box.waitFor();
 await page.waitForTimeout(1500);
 
-// from here on: no server action leaves the browser
-let aborted = 0, leaked = 0;
+// from here on: NO POST of any kind leaves the browser (the chat's sends are server actions, which are POSTs); the guard does not look at headers
+let aborted = 0;
 await page.route("**/*", (route) => {
-  const r = route.request();
-  if (r.method() === "POST" && r.headers()["next-action"]) { aborted++; return route.abort(); }
-  if (r.method() === "POST") leaked++; // any other POST would be a surprise: counted, and reported
+  if (route.request().method() === "POST") { aborted++; return route.abort(); }
   return route.continue();
 });
 
@@ -45,7 +43,7 @@ await page.evaluate((text) => {
     if (!aside) return;
     const stamp = (k: "bubble" | "status") => requestAnimationFrame(() => { if (w.__send[k] === null) w.__send[k] = performance.now(); });
     if (w.__send.bubble === null && [...aside.querySelectorAll("li div")].some((d) => d.textContent?.trim() === text)) stamp("bubble");
-    if (w.__send.status === null && [...aside.querySelectorAll("li[aria-live=polite] p")].some((p) => /Clausia (بيكتب|بيفكّر)|بقرا|بدوّر/.test(p.textContent ?? ""))) stamp("status");
+    if (w.__send.status === null && [...aside.querySelectorAll("li[aria-live=polite] p")].some((p) => /Clausia بيفكّر|بقرا|بدوّر/.test(p.textContent ?? ""))) stamp("status");
   };
   new MutationObserver(check).observe(document.documentElement, { subtree: true, childList: true, characterData: true });
 }, TEXT);
@@ -54,9 +52,9 @@ await page.waitForTimeout(1500);
 
 const r = await page.evaluate(() => (window as unknown as { __send: { t0: number; bubble: number | null; status: number | null } }).__send);
 const bubble = r.bubble === null ? null : Math.round(r.bubble - r.t0), status = r.status === null ? null : Math.round(r.status - r.t0);
-console.log(`aborted server-action POSTs: ${aborted} | other POSTs: ${leaked}`);
-console.log(`send -> message bubble: ${bubble ?? "NOT SEEN"} ms | send -> «Clausia بيكتب…» line: ${status ?? "NOT SEEN"} ms`);
+console.log(`aborted POSTs: ${aborted}`);
+console.log(`send -> message bubble: ${bubble ?? "NOT SEEN"} ms | send -> «Clausia بيفكّر…» line: ${status ?? "NOT SEEN"} ms`);
 await browser.close();
-const ok = aborted >= 1 && leaked === 0 && bubble !== null && bubble < 100 && status !== null && status < 100;
+const ok = aborted >= 1 && bubble !== null && bubble < 100 && status !== null && status < 100;
 console.log(ok ? "PASS" : "FAIL");
 process.exit(ok ? 0 : 1);

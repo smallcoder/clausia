@@ -106,8 +106,8 @@ const browser = await chromium.launch();
 const context = await browser.newContext({ viewport: { width: 1600, height: 1000 }, locale: "ar-EG" });
 const page = await context.newPage();
 await login(page); // (signing in is a server action too: the guard below starts after it)
-// this script only navigates: a server action (the chat's sends are POSTs with a Next-Action header) must never go out, so any such request is aborted
-await page.route("**/*", (r) => (r.request().method() === "POST" && r.request().headers()["next-action"] ? r.abort() : r.continue()));
+// this script only navigates: no POST (a server action, e.g. a chat send) must ever go out, so every POST is aborted
+await page.route("**/*", (r) => (r.request().method() === "POST" ? r.abort() : r.continue()));
 
 // find a case (its address) and a draft, read only
 await page.goto(`${BASE}/`);

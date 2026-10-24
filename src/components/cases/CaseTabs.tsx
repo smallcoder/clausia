@@ -1,8 +1,8 @@
 "use client";
 /**
  * The dossier's tab click, felt at once: the tab bar and the body share this. A click makes that tab active and swaps the body for its skeleton
- * right away (not when the server's answer arrives); both go back to the page's own state when the new `active` comes in. The answer to the
- * click only counts for the tab it was clicked from, so a click that never lands cannot leave the page stuck.
+ * right away (not when the server's answer arrives); both go back to the page's own state as soon as `active` changes (the tab landed, or
+ * Back / Forward), so what is shown always follows the address.
  */
 import { createContext, useContext, useState, type ReactNode } from "react";
 import type { TabKey } from "@/components/cases/dossier";
@@ -11,9 +11,11 @@ import { TabBodySkeleton } from "@/components/shell/PageSkeleton";
 const Ctx = createContext<{ pending: TabKey | null; click: (to: TabKey) => void }>({ pending: null, click: () => {} });
 
 export function TabsProvider({ active, children }: { active: TabKey; children: ReactNode }) {
-  const [clicked, setClicked] = useState<{ from: TabKey; to: TabKey } | null>(null);
-  const pending = clicked && clicked.from === active && clicked.to !== active ? clicked.to : null;
-  return <Ctx.Provider value={{ pending, click: (to) => setClicked({ from: active, to }) }}>{children}</Ctx.Provider>;
+  const [clicked, setClicked] = useState<TabKey | null>(null);
+  const [seen, setSeen] = useState(active);
+  if (seen !== active) { setSeen(active); setClicked(null); }
+  const pending = clicked && clicked !== active ? clicked : null;
+  return <Ctx.Provider value={{ pending, click: setClicked }}>{children}</Ctx.Provider>;
 }
 
 export const useTabs = () => useContext(Ctx);
