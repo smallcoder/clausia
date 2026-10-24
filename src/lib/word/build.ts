@@ -11,7 +11,7 @@
  */
 import JSZip from "jszip";
 import type { DraftBody } from "@/lib/library/types";
-import { DOCX_MIME, DocxError, escapeXml, openDocx, partText } from "./docx";
+import { DOCX_MIME, DocxError, escapeXml, openDocx, partText, printedText } from "./docx";
 import { readOfficeStyle } from "./office-style";
 
 export { DOCX_MIME };
@@ -117,7 +117,8 @@ async function collect(zip: JSZip) {
 }
 
 /** the parts a document needs whether or not its text points at them */
-const KEEP_TYPE = /\/(styles|settings|theme|fontTable|webSettings|numbering|footnotes|endnotes|stylesWithEffects|glossaryDocument)$/;
+const KEEP_TYPE = /\/(styles|settings|theme|fontTable|webSettings|numbering|footnotes|endnotes|stylesWithEffects)$/;
+
 
 /**
  * Takes the lawyer's sample (or template) file clean. The file may come from another client's case, and nothing of that may travel into a draft:
@@ -133,11 +134,18 @@ export async function scrub(zip: JSZip, title: string, opts: { keepNotes?: boole
   await dropRels(zip, "_rels/.rels", (r) => /\/(custom-properties|extended-properties)$|\/thumbnail$/.test(r.type));
   const doc = (await partText(zip, "word/document.xml")) ?? "";
   const used = new Set([...doc.matchAll(/r:(?:id|embed|link|pict)="([^"]+)"/g)].map((m) => m[1]));
-  await dropRels(zip, "word/_rels/document.xml.rels", (r) => /\/(comments|commentsExtended|commentsIds|commentsExtensible|people|customXml)$/.test(r.type) || (!KEEP_TYPE.test(r.type) && !used.has(r.id)));
-  // the attached template: a path on the lawyer's own computer
+  await dropRels(zip, "word/_rels/document.xml.rels", (r) => /\/(comments|commentsExtended|commentsIds|commentsExtensible|people|customXml|glossaryDocument)$/.test(r.type) || (!KEEP_TYPE.test(r.type) && !used.has(r.id)));
+  // the settings: the attached template (a path on the lawyer's own computer), the document variables and the mail merge (a data source, its fields and
+  // values: the sample's own), and track changes (the draft starts clean). The relationships of the settings (they only point at those) go with them.
   const settings = await partText(zip, "word/settings.xml");
-  if (settings) zip.file("word/settings.xml", settings.replace(/<w:attachedTemplate\b[^>]*\/>/g, ""));
-  await dropRels(zip, "word/_rels/settings.xml.rels", (r) => /\/attachedTemplate$/.test(r.type));
+  if (settings) {
+    zip.file("word/settings.xml", settings
+      .replace(/<w:docVars\b[^>]*\/>|<w:docVars\b[^>]*>[\s\S]*?<\/w:docVars>/g, "")
+      .replace(/<w:mailMerge\b[^>]*\/>|<w:mailMerge\b[^>]*>[\s\S]*?<\/w:mailMerge>/g, "")
+      .replace(/<w:(?:attachedTemplate|trackRevisions)\b[^>]*\/>/g, "")
+      .replace(/<w:\w+\b[^>]*\sr:id="[^"]*"[^>]*\/>/g, "")); // anything else that still names a relationship we are about to drop
+  }
+  await dropRels(zip, "word/_rels/settings.xml.rels", () => true);
   if (!opts.keepNotes) {
     for (const [p, tag] of [["footnotes", "footnote"], ["endnotes", "endnote"]] as const) {
       if (!zip.file(`word/${p}.xml`)) continue;
@@ -145,6 +153,12 @@ export async function scrub(zip: JSZip, title: string, opts: { keepNotes?: boole
     }
   }
   await collect(zip);
+  // the header and footer that stay: what they print
+  for (const n of Object.keys(zip.files)) {
+    if (!/^word\/(?:header|footer)\d*\.xml$/.test(n)) continue;
+    const xml = await partText(zip, n);
+    if (xml !== null) zip.file(n, printedText(xml));
+  }
 }
 
 /** The lawyer's own file with a new body: his header, footer, margins and styles stay; the paragraphs use his font and size. */

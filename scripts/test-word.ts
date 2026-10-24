@@ -20,7 +20,7 @@ import type { Db } from "@/lib/supabase/server";
 import { applyOp, MANUAL } from "@/lib/tools/apply";
 import { INTERNAL_TOOLS, writeToolSpecs } from "@/lib/tools/registry";
 import { BLANK, buildDocx, exportBlocks } from "@/lib/word/build";
-import { DocxError, MAX_DOCX_BYTES, looksLikeDocx, openDocx, paragraphsOf } from "@/lib/word/docx";
+import { DocxError, MAX_DOCX_BYTES, MAX_PART_BYTES, MAX_TOTAL_BYTES, escapeXml, looksLikeDocx, openDocx, paragraphsOf, partText, printedText, unescapeXml } from "@/lib/word/docx";
 import { exportDraft, loadOfficeStyle } from "@/lib/word/export";
 import { readOfficeStyle, twipsToCm } from "@/lib/word/office-style";
 import { extractTemplateBody, fillDocxTemplate, knownKey } from "@/lib/word/template";
@@ -64,6 +64,25 @@ async function consistent(z: JSZip): Promise<string[]> {
   return bad;
 }
 
+/** a zip whose entry `name` declares `size` as its uncompressed size in the central directory AND the local header (the real data is unchanged) */
+function lyingSizes(zip: Uint8Array, name: string, size: number): Uint8Array {
+  const b = Buffer.from(zip);
+  let p = b.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06])); // end of central directory
+  p = b.readUInt32LE(p + 16); // where the central directory starts
+  let done = false;
+  while (b.readUInt32LE(p) === 0x02014b50) {
+    const nl = b.readUInt16LE(p + 28), el = b.readUInt16LE(p + 30), cl = b.readUInt16LE(p + 32);
+    if (b.subarray(p + 46, p + 46 + nl).toString("utf8") === name) {
+      b.writeUInt32LE(size, p + 24);
+      b.writeUInt32LE(size, b.readUInt32LE(p + 42) + 22);
+      done = true;
+    }
+    p += 46 + nl + el + cl;
+  }
+  if (!done) throw new Error(`no entry ${name}`);
+  return new Uint8Array(b);
+}
+
 const BODY: DraftBody = {
   version: 1,
   blocks: [
@@ -103,6 +122,40 @@ const OFFICE = await makeOfficeDocx();
   eq([bare.header.lines, bare.footer.lines, bare.fonts], [[], [], { body: "Arial", size: 22 }], "no header / footer / run fonts → empty lines and the document defaults (the Arabic font and size of the styles)");
 }
 
+// the header as it PRINTS: tracked insertions kept, tracked deletions and hidden text dropped
+{
+  const tracked = await makeOfficeDocx({ tracked: true });
+  const st = await readOfficeStyle(await openDocx(tracked));
+  eq(st.header.lines.at(-1), "نص مضاف ظاهر", "the office style's header lines are what prints: «نص مضاف» (an insertion) and «ظاهر» are in");
+  check(!st.header.lines.join(" ").includes("محذوف") && !st.header.lines.join(" ").includes("مخفي"), "…a tracked deletion and a hidden run are not");
+  const z = await openDocx(await buildDocx(BODY, { title: "x", office: tracked }));
+  const hdr = await text(z, "word/header1.xml");
+  check(hdr.includes("نص مضاف") && hdr.includes("ظاهر") && !hdr.includes("نص محذوف") && !hdr.includes("نص مخفي") && !hdr.includes("<w:ins") && !hdr.includes("<w:del") && !hdr.includes("vanish"), "the exported header keeps the insertion's text and has no deleted text, no hidden text, no revision marks");
+  eq(await wellFormed(z), [], "…and is well-formed");
+  eq(printedText("<w:p><w:r><w:t>a</w:t></w:r></w:p>"), "<w:p><w:r><w:t>a</w:t></w:r></w:p>", "printedText leaves a plain paragraph alone");
+  eq(printedText('<w:p><w:pPr><w:rPr><w:del w:id="1"/></w:rPr></w:pPr><w:del w:id="2"><w:r><w:delText>gone</w:delText></w:r></w:del><w:r><w:t>kept</w:t></w:r></w:p>').includes("gone"), false, "a self-closing tracked mark does not swallow the text after it");
+  check(printedText('<w:p><w:r><w:rPr><w:vanish w:val="0"/></w:rPr><w:t>shown</w:t></w:r></w:p>').includes("shown"), "vanish val=0 is not hidden");
+  check(printedText('<w:p><w:r><w:rPr><w:rPrChange w:id="1"><w:rPr><w:b/></w:rPr></w:rPrChange></w:rPr><w:t>x</w:t></w:r></w:p>').includes("rPrChange") === false, "the old values of a tracked property change are dropped");
+}
+// XML-invalid characters never reach a part; a character reference can not throw
+{
+  const nasty = "أ\u0000ب\u0008ج\u000Bد\u000Cه\u000Ew\u001Fz\uD800y\uDC00x😀ok\uFFFE";
+  eq(escapeXml(nasty), "أبجدهwzyx😀ok", "escapeXml drops control characters (kept: tab, newline, CR) and lone surrogates; a real emoji stays");
+  const z = await openDocx(await buildDocx({ version: 1, blocks: [{ t: "p", text: nasty }, { t: "title", text: nasty }] }, { title: nasty, office: OFFICE }));
+  eq(await wellFormed(z), [], "an export of text full of control characters and lone surrogates is well-formed");
+  eq(paragraphsOf(await text(z, "word/document.xml")), ["أبجدهwzyx😀ok", "أبجدهwzyx😀ok"], "…and reads back without them");
+  const plain = await openDocx(await buildDocx({ version: 1, blocks: [{ t: "p", text: nasty }] }, { title: nasty }));
+  eq(await wellFormed(plain), [], "the plain page too");
+  const tz = await openDocx(await makeTemplateDocx());
+  await fillDocxTemplate(tz, () => nasty, nasty);
+  eq(await wellFormed(tz), [], "a template filled with such a value is well-formed");
+  let threw = false;
+  let out: string[] = [];
+  try { out = [unescapeXml("&#99999999;"), unescapeXml("&#xD800;"), unescapeXml("&#0;"), unescapeXml("&#x110000;"), unescapeXml("&#8;"), unescapeXml("&#65;&#x42;&#x1F600;"), unescapeXml("&#9;")]; } catch { threw = true; }
+  check(!threw, "unescapeXml does not throw on an impossible character reference");
+  eq(out, ["", "", "", "", "", "AB😀", "\t"], "…it drops them (a surrogate, a control code, past U+10FFFF) and reads the valid ones");
+}
+
 // ---------------------------------------------------------------- (b) the export on the office's paper
 console.log("\n-- (b) the export on the office's paper --");
 {
@@ -136,6 +189,10 @@ console.log("\n-- (b) the export on the office's paper --");
   check(!(await allText(z)).includes("مكتب سامح") && !(await allText(z)).includes("example.com") && !(await allText(z)).includes("Normal.dotm"), "no company name, no link of the sample, no path of its attached template");
   check(!z.file("word/_rels/settings.xml.rels") && !(await text(z, "word/settings.xml")).includes("attachedTemplate") && (await text(z, "word/settings.xml")).includes("defaultTabStop"), "the attached template is cut out of the settings (the other settings stay)");
   check(!!z.file("word/media/logo.png") && !!z.file("word/_rels/header1.xml.rels"), "the header's own picture and its relationship stay");
+  check(!z.file("word/glossary/document.xml") && !(await text(z, "word/_rels/document.xml.rels")).includes("glossary") && !(await text(z, "[Content_Types].xml")).includes("glossary"), "the sample's GLOSSARY (building blocks / AutoText: another client's text) is gone: part, relationship and content type");
+  const st2 = await text(z, "word/settings.xml");
+  check(!st2.includes("docVar") && !st2.includes("mailMerge") && !st2.includes("trackRevisions") && !/r:id=/.test(st2) && st2.includes("defaultTabStop"), "the settings lose the document variables, the mail merge and track changes (the other settings stay)");
+  check(!z.file("word/_rels/settings.xml.rels") && !(await allText(z)).includes("عملاء-سامح") && !(await allText(z)).includes("نص تلقائي"), "…and the mail-merge data source and the glossary text are nowhere in the file");
   check(!(await text(z, "[Content_Types].xml")).includes("comments.xml") && !(await text(z, "[Content_Types].xml")).includes("docProps/app.xml") && !(await text(z, "[Content_Types].xml")).includes("customXml"), "the content types of the removed parts are gone");
   check(!(await text(z, "word/footnotes.xml")).includes("عادل") && (await text(z, "word/footnotes.xml")).includes("separator"), "the sample's footnotes are emptied (the separators stay: Word needs them)");
   const core = await text(z, "docProps/core.xml");
@@ -200,6 +257,7 @@ const TEMPLATE = await makeTemplateDocx();
   check(!all.includes("Clausia") && !all.includes("مصدر"), "no Clausia mark in a filled template");
   check(!z.file("word/comments.xml") && !z.file("docProps/custom.xml") && !(await text(z, "docProps/core.xml")).includes("عادل"), "the comments and the properties of the file are scrubbed too");
   check(!z.file("docProps/thumbnail.jpeg") && !z.file("docProps/app.xml") && !z.file("customXml/item1.xml") && !z.file("word/_rels/settings.xml.rels"), "the thumbnail, the extended properties, the custom XML and the attached template of the template file are scrubbed too");
+  check(!z.file("word/glossary/document.xml") && !(await text(z, "word/settings.xml")).includes("docVar") && !(await text(z, "word/settings.xml")).includes("mailMerge") && !(await text(z, "word/settings.xml")).includes("trackRevisions"), "the template's glossary, document variables, mail merge and track changes are scrubbed too");
   // a template whose BODY points at a picture and a link keeps them (only what nothing points at goes)
   const own = await openDocx(OFFICE);
   await fillDocxTemplate(own, () => BLANK, "x");
@@ -226,6 +284,28 @@ console.log("\n-- (e) a file that is not a good Word file --");
   const bombBytes = await bomb.generateAsync({ type: "uint8array", compression: "DEFLATE" });
   check(bombBytes.length < MAX_DOCX_BYTES, "the bomb is small in the zip", `${bombBytes.length} bytes`);
   check(/كبير زيادة/.test((await rejects(openDocx(bombBytes))) ?? ""), "…but it claims 90 MB inflated: refused before anything is inflated");
+  // a LYING header: a part that declares 1000 bytes (central directory AND local header) and really inflates to 100 MB
+  const lie = await JSZip.loadAsync(OFFICE);
+  lie.file("word/media/big.xml", Buffer.alloc(100 * 1024 * 1024, 97));
+  const lieBytes = lyingSizes(await lie.generateAsync({ type: "uint8array", compression: "DEFLATE" }), "word/media/big.xml", 1000);
+  check(lieBytes.length < MAX_DOCX_BYTES, "the lying file is small", `${lieBytes.length} bytes`);
+  const before = process.memoryUsage();
+  let peak = 0;
+  const timer = setInterval(() => { const m = process.memoryUsage(); peak = Math.max(peak, m.arrayBuffers + m.heapUsed - before.arrayBuffers - before.heapUsed); }, 2);
+  const lieMsg = await rejects(openDocx(lieBytes));
+  clearInterval(timer);
+  check(!!lieMsg && /كبير زيادة/.test(lieMsg), "a part that DECLARES 1000 bytes and inflates to 100 MB is refused (the declared size is not trusted)", lieMsg ?? "");
+  check(peak < 3 * MAX_PART_BYTES, "…and it is refused before it uses much memory", `peak +${Math.round(peak / 1048576)} MB (the part cap is ${MAX_PART_BYTES / 1048576} MB)`);
+  const lieDoc = await JSZip.loadAsync(OFFICE);
+  lieDoc.file("word/document.xml", Buffer.alloc(60 * 1024 * 1024, 97));
+  const docBytes = lyingSizes(await lieDoc.generateAsync({ type: "uint8array", compression: "DEFLATE" }), "word/document.xml", 1000);
+  check(/كبير زيادة/.test((await rejects(openDocx(docBytes))) ?? ""), "the same lie in word/document.xml (the part readOfficeStyle unpacks) is refused at open");
+  // each part under its cap, together over the total
+  const fat = await JSZip.loadAsync(OFFICE);
+  const part18 = Buffer.alloc(18 * 1024 * 1024, 98);
+  for (let i = 0; i < Math.ceil(MAX_TOTAL_BYTES / part18.length) + 1; i++) fat.file(`word/media/f${i}.xml`, part18);
+  check(/كبير زيادة/.test((await rejects(openDocx(await fat.generateAsync({ type: "uint8array", compression: "DEFLATE" })))) ?? ""), `parts of 18 MB each (under the cap) are refused when together they pass ${MAX_TOTAL_BYTES / 1048576} MB`);
+  check((await partText(await openDocx(OFFICE), "word/document.xml"))?.includes("<w:body>") === true, "an honest file still opens and reads (partText goes through the same counting read)");
   const many = await JSZip.loadAsync(OFFICE);
   for (let i = 0; i < 520; i++) many.file(`word/media/p${i}.png`, "x");
   check(/معقد/.test((await rejects(openDocx(await many.generateAsync({ type: "uint8array" })))) ?? ""), "a file with over 500 parts is refused");

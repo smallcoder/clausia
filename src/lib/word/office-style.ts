@@ -9,7 +9,7 @@
  * The file itself is kept (the export keeps its header, footer, margins and picture as they are) and this summary is what the pages show.
  */
 import type JSZip from "jszip";
-import { attr, bodySectPr, hasPicture, paragraphsOf, partText, relationships } from "./docx";
+import { attr, bodySectPr, hasPicture, paragraphsOf, partText, printedText, relationships } from "./docx";
 
 export interface OfficeStyle {
   header: { lines: string[]; picture: boolean };
@@ -54,7 +54,7 @@ export async function readOfficeStyle(zip: JSZip): Promise<OfficeStyle> {
       if ((attr(m[0], "w:type") ?? "default") !== "default") continue;
       const target = rels.get(attr(m[0], "r:id") ?? "")?.target;
       const xml = target ? await partText(zip, `word/${target.replace(/^\/?(word\/)?/, "")}`) : null;
-      if (xml) return { lines: clean(paragraphsOf(xml).flatMap((p) => p.split("\n"))), picture: hasPicture(xml) };
+      if (xml) return { lines: clean(paragraphsOf(printedText(xml)).flatMap((p) => p.split("\n"))), picture: hasPicture(xml) }; // what prints: no deleted or hidden text
     }
     return { lines: [] as string[], picture: false };
   };
