@@ -1,6 +1,7 @@
 // Renders docs/design/ia/*.dc.html (the sidebar layout, PR 1 of the restructure) to screenshots/sidebar-layout/mockups/<name>.png,
 // at each mockup's own $preview size. Run: npx tsx scripts/mockup-shots-ia.ts [outDir] [name filter]
 // PR 2 (the agenda): npx tsx scripts/mockup-shots-ia.ts screenshots/agenda/mockups Agenda   (matches IAAgenda* and MAgenda*)
+// PR 7 (the draft editor): npx tsx scripts/mockup-shots-ia.ts screenshots/draft-editor/mockups IADraft   (matches IADraftLight and IADraftDark)
 import { chromium } from "@playwright/test";
 import { mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";

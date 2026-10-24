@@ -11,7 +11,7 @@
 import type { CaseFile } from "@/lib/case-file";
 import { formatDmy, todayIso } from "@/lib/dates";
 import { DOC_TYPE, STAGE } from "@/lib/labels";
-import type { DraftBlock, DraftFill, FillResult, FilledField, LawyerSlot, MissingField, TemplateBody } from "./types";
+import type { DraftBlock, DraftFill, FillResult, FilledField, LawyerSlot, Mark, MissingField, TemplateBody } from "./types";
 
 type Resolved = { value: string; source: string } | { missing: string };
 
@@ -164,6 +164,8 @@ export function judgedSource(cf: CaseFile, forStage: TemplateBody["for_stage"], 
 const RANK = { first_instance: 0, appeal: 1, cassation: 2 } as const;
 
 export const PLACEHOLDER = /\{\{([a-z_]+)\}\}/g;
+/** the values that are somebody else's WORDS, copied as they are (the judgment's operative text): locked in the draft, never rephrased by the model (PR 7) */
+const QUOTED_KEYS = new Set(["judgment_text"]);
 
 /** Does a template need the earlier stage's file? (so the caller loads it) */
 export const needsEarlierCase = (body: TemplateBody, cf: CaseFile) => !!body.for_stage && cf.case.stage === body.for_stage && !!cf.case.previous_stage_case;
@@ -207,7 +209,19 @@ export function fillTemplate(body: TemplateBody, cf: CaseFile, opts: FillOptions
       return { t: "lawyer", key: b.key, heading: b.heading, ...(b.hint ? { hint: b.hint } : {}), text: asked, state };
     }
     for (const m of b.text.matchAll(PLACEHOLDER)) resolve(m[1]);
-    return { t: b.t, text: b.text.replace(PLACEHOLDER, (all, key: string) => values.get(key) ?? all) };
+    // the text with its values put in; a value that is QUOTED text (the judgment's own words) becomes a locked span the model can never change (PR 7)
+    let text = "";
+    let at = 0;
+    const marks: Mark[] = [];
+    for (const m of b.text.matchAll(PLACEHOLDER)) {
+      text += b.text.slice(at, m.index);
+      const v = values.get(m[1]);
+      if (v && QUOTED_KEYS.has(m[1])) marks.push({ k: "lock", s: text.length, e: text.length + v.length, src: filled.find((f) => f.key === m[1])?.source ?? "من ملف القضية" });
+      text += v ?? m[0];
+      at = m.index + m[0].length;
+    }
+    text += b.text.slice(at);
+    return { t: b.t, text, ...(marks.length ? { marks } : {}) };
   });
 
   return { body: { version: 1, blocks }, fill: { filled, missing, lawyer } };

@@ -79,6 +79,7 @@ function kindOf(o: ProposalOp): string {
     case "create_draft": return "مسودة"; // drawn by DraftCard
     case "set_office_style": return "ورق المكتب";
     case "add_office_template": return "صيغة";
+    case "save_draft": case "restore_draft_version": case "import_draft": return "مسودة"; // the lawyer's own acts in the editor: never a card
   }
 }
 
@@ -102,7 +103,7 @@ function summaryOf(o: ProposalOp, lookup: Record<string, string> = {}): string {
     case "record_movement": return [a.amount && formatEgp(parseAmount(String(a.amount)) ?? 0), a.method && MONEY_METHOD[a.method as keyof typeof MONEY_METHOD], a.note].filter(Boolean).join(" · ");
     case "set_case_fee": return a.kind === "open" ? "مفتوحة (بلا مبلغ)" : a.amount ? formatEgp(parseAmount(String(a.amount)) ?? 0) : "";
     case "create_draft": return "مسودة"; // drawn by DraftCard
-    case "set_office_style": case "add_office_template": return "";
+    case "set_office_style": case "add_office_template": case "save_draft": case "restore_draft_version": case "import_draft": return "";
   }
 }
 

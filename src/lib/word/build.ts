@@ -10,26 +10,49 @@
  * sample may come from another client's case, and nothing of that may travel into this draft.
  */
 import JSZip from "jszip";
-import type { DraftBody } from "@/lib/library/types";
+import type { DraftBody, Mark } from "@/lib/library/types";
 import { DOCX_MIME, DocxError, escapeXml, openDocx, partText, printedText } from "./docx";
 import { readOfficeStyle } from "./office-style";
+import { replaceSpans, spans } from "./scan";
 
 export { DOCX_MIME };
 /** what stands for a value the file did not have (and for any placeholder left in a text) */
 export const BLANK = "……………";
 const PLACEHOLDER = /\{\{[^{}]*\}\}/g;
 
-export interface ExportBlock { kind: "title" | "h" | "p"; text: string }
+/** `runs`: the paragraph's text cut where bold starts and stops (PR 7); `ltr`: an English paragraph of an imported Word file (no right-to-left mark) */
+export interface ExportBlock { kind: "title" | "h" | "p"; text: string; runs?: { text: string; bold: boolean }[]; ltr?: boolean }
+
+/** The lines of one block, each as runs: bold where the block's marks say, blanks as dotted lines, trimmed at both ends of the line. A quotation prints as plain text (no mark of any kind). */
+function runLines(b: { text: string; marks?: Mark[] }): { text: string; bold: boolean }[][] {
+  const bold = (b.marks ?? []).filter((m) => m.k === "b");
+  const cuts = [...new Set([0, b.text.length, ...bold.flatMap((m) => [m.s, m.e])])].filter((n) => n >= 0 && n <= b.text.length).sort((x, y) => x - y);
+  const lines: { text: string; bold: boolean }[][] = [[]];
+  for (let i = 0; i + 1 < cuts.length; i++) {
+    const isBold = bold.some((m) => m.s <= cuts[i] && m.e >= cuts[i + 1]);
+    b.text.slice(cuts[i], cuts[i + 1]).replace(PLACEHOLDER, BLANK).split("\n").forEach((part, k) => {
+      if (k > 0) lines.push([]);
+      if (part) lines[lines.length - 1].push({ text: part, bold: isBold });
+    });
+  }
+  return lines.map((runs) => {
+    const out = runs.map((r) => ({ ...r }));
+    if (out.length) { out[0].text = out[0].text.trimStart(); out[out.length - 1].text = out[out.length - 1].text.trimEnd(); }
+    return out.filter((r) => r.text);
+  });
+}
 
 /** The draft's blocks as plain paragraphs (a text with several lines becomes several paragraphs; a blank spot becomes a dotted line). */
 export function exportBlocks(body: DraftBody): ExportBlock[] {
   const out: ExportBlock[] = [];
-  const lines = (kind: ExportBlock["kind"], text: string) => { for (const l of text.replace(PLACEHOLDER, BLANK).split("\n")) out.push({ kind, text: l.trim() }); };
+  const lines = (kind: ExportBlock["kind"], b: { text: string; marks?: Mark[]; dir?: "ltr" }) => {
+    for (const runs of runLines(b)) out.push({ kind, text: runs.map((r) => r.text).join(""), ...(runs.some((r) => r.bold) ? { runs } : {}), ...(b.dir === "ltr" ? { ltr: true } : {}) });
+  };
   for (const b of body.blocks) {
     if (b.t === "lawyer") {
       out.push({ kind: "h", text: b.heading });
-      if (b.text.trim()) lines("p", b.text); else out.push({ kind: "p", text: "" });
-    } else lines(b.t, b.text);
+      if (b.text.trim()) lines("p", b); else out.push({ kind: "p", text: "" });
+    } else lines(b.t, b);
   }
   return out;
 }
@@ -42,10 +65,11 @@ const DEFAULT_SIZE = 32; // half-points: 16 pt
 function paragraph(b: ExportBlock, font: string | null, size: number | null): string {
   const sz = size === null ? "" : `<w:sz w:val="${b.kind === "title" ? size + 4 : size}"/><w:szCs w:val="${b.kind === "title" ? size + 4 : size}"/>`;
   const fonts = font ? `<w:rFonts w:ascii="${escapeXml(font)}" w:hAnsi="${escapeXml(font)}" w:cs="${escapeXml(font)}"/>` : "";
-  const bold = b.kind === "p" ? "" : "<w:b/><w:bCs/>";
-  const ppr = `<w:pPr>${b.kind === "h" || b.kind === "title" ? "<w:keepNext/>" : ""}<w:bidi/>${b.kind === "title" ? '<w:jc w:val="center"/>' : ""}</w:pPr>`;
+  const ppr = `<w:pPr>${b.kind === "h" || b.kind === "title" ? "<w:keepNext/>" : ""}${b.ltr ? "" : "<w:bidi/>"}${b.kind === "title" ? '<w:jc w:val="center"/>' : ""}</w:pPr>`;
   if (!b.text) return `<w:p>${ppr}</w:p>`;
-  return `<w:p>${ppr}<w:r><w:rPr>${fonts}${bold}${sz}<w:rtl/></w:rPr><w:t xml:space="preserve">${escapeXml(b.text)}</w:t></w:r></w:p>`;
+  const run = (text: string, isBold: boolean) =>
+    `<w:r><w:rPr>${fonts}${b.kind !== "p" || isBold ? "<w:b/><w:bCs/>" : ""}${sz}${b.ltr ? "" : "<w:rtl/>"}</w:rPr><w:t xml:space="preserve">${escapeXml(text)}</w:t></w:r>`;
+  return `<w:p>${ppr}${(b.runs ?? [{ text: b.text, bold: false }]).map((r) => run(r.text, r.bold)).join("")}</w:p>`;
 }
 
 const DEFAULT_SECT = `<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="708" w:footer="708" w:gutter="0"/><w:bidi/></w:sectPr>`;
@@ -139,9 +163,7 @@ export async function scrub(zip: JSZip, title: string, opts: { keepNotes?: boole
   // values: the sample's own), and track changes (the draft starts clean). The relationships of the settings (they only point at those) go with them.
   const settings = await partText(zip, "word/settings.xml");
   if (settings) {
-    zip.file("word/settings.xml", settings
-      .replace(/<w:docVars\b[^>]*\/>|<w:docVars\b[^>]*>[\s\S]*?<\/w:docVars>/g, "")
-      .replace(/<w:mailMerge\b[^>]*\/>|<w:mailMerge\b[^>]*>[\s\S]*?<\/w:mailMerge>/g, "")
+    zip.file("word/settings.xml", replaceSpans(replaceSpans(settings, "w:docVars", () => ""), "w:mailMerge", () => "")
       .replace(/<w:(?:attachedTemplate|trackRevisions)\b[^>]*\/>/g, "")
       .replace(/<w:\w+\b[^>]*\sr:id="[^"]*"[^>]*\/>/g, "")); // anything else that still names a relationship we are about to drop
   }
@@ -170,8 +192,8 @@ async function onOfficePaper(blocks: ExportBlock[], title: string, office: Uint8
   const close = doc.lastIndexOf("</w:body>");
   if (open < 0 || close < open) throw new DocxError("ملف ورق المكتب شكله غير مفهوم");
   // the section of the body (header / footer references, margins, paper): the last one of the file, kept exactly
-  const sects = [...doc.slice(open, close).matchAll(/<w:sectPr(?:\s[^>]*)?(?:\/>|>[\s\S]*?<\/w:sectPr>)/g)];
-  const sect = sects.length ? sects[sects.length - 1][0] : DEFAULT_SECT;
+  const sects = spans(doc.slice(open, close), "w:sectPr");
+  const sect = sects.length ? sects[sects.length - 1].text : DEFAULT_SECT;
   const paras = blocks.map((b) => paragraph(b, style.fonts.body, style.fonts.size ?? DEFAULT_SIZE)).join("");
   zip.file("word/document.xml", `${doc.slice(0, open)}<w:body>${paras}${sect}${doc.slice(close)}`);
   await scrub(zip, title);
