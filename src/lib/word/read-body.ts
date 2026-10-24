@@ -8,6 +8,10 @@ import type JSZip from "jszip";
 import type { DraftBlock, DraftImport, Mark } from "@/lib/library/types";
 import { MAX_BLOCKS, MAX_TEXT, normalizeBlock } from "@/lib/draft/model";
 import { DocxError, attr, partText, printedText, unescapeXml } from "./docx";
+import { countOpens, firstSpan, replaceSpans, spans, textParts } from "./scan";
+
+/** the most paragraphs (`<w:p`) a file may have, counted before anything is parsed (500 blocks is the limit of a draft; the rest are empty lines and the like) */
+const MAX_PARAGRAPHS = 20_000;
 
 export interface WordBody { blocks: DraftBlock[]; dropped: DraftImport["dropped"] }
 
@@ -43,10 +47,12 @@ function stripNested(xml: string, tag: string): { xml: string; count: number } {
 function headingStyles(styles: string): { title: Set<string>; heading: Set<string> } {
   const title = new Set<string>(["Title"]);
   const heading = new Set<string>();
-  for (const m of styles.matchAll(/<w:style\s[^>]*w:styleId="([^"]+)"[^>]*>[\s\S]*?<\/w:style>/g)) {
-    const name = /<w:name\s+w:val="([^"]+)"/.exec(m[0])?.[1] ?? "";
-    if (/^title$/i.test(name) || /^عنوان$/.test(name)) title.add(m[1]);
-    else if (/^heading\s*\d$/i.test(name) || /^عنوان\s*\d$/.test(name) || /^Subtitle$/i.test(name)) heading.add(m[1]);
+  for (const s of spans(styles, "w:style")) {
+    const id = /^<w:style\s[^>]*w:styleId="([^"]+)"/.exec(s.text)?.[1];
+    if (!id) continue;
+    const name = /<w:name\s+w:val="([^"]+)"/.exec(s.text)?.[1] ?? "";
+    if (/^title$/i.test(name) || /^عنوان$/.test(name)) title.add(id);
+    else if (/^heading\s*\d$/i.test(name) || /^عنوان\s*\d$/.test(name) || /^Subtitle$/i.test(name)) heading.add(id);
   }
   return { title, heading };
 }
@@ -75,25 +81,25 @@ export async function readWordBody(zip: JSZip): Promise<WordBody> {
   if (tables.count) dropped.add("tables");
   xml = tables.xml;
   // pictures and drawn shapes (a text box's text is inside the drawing, so it goes with it); the fallback copy of a shape is inside AlternateContent
-  const shapes = xml.replace(/<mc:AlternateContent[\s>][\s\S]*?<\/mc:AlternateContent>/g, "<w:drawing/>");
+  // (every cut below is one pass with indexOf, src/lib/word/scan.ts: a file of unclosed tags costs one read, not the square of its size)
+  const shapes = replaceSpans(xml, "mc:AlternateContent", () => "<w:drawing/>");
   if (/<w:drawing[\s>/]|<w:pict[\s>]|<w:object[\s>]/.test(shapes)) dropped.add("images");
-  xml = shapes.replace(/<w:drawing(?:\s[^>]*)?\/>|<w:drawing[\s>][\s\S]*?<\/w:drawing>/g, "").replace(/<w:pict[\s>][\s\S]*?<\/w:pict>/g, "").replace(/<w:object[\s>][\s\S]*?<\/w:object>/g, "");
+  xml = replaceSpans(replaceSpans(replaceSpans(shapes, "w:drawing", () => ""), "w:pict", () => ""), "w:object", () => "");
   if (/<w:(?:footnote|endnote)Reference[\s/]/.test(xml)) dropped.add("footnotes");
+  if (countOpens(xml, "w:p") > MAX_PARAGRAPHS) throw new DocxError("الملف طويل زيادة عن اللزوم");
 
   const styles = headingStyles((await partText(zip, "word/styles.xml")) ?? "");
   const blocks: DraftBlock[] = [];
-  for (const m of xml.matchAll(/<w:p[\s>][\s\S]*?<\/w:p>/g)) {
-    const p = m[0];
-    const ppr = /<w:pPr>[\s\S]*?<\/w:pPr>/.exec(p)?.[0] ?? "";
+  for (const para of spans(xml, "w:p")) {
+    const p = para.text;
+    const ppr = firstSpan(p, "w:pPr") ?? "";
     let text = "";
     const marks: Mark[] = [];
     // runs and the parts of a run, in order: text, a tab (a space), a line break
-    for (const r of p.matchAll(/<w:r(?:\s[^>]*)?>[\s\S]*?<\/w:r>/g)) {
-      const rpr = /<w:rPr>[\s\S]*?<\/w:rPr>/.exec(r[0])?.[0] ?? "";
+    for (const run of spans(p, "w:r")) {
+      const rpr = firstSpan(run.text, "w:rPr") ?? "";
       const from = text.length;
-      for (const x of r[0].replace(/<w:rPr>[\s\S]*?<\/w:rPr>/, "").matchAll(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>|<w:tab\s*\/>|<w:br\s*\/>|<w:cr\s*\/>/g)) {
-        text += x[1] !== undefined ? unescapeXml(x[1]) : x[0].startsWith("<w:tab") ? " " : "\n";
-      }
+      textParts(rpr ? run.text.replace(rpr, "") : run.text, (kind, t) => { text += kind === "t" ? unescapeXml(t) : kind === "tab" ? " " : "\n"; });
       if (text.length > from && isBold(rpr)) marks.push({ k: "b", s: from, e: text.length });
     }
     // a paragraph is cut at its edges like the export does (the marks move with the cut)

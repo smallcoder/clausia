@@ -9,6 +9,7 @@
  * The file itself is kept (the export keeps its header, footer, margins and picture as they are) and this summary is what the pages show.
  */
 import type JSZip from "jszip";
+import { firstSpan, spans } from "./scan";
 import { attr, bodySectPr, hasPicture, paragraphsOf, partText, printedText, relationships } from "./docx";
 
 export interface OfficeStyle {
@@ -64,8 +65,8 @@ export async function readOfficeStyle(zip: JSZip): Promise<OfficeStyle> {
   const styles = (await partText(zip, "word/styles.xml")) ?? "";
   const theme = await partText(zip, "word/theme/theme1.xml");
   const fromStyles = () => {
-    const normal = /<w:style\s[^>]*w:default="1"[^>]*w:styleId="Normal"[\s\S]*?<\/w:style>|<w:style\s[^>]*w:styleId="Normal"[\s\S]*?<\/w:style>/.exec(styles)?.[0] ?? "";
-    const defaults = /<w:rPrDefault>[\s\S]*?<\/w:rPrDefault>/.exec(styles)?.[0] ?? "";
+    const normal = spans(styles, "w:style").find((s) => /^<w:style\s[^>]*w:styleId="Normal"/.test(s.text))?.text ?? "";
+    const defaults = firstSpan(styles, "w:rPrDefault") ?? "";
     for (const block of [normal, defaults]) {
       const f = /<w:rFonts\s[^>]*>/.exec(block)?.[0];
       if (!f) continue;

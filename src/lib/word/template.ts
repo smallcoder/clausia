@@ -12,6 +12,7 @@ import { FIELD_LABEL, MANUAL_LABEL } from "@/lib/library/fill";
 import type { TemplateBlock, TemplateBody } from "@/lib/library/types";
 import { escapeXml, paragraphsOf, partText, unescapeXml } from "./docx";
 import { scrub } from "./build";
+import { innerOf, replaceSpans, spans } from "./scan";
 
 const TOKEN = /\{\{\s*([^{}]+?)\s*\}\}/g;
 const KEY = /^[a-z_]+$/;
@@ -75,22 +76,22 @@ export async function extractTemplateBody(zip: JSZip): Promise<ExtractedTemplate
 export async function fillDocxTemplate(zip: JSZip, value: (name: string) => string, title: string): Promise<void> {
   const doc = await partText(zip, "word/document.xml");
   if (doc === null) return;
-  const done = doc.replace(/<w:p[\s>][\s\S]*?<\/w:p>/g, (p) => (p.includes("{{") && !p.includes("<w:txbxContent") ? fillParagraph(p, value) : p));
+  const done = replaceSpans(doc, "w:p", (p) => (p.includes("{{") && !p.includes("<w:txbxContent") ? fillParagraph(p, value) : p));
   zip.file("word/document.xml", done);
   await scrub(zip, title, { keepNotes: true });
 }
 
 function fillParagraph(p: string, value: (name: string) => string): string {
-  const nodes = [...p.matchAll(/(<w:t(?:\s[^>]*)?>)([\s\S]*?)(<\/w:t>)/g)];
-  const texts = nodes.map((n) => unescapeXml(n[2]));
+  const texts = spans(p, "w:t").map((n) => unescapeXml(innerOf(n.text, "w:t")));
   const starts: number[] = [];
   let all = "";
   for (const t of texts) { starts.push(all.length); all += t; }
-  const spans = [...all.matchAll(TOKEN)].map((m) => ({ s: m.index!, e: m.index! + m[0].length, name: m[1] }));
-  if (!spans.length) return p;
-  const at = (pos: number) => { let i = 0; while (i + 1 < starts.length && starts[i + 1] <= pos) i++; return i; };
+  const found = [...all.matchAll(TOKEN)].map((m) => ({ s: m.index!, e: m.index! + m[0].length, name: m[1] }));
+  if (!found.length) return p;
+  /** the run that holds position `pos` (binary search: a paragraph may have very many runs) */
+  const at = (pos: number) => { let lo = 0, hi = starts.length - 1; while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (starts[mid] <= pos) lo = mid; else hi = mid - 1; } return lo; };
   // from the last placeholder to the first, so the places of the earlier ones stay right
-  for (const sp of spans.reverse()) {
+  for (const sp of found.reverse()) {
     const i = at(sp.s), j = at(sp.e - 1);
     const v = value(sp.name);
     texts[i] = texts[i].slice(0, sp.s - starts[i]) + v + (i === j ? texts[i].slice(sp.e - starts[i]) : "");
@@ -98,7 +99,7 @@ function fillParagraph(p: string, value: (name: string) => string): string {
     if (j > i) texts[j] = texts[j].slice(sp.e - starts[j]);
   }
   let n = 0;
-  return p.replace(/(<w:t(?:\s[^>]*)?>)([\s\S]*?)(<\/w:t>)/g, () => {
+  return replaceSpans(p, "w:t", () => {
     const t = texts[n++];
     return `<w:t xml:space="preserve">${t.split("\n").map(escapeXml).join('</w:t><w:br/><w:t xml:space="preserve">')}</w:t>`;
   });
