@@ -92,15 +92,17 @@ export async function prepareEdit(db: Db, args: EditArgs, lawyerTexts: string[],
     const planned = planChange(current, asChange(args), cite);
     const after = cite ? cite.text : (args.new_text ?? "").trim() ? args.new_text!.trim() : "";
     // new words of Clausia's own: no number, article, year or ruling that the lawyer, the draft or the case file do not already have
-    if (!cite && after) {
+    // Clausia's own words: the new text, and the label and the reason too (they are shown to the lawyer on the card, so an invented article can't hide there)
+    const own = [...(!cite && after ? [after] : []), args.label, args.why].join("\n");
+    {
       const cf = await getCaseFile(db, row.case_id).catch(() => null);
       // a number may come from the lawyer, the draft or the case file (its papers too); an ARTICLE / RULING / law-year phrase («المادة 227»، «المادة الخامسة»،
       // «لسنة 2024») only from the lawyer's words, the draft or the file's own data, NOT from a paper: a paper's article is added with `cite`, with its source
       const draftSide = [...lawyerTexts, ...bodyTexts(current)];
       const unpapered = cf ? fileTexts({ ...cf, documents: cf.documents.map((d) => ({ ...d, pages: [] })) }) : [];
-      const bad = [...numbersNotIn(after, [...draftSide, ...(cf ? fileTexts(cf) : [])]), ...citationsNotIn(after, [...draftSide, ...unpapered], { digits: true })];
+      const bad = [...numbersNotIn(own, [...draftSide, ...(cf ? fileTexts(cf) : [])]), ...citationsNotIn(own, [...draftSide, ...unpapered], { digits: true })];
       if (bad.length) {
-        return fail(`النص الجديد فيه رقم أو مادة أو سنة مش في كلام المحامي ولا في المسودة ولا في ملف القضية (${bad.slice(0, 4).join("، ")}). متكتبش رقم مادة أو حكم أو قضية من عندك: لو محتاج سند دوّر عليه في أوراق القضية (get_document_text) وضيفه بـ cite، ولو ملقيتهوش قول للمحامي بوضوح إنك ملقيتش في أوراق القضية حاجة.`);
+        return fail(`النص الجديد (أو عنوان التعديل أو سببه) فيه رقم أو مادة أو سنة مش في كلام المحامي ولا في المسودة ولا في ملف القضية (${bad.slice(0, 4).join("، ")}). متكتبش رقم مادة أو حكم أو قضية من عندك: لو محتاج سند دوّر عليه في أوراق القضية (get_document_text) وضيفه بـ cite، ولو ملقيتهوش قول للمحامي بوضوح إنك ملقيتش في أوراق القضية حاجة.`);
       }
     }
     const edit: EditPreview = {

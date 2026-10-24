@@ -121,7 +121,7 @@ try {
         await go(page, "");
         const blocks = await page.locator("[data-block-id]").count();
         if (blocks < 5) problems.push(`editor ${tag}: only ${blocks} editable blocks`);
-        if (!(await page.locator("[data-lock]").count()) || !(await page.locator("[data-ph]").count())) problems.push(`editor ${tag}: the quotation or the blanks are missing`);
+        if (!(await page.locator("article figure blockquote, article [data-lock]").count()) || !(await page.locator("[data-ph]").count())) problems.push(`editor ${tag}: the quotation or the blanks are missing`);
         await page.screenshot({ path: `${OUT}/${m}editor-${w}-${t}.png` });
         await contrast(page, "main#page", `editor ${tag}`);
         await noScroll(page, `editor ${tag}`);

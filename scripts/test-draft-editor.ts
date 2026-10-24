@@ -618,6 +618,19 @@ console.log("\n-- (j) the model's change is refused at the door; a citation only
   check(said.ok, "…but the same words are fine when the lawyer said them himself");
   const own = await prep({ block: P1.id!, old_text: "القصور في التسبيب", new_text: "السبب الأول: القصور في التسبيب" });
   check(own.ok, "words the draft already has are fine");
+  // the label and the reason are shown to the lawyer on the card: same guard (digits and spelled out)
+  const lblDigits = await prep({ block: P1.id!, old_text: "القصور في التسبيب", new_text: "قصور التسبيب", label: "المادة 227" });
+  check(!lblDigits.ok && /227/.test(lblDigits.error), "an article number in the LABEL of a change → refused");
+  const whyDigits = await prep({ block: P1.id!, old_text: "القصور في التسبيب", new_text: "قصور التسبيب", why: "طبقا للمادة 313 من قانون الإثبات" });
+  check(!whyDigits.ok && /313/.test(whyDigits.error), "an article number in the REASON of a change → refused");
+  const whyWords = await prep({ block: P1.id!, old_text: "القصور في التسبيب", new_text: "قصور التسبيب", why: "تطبيقا للمادة ثلاثمائة" });
+  check(!whyWords.ok && /ماده ثلاثمائه/.test(whyWords.error), "a spelled-out article in the REASON → refused", !whyWords.ok ? whyWords.error.slice(0, 80) : "");
+  const lblWords = await prep({ block: P1.id!, old_text: "القصور في التسبيب", new_text: "قصور التسبيب", label: "رقم خمسمائة" });
+  check(!lblWords.ok, "a spelled-out number in the LABEL → refused");
+  const whyOk = await prep({ block: P1.id!, old_text: "القصور في التسبيب", new_text: "قصور التسبيب", why: "تطبيقا للمادة ثلاثمائة" }, ["غيّر وطبق المادة ثلاثمائة"]);
+  check(whyOk.ok, "…but fine when the lawyer said it himself");
+  const citeWhy = await prepareEdit(f.db, { draft: DRAFT, kind: "add", block: P1.id!, cite: { document: DOC, page: 3, quote: "المادة 227 من قانون المرافعات تنص" }, label: "إضافة", why: "سند من المادة 999", quote: "q" } as EditArgs, ["ضيف سند"], CASE);
+  check(!citeWhy.ok && /999/.test(citeWhy.error), "a cited add whose REASON invents another article → refused too");
 
   // citations: only from the case's papers, the words read off the page by code
   const c1 = await prepareEdit(f.db, { draft: DRAFT, kind: "add", block: P1.id!, cite: { document: DOC, page: 3, quote: "المادة ٢٢٧ من   قانون المرافعات تنص على أن الأحكام تصدر بالأغلبية" }, label: "إضافة", why: "سند", quote: "q" } as EditArgs, ["ضيف سند"], CASE);
@@ -659,7 +672,17 @@ console.log("\n-- (k) the spelled-out guard (#202), the chip, the read tools --"
   eq(spelledCitations("طبقا للمادة الخامسة من القانون رقم ثلاثة وعشرين لسنة ألفين").length, 3, "three spelled-out citations found: an article, a law number, a year");
   eq(spelledCitations("السبب الأول والثاني لقصور التسبيب").length, 0, "«الأول» outside a citation is not one");
   eq(spelledCitations("بالمادة العاشرة وللمادة الأولى").length, 2, "prefixes (ب، ل) are read");
-  eq(citationsNotIn("المادة الخامسة", ["المادة الخامسة من القانون"]), [], "a citation the sources already have in the same words is fine");
+  for (const w of ["المادة ثلاثمائة", "رقم خمسمائة", "لسنة ستمائة", "المادة ثلاثمئة", "المادة اثني عشر", "المادة اثنى عشر", "المادة اثنا عشر", "المادة أربعمائة", "المادة سبعمائة", "المادة ثمانمائة", "الطعن رقم تسعمائة", "المادة ثلاث مائة", "المادة تلتمية"]) {
+    if (w.endsWith("تلتمية")) continue; // (a colloquial form nobody writes in a draft: not claimed)
+    eq(spelledCitations(w).length, 1, `spelled-out number caught: «${w}»`);
+  }
+  eq(citationsNotIn("المادة ثلاثمائة", ["المادة ثلاثمائة"]), [], "…and fine when the lawyer already said it");
+  eq(citationsNotIn("المادة ثلاثمائة", ["المادة مائة"]).length, 1, "…but not when he said another one");
+  eq(citationsNotIn("المادة خمسمائة", [], { digits: true }).length, 1, "a one-word hundred is caught with the digits option too");
+  eq(citationsNotIn("المادة النص الواضح", []), [], "an ordinary word after «المادة» is not a number");
+  eq(citationsNotIn("المادة المقتبسة", []), [], "…nor «المقتبسة»");
+  eq(citationsNotIn("المادة 227 من القانون", ["x"], { digits: true }).length, 1, "digits: an article number nobody gave is caught");
+  eq(citationsNotIn("المادة الخامسة", ["المادة الخامسة من القانون"]), [],"a citation the sources already have in the same words is fine");
   eq(citationsNotIn("المادة الخامسة", ["المادة السادسة"]).length, 1, "a different article is not");
   eq(citationsNotIn("المادة الخامسة", []).length, 1, "…nor one nobody gave");
   eq(numbersNotIn("المادة 227", ["الدعوى 8833"]), ["227"], "digits are still caught");

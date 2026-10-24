@@ -35,6 +35,9 @@ const NUMBER_WORDS = new Set((
   "عشرون عشرين ثلاثون ثلاثين اربعون اربعين خمسون خمسين ستون ستين سبعون سبعين ثمانون ثمانين تسعون تسعين مائه مئه ميه مايه مائتين مئتين مائتان الف الفين الفان " +
   "اول اولي ثاني ثانيه ثالث ثالثه رابع رابعه خامس خامسه سادس سادسه سابع سابعه ثامن ثامنه تاسع تاسعه عاشر عاشره حاديه حادي"
 ).split(" "));
+// the one-word hundreds («ثلاثمائة»، «خمسمائة»، «ستمائة»، «ثمانمئة»): a unit prefix joined to «مائة / مئة / مية / ماية»; and «اثني / اثنى عشر»
+for (const unit of ["ثلاث", "تلات", "اربع", "خمس", "ست", "سبع", "ثمان", "تمان", "تسع"]) for (const h of ["مائه", "مئه", "ميه", "مايه"]) NUMBER_WORDS.add(unit + h);
+for (const w of ["اثني", "اثنى", "اثنين", "اثنا"]) NUMBER_WORDS.add(w);
 /** the words that introduce a citation: an article, a year of a law, a case or law number */
 const CITE_WORDS = new Set(["ماده", "مواد", "لسنه", "رقم"]);
 
