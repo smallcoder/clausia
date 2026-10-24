@@ -54,7 +54,7 @@ async function clientContext(db: Db, clientId: string): Promise<PanelContext | n
   };
 }
 
-export async function loadPanel(db: Db, path: string[] | undefined, sp: { s?: string; hearing?: string; q?: string }, who: Who | Promise<Who | null> | null = null): Promise<PanelData> {
+export async function loadPanel(db: Db, path: string[] | undefined, sp: { s?: string; hearing?: string; q?: string }, who: Who | null = null): Promise<PanelData> {
   const wantCase = path?.[0] === "cases" && path[1] && UUID.test(path[1]) ? path[1] : null;
   const wantClient = path?.[0] === "clients" && path[1] && UUID.test(path[1]) ? path[1] : null;
   const ctx = wantCase ? await caseContext(db, wantCase) : wantClient ? await clientContext(db, wantClient) : null;
@@ -66,7 +66,7 @@ export async function loadPanel(db: Db, path: string[] | undefined, sp: { s?: st
   // It is the slowest part, so it starts here (beside the reads below) and is NOT awaited: the panel gets the promise and the brief
   // streams in after the rest (ChatThread, under Suspense).
   const morning: PanelData["morning"] = !caseId && !clientId && who
-    ? Promise.resolve(who).then((w) => (w ? loadMorning(db, w.userId, w.displayName) : null)).catch((e) => {
+    ? loadMorning(db, who.userId, who.displayName).catch((e) => {
         console.error("morning brief failed", e); // the chat still works: it falls back to the plain greeting
         return null;
       })

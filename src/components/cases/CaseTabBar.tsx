@@ -25,12 +25,12 @@ export function CaseTabBar({ caseId, active: current, counts, keep }: {
         const is = t.key === active;
         return (
           <Link key={t.key} ref={is ? on : undefined} href={tabHref(caseId, t.key, keep)} scroll={false} onClick={() => click(t.key)} aria-current={is ? "page" : undefined}
-            className={`tap -mb-px flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-3 text-base transition-colors sm:px-4 sm:text-md ${is ? "border-title font-bold text-title" : "border-transparent font-medium text-text-3 hover:text-text"}`}>
+            className={`tap relative -mb-px flex shrink-0 items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-3 text-base transition-colors sm:px-4 sm:text-md ${is ? "border-title font-bold text-title" : "border-transparent font-medium text-text-3 hover:text-text"}`}>
             {t.label}
             <span className="font-num text-sm text-text-3">{counts[t.key].text}</span>
             {counts[t.key].gold ? <span aria-hidden className="size-dot rounded-full bg-gold" /> : null}
             {counts[t.key].gold ? <span className="sr-only">محتاجة مراجعة</span> : null}
-            <LinkPending />
+            <LinkPending className="absolute end-1.5 top-2" />
           </Link>
         );
       })}

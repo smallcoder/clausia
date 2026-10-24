@@ -165,7 +165,7 @@ export function Sidebar({ data, initials, displayName, officeName, email, alerts
                   className={cx(row, "relative h-control px-3 text-base", railCenter, on ? "side-on font-semibold" : "font-medium", badge > 0 && "pe-12 rail:pe-0")}>
                   <Icon aria-hidden size={17} strokeWidth={1.8} className="shrink-0" />
                   <span className={cx("flex-1", label)}>{text}</span>
-                  <LinkPending />
+                  <LinkPending className="rail:hidden" />
                 </Link>
                 {/* the count is its own link (a link cannot sit inside a link): it opens the agenda's «محتاجة قرار» tab */}
                 {badge ? (
