@@ -226,6 +226,20 @@ export const WRITE_TOOL_ARGS = {
     storage_path: z.string().regex(/^[0-9a-f-]{36}\/templates\/[0-9a-f-]{36}\/[A-Za-z0-9._-]+\.docx$/i),
     body: z.object({ version: z.literal(1), blocks: z.array(z.unknown()).max(200) }).passthrough(), // checked again against the template shape in applyOp
   }),
+  // The draft editor (PR 7). The three below are the LAWYER's own acts in the editor (his save, a restored version, a Word file opened as a draft): saved by
+  // the server actions through applyOp with MANUAL provenance; the model never makes them (INTERNAL_TOOLS). The body is checked again by `parseBody`.
+  save_draft: z.object({
+    draft: z.string().uuid(),
+    body: z.object({ version: z.literal(1), blocks: z.array(z.unknown()).max(500) }).passthrough(),
+    expected: z.string().max(40).nullable().optional(),
+  }),
+  restore_draft_version: z.object({ draft: z.string().uuid(), version: z.string().uuid() }),
+  import_draft: z.object({
+    case: z.string().uuid(),
+    title: z.string().trim().min(2).max(200),
+    body: z.object({ version: z.literal(1), blocks: z.array(z.unknown()).max(500) }).passthrough(),
+    imported: z.object({ file_name: z.string().max(200), dropped: z.array(z.enum(["tables", "images", "footnotes"])).max(3) }),
+  }),
   // Made ONLY by code (src/lib/deadlines/propose.ts) after a judgment is saved; internal like the two above. The args are the lawyer's
   // inputs (facts), never a number: `applyOp` reads the days from the article text and works out the last day itself.
   add_deadline: z.object({
@@ -244,7 +258,7 @@ export type WriteArgs<T extends WriteTool> = z.infer<(typeof WRITE_TOOL_ARGS)[T]
 export const WRITE_TOOLS = Object.keys(WRITE_TOOL_ARGS) as WriteTool[];
 export const isWriteTool = (n: string): n is WriteTool => n in WRITE_TOOL_ARGS;
 /** Tools only code may propose (see above): not offered to the model, refused if it calls them. */
-export const INTERNAL_TOOLS = ["add_doc_column", "add_doc_cell", "add_deadline", "set_office_style", "add_office_template"] as const satisfies readonly WriteTool[];
+export const INTERNAL_TOOLS = ["add_doc_column", "add_doc_cell", "add_deadline", "set_office_style", "add_office_template", "save_draft", "restore_draft_version", "import_draft"] as const satisfies readonly WriteTool[];
 export const isInternalTool = (n: string): boolean => (INTERNAL_TOOLS as readonly string[]).includes(n);
 
 export const WRITE_TOOL_DESCRIPTIONS: Record<WriteTool, string> = {
@@ -267,6 +281,9 @@ export const WRITE_TOOL_DESCRIPTIONS: Record<WriteTool, string> = {
   add_deadline: "ميعاد طعن (استئناف / نقض) يحسبه الكود من نص المادة بعد تسجيل حكم. يصنعه الكود فقط.",
   set_office_style: "ورق المكتب: الرأس والتذييل والخط والهوامش من ملف Word رفعه المحامي. يحفظه الكود فقط.",
   add_office_template: "صيغة مكتب من ملف Word رفعه المحامي. يحفظها الكود فقط.",
+  save_draft: "حفظ المحامي لمسودته من المحرر (نسخة جديدة في السجل). يحفظها الكود فقط.",
+  restore_draft_version: "استرجاع نسخة قديمة من مسودة كنسخة جديدة. يحفظها الكود فقط.",
+  import_draft: "فتح ملف Word رفعه المحامي كمسودة لقضية. يحفظها الكود فقط.",
   create_draft: "اقتراح مسودة من صيغة لقضية (مثل «صحيفة استئناف لقضية كريم»). الكود هو اللي بيملا البيانات من ملف القضية ويكتب مصدر كل بيان؛ أنت بتختار الصيغة والقضية بس. الأسباب والطلبات بتتساب فاضية للمحامي إلا لو طلب منك تكتبها.",
 };
 
@@ -297,6 +314,9 @@ export const OP_TITLE: Record<WriteTool, string> = {
   create_draft: "مسودة من صيغة",
   set_office_style: "ورق المكتب",
   add_office_template: "صيغة المكتب",
+  save_draft: "حفظ المسودة",
+  restore_draft_version: "استرجاع نسخة",
+  import_draft: "مسودة من ملف Word",
 };
 
 export const OP_FIELDS: Record<WriteTool, FieldSpec[]> = {
@@ -424,6 +444,9 @@ export const OP_FIELDS: Record<WriteTool, FieldSpec[]> = {
   create_draft: [], // drawn by DraftCard, not as fields
   set_office_style: [], // the lawyer's own upload: never a card
   add_office_template: [],
+  save_draft: [], // the lawyer's own act in the editor: never a card
+  restore_draft_version: [],
+  import_draft: [],
 };
 
 /** Tool specs for the provider (JSON Schema from zod). */

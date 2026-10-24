@@ -16,7 +16,7 @@ import { extractTemplateBody } from "./template";
 export type UploadResult = { ok: true; note: string } | { ok: false; error: string };
 
 /** the file of a form, checked: a Word file, not empty, not too big. Plain Arabic errors. */
-async function readFile(form: FormData): Promise<{ name: string; bytes: Uint8Array } | { error: string }> {
+export async function readFile(form: FormData): Promise<{ name: string; bytes: Uint8Array } | { error: string }> {
   const file = form.get("file");
   if (!(file instanceof File) || file.size === 0) return { error: "اختار ملف Word (.docx)" };
   if (!looksLikeDocx(file.name, file.type)) return { error: "الملف لازم يكون Word (.docx). ملفات PDF والـ .doc القديمة مش مدعومة" };

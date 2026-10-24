@@ -1473,6 +1473,66 @@ export type Database = {
           },
         ]
       }
+      // HAND-WRITTEN from supabase/migrations/20261027100000_draft_versions.sql (PR 7): the migration is not applied yet, so `npm run db:types` cannot emit it.
+      // Same shape as the generator's. After the owner applies the migration, `npm run db:types` replaces this block with the generated one.
+      draft_versions: {
+        Row: {
+          body: Json
+          created_at: string
+          created_by: string | null
+          draft_id: string
+          id: string
+          kind: string
+          note: string | null
+          office_id: string
+          restored_from: string | null
+        }
+        Insert: {
+          body: Json
+          created_at?: string
+          created_by?: string | null
+          draft_id: string
+          id?: string
+          kind: string
+          note?: string | null
+          office_id?: string
+          restored_from?: string | null
+        }
+        Update: {
+          body?: Json
+          created_at?: string
+          created_by?: string | null
+          draft_id?: string
+          id?: string
+          kind?: string
+          note?: string | null
+          office_id?: string
+          restored_from?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "draft_versions_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "drafts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "draft_versions_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "draft_versions_restored_from_fkey"
+            columns: ["restored_from"]
+            isOneToOne: false
+            referencedRelation: "draft_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drafts: {
         Row: {
           body: Json

@@ -1,20 +1,26 @@
 // «المذكرات والأحكام» (?tab=memos): the case's judgments (the saved ones, as the lawyer stated them) and the documents whose type says
-// they are a memo or a judgment (مذكرتنا، مذكرة الخصم، حكم). The draft editor comes later (PR 7): for now this tab lists what exists.
+// they are a memo or a judgment (مذكرتنا، مذكرة الخصم، حكم). `?draft=` opens one draft in the editor (PR 7); «افتح ملف Word كمسودة» makes a draft from a Word file.
 // A document's home is «المستندات»: each row only opens the file and the footer links to that tab.
 import Link from "next/link";
 import { JudgmentsTab } from "@/components/case-tabs/JudgmentsTab";
 import { docName } from "@/components/cases/case-view";
 import { memoDocs } from "@/components/cases/dossier";
 import { pagesLabel } from "@/components/documents/DocThumb";
-import { DraftView } from "@/components/library/DraftView";
+import { DraftEditor } from "@/components/draft/DraftEditor";
+import { ImportWord } from "@/components/draft/ImportWord";
 import { DateText } from "@/components/ui";
 import type { CaseFile } from "@/lib/case-file";
+import type { VersionRow } from "@/lib/draft/store";
 import { DOC_TYPE } from "@/lib/labels";
 import type { DraftFull, DraftSummary } from "@/lib/library/list";
+import type { OfficeStyle } from "@/lib/word/office-style";
 
-/** `drafts`: the case's drafts from the library, newest first; `draft`: the one opened with `?draft=` (read only; the editor is PR 7). */
-export function MemosTab({ cf, caseId, drafts = [], draft = null, hasStyle = false, word = false }: { cf: CaseFile; caseId: string; drafts?: DraftSummary[]; draft?: DraftFull | null; hasStyle?: boolean; word?: boolean }) {
-  if (draft) return <DraftView draft={draft} backHref={`/cases/${caseId}?tab=memos`} hasStyle={hasStyle} word={word} />;
+/**
+ * `drafts`: the case's drafts from the library, newest first; `draft`: the one opened with `?draft=` (the editor, PR 7) with its `versions` and the office's
+ * paper (`style`, null = none yet).
+ */
+export function MemosTab({ cf, caseId, drafts = [], draft = null, style = null, versions = [], word = false }: { cf: CaseFile; caseId: string; drafts?: DraftSummary[]; draft?: DraftFull | null; style?: OfficeStyle | null; versions?: VersionRow[]; word?: boolean }) {
+  if (draft) return <DraftEditor draft={draft} caseId={caseId} clientName={cf.client?.name ?? null} style={style} versions={versions} word={word} />;
   const docs = memoDocs(cf);
   const judgments = cf.judgments.length + cf.pending_suggestions.filter((p) => p.table === "judgments").length;
   if (!docs.length && !judgments && !drafts.length) {
@@ -22,13 +28,15 @@ export function MemosTab({ cf, caseId, drafts = [], draft = null, hasStyle = fal
       <section className="rounded-xl border border-border-2 bg-card px-6 py-6 shadow-card">
         <p className="text-md font-semibold text-text">لسه مفيش مذكرات أو أحكام في القضية دي</p>
         <p className="mt-1.5 max-w-160 text-base leading-7 text-text-3">
-          ارفع المذكرة أو الحكم من <Link href={`/cases/${caseId}?tab=documents`} className="font-semibold text-text-2 underline underline-offset-4">المستندات</Link>، أو قول لـ Clausia تكتبلك مذكرة في المحادثة، أو اختار صيغة من <Link href="/library" className="font-semibold text-text-2 underline underline-offset-4">المكتبة</Link>.
+          ارفع المذكرة أو الحكم من <Link href={`/cases/${caseId}?tab=documents`} className="font-semibold text-text-2 underline underline-offset-4">المستندات</Link>، أو قول لـ Clausia تكتبلك مذكرة في المحادثة، أو اختار صيغة من <Link href="/library" className="font-semibold text-text-2 underline underline-offset-4">المكتبة</Link>، أو افتح ملف Word عندك كمسودة.
         </p>
+        <div className="mt-3"><ImportWord caseId={caseId} /></div>
       </section>
     );
   }
   return (
     <div className="space-y-4 pb-4">
+      <div className="flex flex-wrap items-start justify-between gap-2"><ImportWord caseId={caseId} /></div>
       {drafts.length ? (
         <section className="overflow-hidden rounded-xl border border-border-2 bg-card shadow-card" aria-label="المسودات">
           <h2 className="px-6 py-4 text-lg font-bold text-title">المسودات</h2>
