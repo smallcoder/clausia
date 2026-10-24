@@ -7,15 +7,15 @@ import { TitleRow } from "@/components/shell/TitleRow";
 
 type Kind = "home" | "case" | "roll" | "cases";
 
-const Bar = ({ w, h = 12, className = "" }: { w: string; h?: number; className?: string }) => (
+export const Bar = ({ w, h = 12, className = "" }: { w: string; h?: number; className?: string }) => (
   <span aria-hidden className={`skel block ${className}`} style={{ width: w, height: h }} />
 );
 
-function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+export function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return <div className={`rounded-xl border border-border-2 bg-card p-5 shadow-card sm:p-6 ${className}`}>{children}</div>;
 }
 
-function Rows({ n, line = true }: { n: number; line?: boolean }) {
+export function Rows({ n, line = true }: { n: number; line?: boolean }) {
   return (
     <div>
       {Array.from({ length: n }, (_, i) => (
@@ -56,6 +56,15 @@ function TitleRowSkeleton({ stats, caps = 0 }: { stats: number; caps?: number })
       </div>
       <div className="ms-auto flex gap-1">{Array.from({ length: caps }, (_, i) => <Bar key={i} w="88px" h={34} className="rounded-full" />)}</div>
     </TitleRow>
+  );
+}
+
+/** A dossier tab's body while another tab opens (the header and the tab bar stay): one card of rows. */
+export function TabBodySkeleton() {
+  return (
+    <div role="status" aria-busy="true" aria-label="جارٍ التحميل" className="skel-shimmer space-y-4">
+      <Card><Bar w="80px" h={14} /><Rows n={4} /></Card>
+    </div>
   );
 }
 

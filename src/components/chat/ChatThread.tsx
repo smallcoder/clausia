@@ -6,7 +6,7 @@
  * A session that does not exist yet (threadId null) is made by its first message, then the URL points at it (?s=).
  */
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useOptimistic, useRef, useState, useTransition, type ReactNode } from "react";
+import { Suspense, use, useEffect, useOptimistic, useRef, useState, useTransition, type ReactNode } from "react";
 import { cx } from "@/components/ui";
 import { DeadlineCard } from "@/components/proposal/DeadlineCard";
 import { ProposalCard } from "@/components/proposal/ProposalCard";
@@ -14,6 +14,7 @@ import type { DeadlineCardEntry } from "@/lib/deadlines/cards";
 import { useReadProgress } from "@/components/documents/useReadProgress";
 import { SourceChip } from "@/components/cite/SourceChip";
 import { useDrop } from "@/components/shell/DropZone";
+import { Bar } from "@/components/shell/PageSkeleton";
 import { routeDrop } from "@/lib/documents/drop";
 import { AskChips } from "./AskChips";
 import { ChatComposer } from "./ChatComposer";
@@ -81,8 +82,8 @@ export function ChatThread({ threadId, caseId, clientId = null, hearing, items, 
   deadlines?: Record<string, DeadlineCardEntry>;
   docs?: Record<string, ThreadDoc>;
   chips?: Chip[];
-  /** the general context's top (the morning brief and the «noticed» cards); it is not a saved message */
-  morning?: MorningData | null;
+  /** the general context's top (the morning brief, the «noticed» cards and their chips); it is not a saved message. A promise: it streams in after the thread */
+  morning?: Promise<MorningData | null> | null;
   /** a starter sentence already in the box (from a brief chip's link); it is not sent */
   starter?: string;
 }) {
@@ -213,17 +214,31 @@ export function ChatThread({ threadId, caseId, clientId = null, hearing, items, 
   const step = useTurnSteps(sending ? turn : null); // the real step Clausia is on; none yet: the plain waiting line
   const status = sending ? (step ?? "Clausia بيكتب…") : uploading ? reading : null;
 
+  /** the empty chat's first line (also what stands in for the brief when it could not be built) */
+  const greeting = shown.length === 0 ? (
+    <ClausiaLine>
+              <p>{hearing ? `جلسة ${shortDay(hearing.date)}: قول لي حصل إيه فيها، أو ارفع ورقة منها.` : caseId ? "اكتب لي اللي استجد في القضية دي، أو ارفع ورقة." : clientId ? "اسألني عن الموكل ده وقضاياه، أو قول لي على قضية جديدة ليه." : "أهلًا. احكي لي عن الموكل أو القضية، أو ارفع الصحيفة."} هجهّز لك اللي هيتحفظ في بطاقة، ومش هيتحفظ حاجة قبل ما تأكد.</p>
+            </ClausiaLine>
+  ) : null;
+  const chipRow = (list: Chip[]) => list.length && !busy ? (
+    <div className="flex flex-wrap gap-1.5">
+      {list.map((c) => (
+        <button key={c.label} type="button" onClick={() => { setText(c.text); boxRef.current?.focus(); }} className={cx(CHIP, c.icon && "gap-1.75")}><ChipIcon icon={c.icon} />{c.label}</button>
+      ))}
+    </div>
+  ) : null;
+
   return (
     <>
       <div ref={scroller} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <div className="mx-auto flex w-full max-w-messages flex-col gap-4 px-4 pb-12 pt-4 xl:px-4.5 xl:pt-6">
-          {morning ? <MorningBlock data={morning} /> : null}
-
-          {shown.length === 0 && !morning ? (
-            <ClausiaLine>
-              <p>{hearing ? `جلسة ${shortDay(hearing.date)}: قول لي حصل إيه فيها، أو ارفع ورقة منها.` : caseId ? "اكتب لي اللي استجد في القضية دي، أو ارفع ورقة." : clientId ? "اسألني عن الموكل ده وقضاياه، أو قول لي على قضية جديدة ليه." : "أهلًا. احكي لي عن الموكل أو القضية، أو ارفع الصحيفة."} هجهّز لك اللي هيتحفظ في بطاقة، ومش هيتحفظ حاجة قبل ما تأكد.</p>
-            </ClausiaLine>
+          {morning ? (
+            <Suspense fallback={<MorningSkeleton />}>
+              <Await promise={morning}>{(m) => (m ? <MorningBlock data={m} /> : greeting)}</Await>
+            </Suspense>
           ) : null}
+
+          {morning ? null : greeting}
 
           <ol className="flex flex-col gap-4">
             {shown.map((m) => (
@@ -271,13 +286,8 @@ export function ChatThread({ threadId, caseId, clientId = null, hearing, items, 
             ) : null}
           </ol>
 
-          {chips.length && !busy && (!morning || shown.length === 0) ? (
-            <div className="flex flex-wrap gap-1.5">
-              {chips.map((c) => (
-                <button key={c.label} type="button" onClick={() => { setText(c.text); boxRef.current?.focus(); }} className={cx(CHIP, c.icon && "gap-1.75")}><ChipIcon icon={c.icon} />{c.label}</button>
-              ))}
-            </div>
-          ) : null}
+          {/* the starter chips: the case's own, or (general context) the brief's, which arrive with it */}
+          {morning ? (shown.length === 0 ? <Suspense fallback={null}><Await promise={morning}>{(m) => chipRow(m?.chips ?? [])}</Await></Suspense> : null) : chipRow(chips)}
         </div>
       </div>
 
@@ -288,6 +298,20 @@ export function ChatThread({ threadId, caseId, clientId = null, hearing, items, 
         placeholder={modePlaceholder(mode, !!caseId)} mode={mode} onMode={setMode} boxRef={boxRef} fileRef={fileRef}
         context={<AskChips chips={askChips} onRemove={removeChip} />} />
     </>
+  );
+}
+
+/** Reads a promise the server started (the brief) once it is done; the Suspense around it shows its skeleton meanwhile. */
+function Await<T>({ promise, children }: { promise: Promise<T>; children: (v: T) => ReactNode }) {
+  return <>{children(use(promise))}</>;
+}
+
+/** The brief's place while it loads: a few lines, so the thread and the composer are already there. */
+function MorningSkeleton() {
+  return (
+    <div role="status" aria-busy="true" aria-label="جارٍ تجهيز ملخص اليوم" className="skel-shimmer space-y-3">
+      <Bar w="55%" h={16} /><Bar w="85%" h={13} /><Bar w="70%" h={13} />
+    </div>
   );
 }
 

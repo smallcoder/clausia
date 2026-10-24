@@ -10,7 +10,7 @@
  */
 import { Bell, BookOpen, CalendarDays, CalendarOff, ChevronDown, FileText, FolderClosed, House, LogOut, MessageSquare, Search, Users } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useDraft } from "@/components/chat/draft";
 import { shortDay } from "@/components/chat/panel-types";
@@ -19,6 +19,7 @@ import { DateText, cx } from "@/components/ui";
 import { askPermission } from "@/lib/brief/notify";
 import type { SideCase, SideData, SideSession } from "@/lib/sidebar";
 import { ClausiaMark } from "./ClausiaMark";
+import { LinkPending } from "./LinkPending";
 import { useShell } from "./ShellContext";
 import { ThemeToggle } from "./ThemeToggle";
 import { useBriefBell } from "./useBriefBell";
@@ -58,6 +59,7 @@ interface Props {
 export function Sidebar({ data, initials, displayName, officeName, email, alerts, userId, holidays }: Props) {
   const path = usePathname();
   const sp = useSearchParams();
+  const router = useRouter();
   const { drawer, setDrawer, setFull, openThread } = useShell();
   const { focusComposer } = useDraft();
   const [query, setQuery] = useState("");
@@ -69,7 +71,10 @@ export function Sidebar({ data, initials, displayName, officeName, email, alerts
   const { items: briefItems, opened } = useBriefBell(userId, path);
   const brief = briefItems[0];
   const caseId = path.match(/^\/cases\/([^/]+)/)?.[1] ?? null;
-  const onNav = activeNav(path);
+  // the clicked nav item is active at once (not when the page arrives); it is only valid for the address it was clicked on
+  const address = `${path}?${sp.toString()}`;
+  const [clicked, setClicked] = useState<{ at: string; href: string } | null>(null);
+  const onNav = clicked?.at === address ? clicked.href : activeNav(path);
   /** a general chat keeps its open session when the lawyer moves between the nav pages (a case's sessions are its own) */
   const general = !caseId && !/^\/clients\/[^/]+/.test(path) ? sp.get("s") : null;
   const navHref = (href: string) => (general ? `${href}?s=${general}` : href);
@@ -156,10 +161,11 @@ export function Sidebar({ data, initials, displayName, officeName, email, alerts
             const badge = href === AGENDA && alerts > 0 ? alerts : 0;
             return (
               <li key={href} className="relative">
-                <Link href={navHref(href)} onClick={showPage} aria-current={on ? "page" : undefined} title={text}
+                <Link href={navHref(href)} onClick={() => { showPage(); setClicked({ at: address, href }); }} aria-current={on ? "page" : undefined} title={text}
                   className={cx(row, "relative h-control px-3 text-base", railCenter, on ? "side-on font-semibold" : "font-medium", badge > 0 && "pe-12 rail:pe-0")}>
                   <Icon aria-hidden size={17} strokeWidth={1.8} className="shrink-0" />
                   <span className={cx("flex-1", label)}>{text}</span>
+                  <LinkPending />
                 </Link>
                 {/* the count is its own link (a link cannot sit inside a link): it opens the agenda's «محتاجة قرار» tab */}
                 {badge ? (
@@ -175,7 +181,7 @@ export function Sidebar({ data, initials, displayName, officeName, email, alerts
         <div className="mt-1 flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-2.5 pb-3">
           <div className="flex items-center justify-between px-2.5 pb-1.5 pt-3.5 rail:hidden">
             <Link href="/cases" onClick={showPage} className="tap text-sm font-bold text-text-3">القضايا</Link>
-            <Link href={`/?s=new&q=${encodeURIComponent("افتح قضية جديدة: ")}`} onClick={showPage} className="tap text-sm text-text-3 hover:text-text">+ جديدة</Link>
+            <Link href={`/?s=new&q=${encodeURIComponent("افتح قضية جديدة: ")}`} prefetch={false} onClick={showPage} className="tap text-sm text-text-3 hover:text-text">+ جديدة</Link>
           </div>
 
           {/* full list (288 and the drawer) */}
@@ -186,6 +192,7 @@ export function Sidebar({ data, initials, displayName, officeName, email, alerts
               return (
                 <li key={c.id}>
                   <button type="button" aria-expanded={open} onClick={() => setToggled((t) => ({ ...t, [c.id]: !open }))}
+                    onPointerEnter={() => { if (!open) router.prefetch(`/cases/${c.id}`); }}
                     className={cx(row, "w-full px-2.5 py-2 text-start", here && "bg-border-2")}>
                     <ChevronDown aria-hidden size={13} strokeWidth={2.2} className={cx("shrink-0 text-text-4 transition-transform", !open && "rotate-90")} />
                     <span className="min-w-0 flex-1 leading-[1.35]">
@@ -203,14 +210,14 @@ export function Sidebar({ data, initials, displayName, officeName, email, alerts
                       </li>
                       {c.sessions.map((s) => (
                         <li key={s.id}>
-                          <Link href={sessionHref(c.id, s.id)} aria-current={sessionOn(c.id, s.id) ? "true" : undefined}
+                          <Link href={sessionHref(c.id, s.id)} prefetch={false} aria-current={sessionOn(c.id, s.id) ? "true" : undefined}
                             className={cx(row, "px-2.5 py-1.5 text-sm", sessionOn(c.id, s.id) && "side-on")}>
                             <MessageSquare aria-hidden size={13} strokeWidth={1.8} className="shrink-0" />
                             <span className="min-w-0 truncate">{sessionLabel(s)}</span>
                           </Link>
                         </li>
                       ))}
-                      <li><Link href={`/cases/${c.id}?s=new`} className="tap block px-2.5 py-1.5 text-sm text-text-4 hover:text-text">+ محادثة جديدة</Link></li>
+                      <li><Link href={`/cases/${c.id}?s=new`} prefetch={false} className="tap block px-2.5 py-1.5 text-sm text-text-4 hover:text-text">+ محادثة جديدة</Link></li>
                     </ul>
                   ) : null}
                 </li>
@@ -236,14 +243,14 @@ export function Sidebar({ data, initials, displayName, officeName, email, alerts
           <ul className="flex flex-col gap-px rail:hidden">
             {generalSessions.map((s) => (
               <li key={s.id}>
-                <Link href={sessionHref(null, s.id)} aria-current={sessionOn(null, s.id) ? "true" : undefined}
+                <Link href={sessionHref(null, s.id)} prefetch={false} aria-current={sessionOn(null, s.id) ? "true" : undefined}
                   className={cx(row, "px-2.5 py-1.5 text-sm", sessionOn(null, s.id) && "side-on")}>
                   <MessageSquare aria-hidden size={13} strokeWidth={1.8} className="shrink-0" />
                   <span className="min-w-0 truncate">{sessionLabel(s)}</span>
                 </Link>
               </li>
             ))}
-            <li><Link href="/?s=new" onClick={showPage} className="tap block px-2.5 py-1.5 text-sm text-text-4 hover:text-text">+ محادثة جديدة</Link></li>
+            <li><Link href="/?s=new" prefetch={false} onClick={showPage} className="tap block px-2.5 py-1.5 text-sm text-text-4 hover:text-text">+ محادثة جديدة</Link></li>
           </ul>
         </div>
 

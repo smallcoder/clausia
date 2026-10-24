@@ -9,6 +9,7 @@ export type SlotSearch = { s?: string; hearing?: string; q?: string };
 export async function ChatSlot({ path, searchParams }: { path?: string[]; searchParams: Promise<SlotSearch> }) {
   const sp = await searchParams;
   const db = await createClient();
-  const s = await getSession(db);
-  return <ChatPanel data={await loadPanel(db, path, sp, s ? { userId: s.user.id, displayName: s.displayName } : null)} />;
+  // who is asking is only needed for the general context's brief: it is read beside the panel's own reads, not before them
+  const who = getSession(db).then((s) => (s ? { userId: s.user.id, displayName: s.displayName } : null)).catch(() => null);
+  return <ChatPanel data={await loadPanel(db, path, sp, who)} />;
 }

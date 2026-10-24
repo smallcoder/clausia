@@ -452,6 +452,11 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-even
   background-size: 200% 100%; background-attachment: fixed; animation: skel-sweep 1.8s ease-in-out infinite;
 }
 
+/* Pending link (shell/LinkPending): a small dot that pulses while the clicked link's page is on its way; it waits 100ms so an instant navigation never shows it (no spinner) */
+@keyframes link-pending-in { to { opacity: 0.55; } }
+.link-pending { flex: none; width: 6px; height: 6px; border-radius: 9999px; background: currentColor; opacity: 0; visibility: hidden; }
+.link-pending.is-pending { visibility: visible; animation: link-pending-in 150ms ease 100ms forwards, skeleton-pulse 1.2s ease-in-out 250ms infinite; }
+
 /* Bottom sheet */
 @keyframes sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
