@@ -21,7 +21,9 @@ import { findSpan } from "@/lib/quote-match";
 import { cairoDateOf, resolveRelativeDays, type RelativeDay } from "@/lib/relative-days";
 import type { Db } from "@/lib/supabase/server";
 import { isReadTool, READ_TOOL_SPECS, runReadTool } from "@/lib/tools/read";
-import { isInternalTool, isWriteTool, OP_TITLE, WRITE_TOOL_ARGS, writeToolSpecs } from "@/lib/tools/registry";
+import { prepareEdit } from "@/lib/draft/edit";
+import type { DraftBody } from "@/lib/library/types";
+import { isInternalTool, isWriteTool, OP_TITLE, WRITE_TOOL_ARGS, writeToolSpecs, type WriteArgs } from "@/lib/tools/registry";
 import { askContextBlock, type AskItem } from "./ask";
 import type { ChatMode } from "./modes";
 import { buildSystemPrompt, type CaseContext, type ClientContext } from "./prompt";
@@ -202,6 +204,7 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }, clock: 
     const results = new Map<string, unknown>();
     const drafts: { call: LlmToolCall; op: DraftOp }[] = [];
     const refsInCard = new Set<string>();
+    const editedDrafts = new Map<string, DraftBody>(); // a draft as it stands after the changes already proposed in this card
 
     for (const call of calls) {
       if (isReadTool(call.name)) {
@@ -266,11 +269,23 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }, clock: 
       }
       // a draft: the CODE fills the template from the case file (the model only picked the template and the case); the grounds / requests
       // are accepted only when the lawyer asked for them in his own words (this message and the two before it), and carry no number of the model's own
+      // the lawyer's own words that count for a grounds / a change: this message and the two before it, but only in a case's session (a general session mixes cases: #202)
+      const askedIn = thread.case_id ? recentLawyerTexts(text, userMsg.id, lawyer) : [text];
       let draft: DraftOp["draft"];
       if (call.name === "create_draft") {
-        const prep = await draftFromCall(db, call.args, recentLawyerTexts(text, userMsg.id, lawyer));
+        const prep = await draftFromCall(db, call.args, askedIn);
         if (!prep.ok) { results.set(call.id, { error: prep.error }); continue; }
         draft = prep.draft;
+      }
+      // a change to a saved draft (PR 7b): checked against the draft as it stands after the earlier changes of THIS card; a locked span, words that are not
+      // there, a citation not on the paper's page, an article or number nobody gave: refused here and the model is told why. Nothing is saved before the tap.
+      let edit: DraftOp["edit"];
+      if (call.name === "edit_draft") {
+        const a = parsed.data as WriteArgs<"edit_draft">;
+        const prep = await prepareEdit(db, a, askedIn, thread.case_id, editedDrafts.get(a.draft));
+        if (!prep.ok) { results.set(call.id, { error: prep.error }); continue; }
+        editedDrafts.set(a.draft, prep.body);
+        edit = prep.edit;
       }
       const ref = call.args.ref;
       if (typeof ref === "string" && ref) refsInCard.add(ref);
@@ -279,6 +294,7 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }, clock: 
         op: {
           ...(hint ? { hint } : {}),
           ...(draft ? { draft } : {}),
+          ...(edit ? { edit } : {}),
           tool: call.name, args, source: sourceOf((call.args.quote as string | undefined) ?? null, text, userMsg.id, docPages),
           resolved_from: fromRelativeWords(call.args, [text, ...sourceTexts], resolved),
         },
@@ -286,7 +302,7 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }, clock: 
     }
 
     if (drafts.length) {
-      const caseId = thread.case_id ?? firstCaseUuid(drafts.map((x) => x.op));
+      const caseId = thread.case_id ?? firstCaseUuid(drafts.map((x) => x.op)) ?? drafts.find((x) => x.op.edit)?.op.edit?.case ?? null;
       onStep?.(CARD_STEP);
       try {
         const proposal: Proposal = await createProposal(db, { threadId: thread.id, messageId: am.id, caseId, ops: drafts.map((x) => x.op), sourceTexts: [...sourceTexts, text] });

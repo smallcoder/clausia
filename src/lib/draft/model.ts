@@ -145,6 +145,11 @@ export function replaceRange(b: DraftBlock, from: number, to: number, insert: st
 const sliceMarks = (marks: Mark[] | undefined, from: number, to: number): Mark[] =>
   (marks ?? []).filter((m) => m.s < to && m.e > from).map((m) => ({ ...m, s: Math.max(m.s, from) - from, e: Math.min(m.e, to) - from }));
 
+/** a piece of a block (its text and the marks inside it), for drawing a block in parts around a tracked change */
+export function sliceBlock(b: DraftBlock, from: number, to: number): DraftBlock {
+  return normalizeBlock({ ...b, text: b.text.slice(from, to), marks: sliceMarks(b.marks, from, to) });
+}
+
 /** Enter inside a block: the text before `at` stays, the rest becomes the next block (a lawyer section can not be split) */
 export function splitBlock(b: DraftBlock, at: number): [DraftBlock, DraftBlock] | null {
   if (b.t === "lawyer") return null;

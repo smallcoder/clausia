@@ -10,6 +10,7 @@ import { DraftEditor } from "@/components/draft/DraftEditor";
 import { ImportWord } from "@/components/draft/ImportWord";
 import { DateText } from "@/components/ui";
 import type { CaseFile } from "@/lib/case-file";
+import type { PendingChange } from "@/lib/draft/pending";
 import type { VersionRow } from "@/lib/draft/store";
 import { DOC_TYPE } from "@/lib/labels";
 import type { DraftFull, DraftSummary } from "@/lib/library/list";
@@ -19,8 +20,8 @@ import type { OfficeStyle } from "@/lib/word/office-style";
  * `drafts`: the case's drafts from the library, newest first; `draft`: the one opened with `?draft=` (the editor, PR 7) with its `versions` and the office's
  * paper (`style`, null = none yet).
  */
-export function MemosTab({ cf, caseId, drafts = [], draft = null, style = null, versions = [], word = false }: { cf: CaseFile; caseId: string; drafts?: DraftSummary[]; draft?: DraftFull | null; style?: OfficeStyle | null; versions?: VersionRow[]; word?: boolean }) {
-  if (draft) return <DraftEditor draft={draft} caseId={caseId} clientName={cf.client?.name ?? null} style={style} versions={versions} word={word} />;
+export function MemosTab({ cf, caseId, drafts = [], draft = null, style = null, versions = [], changes = [], word = false }: { cf: CaseFile; caseId: string; drafts?: DraftSummary[]; draft?: DraftFull | null; style?: OfficeStyle | null; versions?: VersionRow[]; changes?: PendingChange[]; word?: boolean }) {
+  if (draft) return <DraftEditor draft={draft} caseId={caseId} clientName={cf.client?.name ?? null} style={style} versions={versions} changes={changes} word={word} />;
   const docs = memoDocs(cf);
   const judgments = cf.judgments.length + cf.pending_suggestions.filter((p) => p.table === "judgments").length;
   if (!docs.length && !judgments && !drafts.length) {

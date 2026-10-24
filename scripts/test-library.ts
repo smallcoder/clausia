@@ -233,6 +233,10 @@ const ARGS = { template: TPL, case: CASE, quote: "عايز مذكرة بدفاع
   if (ok.ok) eq(ok.fill.lawyer.map((l) => l.state), ["needs_confirmation", "empty"], "…marked «needs confirmation»; the requests stay empty");
   const num = await prepareDraft(db, { template: TPL, case: CASE, grounds: "طبقا للمادة 227 مرافعات" }, ["اكتبلي الأسباب"]);
   check(!num.ok && /227/.test(num.error), "drafted text with an article number nobody said → refused", !num.ok ? num.error.slice(0, 60) : "");
+  const word = await prepareDraft(db, { template: TPL, case: CASE, grounds: "طبقا للمادة الخامسة من القانون" }, ["اكتبلي الأسباب"]);
+  check(!word.ok && /مكتوبين بالحروف/.test(word.error), "drafted text with a SPELLED-OUT article («المادة الخامسة») nobody said → refused (#202)", !word.ok ? word.error.slice(0, 70) : "");
+  const wordSaid = await prepareDraft(db, { template: TPL, case: CASE, grounds: "طبقا للمادة الخامسة من القانون" }, ["اكتبلي الأسباب وفيها المادة الخامسة"]);
+  check(wordSaid.ok, "…but the lawyer's own spelled-out article is allowed");
   const said = await prepareDraft(db, { template: TPL, case: CASE, grounds: "طبقا للمادة 227 مرافعات" }, ["اكتبلي الأسباب وفيها المادة 227"]);
   check(said.ok, "…but the lawyer's own number is allowed");
   const fileNum = await prepareDraft(db, { template: TPL, case: CASE, grounds: "في الدعوى 8833 لسنة 2024" }, ["اكتبلي الأسباب"]);

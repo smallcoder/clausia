@@ -17,7 +17,7 @@ import type { Applied } from "@/lib/tools/apply";
 export const STALE = "المسودة اتغيّرت من مكان تاني. افتحها تاني وكمّل من آخر نسخة.";
 export type VersionKind = "original" | "save" | "accept" | "restore" | "import";
 
-export interface DraftRow { id: string; case_id: string; title: string; body: DraftBody; fill: DraftFill; updated_at: string; created_at: string }
+export interface DraftRow { id: string; case_id: string; title: string; body: DraftBody; fill: DraftFill; updated_at: string; created_at: string; template_id: string | null }
 
 function must<R extends { data: unknown; error: { message: string } | null }>(r: R): NonNullable<R["data"]> {
   if (r.error) throw new Error(r.error.message);
@@ -27,7 +27,7 @@ function must<R extends { data: unknown; error: { message: string } | null }>(r:
 
 /** One draft this lawyer can read (RLS), its body checked. */
 export async function loadDraftRow(db: Db, id: string): Promise<DraftRow> {
-  const { data, error } = await db.from("drafts").select("id, case_id, title, body, fill, updated_at, created_at").eq("id", id).neq("review_status", "rejected").maybeSingle();
+  const { data, error } = await db.from("drafts").select("id, case_id, title, body, fill, updated_at, created_at, template_id").eq("id", id).neq("review_status", "rejected").maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) throw new Error("المسودة غير موجودة");
   return { ...data, body: parseBody(data.body), fill: data.fill as unknown as DraftFill };

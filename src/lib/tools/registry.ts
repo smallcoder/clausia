@@ -226,6 +226,36 @@ export const WRITE_TOOL_ARGS = {
     storage_path: z.string().regex(/^[0-9a-f-]{36}\/templates\/[0-9a-f-]{36}\/[A-Za-z0-9._-]+\.docx$/i),
     body: z.object({ version: z.literal(1), blocks: z.array(z.unknown()).max(200) }).passthrough(), // checked again against the template shape in applyOp
   }),
+  // A change to a saved draft (PR 7b, «اسأل Clausia»): ONE change per call, shown to the lawyer as a tracked change (old text struck through, new text in gold,
+  // ✓ / ×). Nothing in the draft changes until he taps ✓. The model points at a block by its id (from get_draft) and gives the exact old words; code finds
+  // them, refuses a change that touches quoted (locked) text, and writes nothing itself. A ruling or an article is added ONLY with `cite`: code reads the
+  // paper's page and takes the words from it (the model's own wording of a quotation is never used).
+  edit_draft: z.object({
+    draft: z.string().uuid().describe("معرف المسودة (من get_draft أو list_drafts)"),
+    kind: z.enum(["replace", "add"]).describe("replace = استبدال نص في فقرة (old_text ← new_text؛ new_text فاضي = حذف). add = فقرة جديدة بعد الفقرة block."),
+    block: z.string().min(1).max(24).describe("معرف الفقرة من get_draft (replace: الفقرة اللي فيها النص. add: الفقرة اللي هتتحط بعدها الفقرة الجديدة)"),
+    old_text: z.string().max(4000).optional().describe("replace فقط: النص القديم بالحرف كما في get_draft، ومرة واحدة بس في الفقرة (طوّله لو بيتكرر). ممنوع يلمس نص مقتبس (locked)."),
+    new_text: z.string().max(4000).optional().describe("replace: النص الجديد. add: نص الفقرة الجديدة (من غير cite). بلا أرقام مواد أو أحكام أو تواريخ من عندك."),
+    style: z.enum(["p", "h"]).optional().describe("add فقط: فقرة (p) أو عنوان (h)"),
+    cite: z.object({
+      document: z.string().uuid().describe("المستند من أوراق القضية"),
+      page: z.number().int().min(1).describe("رقم الصفحة"),
+      quote: z.string().min(2).max(2000).describe("النص بالحرف من صفحة المستند: الكود هو اللي بياخد النص من الورقة"),
+    }).optional().describe("add فقط: إضافة نص حرفي (مادة أو حكم أو اقتباس) من ورقة في القضية. بدون cite ممنوع تكتب رقم مادة أو حكم. لو ملقيتش، متضيفش حاجة وقول للمحامي بوضوح."),
+    label: z.string().min(1).max(30).describe("كلمة واحدة أو اتنين للتعديل: ترتيب / صياغة / إضافة / حذف"),
+    why: z.string().min(2).max(200).describe("جملة قصيرة بتقول ليه التعديل ده"),
+    quote,
+  }).superRefine((a, ctx) => {
+    if (a.kind === "replace") {
+      if (!a.old_text?.trim()) ctx.addIssue({ code: "custom", path: ["old_text"], message: "replace محتاج old_text" });
+      if (a.new_text === undefined) ctx.addIssue({ code: "custom", path: ["new_text"], message: "replace محتاج new_text (فاضي = حذف)" });
+      if (a.cite) ctx.addIssue({ code: "custom", path: ["cite"], message: "cite للإضافة (add) بس" });
+    } else {
+      if (!a.new_text?.trim() && !a.cite) ctx.addIssue({ code: "custom", path: ["new_text"], message: "add محتاج new_text أو cite" });
+      if (a.new_text?.trim() && a.cite) ctx.addIssue({ code: "custom", path: ["cite"], message: "إما new_text أو cite" });
+      if (a.old_text) ctx.addIssue({ code: "custom", path: ["old_text"], message: "old_text للاستبدال بس" });
+    }
+  }),
   // The draft editor (PR 7). The three below are the LAWYER's own acts in the editor (his save, a restored version, a Word file opened as a draft): saved by
   // the server actions through applyOp with MANUAL provenance; the model never makes them (INTERNAL_TOOLS). The body is checked again by `parseBody`.
   save_draft: z.object({
@@ -281,6 +311,7 @@ export const WRITE_TOOL_DESCRIPTIONS: Record<WriteTool, string> = {
   add_deadline: "ميعاد طعن (استئناف / نقض) يحسبه الكود من نص المادة بعد تسجيل حكم. يصنعه الكود فقط.",
   set_office_style: "ورق المكتب: الرأس والتذييل والخط والهوامش من ملف Word رفعه المحامي. يحفظه الكود فقط.",
   add_office_template: "صيغة مكتب من ملف Word رفعه المحامي. يحفظها الكود فقط.",
+  edit_draft: "اقتراح تعديل واحد في مسودة محفوظة (استبدال نص أو إضافة فقرة). بيظهر للمحامي كتعديل متتبَّع (القديم مشطوب والجديد بالذهبي)، ولا حاجة بتتغير في المسودة إلا لما يضغط ✓. النص المقتبس (المقفول) مبيتعدلش أبدًا. أي مادة أو حكم بتضيفه لازم يكون من ورقة في القضية (cite).",
   save_draft: "حفظ المحامي لمسودته من المحرر (نسخة جديدة في السجل). يحفظها الكود فقط.",
   restore_draft_version: "استرجاع نسخة قديمة من مسودة كنسخة جديدة. يحفظها الكود فقط.",
   import_draft: "فتح ملف Word رفعه المحامي كمسودة لقضية. يحفظها الكود فقط.",
@@ -314,6 +345,7 @@ export const OP_TITLE: Record<WriteTool, string> = {
   create_draft: "مسودة من صيغة",
   set_office_style: "ورق المكتب",
   add_office_template: "صيغة المكتب",
+  edit_draft: "تعديل في المسودة",
   save_draft: "حفظ المسودة",
   restore_draft_version: "استرجاع نسخة",
   import_draft: "مسودة من ملف Word",
@@ -444,6 +476,7 @@ export const OP_FIELDS: Record<WriteTool, FieldSpec[]> = {
   create_draft: [], // drawn by DraftCard, not as fields
   set_office_style: [], // the lawyer's own upload: never a card
   add_office_template: [],
+  edit_draft: [], // drawn by DraftEditCard (and as tracked changes in the editor), not as fields
   save_draft: [], // the lawyer's own act in the editor: never a card
   restore_draft_version: [],
   import_draft: [],

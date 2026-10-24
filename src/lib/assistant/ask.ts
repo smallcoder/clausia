@@ -17,12 +17,14 @@ export const ASK_KIND = {
   argument: "دفع / دفاع",
   hearing: "جلسة",
   document: "مستند",
+  /** the draft open in the editor (PR 7b), or a selection in it (`field` = the block's id) */
+  draft: "مسودة",
 } as const;
 export type AskKind = keyof typeof ASK_KIND;
 
 /** The chip's first word (the chip reads «الواقعة · 15/3/2026 · إنذار على يد محضر…»). */
 export const ASK_CHIP_WORD: Record<AskKind, string> = {
-  field: "البيان", summary: "الملخص", fact: "الواقعة", party: "الطرف", request: "الطلب", argument: "الدفع", hearing: "الجلسة", document: "المستند",
+  field: "البيان", summary: "الملخص", fact: "الواقعة", party: "الطرف", request: "الطلب", argument: "الدفع", hearing: "الجلسة", document: "المستند", draft: "المسودة",
 };
 
 export interface AskItem {
@@ -54,7 +56,7 @@ export function cleanAsk(raw: unknown): AskItem[] {
     const { kind, id, label, field } = x as Record<string, unknown>;
     if (typeof kind !== "string" || !(kind in ASK_KIND) || typeof id !== "string" || !UUID.test(id)) continue;
     const item: AskItem = { kind: kind as AskKind, id: id.toLowerCase(), label: cleanLabel(label) };
-    if (typeof field === "string" && /^[a-z_]{1,24}$/.test(field)) item.field = field;
+    if (typeof field === "string" && /^[a-z0-9_]{1,24}$/i.test(field)) item.field = field;
     if (out.some((o) => askKey(o) === askKey(item))) continue;
     out.push(item);
     if (out.length === MAX_ASK) break;
@@ -71,9 +73,9 @@ export const askKey = (i: Pick<AskItem, "kind" | "id" | "field">) => `${i.kind}:
 export function askContextBlock(items: AskItem[], caseId?: string | null): string | null {
   if (!items.length) return null;
   const lines = items.map((i) => {
-    const where = i.kind === "hearing" ? `list_hearings(case_id)` : i.kind === "document" ? `get_document_text(document_id = ${i.id})` : `get_case(case_id)`;
-    const ref = i.kind === "field" || i.kind === "summary" ? `case_id = ${i.id}` : `id = ${i.id}`;
-    const f = i.field ? `، الخانة = ${i.field}` : "";
+    const where = i.kind === "hearing" ? `list_hearings(case_id)` : i.kind === "document" ? `get_document_text(document_id = ${i.id})` : i.kind === "draft" ? `get_draft(draft_id = ${i.id})` : `get_case(case_id)`;
+    const ref = i.kind === "field" || i.kind === "summary" ? `case_id = ${i.id}` : i.kind === "draft" ? `draft_id = ${i.id}` : `id = ${i.id}`;
+    const f = i.field ? (i.kind === "draft" ? `، الفقرة = ${i.field}` : `، الخانة = ${i.field}`) : "";
     return `- ${ASK_KIND[i.kind]} (${ref}${f}) «${i.label}» ← اقرأه بـ ${where}`;
   });
   return [
