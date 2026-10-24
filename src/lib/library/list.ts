@@ -57,17 +57,20 @@ export async function listDrafts(db: Db, caseId: string): Promise<DraftSummary[]
   });
 }
 
-export interface DraftFull extends DraftSummary { body: DraftBody; fill: DraftFill }
+/** `own_template`: made from the lawyer's own Word template (its file keeps its formatting; the office paper does not apply) */
+export interface DraftFull extends DraftSummary { body: DraftBody; fill: DraftFill; own_template: boolean }
 
 /** One draft of this case (null when it is not here or not visible). */
 export async function getDraft(db: Db, caseId: string, id: string): Promise<DraftFull | null> {
-  const { data, error } = await db.from("drafts").select("id, title, template_name, needs_lawyer_review, created_at, body, fill")
+  const { data, error } = await db.from("drafts").select("id, title, template_name, needs_lawyer_review, created_at, body, fill, template_id")
     .eq("case_id", caseId).eq("id", id).neq("review_status", "rejected").maybeSingle();
   if (error) throw new Error(`drafts: ${error.message}`);
   if (!data) return null;
   const body = data.body as unknown as DraftBody;
   const fill = data.fill as unknown as DraftFill;
+  const own = data.template_id ? (await db.from("templates").select("storage_path").eq("id", data.template_id).maybeSingle()).data?.storage_path : null;
   return {
+    own_template: !!own,
     id: data.id, title: data.title, template_name: data.template_name, needs_lawyer_review: data.needs_lawyer_review, created_at: data.created_at, body, fill,
     open_spots: (fill.missing?.length ?? 0) + (fill.lawyer?.filter((l) => l.state === "empty").length ?? 0),
   };

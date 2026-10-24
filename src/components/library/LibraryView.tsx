@@ -9,6 +9,7 @@
 import { ChevronLeft, FileText, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useId, useMemo, useRef, useState } from "react";
+import { UploadTemplate } from "@/components/library/UploadTemplate";
 import { cx } from "@/components/ui";
 import { OFFICE_TEMPLATES_LABEL, TEMPLATE_CATEGORY } from "@/lib/labels";
 import type { TemplateRow } from "@/lib/library/list";
@@ -55,11 +56,14 @@ export function LibraryView({ templates, cases }: { templates: TemplateRow[]; ca
       <header className="flex flex-wrap items-center gap-x-5 gap-y-3 pt-3 sm:pt-13">
         <h1 className="text-xl font-bold leading-[1.1] text-title sm:text-page-title">المكتبة</h1>
         {tab === "templates" ? (
-          <label className="focus-host ms-auto flex h-11 w-full min-w-0 items-center gap-2 rounded-full border border-border-2 bg-field px-4 text-text-3 sm:w-80">
-            <Search aria-hidden size={16} strokeWidth={1.8} className="shrink-0" />
-            <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="دوّر في الصيغ…" aria-label="دوّر في الصيغ"
-              className="bare-field min-w-0 flex-1 bg-transparent text-base text-text placeholder:text-text-3" />
-          </label>
+          <div className="flex w-full min-w-0 flex-wrap items-center gap-3 sm:ms-auto sm:w-auto sm:flex-nowrap">
+            <UploadTemplate />
+            <label className="focus-host flex h-11 min-w-0 flex-1 items-center gap-2 rounded-full border border-border-2 bg-field px-4 text-text-3 sm:w-80 sm:flex-none">
+              <Search aria-hidden size={16} strokeWidth={1.8} className="shrink-0" />
+              <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="دوّر في الصيغ…" aria-label="دوّر في الصيغ"
+                className="bare-field min-w-0 flex-1 bg-transparent text-base text-text placeholder:text-text-3" />
+            </label>
+          </div>
         ) : null}
       </header>
 

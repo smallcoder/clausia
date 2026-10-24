@@ -8,7 +8,7 @@
  *   below 1280: a side drawer (≡ in the chat header), solid, over a dim layer.
  * Data comes from the layout (lib/sidebar.ts); the open session comes from the chat panel through the shell context.
  */
-import { Bell, BookOpen, CalendarDays, CalendarOff, ChevronDown, FolderClosed, House, LogOut, MessageSquare, Search, Users } from "lucide-react";
+import { Bell, BookOpen, CalendarDays, CalendarOff, ChevronDown, FileText, FolderClosed, House, LogOut, MessageSquare, Search, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -275,7 +275,9 @@ export function Sidebar({ data, initials, displayName, officeName, email, alerts
                 </Link>
               ) : null}
               <Soon>الفريق</Soon>
-              <Soon>ورق المكتب</Soon>
+              <Link href="/settings/office-style" onClick={() => { setMenu(false); showPage(); }} className={menuRow}>
+                <FileText size={16} strokeWidth={1.9} aria-hidden /> ورق المكتب
+              </Link>
               <form action="/auth/signout" method="post">
                 <button className={cx(menuRow, "w-full")}><LogOut size={16} strokeWidth={1.9} aria-hidden /> تسجيل الخروج</button>
               </form>

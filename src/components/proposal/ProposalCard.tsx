@@ -77,6 +77,8 @@ function kindOf(o: ProposalOp): string {
     case "record_movement": return a.kind === "expense" ? "مصروف" : "استلام";
     case "set_case_fee": return "الأتعاب";
     case "create_draft": return "مسودة"; // drawn by DraftCard
+    case "set_office_style": return "ورق المكتب";
+    case "add_office_template": return "صيغة";
   }
 }
 
@@ -100,6 +102,7 @@ function summaryOf(o: ProposalOp, lookup: Record<string, string> = {}): string {
     case "record_movement": return [a.amount && formatEgp(parseAmount(String(a.amount)) ?? 0), a.method && MONEY_METHOD[a.method as keyof typeof MONEY_METHOD], a.note].filter(Boolean).join(" · ");
     case "set_case_fee": return a.kind === "open" ? "مفتوحة (بلا مبلغ)" : a.amount ? formatEgp(parseAmount(String(a.amount)) ?? 0) : "";
     case "create_draft": return "مسودة"; // drawn by DraftCard
+    case "set_office_style": case "add_office_template": return "";
   }
 }
 
@@ -250,7 +253,7 @@ export function ProposalCard({ proposal: initial, lookup = {}, rows = {} }: {
   }
 
   // a card made only of drafts is drawn by DraftCard (the fill card of the library); the tap and the undo toast stay here
-  if (isDraftCard(p)) return <DraftCard proposal={p} pending={pending} error={error} onDecide={(mode, opIds) => decide(mode, opIds)} />;
+  if (isDraftCard(p)) return <DraftCard proposal={p} pending={pending} error={error} onDecide={(mode, opIds) => decide(mode, opIds)} downloadHref={(id) => `/api/drafts/${id}/docx`} />;
 
   const toggle = (id: string) => setExpanded((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   /** «عدّل» opens every open row and the footer's second line; «اقفل» closes both. On mobile it opens the sheet. */

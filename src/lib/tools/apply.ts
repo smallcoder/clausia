@@ -8,7 +8,7 @@ import { buildDeadlines } from "@/lib/deadlines/service";
 import { parseAmount } from "@/lib/money";
 import type { Db } from "@/lib/supabase/server";
 import type { Database, Json } from "@/lib/db/types";
-import { buildDraft } from "@/lib/library/make";
+import { buildDraft, TemplateBodySchema } from "@/lib/library/make";
 import { WRITE_TOOL_ARGS, type WriteArgs, type WriteTool } from "./registry";
 
 type E = Database["public"]["Enums"];
@@ -102,7 +102,7 @@ function must<R extends { data: unknown; error: { message: string } | null }>(r:
 /** Puts the database back as it was before one applied op (a card is saved all or nothing). */
 export type Undo = () => Promise<void>;
 
-type Table = "clients" | "cases" | "case_parties" | "case_facts" | "case_requests" | "case_arguments" | "hearings" | "judgments" | "doc_columns" | "doc_column_cells" | "case_deadlines" | "documents" | "case_fees" | "account_movements" | "drafts";
+type Table = "clients" | "cases" | "case_parties" | "case_facts" | "case_requests" | "case_arguments" | "hearings" | "judgments" | "doc_columns" | "doc_column_cells" | "case_deadlines" | "documents" | "case_fees" | "account_movements" | "drafts" | "templates" | "office_style";
 const del = (db: Db, table: Table, id: string): Undo => async () => { must(await db.from(table).delete().eq("id", id).select("id")); };
 
 /**
@@ -387,6 +387,30 @@ async function applyOpRaw(db: Db, tool: WriteTool, rawArgs: unknown, p: Provenan
         review_status: p.review_status, created_by_kind: p.created_by_kind, source_kind: p.source_kind, source_message_id: p.source_message_id ?? null,
       }).select("id").single());
       return { id: row.id, undo: del(db, "drafts", row.id), steps: rm("drafts", row.id) };
+    }
+    case "set_office_style": {
+      const x = a as WriteArgs<"set_office_style">;
+      // one row per office (RLS shows this office's row only): a new style replaces the old one in place; the undo puts the old file and summary back
+      const cur = (await db.from("office_style").select("id, file_name, storage_path, style, updated_at").maybeSingle()).data;
+      const style = x.style as unknown as Json;
+      if (!cur) {
+        const row = must(await db.from("office_style").insert({ file_name: x.file_name, storage_path: x.storage_path, style }).select("id").single());
+        return { id: row.id, undo: del(db, "office_style", row.id), steps: rm("office_style", row.id) };
+      }
+      const before = { file_name: cur.file_name, storage_path: cur.storage_path, style: cur.style, updated_at: cur.updated_at };
+      must(await db.from("office_style").update({ file_name: x.file_name, storage_path: x.storage_path, style, updated_at: new Date().toISOString() }).eq("id", cur.id).select("id").single());
+      return { id: cur.id, undo: async () => { must(await db.from("office_style").update(before).eq("id", cur.id).select("id").single()); }, steps: [back("office_style", cur.id, before)] };
+    }
+    case "add_office_template": {
+      const x = a as WriteArgs<"add_office_template">;
+      // the body is data from a file: its shape is checked here, not trusted
+      const body = TemplateBodySchema.safeParse(x.body);
+      if (!body.success) throw new Error("شكل الصيغة غير مفهوم");
+      if (!body.data.blocks.length) throw new Error("مفيش نص في الملف ده");
+      const row = must(await db.from("templates").insert({
+        office_id: x.office, name: x.name, category: x.category, description: x.description?.trim() ?? "", body: body.data as unknown as Json, storage_path: x.storage_path, needs_lawyer_review: false,
+      }).select("id").single());
+      return { id: row.id, undo: del(db, "templates", row.id), steps: rm("templates", row.id) };
     }
     case "add_deadline": {
       const x = a as WriteArgs<"add_deadline">;

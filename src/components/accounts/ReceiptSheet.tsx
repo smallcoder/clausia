@@ -18,11 +18,14 @@ export interface Receipt {
   about: string;
   note: string | null;
   backHref: string;
+  /** the office's own paper («ورق المكتب», PR 6b), read from the Word file the lawyer gave: its header and footer lines and its font. Absent = the plain layout. */
+  paper?: { header: string[]; footer: string[]; font: string | null } | null;
 }
 
 /**
  * «إيصال استلام»: the paper. The toolbar (back, print) is hidden in print; the paper is drawn as ink on white in either theme (globals.css `.receipt-paper`).
- * The office's own style (letterhead, logo, serial number) comes with PR 6: this is the plain layout.
+ * With the office's own paper («ورق المكتب», PR 6b): its header lines on top, its footer lines at the bottom and its font; without: the plain layout.
+ * (The letterhead picture and the serial numbers stay in Word and in a later step.)
  */
 export function ReceiptSheet({ r }: { r: Receipt }) {
   const rows: [string, React.ReactNode][] = [
@@ -40,7 +43,13 @@ export function ReceiptSheet({ r }: { r: Receipt }) {
         </Link>
         <PrintButton />
       </div>
-      <article className="receipt-paper mx-auto max-w-xl rounded-lg border border-border bg-card px-6 py-8 shadow-card print:max-w-none print:rounded-none print:border-0 print:p-0 print:shadow-none sm:px-10">
+      <article style={r.paper?.font ? { fontFamily: `"${r.paper.font.replace(/"/g, "")}", var(--font-sans)` } : undefined} // the office's own font, read from its Word file
+        className="receipt-paper mx-auto max-w-xl rounded-lg border border-border bg-card px-6 py-8 shadow-card print:max-w-none print:rounded-none print:border-0 print:p-0 print:shadow-none sm:px-10">
+        {r.paper?.header.length ? (
+          <div className="mb-5 border-b border-border-strong pb-4 text-center" aria-label="رأس ورق المكتب">
+            {r.paper.header.map((l, i) => <p key={i} className={i === 0 ? "text-lg font-bold text-title" : "text-base text-text-3"}>{l}</p>)}
+          </div>
+        ) : null}
         <header className="flex items-start justify-between gap-4 border-b border-border-strong pb-5">
           <div>
             <p className="text-md font-semibold text-text-3">{r.office}</p>
@@ -60,6 +69,11 @@ export function ReceiptSheet({ r }: { r: Receipt }) {
           <div><div className="h-10 border-b border-border-strong" /><p className="mt-2">المستلم</p></div>
           <div><div className="h-10 border-b border-border-strong" /><p className="mt-2">التوقيع</p></div>
         </div>
+        {r.paper?.footer.length ? (
+          <div className="mt-10 border-t border-border-strong pt-3 text-center text-sm text-text-3" aria-label="تذييل ورق المكتب">
+            {r.paper.footer.map((l, i) => <p key={i}>{l}</p>)}
+          </div>
+        ) : null}
       </article>
     </main>
   );

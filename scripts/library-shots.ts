@@ -11,6 +11,11 @@
 //     memos-drafts-<1920|1440>-<t>, m-memos-drafts-390-<t>        a draft listed in the case's «المذكرات والأحكام»
 //     draft-<1920|1440>-<t>, m-draft-390-<t>, draft-asked-1920-<t>   the draft, read only
 //     compare-library-1920-<t>                                   the mockup (docs/design/ia/IALibrary*, rendered to mockups/) next to the build
+//   PR 6b — REAL pages: dialog-upload-1920-<t>, m-dialog-upload-390-<t> («+ ارفع صيغة مكتبك», opened, never submitted); office-style-empty-<1920|1440>-<t>,
+//     m-office-style-empty-390-<t> («ورق المكتب», nothing uploaded yet); account-menu-1920-<t> («ورق المكتب» is a link now).
+//   PR 6b — MOCKED (zz-preview-case ?ask=1, zz-preview-style, zz-preview-receipt, none committed): draft-ask-word-<1920|1440>-<t>, m-draft-ask-word-390-<t> (the
+//     first-time «ارفع ملف Word» prompt), office-style-<1920|1440>-<t>, m-office-style-390-<t>, receipt-<plain|office-paper>-<t>, receipt-office-paper-print.
+//   The exported .docx images (export-*.png) come from scripts/library-docx-shots.ts.
 // Checks (printed): no horizontal scroll at 390 / 1280 / 1440 / 1920, AA contrast of the text on the page, the dialog and the cards.
 // Needs the app running and the mockups rendered (npx tsx scripts/mockup-shots-ia.ts screenshots/library/mockups Library).
 // Run: npx tsx --conditions=react-server --env-file=.env.local scripts/library-shots.ts [baseUrl] [--preview]
@@ -203,6 +208,57 @@ try {
       await ctx.close();
     }
 
+    // ---- 6b, REAL pages: the upload dialog and «ورق المكتب» (the demo office has none yet: the empty state); opened, NEVER submitted ----
+    {
+      const [ctx, page, writes] = await ctxOf(1920, 1080, dark);
+      await go(page, "/library");
+      const base = writes.length;
+      await page.getByRole("button", { name: /ارفع صيغة مكتبك/ }).click();
+      await page.waitForSelector("dialog[open]");
+      await page.waitForTimeout(400);
+      await shot(page, `dialog-upload-1920-${t}`);
+      await contrast(page, "dialog[open]", `upload dialog 1920 ${t}`);
+      await page.keyboard.press("Escape");
+      if (writes.length > base) problems.push(`the upload dialog made a POST while only being opened (${writes.slice(base).join(", ")})`);
+      else console.log("the upload dialog only opened: no POST after the page loaded");
+      await ctx.close();
+    }
+    {
+      const [ctx, page] = await ctxOf(390, 844, dark);
+      await go(page, "/library");
+      await page.getByRole("button", { name: /ارفع صيغة مكتبك/ }).click();
+      await page.waitForSelector("dialog[open]");
+      await page.waitForTimeout(400);
+      await shot(page, `m-dialog-upload-390-${t}`);
+      await contrast(page, "dialog[open]", `m-upload dialog 390 ${t}`);
+      await ctx.close();
+    }
+    for (const [w, h] of [[1920, 1080], [1440, 900]] as const) {
+      const [ctx, page] = await ctxOf(w, h, dark);
+      await go(page, "/settings/office-style");
+      await shot(page, `office-style-empty-${w}-${t}`);
+      await contrast(page, "main#page", `office-style-empty ${w} ${t}`);
+      await noScroll(page, `office-style-empty ${w} ${t}`);
+      await ctx.close();
+    }
+    {
+      const [ctx, page] = await ctxOf(390, 844, dark);
+      await go(page, "/settings/office-style");
+      await shot(page, `m-office-style-empty-390-${t}`);
+      await contrast(page, "main#page", `m-office-style-empty 390 ${t}`);
+      await noScroll(page, `m-office-style-empty 390 ${t}`);
+      await ctx.close();
+    }
+    {
+      // the account menu: «ورق المكتب» is a link now (it said «قريباً»)
+      const [ctx, page] = await ctxOf(1920, 1080, dark);
+      await go(page, "/library");
+      await page.getByRole("button", { name: "الحساب" }).click();
+      await page.waitForTimeout(400);
+      await shot(page, `account-menu-1920-${t}`);
+      await ctx.close();
+    }
+
     if (!PREVIEW) continue;
     // ---- MOCKED render ----
     {
@@ -256,6 +312,59 @@ try {
       await noScroll(page, `draft ${w} ${t}`);
       await ctx.close();
     }
+    // ---- 6b, MOCKED render: the first-time ask, «ورق المكتب» with a style, the receipt on the office's paper ----
+    for (const [w, h] of [[1920, 1400], [1440, 1100]] as const) {
+      const [ctx, page] = await ctxOf(w, h, dark);
+      await go(page, "/zz-preview-case?draft=1&ask=1", "main#page");
+      await shot(page, `draft-ask-word-${w}-${t}`);
+      await contrast(page, "main#page", `draft-ask ${w} ${t}`);
+      await noScroll(page, `draft-ask ${w} ${t}`);
+      await ctx.close();
+    }
+    {
+      const [ctx, page] = await ctxOf(390, 844, dark);
+      await go(page, "/zz-preview-case?draft=1&ask=1&sheet=1", "main#page");
+      await shot(page, `m-draft-ask-word-390-${t}`);
+      await contrast(page, "main#page", `m-draft-ask 390 ${t}`);
+      await noScroll(page, `m-draft-ask 390 ${t}`);
+      await ctx.close();
+    }
+    for (const [w, h] of [[1920, 1080], [1440, 900]] as const) {
+      const [ctx, page] = await ctxOf(w, h, dark);
+      await go(page, "/zz-preview-style", "main#page");
+      await shot(page, `office-style-${w}-${t}`);
+      await contrast(page, "main#page", `office-style ${w} ${t}`);
+      await noScroll(page, `office-style ${w} ${t}`);
+      await ctx.close();
+    }
+    {
+      const [ctx, page] = await ctxOf(390, 844, dark);
+      await go(page, "/zz-preview-style", "main#page");
+      await shot(page, `m-office-style-390-${t}`);
+      await contrast(page, "main#page", `m-office-style 390 ${t}`);
+      await noScroll(page, `m-office-style 390 ${t}`);
+      await ctx.close();
+    }
+    for (const paper of [false, true]) {
+      const [ctx, page] = await ctxOf(1100, 900, dark);
+      await go(page, `/zz-preview-receipt${paper ? "?paper=1" : ""}`, "article");
+      await shot(page, `receipt-${paper ? "office-paper" : "plain"}-${t}`);
+      await contrast(page, "article", `receipt ${paper ? "paper" : "plain"} ${t}`);
+      if (paper && !dark) {
+        await page.emulateMedia({ media: "print" });
+        await page.waitForTimeout(300);
+        await shot(page, "receipt-office-paper-print");
+      }
+      await ctx.close();
+    }
+    {
+      const [ctx, page] = await ctxOf(390, 844, dark);
+      await go(page, "/zz-preview-receipt?paper=1", "article");
+      await shot(page, `m-receipt-office-paper-390-${t}`);
+      await noScroll(page, `m-receipt-paper 390 ${t}`);
+      await ctx.close();
+    }
+
     // mockup next to the build (the mockup is 1920 × 1080)
     {
       const [ctx, page] = await ctxOf(3840, 1080, dark);
