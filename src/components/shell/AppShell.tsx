@@ -1,9 +1,9 @@
 "use client";
 /**
  * The app's layout (docs/design/ia: SBC*, SBF*, MDrawer*, MChat*). No top bar: the logo is in the sidebar.
- *   desktop (1280 and up): one centered frame (max 1800, 20px margins). On the end side (the right) ONE glass surface = the sidebar (264, or 72 as icons
- *   up to 1440) + the chat (480) attached to it with no gap; the page beside it (about 1000 wide). «Full screen» hides the page and the
- *   chat takes the whole frame (its messages column is 760, centered); the choice is remembered per user (ShellContext).
+ *   desktop (1280 and up): one centered frame (max 1800, 20px margins). On the end side (the right) ONE glass surface = the sidebar (288, or 72 as icons
+ *   up to 1440) + the chat (560; 480 beside the icons) attached to it with no gap; the page beside it (about 950 wide at 1920). «Full screen» hides the
+ *   page and the chat takes the whole frame (its messages column is 520, centered); the choice is remembered per user (ShellContext).
  *   below 1280 (phone / tablet): the chat is the whole screen; the sidebar is a side drawer (≡ in the chat header); the page opens as a bottom sheet over the chat.
  * The chat arrives as the @chat slot (it knows the context and the session from the URL); the composer's draft lives here, so it survives moving between pages.
  *
@@ -21,6 +21,7 @@ import { DropProvider } from "@/components/shell/DropZone";
 import { ShellProvider, useShell } from "@/components/shell/ShellContext";
 import { Sidebar } from "@/components/shell/Sidebar";
 import { UndoToastProvider } from "@/components/shell/UndoToast";
+import { useScrollbars } from "@/components/shell/useScrollbars";
 import { cx } from "@/components/ui";
 import type { SideData } from "@/lib/sidebar";
 
@@ -52,6 +53,7 @@ function Frame({ user, side, alerts, holidays, chat, children }: { user: ShellUs
   const path = usePathname();
   const sp = useSearchParams();
   const { full } = useShell();
+  useScrollbars(); // thin scrollbars, shown only while scrolling
   const open = sheetOpen(path, sp);
   return (
     <div className="xl:px-5">

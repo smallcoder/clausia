@@ -9,6 +9,7 @@ import { CalendarDays, File, FolderClosed, Gavel, type LucideIcon } from "lucide
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { DECIDE_HREF } from "@/components/agenda/url";
 import { SourceChip, SourceLabel } from "@/components/cite/SourceChip";
 import { OpenHearing, RollSheet } from "@/components/hearings/RollSheet";
 import { DateText, cx } from "@/components/ui";
@@ -116,7 +117,7 @@ export function MorningBlock({ data }: { data: MorningData }) {
             <h2 className="text-sm font-bold leading-[normal] text-title">{noticedHeading(notices.length)}</h2>
             {notices.map((n) => (n.kind === "hearing_decision" ? <HearingCard key={id(n)} n={n} onIgnore={() => ignore(n)} /> : <ConflictCard key={id(n)} n={n} onIgnore={() => ignore(n)} />))}
             {moreUndecided > 0 ? (
-              <Link href="/agenda?decide=1" className="tap inline-flex w-fit items-center text-sm font-semibold text-text-2 hover:text-text">
+              <Link href={DECIDE_HREF} className="tap inline-flex w-fit items-center text-sm font-semibold text-text-2 hover:text-text">
                 وفيه {nHearings(moreUndecided)} كمان فاتت من غير قرار ←
               </Link>
             ) : null}

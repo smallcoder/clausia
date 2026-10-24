@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>شكل تنبيه القرارات فاتح</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#ECEEF2}
+a{text-decoration:none;color:inherit}
+textarea::placeholder,input::placeholder{color:#9A9EA6}
+button{font:inherit;cursor:pointer}
+</style>
+</helmet>
+<div dir="rtl" style="width: 1100px; height: 600px; position: relative; overflow: hidden; background: radial-gradient(1100px 560px at 75% -15%, rgba(255,255,255,0.95), transparent 65%), radial-gradient(900px 600px at 0% 100%, rgba(214,220,232,0.7), transparent 60%), #ECEEF2; color: #121A2B; font-family: -apple-system, BlinkMacSystemFont, 'SF Arabic', 'SF Pro Text', system-ui, 'Vazirmatn', sans-serif">
+<div style="padding: 40px 50px; display: flex; flex-direction: column; gap: 22px"><div style="border-radius: 24px; padding: 22px 26px; border: 1px dashed rgba(18,26,43,0.06)"><div style="font-size: 14px; font-weight: 700; color: #6A6E76; margin-bottom: 12px">أ · تاب «محتاجة قرار» بالعدد، من غير بانر</div><div style="display: flex; align-items: center; gap: 14px"><h1 style="margin: 0; font-size: 30px; font-weight: 700; color: #0F1626">الأجندة</h1></div><div style="display: flex; gap: 4px; margin-top: 14px; border-bottom: 1px solid rgba(18,26,43,0.06)"><a href="#" style="padding: 10px 14px; font-size: 14.5px; font-weight: 700; color: #0F1626; border-bottom: 2px solid #0F1626; margin-bottom: -1px">الأجندة</a><a href="#" style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; font-size: 14.5px; color: #6A6E76">محتاجة قرار <span style="font-family: -apple-system, 'SF Pro Display', system-ui, 'Inter', sans-serif; font-size: 12px; font-weight: 700; min-width: 22px; height: 22px; padding: 0 7px; border-radius: 11px; background: rgba(137,112,56,0.3); color: #897038; display: inline-flex; align-items: center; justify-content: center">4</span></a></div></div><div style="border-radius: 24px; padding: 22px 26px; border: 1px dashed rgba(18,26,43,0.06)"><div style="font-size: 14px; font-weight: 700; color: #6A6E76; margin-bottom: 12px">ب · كارت هادي من غير إطار، فيه العدد وأقدم جلسة وزرار</div><div style="display: flex; align-items: center; gap: 14px"><h1 style="margin: 0; font-size: 30px; font-weight: 700; color: #0F1626">الأجندة</h1></div><a href="#" style="display: flex; align-items: center; gap: 14px; margin-top: 14px; padding: 14px 18px; border-radius: 18px; background: #FFFFFF; border: 1px solid rgba(18,26,43,0.06); box-shadow: 0 1px 2px rgba(18,26,43,0.04), 0 30px 60px -34px rgba(18,26,43,0.25)"><div style="font-family: -apple-system, 'SF Pro Display', system-ui, 'Inter', sans-serif; font-size: 30px; font-weight: 300; color: #897038; width: 40px; text-align: center">4</div><div style="flex: 1"><div style="font-size: 14.5px; font-weight: 700">جلسات محتاجة قرار</div><div style="font-size: 12.5px; color: #6A6E76">أقدمهم 16/7 · عادل النموذجي</div></div><span style="height: 36px; padding: 0 16px; border-radius: 18px; background: #141C2E; color: #FFFFFF; box-shadow: 0 8px 18px -8px rgba(18,26,43,0.6); display: inline-flex; align-items: center; font-size: 13px; font-weight: 700">سجّلهم</span></a></div><div style="border-radius: 24px; padding: 22px 26px; border: 1px dashed rgba(18,26,43,0.06)"><div style="font-size: 14px; font-weight: 700; color: #6A6E76; margin-bottom: 12px">ج · chip صغيرة جنب العنوان</div><div style="display: flex; align-items: center; gap: 14px"><h1 style="margin: 0; font-size: 30px; font-weight: 700; color: #0F1626">الأجندة</h1><a href="#" style="display: inline-flex; align-items: center; gap: 7px; height: 32px; padding: 0 12px; border-radius: 16px; background: rgba(214,192,143,0.22); color: #897038; font-size: 13px; font-weight: 700"><span style="width: 6px; height: 6px; border-radius: 3px; background: #897038"></span>4 محتاجة قرار</a></div></div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","options":["#D6C08F","#C9D1D9","#BCD0C3"],"default":"#D6C08F"},"$preview":{"width":1100,"height":600}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var accent = this.props.accent ?? '#D6C08F';
+    var dark = false;
+    var gold = dark ? accent : '#897038';
+    var hair = dark ? 'rgba(255,255,255,0.06)' : 'rgba(18,26,43,0.06)';
+    var fg = dark ? '#ECEDF0' : '#121A2B', sub = dark ? '#8C909A' : '#6A6E76';
+    var today = [
+      { circuit: '7', title: 'كريم المثالي — صحة ونفاذ عقد بيع', meta: 'استئناف القاهرة · الدور 4 · قاعة 12', need: 'الاطلاع والمذكرات' },
+      { circuit: '5', title: 'منى الافتراضية — فصل تعسفي', meta: 'الجيزة الابتدائية · الدور 2', need: 'تقرير الخبير' },
+      { circuit: '3', title: 'عادل النموذجي — إخلاء لعدم سداد الأجرة', meta: 'شمال القاهرة الابتدائية · العباسية', need: 'أصل عقد الإيجار' }
+    ];
+    var cs = [
+      ['عادل النموذجي — إخلاء لعدم سداد الأجرة', '772 لسنة 2025', 'شمال القاهرة الابتدائية · الدائرة 3 إيجارات', '5/11', ''],
+      ['كريم المثالي — صحة ونفاذ عقد بيع', '8833 لسنة 2024', 'استئناف القاهرة · الدائرة 7 مدني', 'النهارده', 'today'],
+      ['منى الافتراضية — فصل تعسفي', '1290 لسنة 2025', 'الجيزة الابتدائية · الدائرة 5 عمال', 'النهارده', 'today'],
+      ['شركة المثال للتجارة — مديونية توريدات', '2207 لسنة 2025', 'المحكمة الاقتصادية بالقاهرة · الدائرة 4', 'بكرة', ''],
+      ['هالة الافتراضية — نفقة زوجية وصغار', '315 لسنة 2025', 'أسرة مصر الجديدة · الدائرة 2', 'بكرة', ''],
+      ['ياسر النموذجي — فرز وتجنيب', '98 لسنة 2026', 'حلوان الجزئية · الدائرة 2 مدني', '—', 'decide'],
+      ['طارق الاختباري — إلغاء قرار نقل', '6610 لسنة 2025', 'القضاء الإداري بالقاهرة · الدائرة 1', '12/11', 'reserved'],
+      ['نادية التجريبية — طعن بالنقض في حكم ريع', '11873 لسنة 2023', 'محكمة النقض · الدائرة المدنية', '25/10', ''],
+      ['حسام الافتراضي — تعويض عن حادث سيارة', '3021 لسنة 2025', 'جنوب القاهرة الابتدائية · الدائرة 9', '—', 'decide'],
+      ['سامح التجريبي — صحة توقيع', '4512 لسنة 2024', 'شمال القاهرة الابتدائية · الدائرة 6', '9/11', '']
+    ];
+    var cases = cs.map(function (c, i) {
+      var st = c[4];
+      return { title: c[0], number: c[1], court: c[2], next: c[3],
+        nextColor: st === 'today' ? fg : (st === 'decide' ? gold : sub), nextWeight: st === 'today' ? 700 : 500,
+        hasTag: st === 'decide' || st === 'reserved', tag: st === 'decide' ? 'محتاجة قرار' : 'محجوزة للحكم',
+        tagColor: st === 'decide' ? gold : sub, tagDot: st === 'decide' ? gold : sub,
+        line: i < cs.length - 1 ? '1px solid ' + hair : '0' };
+    });
+    var timeline = [
+      { date: '1/9/2022', text: 'حرّر الموكل عقد إيجار للشقة رقم 12 بمدينة نصر لمدة سنة تتجدد تلقائيًا.', source: 'الصحيفة · ص 2 · مؤكدة', suggested: false },
+      { date: 'يناير 2026', text: 'امتنع المستأجر عن سداد الأجرة الشهرية اعتبارًا من يناير 2026.', source: 'من رسالتك · مؤكدة', suggested: false },
+      { date: '15/3/2026', text: 'أنذر المستأجر على يد محضر بسداد المتأخر خلال خمسة عشر يومًا.', source: 'الإنذار · ص 1', suggested: true }
+    ].map(function (x, i, a) { return Object.assign({}, x, { dot: x.suggested ? gold : sub, notLast: i < a.length - 1 }); });
+    var parties = [
+      { name: 'عادل النموذجي', role: 'موكلنا · مدعٍ', ours: true },
+      { name: 'وليد التجريبي', role: 'الخصم · مدعى عليه', ours: false },
+      { name: 'أ. سامح الافتراضي', role: 'محامي الخصم', ours: false }
+    ].map(function (x, i, a) { return Object.assign({}, x, { line: i < a.length - 1 ? '1px solid ' + hair : '0', roleColor: x.ours ? gold : sub }); });
+    var docs = [{ name: 'صحيفة الدعوى', meta: '4 صفحات · اتقرت' }, { name: 'عقد الإيجار', meta: 'صفحتين · اتقرت' }, { name: 'الإنذار', meta: 'صفحة · اتقرت' }]
+      .map(function (x, i, a) { return Object.assign({}, x, { line: i < a.length - 1 ? '1px solid ' + hair : '0' }); });
+    var items = [
+      { kind: 'الموكلة', text: 'رانيا التجريبية · 01000000123', source: 'من رسالتك', quote: '' },
+      { kind: 'الدعوى', text: 'إخلاء لعدم سداد الأجرة · مدعية', source: 'الصحيفة · ص 1', quote: '' },
+      { kind: 'المحكمة', text: 'شمال القاهرة الابتدائية · الدائرة 3', source: 'الصحيفة · ص 1', quote: '' },
+      { kind: 'الخصم', text: 'كمال الافتراضي · مدعى عليه', source: 'الصحيفة · ص 1', quote: '' },
+      { kind: 'واقعة', text: '1/9/2022 · تحرير عقد إيجار الشقة', source: 'الصحيفة · ص 2', quote: '«بموجب عقد إيجار مؤرخ 1/9/2022 استأجر المدعى عليه الشقة…»' },
+      { kind: 'الطلبات', text: 'إخلاء العين وتسليمها خالية', source: 'الصحيفة · ص 4', quote: '' }
+    ].map(function (x, i, a) { return Object.assign({}, x, { hasQuote: !!x.quote, line: i < a.length - 1 ? '1px solid ' + hair : '0' }); });
+    var segOn = dark ? 'background: #26314B; color: #FFFFFF; box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 6px 14px -6px rgba(0,0,0,0.6)' : 'background: #141C2E; color: #FFFFFF; box-shadow: 0 8px 16px -8px rgba(18,26,43,0.55)';
+    var days = [['السبت', '17', '1'], ['الأحد', '18', '1'], ['الاثنين', '19', '2'], ['الثلاثاء', '20', '3'], ['الأربعاء', '21', '2'], ['الخميس', '22', '1']].map(function (d, i) {
+      var on = i === 3;
+      return { name: d[0], num: d[1], count: d[2] + ' جلسة', style: on ? segOn : 'background: transparent; color: ' + fg, countColor: on ? 'rgba(255,255,255,0.7)' : sub, nameColor: on ? 'rgba(255,255,255,0.8)' : sub };
+    });
+    var courts = [
+      { court: 'محكمة استئناف القاهرة', place: 'الدور 4 · قاعة 12', circuit: '7', title: 'كريم المثالي — صحة ونفاذ عقد بيع', number: '8833 لسنة 2024', need: 'الاطلاع والمذكرات' },
+      { court: 'محكمة الجيزة الابتدائية', place: 'الدور 2', circuit: '5', title: 'منى الافتراضية — فصل تعسفي', number: '1290 لسنة 2025', need: 'تقرير الخبير' },
+      { court: 'شمال القاهرة الابتدائية', place: 'العباسية', circuit: '3', title: 'عادل النموذجي — إخلاء لعدم سداد الأجرة', number: '772 لسنة 2025', need: 'أصل عقد الإيجار' }
+    ];
+    return { accent: accent, timeline: timeline, parties: parties, docs: docs, items: items, days: days, courts: courts, today: today.map(function (x, i) { return Object.assign({}, x, { line: i < today.length - 1 ? '1px solid ' + hair : '0' }); }), cases: cases };
+  }
+}
+</script>
+</body>
+</html>

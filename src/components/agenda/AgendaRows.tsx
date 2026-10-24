@@ -1,7 +1,8 @@
 /**
  * One day's hearings (docs/design/ia/IAAgenda*, MAgenda*): grouped by court building (the court, with the floor / hall where it is
- * known), and inside each group in circuit order. Row columns: الدائرة · رقم الدعوى · الموكل ضد الخصم · المطلوب.
- * A row opens the case's hearings tab. No decision inputs here: a past hearing without a decision is recorded one by one (DecisionFlow).
+ * known, and the count), and inside each group in circuit order. Each court card reads top to bottom: the court's line, the column names
+ * (الدائرة · رقم الدعوى · الموكل ضد الخصم · المطلوب), then the rows. There is no shared header above the cards.
+ * A row opens the case's hearings tab. No decision inputs here: a past hearing without a decision is recorded in the «محتاجة قرار» tab (DecideList).
  * No hooks, so it renders on either side.
  *
  * Building / floor / hall: only `hearings.location` as written in a paper or said by the lawyer ("الدور 4 · قاعة 12", "العباسية"); a court with
@@ -36,16 +37,17 @@ export function agendaGroups(rows: HearingWithCase[]): { key: string; court: str
   }));
 }
 
-/** The column names above the cards (desktop only). */
-export function AgendaColumns() {
+/** The column names inside a court card, between its line and its rows (desktop only). */
+function Columns() {
   return (
-    <div aria-hidden className={cx("hidden gap-x-4 pb-2.5 pt-1 text-sm text-text-3 sm:grid", GRID, PAD)}>
+    <div aria-hidden className={cx("hidden gap-x-4 pb-2.5 text-sm text-text-3 sm:grid", GRID, PAD)}>
       <span>الدائرة</span><span>رقم الدعوى</span><span>الموكل ضد الخصم</span><span>المطلوب</span>
     </div>
   );
 }
 
-function Sides({ h }: { h: HearingWithCase }): ReactNode {
+/** «client ضد opponent» (the client alone when no opponent is saved; the case's title when there is no client). Also the «محتاجة قرار» rows. */
+export function Sides({ h }: { h: HearingWithCase }): ReactNode {
   const { client_name: client, opponent } = h.case;
   if (!client) return hearingTitle(h);
   return opponent ? <>{client} <span className="font-normal text-text-3">ضد</span> {opponent}</> : client;
@@ -83,14 +85,15 @@ export function AgendaGroups({ rows }: { rows: HearingWithCase[] }) {
     <div className="space-y-3.5 sm:space-y-4">
       {agendaGroups(rows).map((g) => (
         <section key={g.key} aria-label={g.court} className="overflow-hidden rounded-xl border border-border-2 bg-card shadow-card">
-          <div className={cx("flex items-baseline justify-between gap-3 border-b border-border-2 py-3.5", PAD)}>
+          <div className={cx("flex items-baseline justify-between gap-3 pb-2 pt-3.5 sm:pb-1", PAD)}>
             <h3 className="min-w-0 truncate text-md font-bold text-text">
               {g.court}
               {g.place ? <span className="ms-2.5 text-sm font-normal text-text-3">{g.place}</span> : null}
             </h3>
             <span className="hidden shrink-0 text-sm text-text-3 sm:inline">{nHearings(g.items.length)}</span>
           </div>
-          <ul className="divide-y divide-border-2">
+          <Columns />
+          <ul className="divide-y divide-border-2 border-t border-border-2">
             {g.items.map((h) => <li key={h.id}><AgendaRow h={h} /></li>)}
           </ul>
         </section>

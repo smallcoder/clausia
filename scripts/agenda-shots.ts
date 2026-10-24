@@ -1,8 +1,8 @@
-// Screenshots + checks of the agenda (PR 2 of the restructure) → screenshots/agenda/ (read only: no model call, no database write; the decision flow is only opened).
-//   <day|week|month|flow>-<1920|1440>-<light|dark>   the page with the sidebar and the chat
-//   m-<day|week|month|flow>-390-<light|dark>          the phone (the page is a sheet over the chat)
+// Screenshots + checks of the agenda (PR 2 of the restructure) → screenshots/agenda/ (read only: no model call, no database write; the «محتاجة قرار» tab is only opened).
+//   <day|week|month|decide>-<1920|1440>-<light|dark>   the page with the sidebar and the chat
+//   m-<day|week|month|decide>-390-<light|dark>          the phone (the page is a sheet over the chat)
 //   compare-day-1920-<t>, compare-m-day-390-<t>        the mockup (docs/design/ia/IAAgenda*, MAgenda*, rendered to mockups/) next to the build
-// Checks (printed): no horizontal scroll at 390 / 1280 / 1440 / 1600 / 1920 (day, week, month, flow open), AA contrast of the agenda's text (and the flow's),
+// Checks (printed): no horizontal scroll at 390 / 1280 / 1440 / 1600 / 1920 (day, week, month, decide), AA contrast of the agenda's text (and the tab's),
 // the redirects of the old addresses, the chat panel beside the page.
 // Needs the app running and the mockups rendered (npx tsx scripts/mockup-shots-ia.ts screenshots/agenda/mockups Agenda).
 // Run: npx tsx --conditions=react-server --env-file=.env.local scripts/agenda-shots.ts [baseUrl] [dd/mm/yyyy of the day to shoot]
@@ -45,7 +45,7 @@ const shot = (page: Page, name: string) => page.screenshot({ path: `${OUT}/${nam
 const theme = (d: boolean) => (d ? "dark" : "light");
 const problems: string[] = [];
 
-const VIEWS: [string, string][] = [["day", `/agenda?view=day&date=${DAY}`], ["week", `/agenda?view=week&date=${DAY}`], ["month", `/agenda?view=month&date=${DAY}`], ["flow", `/agenda?decide=1&date=${DAY}`]];
+const VIEWS: [string, string][] = [["day", `/agenda?view=day&date=${DAY}`], ["week", `/agenda?view=week&date=${DAY}`], ["month", `/agenda?view=month&date=${DAY}`], ["decide", "/agenda?tab=decide"]];
 
 // ---- contrast: the text colour against the pixels behind it (the text is made transparent, the page shot again, the median colour under each text box) ----
 const lum = (c: number[]) => { const f = (v: number) => { const x = v / 255; return x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4; }; return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); };
@@ -113,7 +113,7 @@ try {
         const [ctx, page] = await ctxOf(w, h, dark);
         await go(page, path);
         await shot(page, `${name}-${w}-${t}`);
-        if (w === 1920) await contrast(page, name === "flow" ? "[role='dialog']" : "main#page", `${name} ${w} ${t}`);
+        if (w === 1920) await contrast(page, "main#page", `${name} ${w} ${t}`);
         await ctx.close();
       }
     }
@@ -121,7 +121,7 @@ try {
       const [ctx, page] = await ctxOf(390, 844, dark);
       await go(page, path);
       await shot(page, `m-${name}-390-${t}`);
-      await contrast(page, name === "flow" ? "[role='dialog']" : "main#page", `m-${name} 390 ${t}`);
+      await contrast(page, "main#page", `m-${name} 390 ${t}`);
       await ctx.close();
     }
   }
@@ -160,7 +160,7 @@ try {
   // ---- the old addresses go to the agenda, and the chat panel is beside it ----
   {
     const [ctx, page] = await ctxOf(1440, 900, false);
-    for (const [from, want] of [["/hearings", /^\/agenda$/], ["/hearings?view=week&date=20/10/2026", /^\/agenda\?view=week&date=20\/10\/2026$/], ["/hearings?filter=undecided", /^\/agenda\?decide=1$/]] as const) {
+    for (const [from, want] of [["/hearings", /^\/agenda$/], ["/hearings?view=week&date=20/10/2026", /^\/agenda\?view=week&date=20\/10\/2026$/], ["/hearings?filter=undecided", /^\/agenda\?tab=decide$/]] as const) {
       await page.goto(`${BASE}${from}`, { waitUntil: "load", timeout: 120_000 });
       const u = new URL(page.url());
       const got = decodeURIComponent(u.pathname + u.search);

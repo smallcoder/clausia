@@ -1,8 +1,9 @@
 "use client";
 /**
- * The agenda (الأجندة, replaces the Roll; mockups docs/design/ia/IAAgenda*, MAgenda*): the title row (day / week / month switch, month arrows,
- * «النهارده»), the day strip (the Roll's RollStrip, one continuous strip, a dot per hearing), ONE slim line for past hearings that still need a
- * decision (it opens DecisionFlow), then the day: its deadlines (flag-gated, as before) and its hearings by court building and circuit.
+ * The agenda (الأجندة, replaces the Roll; mockups docs/design/ia/IAAgenda*, MAgenda*, BannerOpts* option A): the title, two tabs — «الأجندة» and
+ * «محتاجة قرار» (its count in a small gold pill; ?tab=decide) — and under «الأجندة» the title row's controls (day / week / month switch, month arrows,
+ * «النهارده»), the day strip (the Roll's RollStrip, one continuous strip, a dot per hearing), then the day: its deadlines (flag-gated, as before) and its
+ * hearings by court building and circuit. «محتاجة قرار» is DecideList: every past hearing with no decision, each recorded inside its row.
  *
  * - The server page renders the first view with the rows for the chosen week ±SSR weeks (SSR, deep links, refresh).
  * - While the strip scrolls, the days in view ±3 weeks are loaded through hearingsRangeAction (RLS-bound), a few weeks per call, before they
@@ -10,17 +11,19 @@
  * - Selecting a day / view updates the URL with history.pushState (?view=day|week|month&date=d/m/yyyy; other params such as the chat's ?s= are kept);
  *   back / forward restore it without a server round-trip.
  * - The content changes with a 200ms crossfade and a slight slide in the direction of travel (none with prefers-reduced-motion).
+ * - The tabs are links too: history.pushState to ?tab=decide / the day's address; back / forward restore the tab.
  * - When the server renders again (a decision recorded → revalidatePath), its rows replace the cache for its range and every other week
- *   is marked stale and read again when it comes into view.
+ *   is marked stale and read again when it comes into view. The saved row has already left the «محتاجة قرار» list by then (decide.ts).
  */
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { AgendaColumns, AgendaGroups } from "@/components/agenda/AgendaRows";
-import { DecisionFlow } from "@/components/agenda/DecisionFlow";
+import { AgendaGroups } from "@/components/agenda/AgendaRows";
+import { DecideList, type Saved } from "@/components/agenda/DecideList";
+import { stillWaiting, waitingCount } from "@/components/agenda/decide";
 import { monthBounds, MonthGrid, shiftMonth } from "@/components/agenda/MonthGrid";
-import { AGENDA, agendaHref, type AgendaView as View } from "@/components/agenda/url";
+import { AGENDA, agendaHref, DECIDE_HREF, tabOf, type AgendaTab, type AgendaView as View } from "@/components/agenda/url";
 import { DeadlineRows } from "@/components/hearings/DeadlineRows";
 import { hearingsRangeAction } from "@/components/hearings/actions";
 import { reducedMotion, RollStrip, stripRange, type SelectHow } from "@/components/hearings/RollStrip";
@@ -49,10 +52,10 @@ function readUrl(search: string | URLSearchParams, today: string): Sel {
   const v = sp.get("view");
   return { date: p?.precision === "day" ? p.iso : today, view: v === "week" || v === "month" ? v : "day" };
 }
-/** the address bar for a selection: view and date set, the chat's session and anything else kept, the decision flow's flag dropped */
+/** the address bar for a selection: view and date set, the chat's session and anything else kept, the tab's flags dropped */
 function urlFor(s: Sel): string {
   const rest = new URLSearchParams(window.location.search);
-  for (const k of ["view", "date", "decide"]) rest.delete(k);
+  for (const k of ["view", "date", "tab", "decide"]) rest.delete(k);
   return `${agendaHref(s.date, s.view)}${rest.size ? `&${rest}` : ""}`; // the date is written as the lawyer reads it (d/m/yyyy), like every link to the agenda
 }
 
@@ -91,14 +94,12 @@ interface Props {
   rows: HearingWithCase[];
   /** saved appeal deadlines for the same range (the server's first render); none with the flag off */
   deadlines?: RollDeadline[];
-  /** past hearings with no decision: how many, and the oldest ones for the one-by-one flow */
+  /** past hearings with no decision: how many, and the oldest ones for the «محتاجة قرار» tab */
   undecided: number;
   undecidedRows: HearingWithCase[];
-  /** ?decide=1: the flow is open on load */
-  openFlow: boolean;
 }
 
-export function AgendaView({ today, from, to, rows, deadlines = [], undecided, undecidedRows, openFlow }: Props) {
+export function AgendaView({ today, from, to, rows, deadlines = [], undecided, undecidedRows }: Props) {
   const sp = useSearchParams();
   const [cache] = useState(() => { const c = new Cache(); c.put(from, to, rows, deadlines); return c; });
   const [ver, setVer] = useState(0);
@@ -106,7 +107,9 @@ export function AgendaView({ today, from, to, rows, deadlines = [], undecided, u
   const [center, setCenter] = useState(() => weekStart(readUrl(sp, today).date));
   const [pinned, setPinned] = useState(() => new Set(weekdayOf(sel.date) === 5 ? [sel.date] : []));
   const [leaving, setLeaving] = useState<{ sel: Sel; dir: number; key: number } | null>(null);
-  const [flow, setFlow] = useState(openFlow && undecidedRows.length > 0);
+  const [tab, setTab] = useState<AgendaTab>(() => tabOf(sp));
+  /** the hearings whose decision was saved in this visit: they leave the «محتاجة قرار» list at once, before the page is read again */
+  const [saved, setSaved] = useState<Saved[]>([]);
   const lastHow = useRef<SelectHow | "history" | null>(null);
   const visible = useRef({ first: center, last: addDaysIso(center, 6) });
   const selRef = useRef(sel);
@@ -199,7 +202,10 @@ export function AgendaView({ today, from, to, rows, deadlines = [], undecided, u
 
   // back / forward: the URL is the truth (read it from location — a late useSearchParams update must not undo a newer tap)
   useEffect(() => {
-    if (window.location.pathname === AGENDA) change(readUrl(window.location.search, today), "history");
+    if (window.location.pathname !== AGENDA) return;
+    const t = tabOf(new URLSearchParams(window.location.search));
+    setTab(t);
+    if (t === "agenda") change(readUrl(window.location.search, today), "history");
   }, [sp, today, change]);
 
   useEffect(() => {
@@ -216,11 +222,20 @@ export function AgendaView({ today, from, to, rows, deadlines = [], undecided, u
     change(s, "tap");
   };
 
-  const closeFlow = useCallback(() => {
-    setFlow(false);
-    const u = new URL(window.location.href);
-    if (u.searchParams.has("decide")) { u.searchParams.delete("decide"); window.history.replaceState(null, "", u); }
-  }, []);
+  /** a tab: the address is `?tab=decide` or the selected day's, and the chat's session is kept */
+  const tabHref = (t: AgendaTab) => (t === "decide" ? DECIDE_HREF : agendaHref(sel.date, sel.view));
+  const pickTab = (t: AgendaTab) => (e: React.MouseEvent) => {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+    e.preventDefault();
+    if (t === tab) return;
+    const keep = new URLSearchParams(window.location.search);
+    for (const k of ["view", "date", "tab", "decide"]) keep.delete(k);
+    window.history.pushState(null, "", `${tabHref(t)}${keep.size ? `&${keep}` : ""}`);
+    setTab(t);
+  };
+
+  const waiting = stillWaiting(undecidedRows, new Set(saved.map((s) => s.id)));
+  const waitingTotal = waitingCount(undecided, undecidedRows, new Set(saved.map((s) => s.id)));
 
   // ---- derived ----------------------------------------------------------------------------------------------------
   const counts = useMemo(() => {
@@ -256,51 +271,65 @@ export function AgendaView({ today, from, to, rows, deadlines = [], undecided, u
     </div>
   );
 
+  const onAgenda = tab === "agenda";
+  const tabs: [AgendaTab, string][] = [["agenda", "الأجندة"], ["decide", "محتاجة قرار"]];
+
   return (
     <>
       <TitleRow className="flex items-end justify-between gap-4 px-1 pt-3 leading-[normal] sm:justify-start sm:gap-5">
         <PageTitle className="min-w-0">الأجندة</PageTitle>
-        {switcher}
-        {arrows("hidden sm:flex")}
-        <a href={agendaHref(today, view)} onClick={select({ date: today, view })}
-          className="tap hidden h-chip items-center rounded-full border border-border bg-chip px-3.75 text-sm font-semibold text-text shadow-soft transition hover:bg-card-2 sm:inline-flex">النهارده</a>
+        {onAgenda ? switcher : null}
+        {onAgenda ? arrows("hidden sm:flex") : null}
+        {onAgenda ? (
+          <a href={agendaHref(today, view)} onClick={select({ date: today, view })}
+            className="tap hidden h-chip items-center rounded-full border border-border bg-chip px-3.75 text-sm font-semibold text-text shadow-soft transition hover:bg-card-2 sm:inline-flex">النهارده</a>
+        ) : null}
       </TitleRow>
-      {view === "month" ? arrows("mt-3 flex justify-center sm:hidden") : null}
 
-      {view === "month" ? null : (
-        <RollStrip key={center} center={center} selected={view === "day" ? date : null} focusDay={view === "day" ? date : wk}
-          today={today} counts={counts} pinned={pinned} onSelect={onSelect} onWeekStep={view === "week" ? onWeekStep : undefined} onVisible={onVisible} />
-      )}
+      {/* the two tabs (links, so they open in a new tab too); the count of «محتاجة قرار» is a small gold pill */}
+      <nav aria-label="أقسام الأجندة" className="mt-3.5 flex gap-1 border-b border-border-2 px-1">
+        {tabs.map(([t, name]) => {
+          const on = t === tab;
+          return (
+            <a key={t} href={tabHref(t)} onClick={pickTab(t)} aria-current={on ? "page" : undefined}
+              className={cx("tap -mb-px flex items-center gap-2 border-b-2 px-3.5 py-2.5 text-md transition", on ? "border-title font-bold text-title" : "border-transparent text-text-3 hover:text-text")}>
+              {name}
+              {t === "decide" && waitingTotal > 0 ? (
+                <span className="font-num inline-flex h-5.5 min-w-5.5 items-center justify-center rounded-full bg-gold-bg px-1.75 text-xs font-bold text-gold-text-small">
+                  <span className="sr-only">العدد </span>{waitingTotal}
+                </span>
+              ) : null}
+            </a>
+          );
+        })}
+      </nav>
 
-      {undecided > 0 && undecidedRows.length ? (
-        <button type="button" onClick={() => setFlow(true)} aria-haspopup="dialog"
-          className="tap mt-4 flex w-full items-center justify-between gap-3 rounded-xl border border-gold-edge px-4 py-2.5 text-start text-base leading-[normal] transition hover:bg-gold-bg sm:mt-5 sm:px-5">
-          <span className="flex min-w-0 items-center gap-2.5 text-text-2">
-            <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-gold" />
-            <span className="min-w-0">
-              <b className="font-bold text-gold-on-ambient">{nHearings(undecided)} فاتت</b> لسه قرارها متسجلش
-            </span>
-          </span>
-          <span className="inline-flex shrink-0 items-center gap-1 font-bold text-gold-on-ambient">
-            <span className="hidden sm:inline">سجّلها واحدة واحدة</span><span className="sm:hidden">سجّلها</span>
-            <ChevronLeft size={16} strokeWidth={1.9} aria-hidden />
-          </span>
-        </button>
-      ) : null}
+      {onAgenda ? (
+        <>
+          {view === "month" ? arrows("mt-3 flex justify-center sm:hidden") : null}
 
-      <div className="mt-5 sm:mt-6">
-        {/* both layers sit in one grid cell while the old one fades out */}
-        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)]" data-roll-content>
-          {leaving ? (
-            <div key={`out-${leaving.key}`} inert aria-hidden className="roll-out pointer-events-none [grid-area:1/1]" style={slide(leaving.dir)}>{layer(leaving.sel)}</div>
-          ) : null}
-          <div key={`${view}:${date}`} className={cx("min-w-0 [grid-area:1/1]", leaving && "roll-in")} style={leaving ? slide(leaving.dir) : undefined} data-roll-day={date}>
-            {layer(sel)}
+          {view === "month" ? null : (
+            <RollStrip key={center} center={center} selected={view === "day" ? date : null} focusDay={view === "day" ? date : wk}
+              today={today} counts={counts} pinned={pinned} onSelect={onSelect} onWeekStep={view === "week" ? onWeekStep : undefined} onVisible={onVisible} />
+          )}
+
+          <div className="mt-5 sm:mt-6">
+            {/* both layers sit in one grid cell while the old one fades out */}
+            <div className="grid min-w-0 grid-cols-[minmax(0,1fr)]" data-roll-content>
+              {leaving ? (
+                <div key={`out-${leaving.key}`} inert aria-hidden className="roll-out pointer-events-none [grid-area:1/1]" style={slide(leaving.dir)}>{layer(leaving.sel)}</div>
+              ) : null}
+              <div key={`${view}:${date}`} className={cx("min-w-0 [grid-area:1/1]", leaving && "roll-in")} style={leaving ? slide(leaving.dir) : undefined} data-roll-day={date}>
+                {layer(sel)}
+              </div>
+            </div>
           </div>
+        </>
+      ) : (
+        <div className="mt-5 sm:mt-6">
+          <DecideList rows={waiting} total={waitingTotal} saved={saved.slice(-3)} onSaved={(s) => setSaved((xs) => [...xs, s])} />
         </div>
-      </div>
-
-      {flow ? <DecisionFlow rows={undecidedRows} onClose={closeFlow} /> : null}
+      )}
     </>
   );
 }
@@ -334,7 +363,6 @@ function Content({ s, today, cache, counts, select }: { s: Sel; today: string; c
     if (!days.length) return <Empty>مفيش جلسات الأسبوع ده. الجلسات بتظهر هنا لما تضيفها في ملف الدعوى، أو لما تقول لـ Clausia عليها.</Empty>;
     return (
       <div className="space-y-7">
-        {weekRows.length ? <AgendaColumns /> : null}
         {days.map((d) => {
           const day = cache.day(d);
           return (
@@ -362,10 +390,7 @@ function Content({ s, today, cache, counts, select }: { s: Sel; today: string; c
       <h2 className="sr-only"><DateText value={dayName(date, today)} /></h2>
       <DeadlineRows rows={cache.deadlines(date)} today={today} />
       {dayRows.length ? (
-        <>
-          <AgendaColumns />
-          <AgendaGroups rows={dayRows} />
-        </>
+        <AgendaGroups rows={dayRows} />
       ) : cache.deadlines(date).length ? null : (
         <Empty>
           مفيش جلسات {date === today ? "النهارده" : <>يوم <DateText value={dayName(date, today)} /></>}.

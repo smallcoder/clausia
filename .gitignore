@@ -15,3 +15,6 @@ screenshots/tmp/
 
 # dry-run reports hold client names: never commit them
 scripts/out/
+
+# the shots script writes a temporary preview page here and deletes it again
+src/app/(app)/zz-preview-decide/

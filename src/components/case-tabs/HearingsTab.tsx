@@ -1,14 +1,14 @@
 // «الجلسات» (?tab=hearings, the dossier's first tab; docs/design/ia/IACase*, MCase*): a table of the case's hearings — date, decision,
 // and the minutes. The next hearing comes first with «الجاية», then the held ones, newest first. A hearing before today with no decision says
-// «القرار متسجلش · سجّله» in gold; «سجّله» opens the decision recorder in place (RecordDecision → recordDecisionAction → applyOp), so
-// nothing is saved without the tap. This tab is the home of hearings and decisions: «أضف جلسة» is its last row.
+// «القرار متسجلش · سجّله» in gold; the link opens the agenda's «محتاجة قرار» tab (/agenda?tab=decide), where the decision is recorded
+// (RecordDecision → recordDecisionAction → applyOp), so nothing is saved without the tap. This tab is the home of hearings and decisions: «أضف جلسة» is its last row.
+import Link from "next/link";
+import { DECIDE_HREF } from "@/components/agenda/url";
 import { SourceChip } from "@/components/cite/SourceChip";
 import type { CiteSource } from "@/components/cite/context";
 import { Change, SuggestedTag, WaitingLine } from "@/components/cases/Suggest";
 import { decisionLine } from "@/components/cases/case-view";
 import { AddHearing } from "@/components/hearings/AddHearing";
-import { DecisionNotices } from "@/components/hearings/DecisionNotices";
-import { RecordDecision } from "@/components/hearings/RecordDecision";
 import { DateText, cx } from "@/components/ui";
 import { formatDmy } from "@/lib/dates";
 import type { PendingEdits } from "@/lib/edits";
@@ -32,7 +32,7 @@ function minutesChip(h: Row, names: Map<string, string>): CiteSource | null {
 /** «الجاية»: the ink pill (champagne frame in dark) */
 const NextPill = () => <span className="pill-on inline-flex h-6 items-center rounded-md px-2.5 text-xs font-bold">الجاية</span>;
 
-function HearingRow({ h, today, next, needed, caseId, names }: { h: Row; today: string; next: boolean; needed: string | null; caseId: string; names: Map<string, string> }) {
+function HearingRow({ h, today, next, needed, names }: { h: Row; today: string; next: boolean; needed: string | null; names: Map<string, string> }) {
   const held = h.hearing_date < today; // the one rule: a hearing dated today is the next one (no «سجّله» until the day is over)
   const minutes = minutesChip(h, names);
   const suggested = h.review_status === "suggested";
@@ -43,7 +43,9 @@ function HearingRow({ h, today, next, needed, caseId, names }: { h: Row; today: 
         {h.decision_type ? (
           <span className="text-text">{decisionLine(h.decision_type, h.decision_text)}</span>
         ) : held ? (
-          <RecordDecision hearingId={h.id} caseId={caseId} hearingDate={h.hearing_date} label={`جلسة ${formatDmy(h.hearing_date)}`} trigger="القرار متسجلش · سجّله" />
+          <Link href={DECIDE_HREF} className="tap inline-flex min-h-8 items-center gap-1.5 text-base font-semibold text-gold hover:underline">
+            <span aria-hidden className="size-dot rounded-full bg-gold" />القرار متسجلش · سجّله
+          </Link>
         ) : (
           <>
             {next ? <NextPill /> : null}
@@ -97,19 +99,17 @@ export async function HearingsTab({ caseId, today, edits }: { caseId: string; to
   return (
     <div className="space-y-4 pb-4">
       {edits ? <Proposed edits={edits} /> : null}
-      <DecisionNotices>
-        <section className="overflow-hidden rounded-xl border border-border-2 bg-card shadow-card" aria-label="الجلسات">
-          <div className="hidden gap-x-4 px-6 py-3 text-sm font-semibold text-text-3 sm:flex">
-            <span className="w-30 shrink-0">التاريخ</span><span className="flex-1">القرار</span><span className="sr-only">المحضر</span>
-          </div>
-          {ordered.length ? (
-            <ol>{ordered.map((h) => <HearingRow key={h.id} h={h} today={today} next={h.id === nextId} needed={needed(h)} caseId={caseId} names={names} />)}</ol>
-          ) : (
-            <p className="border-t border-border-2 px-6 py-5 text-base leading-7 text-text-3">لسه مفيش جلسات متسجلة للقضية دي. أضف أول جلسة بتاريخها، أو قول لـ Clausia ميعادها.</p>
-          )}
-          <div className="border-t border-border-2"><AddHearing caseId={caseId} /></div>
-        </section>
-      </DecisionNotices>
+      <section className="overflow-hidden rounded-xl border border-border-2 bg-card shadow-card" aria-label="الجلسات">
+        <div className="hidden gap-x-4 px-6 py-3 text-sm font-semibold text-text-3 sm:flex">
+          <span className="w-30 shrink-0">التاريخ</span><span className="flex-1">القرار</span><span className="sr-only">المحضر</span>
+        </div>
+        {ordered.length ? (
+          <ol>{ordered.map((h) => <HearingRow key={h.id} h={h} today={today} next={h.id === nextId} needed={needed(h)} names={names} />)}</ol>
+        ) : (
+          <p className="border-t border-border-2 px-6 py-5 text-base leading-7 text-text-3">لسه مفيش جلسات متسجلة للقضية دي. أضف أول جلسة بتاريخها، أو قول لـ Clausia ميعادها.</p>
+        )}
+        <div className="border-t border-border-2"><AddHearing caseId={caseId} /></div>
+      </section>
     </div>
   );
 }

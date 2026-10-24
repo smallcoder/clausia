@@ -2,8 +2,8 @@
 /**
  * A hearing's decision sheet (design v2): a bottom sheet on mobile, a side panel on desktop. A held hearing with no decision gets
  * the «تسجيل القرار» form (RecordDecision → applyOp 'record_decision'); every hearing links to its case. Wrap the page in <RollSheet>;
- * <OpenHearing> is the control that opens it (the chat's morning block). The agenda records decisions one by one (agenda/DecisionFlow)
- * and its rows open the case.
+ * <OpenHearing> is the control that opens it (the chat's morning block). The agenda records decisions in its «محتاجة قرار» tab (agenda/DecideList)
+ * and its other rows open the case.
  */
 import { ChevronLeft, X } from "lucide-react";
 import Link from "next/link";
