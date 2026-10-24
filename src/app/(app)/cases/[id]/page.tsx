@@ -5,6 +5,9 @@
 // Each object has one home: hearings and decisions → «الجلسات»; requests and defenses → «الطلبات والدفوع»; facts and parties → «الوقائع»;
 // documents → «المستندات»; judgments → «المذكرات والأحكام». Edits the chat proposed show in the tab that holds them, and the bar below confirms them.
 import { notFound, redirect } from "next/navigation";
+import { Suspense } from "react";
+import { TabBody, TabsProvider } from "@/components/cases/CaseTabs";
+import { TabBodySkeleton } from "@/components/shell/PageSkeleton";
 import { DocumentsTab } from "@/components/case-tabs/DocumentsTab";
 import { HearingsTab } from "@/components/case-tabs/HearingsTab";
 import { MemosTab } from "@/components/case-tabs/MemosTab";
@@ -61,14 +64,21 @@ export default async function CasePage({ params, searchParams }: { params: Promi
   return (
     <div className="mx-auto flex w-full max-w-page flex-1 flex-col px-4 sm:px-10">
       <CaseHeader cf={cf} caseId={id} hs={hs} today={today} edits={edits} clients={clients} />
-      <CaseTabBar caseId={id} active={active} counts={tabCounts(cf, today, drafts.length)} keep={keep} />
-      <div className="mt-4 sm:mt-5">
-        {active === "hearings" ? <HearingsTab caseId={id} today={today} edits={edits} />
-          : active === "sides" ? <div className="pb-4"><Sides cf={cf} caseId={id} edits={edits} className="" /></div>
-          : active === "facts" ? <div className="space-y-4 pb-4"><Facts cf={cf} caseId={id} edits={edits} /><Parties cf={cf} caseId={id} edits={edits} /></div>
-          : active === "documents" ? <DocumentsTab caseId={id} cf={cf} />
-          : <MemosTab cf={cf} caseId={id} drafts={drafts} draft={openDraft} style={style?.style ?? null} versions={versions} changes={changes} word={sp.word === "1"} />}
-      </div>
+      <TabsProvider active={active}>
+        <CaseTabBar caseId={id} active={active} counts={tabCounts(cf, today, drafts.length)} keep={keep} />
+        <div className="mt-4 sm:mt-5">
+          {/* the tab's own data (the hearings, the documents) streams in behind its skeleton; the header and the tab bar are already there. TabBody: the skeleton from the click itself */}
+          <TabBody>
+            <Suspense key={active} fallback={<TabBodySkeleton />}>
+              {active === "hearings" ? <HearingsTab caseId={id} today={today} edits={edits} />
+                : active === "sides" ? <div className="pb-4"><Sides cf={cf} caseId={id} edits={edits} className="" /></div>
+                : active === "facts" ? <div className="space-y-4 pb-4"><Facts cf={cf} caseId={id} edits={edits} /><Parties cf={cf} caseId={id} edits={edits} /></div>
+                : active === "documents" ? <DocumentsTab caseId={id} cf={cf} />
+                : <MemosTab cf={cf} caseId={id} drafts={drafts} draft={openDraft} style={style?.style ?? null} versions={versions} changes={changes} word={sp.word === "1"} />}
+            </Suspense>
+          </TabBody>
+        </div>
+      </TabsProvider>
       {edits?.groups.length ? <ConfirmBar groups={edits.groups} count={edits.count} /> : null}
     </div>
   );

@@ -9,6 +9,8 @@ export type SlotSearch = { s?: string; hearing?: string; q?: string };
 export async function ChatSlot({ path, searchParams }: { path?: string[]; searchParams: Promise<SlotSearch> }) {
   const sp = await searchParams;
   const db = await createClient();
-  const s = await getSession(db);
+  // who is asking is only used for the general context's brief: a case's or a client's chat does not wait for it
+  const general = path?.[0] !== "cases" && path?.[0] !== "clients";
+  const s = general ? await getSession(db) : null;
   return <ChatPanel data={await loadPanel(db, path, sp, s ? { userId: s.user.id, displayName: s.displayName } : null)} />;
 }

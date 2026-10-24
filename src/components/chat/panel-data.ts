@@ -16,10 +16,14 @@ import { loadThread } from "./ThreadView";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+type Who = { userId: string; displayName: string };
+
 async function caseContext(db: Db, caseId: string): Promise<PanelContext | null> {
-  const { data: c } = await db.from("cases").select("id, case_number, case_year, title, court, circuit, clients(name)").eq("id", caseId).maybeSingle();
+  const [{ data: c }, { data: next }] = await Promise.all([
+    db.from("cases").select("id, case_number, case_year, title, court, circuit, clients(name)").eq("id", caseId).maybeSingle(),
+    db.from("hearings").select("hearing_date").eq("case_id", caseId).gte("hearing_date", todayIso()).neq("review_status", "rejected").order("hearing_date").limit(1).maybeSingle(),
+  ]);
   if (!c) return null;
-  const { data: next } = await db.from("hearings").select("hearing_date").eq("case_id", caseId).gte("hearing_date", todayIso()).neq("review_status", "rejected").order("hearing_date").limit(1).maybeSingle();
   const client = c.clients?.name ?? null;
   const number = c.case_number ? (c.case_year ? `${c.case_number}/${c.case_year}` : c.case_number) : null;
   return {
@@ -50,13 +54,29 @@ async function clientContext(db: Db, clientId: string): Promise<PanelContext | n
   };
 }
 
-export async function loadPanel(db: Db, path: string[] | undefined, sp: { s?: string; hearing?: string; q?: string }, who: { userId: string; displayName: string } | null = null): Promise<PanelData> {
+export async function loadPanel(db: Db, path: string[] | undefined, sp: { s?: string; hearing?: string; q?: string }, who: Who | null = null): Promise<PanelData> {
   const wantCase = path?.[0] === "cases" && path[1] && UUID.test(path[1]) ? path[1] : null;
   const wantClient = path?.[0] === "clients" && path[1] && UUID.test(path[1]) ? path[1] : null;
   const ctx = wantCase ? await caseContext(db, wantCase) : wantClient ? await clientContext(db, wantClient) : null;
   const context: PanelContext = ctx ?? { kind: "general" };
   const caseId = context.kind === "case" ? context.id : null;
   const clientId = context.kind === "client" ? context.id : null;
+
+  // the general context starts with the morning brief, the «noticed» cards and chips built from the lawyer's own cases.
+  // It is the slowest part, so it starts here (beside the reads below) and is NOT awaited: the panel gets the promise and the brief
+  // streams in after the rest (ChatThread, under Suspense).
+  const morning: PanelData["morning"] = !caseId && !clientId && who
+    ? loadMorning(db, who.userId, who.displayName).catch((e) => {
+        console.error("morning brief failed", e); // the chat still works: it falls back to the plain greeting
+        return null;
+      })
+    : null;
+
+  // «سجّل قرار جلسة d/m»: the latest hearing of this case that is due (today or past, no decision yet); read beside the rest
+  const dueQuery = caseId
+    ? Promise.resolve(db.from("hearings").select("hearing_date").eq("case_id", caseId).is("decision_type", null).lte("hearing_date", todayIso())
+      .neq("review_status", "rejected").order("hearing_date", { ascending: false }).limit(1).maybeSingle())
+    : null;
 
   const sessions = await listSessions(db, caseId, 40, clientId);
 
@@ -80,11 +100,13 @@ export async function loadPanel(db: Db, path: string[] | undefined, sp: { s?: st
     }
   }
 
-  const data = threadId ? await loadThread(db, threadId) : null;
-  if (threadId && !hearing) {
-    const { data: t } = await db.from("chat_threads").select("hearings(id, hearing_date)").eq("id", threadId).maybeSingle();
-    if (t?.hearings) hearing = { id: t.hearings.id, date: t.hearings.hearing_date };
-  }
+  const [data, linked] = threadId
+    ? await Promise.all([
+        loadThread(db, threadId),
+        hearing ? null : db.from("chat_threads").select("hearings(id, hearing_date)").eq("id", threadId).maybeSingle(),
+      ])
+    : [null, null];
+  if (linked?.data?.hearings) hearing = { id: linked.data.hearings.id, date: linked.data.hearings.hearing_date };
 
   // a general session that is about a case: a card in it points at that case (or created it)
   let moveOffer: PanelData["moveOffer"] = null;
@@ -98,25 +120,12 @@ export async function loadPanel(db: Db, path: string[] | undefined, sp: { s?: st
     }
   }
 
-  // «سجّل قرار جلسة d/m»: the latest hearing of this case that is due (today or past, no decision yet)
   const chips: PanelData["chips"] = [];
-  if (caseId) {
-    const { data: due } = await db.from("hearings").select("hearing_date").eq("case_id", caseId).is("decision_type", null).lte("hearing_date", todayIso())
-      .neq("review_status", "rejected").order("hearing_date", { ascending: false }).limit(1).maybeSingle();
+  if (dueQuery) {
+    const { data: due } = await dueQuery;
     if (due) {
       const d = formatDmy(due.hearing_date).replace(/\/\d{4}$/, "");
       chips.push({ label: `سجّل قرار جلسة ${d}`, text: `قرار جلسة ${d}: ` });
-    }
-  }
-
-  // the general context starts with the morning brief, the «noticed» cards and chips built from the lawyer's own cases
-  let morning: PanelData["morning"] = null;
-  if (!caseId && !clientId && who) {
-    try {
-      morning = await loadMorning(db, who.userId, who.displayName);
-      chips.push(...morning.chips);
-    } catch (e) {
-      console.error("morning brief failed", e); // the chat still works: it falls back to the plain greeting
     }
   }
 

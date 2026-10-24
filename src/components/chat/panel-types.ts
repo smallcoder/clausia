@@ -42,8 +42,8 @@ export interface PanelData {
   moveOffer: { caseId: string; label: string } | null;
   /** starter chips above the composer (they fill the box; nothing is sent) */
   chips: Chip[];
-  /** the general context's top: the morning brief and the «noticed» cards (null in a case, or when it could not be built) */
-  morning: MorningData | null;
+  /** the general context's top: the morning brief, the «noticed» cards and their chips. A promise: it streams in after the panel (null in a case; resolves to null when it could not be built) */
+  morning: Promise<MorningData | null> | null;
   /** a starter sentence from a link (?q=); it fills the box, nothing is sent */
   starter: string;
 }

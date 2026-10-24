@@ -52,9 +52,8 @@ export async function loadThread(db: Db, threadId: string): Promise<ThreadData> 
     if (p.message_id) byMessage.set(p.message_id, [...(byMessage.get(p.message_id) ?? []), p]);
     else orphans.push(p);
   }
-  const lookup = await buildProposalLookup(db, proposals);
-  const deadlines = await loadDeadlineCards(db, proposals);
-  const editRows = await loadCardRows(db, proposals);
+  // three independent reads of the same proposals: together, not one after the other
+  const [lookup, deadlines, editRows] = await Promise.all([buildProposalLookup(db, proposals), loadDeadlineCards(db, proposals), loadCardRows(db, proposals)]);
 
   const docs: Record<string, ThreadDoc> = {};
   for (const d of docRows ?? []) {

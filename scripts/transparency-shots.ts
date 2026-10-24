@@ -120,7 +120,7 @@ try {
       const txt = (await live.first().textContent({ timeout: 500 }).catch(() => null))?.trim();
       if (txt && seen.at(-1) !== txt) {
         seen.push(txt);
-        if (!/بيكتب/.test(txt) && !shotTaken) { await shot(page, "Trans-live-real-1440-light"); shotTaken = true; }
+        if (!/بيفكّر/.test(txt) && !shotTaken) { await shot(page, "Trans-live-real-1440-light"); shotTaken = true; }
       }
       if (!txt && seen.length && i > 20 && (await page.locator("text=استخدمت:").count())) break;
       if (!txt && i > 300) break;
