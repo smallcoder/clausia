@@ -295,7 +295,7 @@ export function AgendaView({ today, from, to, rows, deadlines = [], undecided, u
               className={cx("tap -mb-px flex items-center gap-2 border-b-2 px-3.5 py-2.5 text-md transition", on ? "border-title font-bold text-title" : "border-transparent text-text-3 hover:text-text")}>
               {name}
               {t === "decide" && waitingTotal > 0 ? (
-                <span className="font-num inline-flex h-5.5 min-w-5.5 items-center justify-center rounded-full bg-gold-bg px-1.75 text-xs font-bold text-gold-text-small">
+                <span className="font-num inline-flex h-5.5 min-w-5.5 items-center justify-center rounded-full border border-gold-edge bg-gold-bg px-1.75 text-xs font-bold text-gold-text-small">
                   <span className="sr-only">العدد </span>{waitingTotal}
                 </span>
               ) : null}
