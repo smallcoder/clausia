@@ -8,6 +8,7 @@ import { deadlinesEnabled } from "@/lib/flags";
 import { normalizeForMatch } from "@/lib/quote-match";
 import type { Db } from "@/lib/supabase/server";
 import type { Json } from "@/lib/db/types";
+import type { EditPreview } from "@/lib/draft/edit";
 import type { DraftFill } from "@/lib/library/types";
 import { applyOp, type Provenance, type RefMap, type Undo, type UndoStep } from "@/lib/tools/apply";
 import { logConfirm } from "@/lib/undo";
@@ -49,6 +50,8 @@ export interface ProposalOp {
   hint?: OpHint;
   /** a draft card (PR 6): what the code filled from the case file, where each value came from, and what is still missing (src/lib/library) */
   draft?: DraftPreview;
+  /** a tracked change to a saved draft (PR 7b): the old and new words and the paper a citation came from (src/lib/draft/edit.ts) */
+  edit?: EditPreview;
 }
 
 /** what a draft card shows before «أكّد» (the fill itself is worked out again when the lawyer confirms) */
@@ -86,6 +89,7 @@ export interface DraftOp {
   resolved_from?: Record<string, ResolvedFrom>;
   hint?: OpHint;
   draft?: DraftPreview;
+  edit?: EditPreview;
   /** the texts THIS op's quote must come from (default: the card's `sourceTexts`): a column cell is checked against its own paper */
   sourceTexts?: string[];
 }
@@ -120,6 +124,7 @@ export async function createProposal(
       ...(o.resolved_from && Object.keys(o.resolved_from).length ? { resolved_from: o.resolved_from } : {}),
       ...(o.hint ? { hint: o.hint } : {}),
       ...(o.draft ? { draft: o.draft } : {}),
+      ...(o.edit ? { edit: o.edit } : {}),
     };
   });
   const { data, error } = await db.from("proposals").insert({

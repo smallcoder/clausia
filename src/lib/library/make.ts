@@ -12,7 +12,7 @@ import { caseLabel } from "@/lib/labels";
 import type { DraftPreview } from "@/lib/proposals";
 import type { Db } from "@/lib/supabase/server";
 import { fillTemplate, needsEarlierCase } from "./fill";
-import { askedForLegalText, numbersNotIn } from "./guards";
+import { askedForLegalText, citationsNotIn, numbersNotIn } from "./guards";
 import type { DraftFill, FillResult, TemplateBody } from "./types";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -108,6 +108,9 @@ export async function prepareDraft(db: Db, input: DraftInput, lawyerTexts: strin
   if (legal.length) {
     const bad = numbersNotIn(legal.join("\n"), [...lawyerTexts, ...fileTexts(built.cf)]);
     if (bad.length) return { ok: false, error: `لم يُقترح: النص المكتوب فيه أرقام أو تواريخ مش في كلام المحامي ولا في ملف القضية (${bad.slice(0, 5).join("، ")}). شيلها (سيبها للمحامي) وأعد الاستدعاء.` };
+    // a spelled-out article, law number or year («المادة الخامسة»، «لسنة ألفين وأربعة وعشرين»): digits are caught above, words must be too (#202)
+    const spelled = citationsNotIn(legal.join("\n"), [...lawyerTexts, ...fileTexts(built.cf)]);
+    if (spelled.length) return { ok: false, error: `لم يُقترح: النص المكتوب فيه مادة أو رقم أو سنة مكتوبين بالحروف مش في كلام المحامي ولا في ملف القضية (${spelled.slice(0, 3).join("، ")}). شيلها (سيبها للمحامي) وأعد الاستدعاء.` };
   }
   return { ok: true, fill: built.fill, title: built.title };
 }

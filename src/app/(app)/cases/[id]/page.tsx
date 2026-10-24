@@ -15,6 +15,7 @@ import { ConfirmBar } from "@/components/cases/ConfirmBar";
 import { hearingState } from "@/components/cases/case-view";
 import { resolveTab, tabCounts, tabHref } from "@/components/cases/dossier";
 import { getCaseFile, type CaseFile } from "@/lib/case-file";
+import { loadDraftChanges } from "@/lib/draft/pending";
 import { listVersions } from "@/lib/draft/store";
 import { getDraft, listDrafts } from "@/lib/library/list";
 import { loadOfficeStyle } from "@/lib/word/export";
@@ -53,7 +54,7 @@ export default async function CasePage({ params, searchParams }: { params: Promi
   const [edits, clients, drafts] = await Promise.all([loadPendingEdits(db, id, cf), pickableClients(db), listDrafts(db, id)]);
   const openDraft = active === "memos" && sp.draft && UUID.test(sp.draft) ? await getDraft(db, id, sp.draft) : null;
   // the editor draws the office's paper («ورق المكتب») when the office has one, asks for a Word file when it has not; the history of the draft
-  const [style, versions] = openDraft ? await Promise.all([loadOfficeStyle(db), listVersions(db, openDraft.id)]) : [null, []];
+  const [style, versions, changes] = openDraft ? await Promise.all([loadOfficeStyle(db), listVersions(db, openDraft.id), loadDraftChanges(db, id, openDraft.id)]) : [null, [], []];
   const today = todayIso();
   const hs = hearingState(cf.hearings, today);
 
@@ -66,7 +67,7 @@ export default async function CasePage({ params, searchParams }: { params: Promi
           : active === "sides" ? <div className="pb-4"><Sides cf={cf} caseId={id} edits={edits} className="" /></div>
           : active === "facts" ? <div className="space-y-4 pb-4"><Facts cf={cf} caseId={id} edits={edits} /><Parties cf={cf} caseId={id} edits={edits} /></div>
           : active === "documents" ? <DocumentsTab caseId={id} cf={cf} />
-          : <MemosTab cf={cf} caseId={id} drafts={drafts} draft={openDraft} style={style?.style ?? null} versions={versions} word={sp.word === "1"} />}
+          : <MemosTab cf={cf} caseId={id} drafts={drafts} draft={openDraft} style={style?.style ?? null} versions={versions} changes={changes} word={sp.word === "1"} />}
       </div>
       {edits?.groups.length ? <ConfirmBar groups={edits.groups} count={edits.count} /> : null}
     </div>

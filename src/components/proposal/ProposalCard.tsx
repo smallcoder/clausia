@@ -19,6 +19,7 @@ import { useCite, type CiteSource } from "@/components/cite/context";
 import { SourceChip, SourceLabel } from "@/components/cite/SourceChip";
 import { Was } from "@/components/cases/Suggest";
 import { DraftCard, isDraftCard } from "@/components/proposal/DraftCard";
+import { DraftEditCard, isDraftEditCard } from "@/components/proposal/DraftEditCard";
 import { isMoneyCard, MoneyCard } from "@/components/proposal/MoneyCard";
 import { useUndoToast } from "@/components/shell/UndoToast";
 import { cx, DateText } from "@/components/ui";
@@ -79,6 +80,7 @@ function kindOf(o: ProposalOp): string {
     case "create_draft": return "مسودة"; // drawn by DraftCard
     case "set_office_style": return "ورق المكتب";
     case "add_office_template": return "صيغة";
+    case "edit_draft": return "تعديل"; // drawn by DraftEditCard
     case "save_draft": case "restore_draft_version": case "import_draft": return "مسودة"; // the lawyer's own acts in the editor: never a card
   }
 }
@@ -103,6 +105,7 @@ function summaryOf(o: ProposalOp, lookup: Record<string, string> = {}): string {
     case "record_movement": return [a.amount && formatEgp(parseAmount(String(a.amount)) ?? 0), a.method && MONEY_METHOD[a.method as keyof typeof MONEY_METHOD], a.note].filter(Boolean).join(" · ");
     case "set_case_fee": return a.kind === "open" ? "مفتوحة (بلا مبلغ)" : a.amount ? formatEgp(parseAmount(String(a.amount)) ?? 0) : "";
     case "create_draft": return "مسودة"; // drawn by DraftCard
+    case "edit_draft": return String(a.why ?? ""); // drawn by DraftEditCard
     case "set_office_style": case "add_office_template": case "save_draft": case "restore_draft_version": case "import_draft": return "";
   }
 }
@@ -254,6 +257,7 @@ export function ProposalCard({ proposal: initial, lookup = {}, rows = {} }: {
   }
 
   // a card made only of drafts is drawn by DraftCard (the fill card of the library); the tap and the undo toast stay here
+  if (isDraftEditCard(p)) return <DraftEditCard proposal={p} pending={pending} error={error} onDecide={(mode, opIds) => decide(mode, opIds)} />;
   if (isDraftCard(p)) return <DraftCard proposal={p} pending={pending} error={error} onDecide={(mode, opIds) => decide(mode, opIds)} downloadHref={(id) => `/api/drafts/${id}/docx`} />;
 
   const toggle = (id: string) => setExpanded((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });

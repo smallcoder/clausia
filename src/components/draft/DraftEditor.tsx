@@ -9,13 +9,18 @@
  *  - A Word file opened as a draft says what the reader could not carry over (tables, pictures, footnotes).
  * The page's tracked changes («اسأل Clausia») are PR 7b; this file is the part that edits and versions.
  */
-import { ChevronRight, Bold, Download, FileText, Heading2, History, Lock, LockOpen } from "lucide-react";
+import { ChevronRight, Bold, Check, Download, FileText, Heading2, History, Lock, LockOpen, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useDraft } from "@/components/chat/draft";
 import { OfficeStyleUpload } from "@/components/library/OfficeStyleUpload";
 import { cx } from "@/components/ui";
+import { askKey, cleanLabel } from "@/lib/assistant/ask";
+import { decideProposalAction } from "@/lib/assistant/actions";
+import { fitChange } from "@/lib/draft/changes";
 import { freshId, isQuoteBlock, lockMarks, mergeBlocks, normalizeBlock, setLock, splitBlock } from "@/lib/draft/model";
+import type { PendingChange } from "@/lib/draft/pending";
 import type { VersionRow } from "@/lib/draft/store";
 import { restoreVersionAction, loadVersionAction, saveDraftAction } from "@/lib/draft/actions";
 import type { DraftBlock, DraftBody } from "@/lib/library/types";
@@ -25,6 +30,7 @@ import { Editable, type EditableHandle } from "./Editable";
 import { blockHtml } from "./editor-dom";
 import { LetterheadBottom, LetterheadTop } from "./Letterhead";
 import { ago, stamp } from "./time";
+import { AddedBlock, TrackedText, type Decide, type Fitted } from "./Tracked";
 import { VersionsPanel } from "./VersionsPanel";
 
 /** what the editor needs from the server; the real actions by default (a preview page passes stand-ins) */
@@ -32,8 +38,13 @@ export interface EditorActions {
   save: (draftId: string, body: DraftBody, expected: string | null) => Promise<{ ok: true; updatedAt: string } | { ok: false; error: string }>;
   restore: (draftId: string, versionId: string) => Promise<{ ok: true } | { ok: false; error: string }>;
   loadVersion: (draftId: string, versionId: string) => Promise<{ ok: true; body: DraftBody } | { ok: false; error: string }>;
+  /** ✓ / × on a proposed change: the same decision as the chat card's (nothing in the draft changes before a ✓) */
+  decide: (proposalId: string, mode: "confirm" | "reject", opIds: string[]) => Promise<{ ok: true } | { ok: false; error: string }>;
 }
-const REAL: EditorActions = { save: saveDraftAction, restore: restoreVersionAction, loadVersion: loadVersionAction };
+const REAL: EditorActions = {
+  save: saveDraftAction, restore: restoreVersionAction, loadVersion: loadVersionAction,
+  decide: async (id, mode, opIds) => { const r = await decideProposalAction(id, { mode, opIds }); return r.ok ? { ok: true } : { ok: false, error: r.error ?? "تعذّر الحفظ" }; },
+};
 
 const AUTOSAVE_MS = 3000;
 const jsonOf = (blocks: DraftBlock[]) => JSON.stringify({ version: 1, blocks });
@@ -48,11 +59,14 @@ export interface DraftEditorProps {
   versions: VersionRow[];
   /** he came here from «تنزيل Word» with no office paper yet (the highlight on the ask) */
   word?: boolean;
+  /** the changes Clausia proposed and he has not decided (PR 7b), drawn as tracked changes */
+  changes?: PendingChange[];
   actions?: EditorActions;
 }
 
-export function DraftEditor({ draft, caseId, clientName, style, versions, word = false, actions = REAL }: DraftEditorProps) {
+export function DraftEditor({ draft, caseId, clientName, style, versions, word = false, changes = [], actions = REAL }: DraftEditorProps) {
   const router = useRouter();
+  const { addChip, removeChip, chips, focusComposer } = useDraft();
   const downloadHref = `/api/drafts/${draft.id}/docx`;
   const labels = useMemo(() => new Map(draft.fill.missing.map((m) => [m.key, m.label])), [draft.fill.missing]);
   const own = draft.own_template;
@@ -189,6 +203,66 @@ export function DraftEditor({ draft, caseId, clientName, style, versions, word =
   const canHeading = !!current && (current.t === "h" || current.t === "p") && !own;
   const act = (f: (h: EditableHandle) => void) => { const h = sel ? handles.current.get(sel.id) : active ? handles.current.get(active) : null; if (h) f(h); };
 
+  // ---- «اسأل Clausia»: the open draft is context for the chat while the editor is open (the chip is made again after a message uses it up), and a selection
+  // can be asked about on its own. The chip is DATA for the model (it reads the draft itself with get_draft); nothing is sent until the lawyer sends.
+  const chipKey = askKey({ kind: "draft", id: draft.id });
+  const hasChip = chips.some((c) => askKey(c) === chipKey);
+  useEffect(() => { if (!hasChip) addChip({ kind: "draft", id: draft.id, label: cleanLabel(draft.title) }); }, [hasChip, addChip, draft.id, draft.title]);
+  useEffect(() => () => removeChip(chipKey), [removeChip, chipKey]);
+  const canAsk = !!sel && sel.to > sel.from && !!current;
+  function askAboutSelection() {
+    if (!sel || !current || sel.to <= sel.from) return;
+    addChip({ kind: "draft", id: draft.id, label: cleanLabel(current.text.slice(sel.from, sel.to)), field: sel.id });
+    focusComposer();
+  }
+
+  // ---- the changes Clausia proposed, drawn in the paper (each one fits the draft as it is NOW, or says it no longer does)
+  const [decideBusy, setDecideBusy] = useState(false);
+  const [decideError, setDecideError] = useState<string | null>(null);
+  const tracked = useMemo(() => {
+    const body = { version: 1 as const, blocks };
+    const replaceBy = new Map<string, Fitted[]>();
+    const addAfter = new Map<string, PendingChange[]>();
+    const stale: { c: PendingChange; reason: string }[] = [];
+    const taken = new Map<string, [number, number][]>();
+    for (const c of changes) {
+      const fit = fitChange(body, c.args, c.cite);
+      if (!fit.ok) { stale.push({ c, reason: fit.reason }); continue; }
+      if (c.args.kind === "add") { addAfter.set(c.args.block, [...(addAfter.get(c.args.block) ?? []), c]); continue; }
+      const used = taken.get(c.args.block) ?? [];
+      if (used.some(([a, b]) => fit.from! < b && fit.to! > a)) { stale.push({ c, reason: "بيتداخل مع تعديل تاني على نفس الكلام" }); continue; }
+      taken.set(c.args.block, [...used, [fit.from!, fit.to!]]);
+      replaceBy.set(c.args.block, [...(replaceBy.get(c.args.block) ?? []), { c, from: fit.from!, to: fit.to! }]);
+    }
+    const fitting = [...[...replaceBy.values()].flat().map((x) => x.c), ...[...addAfter.values()].flat()];
+    return { replaceBy, addAfter, stale, fitting };
+  }, [changes, blocks]);
+
+  /** ✓ or ×: what the lawyer has typed is saved first, then the same decision as the chat card's; the page then shows the new body */
+  const decide: Decide = async (c, mode) => {
+    setDecideError(null);
+    setDecideBusy(true);
+    if (mode === "confirm" && dirty() && !(await save())) { setDecideBusy(false); setDecideError("احفظ شغلك الأول: في كلام لسه ما اتحفظش"); return; }
+    const r = await actions.decide(c.proposalId, mode, [c.opId]);
+    setDecideBusy(false);
+    if (!r.ok) { setDecideError(r.error); return; }
+    router.refresh();
+  };
+  async function acceptAll() {
+    setDecideError(null);
+    setDecideBusy(true);
+    if (dirty() && !(await save())) { setDecideBusy(false); setDecideError("احفظ شغلك الأول: في كلام لسه ما اتحفظش"); return; }
+    // card by card (the changes that still fit only), each card all or nothing
+    const byCard = new Map<string, string[]>();
+    for (const c of tracked.fitting) byCard.set(c.proposalId, [...(byCard.get(c.proposalId) ?? []), c.opId]);
+    for (const [id, ops] of byCard) {
+      const r = await actions.decide(id, "confirm", ops);
+      if (!r.ok) { setDecideBusy(false); setDecideError(r.error); router.refresh(); return; }
+    }
+    setDecideBusy(false);
+    router.refresh();
+  }
+
   // ---- the history
   const [showVersions, setShowVersions] = useState(false);
   const [preview, setPreview] = useState<{ v: VersionRow; body: DraftBody } | null>(null);
@@ -245,11 +319,13 @@ export function DraftEditor({ draft, caseId, clientName, style, versions, word =
             <p className="mt-1 text-sm text-text-3" aria-live="polite">
               {draft.template_name === "ملف Word" ? "مسودة من ملف Word" : "مسودة"} · <span className={cx(status === "error" && "font-semibold text-bad")}>{meta}</span>
               {draft.needs_lawyer_review ? " · الصيغة لسه محتاجة مراجعة محامٍ" : ""}
+              {tracked.fitting.length ? <> · <span className="font-semibold text-gold-text-small">{tracked.fitting.length === 1 ? "تعديل مقترح" : `${tracked.fitting.length} ${tracked.fitting.length <= 10 ? "تعديلات" : "تعديل"} مقترحة`}</span></> : null}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Link href="/settings/office-style" className={pill}><FileText aria-hidden size={15} strokeWidth={1.8} />ورق المكتب</Link>
             <button type="button" onClick={() => setShowVersions((v) => !v)} aria-expanded={showVersions} className={cx(pill, showVersions && toolOn)}><History aria-hidden size={15} strokeWidth={1.8} />النسخ</button>
+            <button type="button" onClick={() => void acceptAll()} disabled={!tracked.fitting.length || decideBusy || !!preview} className={cx(pill, "disabled:opacity-50")}><Check aria-hidden size={15} strokeWidth={1.8} />اقبل الكل</button>
             <a href={downloadHref} onClick={(e) => { if (dirty()) { e.preventDefault(); void save().then(() => { window.location.href = downloadHref; }); } }}
               className="bg-primary-fill inline-flex h-11 items-center gap-2 rounded-full px-5 text-base font-bold transition"><Download aria-hidden size={16} strokeWidth={2} />نزّلها Word</a>
           </div>
@@ -282,6 +358,20 @@ export function DraftEditor({ draft, caseId, clientName, style, versions, word =
         </div>
       ) : error && !conflict ? <p role="alert" className="rounded-lg bg-bad-bg px-4 py-2.5 text-base text-bad">{error}</p> : null}
 
+      {decideError ? <p role="alert" className="rounded-lg bg-bad-bg px-4 py-2.5 text-base text-bad">{decideError}</p> : null}
+      {tracked.stale.length ? (
+        <section aria-label="تعديلات ما بقتش مناسبة" className="rounded-lg border border-border-2 bg-card px-4 py-3">
+          <p className="text-base font-semibold text-text">فيه تعديلات مقترحة ما بقتش مناسبة للمسودة الحالية</p>
+          <ul className="mt-1 divide-y divide-border-2">
+            {tracked.stale.map(({ c, reason }) => (
+              <li key={c.opId} className="flex flex-wrap items-center gap-2 py-2 text-base">
+                <span className="min-w-0 flex-1 basis-60"><span className="font-semibold text-text">{c.label}</span> · <span className="text-text-3">{c.why}</span><span className="block text-sm text-bad">{reason}</span></span>
+                <button type="button" disabled={decideBusy} onClick={() => void decide(c, "reject")} className="tap inline-flex h-9 items-center rounded-full border border-border-2 px-3.5 text-sm font-semibold text-text-2 transition hover:text-text disabled:opacity-50">شيل التعديل</button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
       {showVersions ? <VersionsPanel versions={versions} openId={preview?.v.id ?? null} busy={vBusy} error={vError} onOpen={(v) => void openVersion(v)} onRestore={(v) => void restore(v)} onUndoAccept={undoAccept} /> : null}
 
       {preview ? (
@@ -297,6 +387,9 @@ export function DraftEditor({ draft, caseId, clientName, style, versions, word =
           <button type="button" className={cx("tap inline-flex h-10 items-center gap-1.5 rounded-full border border-border-2 px-3.5 text-sm font-semibold text-text-2 transition hover:text-text disabled:opacity-40", sel?.lock && toolOn)} aria-pressed={!!sel?.lock} title="اقتباس: نص حرفي مبيتعدلش" disabled={!canQuote} onClick={() => act((h) => h.quote(!sel?.lock))}>
             {sel?.lock ? <LockOpen aria-hidden size={15} strokeWidth={2} /> : <Lock aria-hidden size={15} strokeWidth={2} />}{sel?.lock ? "فكّ الاقتباس" : "اقتباس"}
           </button>
+          <button type="button" className="tap inline-flex h-10 items-center gap-1.5 rounded-full border border-border-2 px-3.5 text-sm font-semibold text-text-2 transition hover:text-text disabled:opacity-40" title="اسأل Clausia عن النص المحدد" disabled={!canAsk} onClick={askAboutSelection}>
+            <Sparkles aria-hidden size={15} strokeWidth={2} />اسأل Clausia
+          </button>
         </div>
       )}
 
@@ -306,6 +399,9 @@ export function DraftEditor({ draft, caseId, clientName, style, versions, word =
           <div className="space-y-3">
             {shown.map((b, i) => {
               const key = b.id ?? i;
+              const rep = preview ? undefined : tracked.replaceBy.get(b.id!);
+              const adds = preview ? [] : tracked.addAfter.get(b.id!) ?? [];
+              const node = (() => {
               if (b.t === "lawyer") {
                 const confirm = b.state === "needs_confirmation" && (preview ? true : baseText.get(b.key) === b.text);
                 return (
@@ -314,7 +410,9 @@ export function DraftEditor({ draft, caseId, clientName, style, versions, word =
                       {b.heading}
                       {confirm ? <span className="rounded-full bg-gold-bg px-2.5 py-0.5 font-sans text-xs font-semibold text-gold-text-small">محتاجة تأكيدك</span> : null}
                     </h2>
-                    {editableBlock(b) ? (
+                    {rep ? (
+                      <TrackedText block={b} items={rep} labels={labels} busy={decideBusy} onDecide={decide} className="mt-1.5 rounded-md border border-dashed border-gold-edge px-4 py-2" />
+                    ) : editableBlock(b) ? (
                       <Editable block={b} labels={labels} label={b.heading} hint={`${b.hint ?? "بيكتبها المحامي"}: لسه فاضية`} register={register} onFocus={setActive} onChange={(n) => replace(b.id!, n)}
                         className="mt-1.5 rounded-md border border-dashed border-border-strong px-4 py-2 empty:py-4" />
                     ) : (
@@ -336,10 +434,13 @@ export function DraftEditor({ draft, caseId, clientName, style, versions, word =
                 );
               }
               const cls = b.t === "title" ? "pb-1 text-center text-lg font-bold text-title" : b.t === "h" ? "pt-3 text-md font-bold text-title" : "";
+              if (rep) return <TrackedText key={key} block={b} items={rep} labels={labels} busy={decideBusy} onDecide={decide} className={cls} />;
               return editableBlock(b)
                 ? <Editable key={key} block={b} labels={labels} label={b.t === "title" ? "عنوان المذكرة" : b.t === "h" ? "عنوان" : "فقرة"} className={cls} register={register} onFocus={setActive}
                     onChange={(n) => replace(b.id!, n)} onSplit={(cur, at) => split(b.id!, cur, at)} onMergePrev={(cur) => mergePrev(b.id!, normalizeBlock(cur))} />
                 : <ReadOnlyBlock key={key} b={b} className={cls} labels={labels} />;
+              })();
+              return <Fragment key={key}>{node}{adds.map((c) => <AddedBlock key={c.opId} c={c} busy={decideBusy} onDecide={decide} />)}</Fragment>;
             })}
           </div>
           {style ? <LetterheadBottom style={style} /> : null}

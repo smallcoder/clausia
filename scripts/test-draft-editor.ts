@@ -14,11 +14,19 @@ import JSZip from "jszip";
 import type { CaseFile } from "@/lib/case-file";
 import { ensureIds, freshId, isQuoteBlock, mergeBlocks, normalizeMarks, parseBody, replaceRange, sameBody, setLock, splitBlock, syncFill, syncLawyerStates, toggleBold, touchesLock } from "@/lib/draft/model";
 import { saveDraft } from "@/lib/draft/save";
+import { cleanAsk, askContextBlock } from "@/lib/assistant/ask";
+import { ChangeError, fitChange, planChange, type ChangeArgs } from "@/lib/draft/changes";
+import { prepareEdit, type EditArgs } from "@/lib/draft/edit";
+import { loadDraftChanges } from "@/lib/draft/pending";
+import { citationsNotIn, numbersNotIn, spelledCitations } from "@/lib/library/guards";
+import { createProposal, decideProposal } from "@/lib/proposals";
+import { runReadTool, READ_TOOL_SPECS } from "@/lib/tools/read";
 import { fillTemplate } from "@/lib/library/fill";
 import type { DraftBlock, DraftBody, DraftFill, TemplateBody } from "@/lib/library/types";
 import type { Db } from "@/lib/supabase/server";
 import { applyOp, MANUAL } from "@/lib/tools/apply";
-import { INTERNAL_TOOLS, writeToolSpecs } from "@/lib/tools/registry";
+import { INTERNAL_TOOLS, WRITE_TOOL_ARGS, writeToolSpecs } from "@/lib/tools/registry";
+const WRITE_TOOL_ARGS_OK = (a: Record<string, unknown>) => WRITE_TOOL_ARGS.edit_draft.safeParse(a).success;
 import { buildDocx, exportBlocks } from "@/lib/word/build";
 import { DocxError, MAX_PART_BYTES, openDocx, partText } from "@/lib/word/docx";
 import { importWordDraft } from "@/lib/word/import";
@@ -52,7 +60,7 @@ function memDb(tables: Record<string, Row[]>, opts: { failOn?: (table: string, o
         const hit = () => rows.filter((r) => filters.every((f) => f(r)));
         if (mode === "insert") {
           const made = (payload as Row[]).map((p) => {
-            const r: Row = { id: `00000000-0000-4000-9000-${String(++n).padStart(12, "0")}`, office_id: "office-1", created_at: stamp(), ...(table === "drafts" ? { updated_at: stamp(), review_status: "confirmed" } : {}), ...(table === "draft_versions" ? { created_by: "user-1" } : {}), ...p };
+            const r: Row = { id: `00000000-0000-4000-9000-${String(++n).padStart(12, "0")}`, office_id: "office-1", created_at: stamp(), ...(table === "drafts" ? { updated_at: stamp(), review_status: "confirmed" } : {}), ...(table === "draft_versions" ? { created_by: "user-1" } : {}), ...(table === "proposals" ? { status: "pending" } : {}), ...p };
             rows.push(r);
             return r;
           });
@@ -428,6 +436,250 @@ console.log("\n-- (g) tools and migration --");
   check(/security invoker/.test(sql), "…its link check runs with the caller's rights (through RLS)");
   const down = readFileSync("supabase/migrations/20261027100000_draft_versions_down.sql", "utf8").replace(/--.*$/gm, "");
   check(/drop table if exists draft_versions/.test(down) && !/drop table (if exists )?(drafts|cases)\b/.test(down), "the _down file drops only the new table and function");
+}
+
+// ================================================================ PR 7b: «اسأل Clausia» — tracked changes
+const QUOTE_TEXT = "قضت المحكمة بأن «البيع تم بعقد عرفي» وانتهى.";
+const B7 = parseBody({
+  version: 1,
+  blocks: [
+    { t: "title", text: "صحيفة استئناف" },
+    { t: "p", text: "السبب الأول: القصور في التسبيب. السبب الثاني: الخطأ في تطبيق القانون." },
+    { t: "p", text: QUOTE_TEXT, marks: [{ k: "lock", s: 17, e: 37, src: "الصحيفة · ص 2" }] },
+    { t: "lawyer", key: "grounds", heading: "أسباب الاستئناف", text: "نص الأسباب الأول.", state: "written" },
+  ],
+});
+const [, P1, PQ, G1] = B7.blocks;
+const R = (over: Partial<EditArgs> & { block: string; old_text?: string; new_text?: string }): EditArgs => ({ draft: DRAFT, kind: "replace", label: "صياغة", why: "تحسين الصياغة", quote: "عدل الصياغة", ...over } as EditArgs);
+const AR = (over: Partial<ChangeArgs>): ChangeArgs => ({ kind: "replace", block: P1.id!, ...over });
+const refusal = (f: () => unknown) => { try { f(); return null; } catch (e) { return e instanceof ChangeError ? e.message : `OTHER: ${String(e)}`; } };
+
+console.log("\n-- (h) a change is checked in code: locked text is never touched --");
+{
+  const ok = planChange(B7, AR({ old_text: "القصور في التسبيب", new_text: "قصور التسبيب" }));
+  eq(ok.body.blocks[1].text, "السبب الأول: قصور التسبيب. السبب الثاني: الخطأ في تطبيق القانون.", "a replace changes just the old words");
+  eq(B7.blocks[1].text, "السبب الأول: القصور في التسبيب. السبب الثاني: الخطأ في تطبيق القانون.", "…and the body it was planned on is not changed (a plan is not a save)");
+  eq([ok.from, ok.to, ok.blockId], [13, 30, P1.id], "…and says where");
+  const del = planChange(B7, AR({ old_text: " السبب الثاني: الخطأ في تطبيق القانون.", new_text: "" }));
+  eq(del.body.blocks[1].text, "السبب الأول: القصور في التسبيب.", "an empty new text is a delete");
+  const lockedAt = QUOTE_TEXT.indexOf("البيع");
+  for (const [what, old] of [["inside the quotation", "البيع تم"], ["the quotation's words and more", "«البيع تم بعقد عرفي» وانتهى"], ["the whole block", QUOTE_TEXT], ["overlapping the start of the quotation", "بأن «البيع"], ["overlapping its end", "عرفي» وانتهى"]] as const) {
+    eq(refusal(() => planChange(B7, { kind: "replace", block: PQ.id!, old_text: old, new_text: "صياغة جديدة" })), "النص ده مقتبس (مقفول) ومبيتعدلش. Clausia ما بتعيد صياغة المواد والأحكام والاقتباسات.", `a replace ${what} is REFUSED`);
+  }
+  check(lockedAt > 0, "(the quotation really starts inside the block)");
+  const before = planChange(B7, { kind: "replace", block: PQ.id!, old_text: "قضت المحكمة بأن", new_text: "قررت المحكمة أن" });
+  eq([before.body.blocks[2].text, before.body.blocks[2].marks], ["قررت المحكمة أن «البيع تم بعقد عرفي» وانتهى.", [{ k: "lock", s: 17, e: 37, src: "الصحيفة · ص 2" }]], "the text just BEFORE a quotation can change; the quotation moves with its words and stays locked");
+  const after = planChange(B7, { kind: "replace", block: PQ.id!, old_text: "وانتهى.", new_text: "وانتهى الأمر." });
+  eq(after.body.blocks[2].marks, PQ.marks, "…and the text just after it");
+  eq(refusal(() => planChange(B7, AR({ old_text: "كلام مش موجود" }))), "النص القديم مش موجود في الفقرة زي ما هو: المسودة اتغيّرت.", "old words that are not in the block → refused (the draft changed)");
+  eq(refusal(() => planChange(B7, AR({ old_text: "الس", new_text: "x" }))), "النص القديم متكرر في الفقرة: لازم يتحدد بجزء أطول.", "old words that occur twice → refused (ambiguous)");
+  eq(refusal(() => planChange(B7, { kind: "replace", block: "b99", old_text: "x", new_text: "y" })), "الفقرة دي مش موجودة في المسودة: المسودة اتغيّرت. افتحها تاني.", "a block that is not in the draft → refused");
+  eq(refusal(() => planChange(B7, AR({ old_text: "القصور", new_text: "القصور" }))), "التعديل ده مش بيغيّر حاجة.", "a change that changes nothing → refused");
+  eq(planChange(B7, { kind: "replace", block: G1.id!, old_text: "الأول", new_text: "الثاني" }).body.blocks[3].text, "نص الأسباب الثاني.", "the text of a lawyer section can be changed too");
+
+  const add = planChange(B7, { kind: "add", block: P1.id!, new_text: "السبب الثالث: عدم الرد على دفاع جوهري.", style: "p" });
+  eq([add.body.blocks.length, add.body.blocks[2].text, add.body.blocks[2].marks], [5, "السبب الثالث: عدم الرد على دفاع جوهري.", undefined], "an add puts a new paragraph right after the block");
+  check(!!add.body.blocks[2].id && add.body.blocks.filter((b) => b.id === add.body.blocks[2].id).length === 1, "…with a name of its own");
+  eq(planChange(B7, { kind: "add", block: P1.id!, new_text: "عنوان", style: "h" }).body.blocks[2].t, "h", "…as a heading when asked");
+  const cited = planChange(B7, { kind: "add", block: P1.id! }, { text: "المادة 227 من قانون المرافعات تنص", src: "الحكم · ص 3", doc: DOC, page: 3 });
+  eq(cited.body.blocks[2].marks, [{ k: "lock", s: 0, e: 33, src: "الحكم · ص 3", doc: DOC, page: 3 }], "a paragraph taken from a paper is born LOCKED, with its source");
+  check(isQuoteBlock(cited.body.blocks[2]), "…so it is drawn as a quotation box");
+  eq(refusal(() => planChange(B7, { kind: "add", block: "nope", new_text: "x" })), "الفقرة دي مش موجودة في المسودة: المسودة اتغيّرت. افتحها تاني.", "an add after a block that is not there → refused");
+  eq(refusal(() => planChange(B7, { kind: "add", block: P1.id!, new_text: "   " })), "مفيش نص يتضاف.", "an add with no text → refused");
+
+  // what the editor draws: where each pending change fits NOW
+  const f1 = fitChange(B7, AR({ old_text: "القصور في التسبيب", new_text: "x" }));
+  eq(f1.ok && [f1.from, f1.to], [13, 30], "fitChange: where a replace sits now");
+  const f2 = fitChange(parseBody({ version: 1, blocks: [{ ...P1, text: "نص تاني خالص" }] }), { kind: "replace", block: P1.id!, old_text: "القصور", new_text: "x" });
+  check(!f2.ok && /اتغيّرت/.test(f2.reason), "fitChange: a change whose words are gone says so (the editor lists it as no longer fitting)");
+}
+
+console.log("\n-- (i) a change is NOT in the draft until the lawyer taps; ✓ and × per change; «اقبل الكل» --");
+{
+  const draftWith = (body: DraftBody) => draftRow({ body, fill: { filled: [], missing: [], lawyer: [{ key: "grounds", heading: "أسباب الاستئناف", state: "written" }] } });
+  const thread = U(70);
+  const edits = [
+    R({ block: P1.id!, old_text: "القصور في التسبيب", new_text: "قصور التسبيب", label: "صياغة" }),
+    R({ block: P1.id!, old_text: "الخطأ في تطبيق القانون", new_text: "مخالفة القانون", label: "صياغة", why: "أوضح" }),
+  ];
+  const propose = (f: Fake, list: EditArgs[]) => createProposal(f.db, { threadId: thread, caseId: CASE, ops: list.map((a) => ({ tool: "edit_draft", args: a as unknown as Record<string, unknown>, source: { kind: "chat" as const } })), sourceTexts: ["عدل الصياغة"] });
+  const bodyOf = (f: Fake) => f.tables.drafts[0].body as DraftBody;
+  const text1 = (f: Fake) => bodyOf(f).blocks[1].text;
+  const ORIGINAL = B7.blocks[1].text;
+
+  const f = memDb({ drafts: [draftWith(B7)], cases: [{ id: CASE }] });
+  const p = await propose(f, edits);
+  eq([p.ops.length, p.ops.map((o) => o.status)], [2, ["pending", "pending"]], "two changes → ONE card with two ops (one per change)");
+  check(text1(f) === ORIGINAL && !f.tables.draft_versions?.length && !f.log.some((l) => /drafts/.test(l)), "before any tap: the draft is untouched, no version, nothing written to drafts");
+  const pending = await loadDraftChanges(f.db, CASE, DRAFT);
+  eq(pending.map((c) => [c.opId, c.args.old_text, c.args.new_text, c.label]), [["op1", "القصور في التسبيب", "قصور التسبيب", "صياغة"], ["op2", "الخطأ في تطبيق القانون", "مخالفة القانون", "صياغة"]], "the editor reads the same two changes from the card (still pending)");
+  eq((await loadDraftChanges(f.db, CASE, U(99))).length, 0, "…and none for another draft");
+
+  // ✓ on the first one
+  const r1 = await decideProposal(f.db, p.id, { mode: "confirm", opIds: ["op1"] });
+  eq(text1(f), ORIGINAL.replace("القصور في التسبيب", "قصور التسبيب"), "✓ on change 1: ONLY change 1 is in the draft");
+  eq(r1.ops.map((o) => o.status), ["confirmed", "pending"], "…change 2 is still pending");
+  eq(versions(f), ["original", "accept"], "…and it made a version (the «original» first, then the accept)");
+  eq((f.tables.draft_versions[1].note ?? ""), "صياغة: تحسين الصياغة", "…whose note says what was accepted");
+  eq((await loadDraftChanges(f.db, CASE, DRAFT)).map((c) => c.opId), ["op2"], "…the editor now shows only change 2");
+
+  // × on the second one
+  const r2 = await decideProposal(f.db, p.id, { mode: "reject", opIds: ["op2"] });
+  eq([r2.ops.map((o) => o.status), r2.status], [["confirmed", "rejected"], "confirmed"], "× on change 2: it is rejected");
+  check(text1(f) === ORIGINAL.replace("القصور في التسبيب", "قصور التسبيب") && versions(f).length === 2, "…the draft did not change and no version was made");
+  eq((await loadDraftChanges(f.db, CASE, DRAFT)).length, 0, "…and nothing is left to decide");
+
+  // «اقبل الكل»: both in one tap, in order, each its own version
+  const f2 = memDb({ drafts: [draftWith(B7)], cases: [{ id: CASE }] });
+  const p2 = await propose(f2, edits);
+  const all = await decideProposal(f2.db, p2.id, { mode: "confirm" });
+  eq(text1(f2), "السبب الأول: قصور التسبيب. السبب الثاني: مخالفة القانون.", "«اقبل الكل»: both changes are in the draft");
+  eq([all.status, versions(f2)], ["confirmed", ["original", "accept", "accept"]], "…each is a version, and the card is confirmed");
+
+  // undo the last accept = restore the version before it (a new version; nothing deleted)
+  const [orig, one] = f2.tables.draft_versions;
+  void orig;
+  await applyOp(f2.db, "restore_draft_version", { draft: DRAFT, version: one.id }, MANUAL);
+  eq([text1(f2), versions(f2)], ["السبب الأول: قصور التسبيب. السبب الثاني: الخطأ في تطبيق القانون.", ["original", "accept", "accept", "restore"]], "undo of the last accept: the version before it is current again, as a NEW version (all accepts are still in the history)");
+
+  // the draft changed since the change was proposed: refused, nothing saved, the card keeps the reason
+  const f3 = memDb({ drafts: [draftWith(B7)], cases: [{ id: CASE }] });
+  const p3 = await propose(f3, [edits[0]]);
+  const changed = parseBody({ version: 1, blocks: [B7.blocks[0], { ...P1, text: "السبب الأول: تغيّر النص بإيد المحامي." }, ...B7.blocks.slice(2)] });
+  await applyOp(f3.db, "save_draft", { draft: DRAFT, body: changed, expected: f3.tables.drafts[0].updated_at }, MANUAL);
+  const nv = versions(f3).length;
+  const err = await rejects(decideProposal(f3.db, p3.id, { mode: "confirm" }));
+  check(!!err && /ماتحفظش/.test(err), "a change whose old words are gone cannot be accepted (the lawyer is told, plainly)", err ?? "");
+  check(text1(f3) === "السبب الأول: تغيّر النص بإيد المحامي." && versions(f3).length === nv, "…the draft is as the lawyer left it and no version was made");
+  const after3 = (await f3.db.from("proposals").select("*").eq("id", p3.id).maybeSingle()).data as unknown as { ops: { status: string; error?: string }[] };
+  check(after3.ops[0].status === "failed" && /مش موجود/.test(after3.ops[0].error ?? ""), "…and the op says why it failed");
+
+  // THE LOCK, in code: a change that touches quoted text is refused at ✓ even if it got into the card by any other way (prepare skipped)
+  const f4 = memDb({ drafts: [draftWith(B7)], cases: [{ id: CASE }] });
+  const p4 = await propose(f4, [R({ block: PQ.id!, old_text: "البيع تم بعقد عرفي", new_text: "البيع كان بعقد رسمي" })]);
+  const lockErr = await rejects(decideProposal(f4.db, p4.id, { mode: "confirm" }));
+  check(!!lockErr && /ماتحفظش/.test(lockErr), "a change inside a quotation can NOT be accepted, even though it is in the card");
+  check(bodyOf(f4).blocks[2].text === QUOTE_TEXT && !f4.tables.draft_versions?.length, "…the quotation is exactly as it was, no version was made");
+  const lockOp = ((await f4.db.from("proposals").select("*").eq("id", p4.id).maybeSingle()).data as unknown as { ops: { error?: string }[] }).ops[0];
+  check(/مقتبس/.test(lockOp.error ?? ""), "…and the op says it is quoted text", lockOp.error ?? "");
+  const direct = await rejects(applyOp(f4.db, "edit_draft", R({ block: PQ.id!, old_text: "قضت المحكمة بأن «البيع", new_text: "x" }), MANUAL));
+  check(!!direct && /مقتبس/.test(direct), "applyOp itself refuses an edit that overlaps a quotation");
+
+  // all or nothing: change 1 fine, change 2 touches a quotation → NOTHING of the card is saved
+  const f5 = memDb({ drafts: [draftWith(B7)], cases: [{ id: CASE }] });
+  const p5 = await propose(f5, [edits[0], R({ block: PQ.id!, old_text: "البيع تم", new_text: "x" })]);
+  await rejects(decideProposal(f5.db, p5.id, { mode: "confirm" }));
+  check(text1(f5) === ORIGINAL && !f5.tables.draft_versions?.length, "a card with one good change and one that touches a quotation saves NOTHING (all or nothing: the good one is undone)");
+
+  // own-template draft: only the lawyer sections can change
+  const f6 = memDb({ drafts: [{ ...draftWith(B7), template_id: U(10) }], templates: [{ id: U(10), storage_path: "office/templates/x/template.docx" }], cases: [{ id: CASE }] });
+  const own = await rejects(applyOp(f6.db, "edit_draft", edits[0], MANUAL));
+  check(!!own && /ملف Word بتاعك/.test(own), "a draft from the lawyer's own Word template: a change outside the lawyer sections is refused");
+  const ownOk = await applyOp(f6.db, "edit_draft", R({ block: G1.id!, old_text: "الأول", new_text: "الأخير" }), MANUAL);
+  check(!!ownOk.id, "…but its grounds / requests can change");
+}
+
+console.log("\n-- (j) the model's change is refused at the door; a citation only from the case's papers --");
+{
+  const PAGE3 = "حكمت المحكمة حضوريا.\nوحيث إن المادة 227 من قانون المرافعات تنص على أن الأحكام تصدر بالأغلبية.\nولما كان ذلك فإن الدعوى مقبولة.";
+  const rows = (): Record<string, Row[]> => ({
+    drafts: [draftRow({ body: B7 })], cases: [{ id: CASE }],
+    documents: [{ id: DOC, case_id: CASE, file_name: "الحكم.pdf", doc_type: "judgment", title: null }, { id: U(21), case_id: U(3), file_name: "قضية تانية.pdf", doc_type: "other", title: "ورقة قضية تانية" }],
+    document_pages: [{ document_id: DOC, page_no: 3, text: PAGE3 }, { document_id: DOC, page_no: 4, text: "الصفحة الرابعة: المادة 228 تتكلم عن حاجة تانية." }, { document_id: U(21), page_no: 1, text: "المادة 999 من قانون تاني." }],
+  });
+  const f = memDb(rows());
+  const prep = (a: Partial<EditArgs> & { block: string }, lawyer: string[] = ["عدل الصياغة"]) => prepareEdit(f.db, { draft: DRAFT, kind: "replace", label: "صياغة", why: "ليه", quote: "q", ...a } as EditArgs, lawyer, CASE);
+
+  const ok = await prep({ block: P1.id!, old_text: "القصور في التسبيب", new_text: "قصور التسبيب" });
+  check(ok.ok && ok.edit.before === "القصور في التسبيب" && ok.edit.after === "قصور التسبيب" && ok.edit.src === null, "a plain rewording → the card's preview (old words, new words, no source)");
+  const lock = await prep({ block: PQ.id!, old_text: "البيع تم", new_text: "x" });
+  check(!lock.ok && /مقتبس/.test(lock.error), "a change inside a quotation is refused when the model proposes it (it is told why)", !lock.ok ? lock.error.slice(0, 60) : "");
+  const gone = await prep({ block: P1.id!, old_text: "مش موجود", new_text: "x" });
+  check(!gone.ok && /مش موجود في الفقرة/.test(gone.error), "old words that are not there → refused");
+  const other = await prepareEdit(f.db, { draft: DRAFT, kind: "replace", block: P1.id!, old_text: "القصور", new_text: "نقص", label: "x", why: "yy", quote: "q" } as EditArgs, ["x"], U(3));
+  check(!other.ok && /مش من القضية/.test(other.error), "a draft of ANOTHER case is not edited from this case's chat");
+  const nodraft = await prepareEdit(memDb({ drafts: [] }).db, { draft: DRAFT, kind: "replace", block: "b1", old_text: "x", new_text: "y", label: "x", why: "yy", quote: "q" } as EditArgs, ["x"], CASE);
+  check(!nodraft.ok && /المسودة غير موجودة/.test(nodraft.error), "a draft this lawyer can not read is not found");
+  eq(f.log.filter((l) => /^(insert|update|delete)/.test(l)), [], "none of this wrote anything");
+
+  // two changes in one card can not overlap
+  const first = await prep({ block: P1.id!, old_text: "القصور في التسبيب", new_text: "قصور" });
+  const second = first.ok ? await prepareEdit(f.db, { draft: DRAFT, kind: "replace", block: P1.id!, old_text: "في التسبيب", new_text: "x", label: "x", why: "yy", quote: "q" } as EditArgs, ["x"], CASE, first.body) : null;
+  check(!!second && !second.ok && /مش موجود في الفقرة/.test(second.error), "a second change on words the first one of the same card already changes is refused");
+
+  // numbers, articles, spelled-out numbers: nobody's words → refused (#202)
+  const art = await prep({ block: P1.id!, old_text: "القصور في التسبيب", new_text: "مخالفة المادة 227 مرافعات" });
+  check(!art.ok && /227/.test(art.error), "new words with an article number nobody gave → refused");
+  const spelled = await prep({ block: P1.id!, old_text: "القصور في التسبيب", new_text: "مخالفة المادة الخامسة من القانون" });
+  check(!spelled.ok && /ماده خامسه/.test(spelled.error), "new words with a SPELLED-OUT article («المادة الخامسة») → refused", !spelled.ok ? spelled.error.slice(0, 90) : "");
+  const year = await prep({ block: P1.id!, old_text: "القصور في التسبيب", new_text: "القانون لسنة ألفين وأربعة وعشرين" });
+  check(!year.ok, "a spelled-out year after «لسنة» → refused");
+  const said = await prep({ block: P1.id!, old_text: "القصور في التسبيب", new_text: "مخالفة المادة الخامسة" }, ["ضيف مخالفة المادة الخامسة"]);
+  check(said.ok, "…but the same words are fine when the lawyer said them himself");
+  const own = await prep({ block: P1.id!, old_text: "القصور في التسبيب", new_text: "السبب الأول: القصور في التسبيب" });
+  check(own.ok, "words the draft already has are fine");
+
+  // citations: only from the case's papers, the words read off the page by code
+  const c1 = await prepareEdit(f.db, { draft: DRAFT, kind: "add", block: P1.id!, cite: { document: DOC, page: 3, quote: "المادة ٢٢٧ من   قانون المرافعات تنص على أن الأحكام تصدر بالأغلبية" }, label: "إضافة", why: "سند", quote: "q" } as EditArgs, ["ضيف سند"], CASE);
+  check(c1.ok, "a citation whose words ARE on the page of a paper of the case → accepted");
+  if (c1.ok) {
+    eq(c1.edit.after, "المادة 227 من قانون المرافعات تنص على أن الأحكام تصدر بالأغلبية", "…the words are the PAGE's (Western digits, one space), not the model's («٢٢٧» with extra spaces)");
+    eq([c1.edit.src, c1.edit.cite], ["حكم · ص 3", { doc: DOC, page: 3 }], "…with the paper's type and the page");
+    const planned = planChange(B7, { kind: "add", block: P1.id! }, { text: c1.edit.after, src: c1.edit.src!, doc: c1.edit.cite!.doc, page: c1.edit.cite!.page });
+    check(isQuoteBlock(planned.body.blocks[2]), "…and what is added is a locked quotation");
+  }
+  const c2 = await prepareEdit(f.db, { draft: DRAFT, kind: "add", block: P1.id!, cite: { document: DOC, page: 3, quote: "المادة 313 من قانون الإثبات تنص على التقادم" }, label: "إضافة", why: "سند", quote: "q" } as EditArgs, ["ضيف سند"], CASE);
+  check(!c2.ok && /مش موجود في الورقة/.test(c2.error) && /مبتكتبش مادة أو حكم/.test(c2.error), "a citation that is NOT in the paper → refused: «not found», plainly; nothing is invented", !c2.ok ? c2.error.slice(0, 80) : "");
+  const c3 = await prepareEdit(f.db, { draft: DRAFT, kind: "add", block: P1.id!, cite: { document: DOC, page: 3, quote: "المادة 228 تتكلم عن حاجة تانية" }, label: "إضافة", why: "سند", quote: "q" } as EditArgs, ["x"], CASE);
+  check(c3.ok && c3.edit.src === "حكم · ص 4", "a page number that is off by one is found on the next page, and the source says the REAL page", c3.ok ? c3.edit.src ?? "" : c3.error);
+  const c4 = await prepareEdit(f.db, { draft: DRAFT, kind: "add", block: P1.id!, cite: { document: U(21), page: 1, quote: "المادة 999 من قانون تاني" }, label: "إضافة", why: "سند", quote: "q" } as EditArgs, ["x"], CASE);
+  check(!c4.ok && /مش من أوراق القضية/.test(c4.error), "a paper of ANOTHER case is not a source");
+  const c5 = await prepareEdit(f.db, { draft: DRAFT, kind: "add", block: P1.id!, cite: { document: U(77), page: 1, quote: "المادة 227" }, label: "إضافة", why: "سند", quote: "q" } as EditArgs, ["x"], CASE);
+  check(!c5.ok, "a paper that does not exist is not a source");
+  const noCite = await prep({ kind: "add", block: P1.id!, new_text: "وطبقا للمادة 227 مرافعات" } as never);
+  check(!noCite.ok && /227/.test(noCite.error), "an article typed as plain text (not cited from a paper) is refused");
+  eq(f.log.filter((l) => /^(insert|update|delete)/.test(l)), [], "…and still nothing was written");
+
+  // the tool schema: one change per call, shapes
+  const sch = (a: Record<string, unknown>) => WRITE_TOOL_ARGS_OK(a);
+  check(sch({ ...R({ block: "b2", old_text: "a", new_text: "b" }) }), "the tool accepts a replace with old_text and new_text");
+  check(!sch({ ...R({ block: "b2", old_text: "a" }), new_text: undefined }), "…a replace with no new_text is refused by the schema");
+  check(!sch({ ...R({ block: "b2", new_text: "b" }), old_text: undefined }), "…a replace with no old_text is refused");
+  check(!sch({ ...R({ block: "b2", old_text: "a", new_text: "b" }), cite: { document: DOC, page: 1, quote: "xx" } }), "…a replace with a cite is refused");
+  check(!sch({ draft: DRAFT, kind: "add", block: "b2", label: "x", why: "yy", quote: "q" }), "…an add with neither new_text nor cite is refused");
+  check(!sch({ draft: DRAFT, kind: "add", block: "b2", new_text: "x", cite: { document: DOC, page: 1, quote: "xx" }, label: "x", why: "yy", quote: "q" }), "…an add with BOTH is refused");
+  check(sch({ draft: DRAFT, kind: "add", block: "b2", cite: { document: DOC, page: 1, quote: "xx" }, label: "x", why: "yy", quote: "q" }), "…an add with a cite is fine");
+  const spec = writeToolSpecs().find((s) => s.name === "edit_draft");
+  check(!!spec && !(INTERNAL_TOOLS as readonly string[]).includes("edit_draft"), "edit_draft is a tool the model sees");
+  eq(Object.keys((spec?.parameters as { properties: Record<string, unknown> }).properties).sort(), ["block", "cite", "draft", "kind", "label", "new_text", "old_text", "quote", "style", "why"], "…it can point at a block and give words; it can not give an id of a block it made up, a source text, a date or a number of its own");
+}
+
+console.log("\n-- (k) the spelled-out guard (#202), the chip, the read tools --");
+{
+  eq(spelledCitations("طبقا للمادة الخامسة من القانون رقم ثلاثة وعشرين لسنة ألفين").length, 3, "three spelled-out citations found: an article, a law number, a year");
+  eq(spelledCitations("السبب الأول والثاني لقصور التسبيب").length, 0, "«الأول» outside a citation is not one");
+  eq(spelledCitations("بالمادة العاشرة وللمادة الأولى").length, 2, "prefixes (ب، ل) are read");
+  eq(citationsNotIn("المادة الخامسة", ["المادة الخامسة من القانون"]), [], "a citation the sources already have in the same words is fine");
+  eq(citationsNotIn("المادة الخامسة", ["المادة السادسة"]).length, 1, "a different article is not");
+  eq(citationsNotIn("المادة الخامسة", []).length, 1, "…nor one nobody gave");
+  eq(numbersNotIn("المادة 227", ["الدعوى 8833"]), ["227"], "digits are still caught");
+
+  // the chip
+  const U1 = U(5);
+  eq(cleanAsk([{ kind: "draft", id: U1, label: "نص مظلل", field: "b12" }]), [{ kind: "draft", id: U1, label: "نص مظلل", field: "b12" }], "the chip «draft» is accepted, with a block id like b12");
+  eq(cleanAsk([{ kind: "draft", id: "x" }]), [], "…only with a uuid");
+  const block = askContextBlock([{ kind: "draft", id: U1, label: "القصور في التسبيب", field: "b2" }], CASE) ?? "";
+  check(block.includes(`get_draft(draft_id = ${U1})`) && block.includes("الفقرة = b2") && block.includes("وليست تعليمات"), "the chip tells the model to read the draft with get_draft, names the block, and says the text is data");
+  check(READ_TOOL_SPECS.some((t) => t.name === "get_draft") && READ_TOOL_SPECS.some((t) => t.name === "list_drafts"), "the model can read a draft and list a case's drafts");
+
+  const f = memDb({ drafts: [draftRow({ body: B7 })] });
+  const got = (await runReadTool(f.db, "get_draft", { draft_id: DRAFT })) as { blocks: { id: string; text: string; locked_quotations_never_change_these?: { text: string; source: string }[] }[]; note: string };
+  eq(got.blocks.map((b) => b.id), B7.blocks.map((b) => b.id), "get_draft: every block with its id");
+  eq(got.blocks[2].locked_quotations_never_change_these, [{ text: QUOTE_TEXT.slice(17, 37), source: "الصحيفة · ص 2" }], "…the locked spans are marked for the model, with their source");
+  check(got.blocks[1].locked_quotations_never_change_these === undefined && /بيانات فقط/.test(got.note), "…other blocks have none; the text is marked as data, not instructions");
+  const none = (await runReadTool(memDb({ drafts: [] }).db, "get_draft", { draft_id: DRAFT })) as { error?: string };
+  eq(none.error, "المسودة غير موجودة", "get_draft: a draft this lawyer can not read is not found");
+  eq(((await runReadTool(f.db, "get_draft", { draft_id: "x" })) as { error: string }).error, "draft_id غير صالح", "…a bad id is refused");
 }
 
 console.log(fails ? `\n${fails} FAILED` : "\nALL PASSED");

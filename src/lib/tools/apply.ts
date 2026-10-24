@@ -8,6 +8,7 @@ import { buildDeadlines } from "@/lib/deadlines/service";
 import { parseAmount } from "@/lib/money";
 import type { Db } from "@/lib/supabase/server";
 import type { Database, Json } from "@/lib/db/types";
+import { applyEdit } from "@/lib/draft/edit";
 import { importDraft, restoreVersion, saveDraft } from "@/lib/draft/save";
 import { buildDraft, TemplateBodySchema } from "@/lib/library/make";
 import { WRITE_TOOL_ARGS, type WriteArgs, type WriteTool } from "./registry";
@@ -414,6 +415,8 @@ async function applyOpRaw(db: Db, tool: WriteTool, rawArgs: unknown, p: Provenan
       return { id: row.id, undo: del(db, "templates", row.id), steps: rm("templates", row.id) };
     }
     // the draft editor (PR 7): the lawyer's own save, a restored version, a Word file opened as a draft (src/lib/draft/save.ts: all or nothing, versioned)
+    // the lawyer's ✓ on a change Clausia proposed (src/lib/draft/edit.ts: the same checks again on the draft as it is now; a locked span is refused here too)
+    case "edit_draft": return applyEdit(db, a as WriteArgs<"edit_draft">);
     case "save_draft": return saveDraft(db, a as WriteArgs<"save_draft">);
     case "restore_draft_version": return restoreVersion(db, a as WriteArgs<"restore_draft_version">);
     case "import_draft": return importDraft(db, a as WriteArgs<"import_draft">);
