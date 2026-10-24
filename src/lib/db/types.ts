@@ -1473,6 +1473,92 @@ export type Database = {
           },
         ]
       }
+      drafts: {
+        Row: {
+          body: Json
+          case_id: string
+          created_at: string
+          created_by: string | null
+          created_by_kind: Database["public"]["Enums"]["actor_kind"]
+          fill: Json
+          id: string
+          needs_lawyer_review: boolean
+          office_id: string
+          review_status: Database["public"]["Enums"]["item_status"]
+          source_kind: Database["public"]["Enums"]["source_kind"]
+          source_message_id: string | null
+          template_id: string | null
+          template_name: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body: Json
+          case_id: string
+          created_at?: string
+          created_by?: string | null
+          created_by_kind?: Database["public"]["Enums"]["actor_kind"]
+          fill: Json
+          id?: string
+          needs_lawyer_review?: boolean
+          office_id?: string
+          review_status?: Database["public"]["Enums"]["item_status"]
+          source_kind?: Database["public"]["Enums"]["source_kind"]
+          source_message_id?: string | null
+          template_id?: string | null
+          template_name: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: Json
+          case_id?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_kind?: Database["public"]["Enums"]["actor_kind"]
+          fill?: Json
+          id?: string
+          needs_lawyer_review?: boolean
+          office_id?: string
+          review_status?: Database["public"]["Enums"]["item_status"]
+          source_kind?: Database["public"]["Enums"]["source_kind"]
+          source_message_id?: string | null
+          template_id?: string | null
+          template_name?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drafts_case_id_fkey"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drafts_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drafts_source_message_id_fkey"
+            columns: ["source_message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "drafts_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hearings: {
         Row: {
           case_id: string
@@ -1923,6 +2009,47 @@ export type Database = {
           },
         ]
       }
+      office_style: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          file_name: string
+          id: string
+          office_id: string
+          storage_path: string
+          style: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          file_name: string
+          id?: string
+          office_id?: string
+          storage_path: string
+          style: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          file_name?: string
+          id?: string
+          office_id?: string
+          storage_path?: string
+          style?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "office_style_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: true
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       offices: {
         Row: {
           created_at: string
@@ -2118,6 +2245,59 @@ export type Database = {
           },
         ]
       }
+      templates: {
+        Row: {
+          body: Json
+          category: Database["public"]["Enums"]["template_category"]
+          created_at: string
+          created_by: string | null
+          description: string
+          id: string
+          name: string
+          needs_lawyer_review: boolean
+          office_id: string | null
+          slug: string | null
+          storage_path: string | null
+          updated_at: string
+        }
+        Insert: {
+          body: Json
+          category: Database["public"]["Enums"]["template_category"]
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          name: string
+          needs_lawyer_review?: boolean
+          office_id?: string | null
+          slug?: string | null
+          storage_path?: string | null
+          updated_at?: string
+        }
+        Update: {
+          body?: Json
+          category?: Database["public"]["Enums"]["template_category"]
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          id?: string
+          name?: string
+          needs_lawyer_review?: boolean
+          office_id?: string | null
+          slug?: string | null
+          storage_path?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "templates_office_id_fkey"
+            columns: ["office_id"]
+            isOneToOne: false
+            referencedRelation: "offices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -2209,6 +2389,7 @@ export type Database = {
         | "rejected"
       read_status: "pending" | "reading" | "done" | "failed"
       source_kind: "chat" | "document" | "manual"
+      template_category: "claim" | "appeal" | "memo" | "notice" | "contract"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2407,6 +2588,7 @@ export const Constants = {
       ],
       read_status: ["pending", "reading", "done", "failed"],
       source_kind: ["chat", "document", "manual"],
+      template_category: ["claim", "appeal", "memo", "notice", "contract"],
     },
   },
 } as const

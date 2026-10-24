@@ -16,6 +16,7 @@ import { getLlm, LlmUnavailableError, SpendCapError, type ChatRequest, type LlmM
 import { UNAVAILABLE_TEXT } from "@/lib/llm/unavailable";
 import { DEFAULT_TITLE, titleFrom } from "@/lib/threads";
 import { createProposal, normalizeForMatch, type DraftOp, type OpHint, type Proposal, type ResolvedFrom } from "@/lib/proposals";
+import { draftFromCall, recentLawyerTexts } from "@/lib/library/make";
 import { findSpan } from "@/lib/quote-match";
 import { cairoDateOf, resolveRelativeDays, type RelativeDay } from "@/lib/relative-days";
 import type { Db } from "@/lib/supabase/server";
@@ -31,7 +32,7 @@ const MAX_ROUNDS = 6;
 const HISTORY = 40;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** Write-tool args that hold a reference (uuid or «@ref»); other string args are free text and may start with "@". */
-const REF_KEYS = ["case", "client", "hearing", "document", "previous_stage_case"];
+const REF_KEYS = ["case", "client", "hearing", "document", "previous_stage_case", "template"];
 export const PROPOSED_RESULT = "اقتراح بانتظار تأكيد المحامي — لا تكرره";
 
 interface StoredAssistant { calls?: LlmToolCall[]; raw?: unknown }
@@ -263,12 +264,21 @@ async function turn(db: Db, input: TurnInput, state: { saved: boolean }, clock: 
         args = prep.args;
         hint = prep.hint;
       }
+      // a draft: the CODE fills the template from the case file (the model only picked the template and the case); the grounds / requests
+      // are accepted only when the lawyer asked for them in his own words (this message and the two before it), and carry no number of the model's own
+      let draft: DraftOp["draft"];
+      if (call.name === "create_draft") {
+        const prep = await draftFromCall(db, call.args, recentLawyerTexts(text, userMsg.id, lawyer));
+        if (!prep.ok) { results.set(call.id, { error: prep.error }); continue; }
+        draft = prep.draft;
+      }
       const ref = call.args.ref;
       if (typeof ref === "string" && ref) refsInCard.add(ref);
       drafts.push({
         call,
         op: {
           ...(hint ? { hint } : {}),
+          ...(draft ? { draft } : {}),
           tool: call.name, args, source: sourceOf((call.args.quote as string | undefined) ?? null, text, userMsg.id, docPages),
           resolved_from: fromRelativeWords(call.args, [text, ...sourceTexts], resolved),
         },

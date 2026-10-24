@@ -195,6 +195,15 @@ export const WRITE_TOOL_ARGS = {
     if (a.kind === "fixed" && !a.amount) ctx.addIssue({ code: "custom", path: ["amount"], message: "الأتعاب الثابتة لازم لها مبلغ: اسأل المحامي" });
     if (a.kind === "open" && a.amount) ctx.addIssue({ code: "custom", path: ["amount"], message: "الأتعاب المفتوحة بلا مبلغ" });
   }),
+  // A draft from a template (PR 6). The model only PICKS the template and the case: the values are filled by code from the case file
+  // (src/lib/library/fill.ts), never by the model. `grounds` / `requests` are sent ONLY when the lawyer asked Clausia to draft them.
+  create_draft: z.object({
+    template: ref("الصيغة (من search_templates)"),
+    case: ref("القضية"),
+    grounds: z.string().max(4000).optional().describe("أسباب/دفاع/أسانيد — فقط إن طلب المحامي صراحةً أن تكتبها له. اتركها فارغة وإلا. بلا أرقام مواد ولا أرقام قضايا ولا تواريخ من عندك: ما ليس في كلام المحامي أو ملف القضية يُترك."),
+    requests: z.string().max(4000).optional().describe("الطلبات — فقط إن طلب المحامي صراحةً أن تكتبها له. اتركها فارغة وإلا."),
+    quote,
+  }),
   // Made ONLY by code (src/lib/deadlines/propose.ts) after a judgment is saved; internal like the two above. The args are the lawyer's
   // inputs (facts), never a number: `applyOp` reads the days from the article text and works out the last day itself.
   add_deadline: z.object({
@@ -234,6 +243,7 @@ export const WRITE_TOOL_DESCRIPTIONS: Record<WriteTool, string> = {
   record_movement: "اقتراح تسجيل استلام مبلغ من موكل، أو مصروف، في حساب الموكل (بالمبلغ والطريقة كما قالها المحامي حرفيًا).",
   set_case_fee: "اقتراح تحديد أتعاب قضية: مبلغ ثابت، أو «مفتوحة» بلا مبلغ.",
   add_deadline: "ميعاد طعن (استئناف / نقض) يحسبه الكود من نص المادة بعد تسجيل حكم. يصنعه الكود فقط.",
+  create_draft: "اقتراح مسودة من صيغة لقضية (مثل «صحيفة استئناف لقضية كريم»). الكود هو اللي بيملا البيانات من ملف القضية ويكتب مصدر كل بيان؛ أنت بتختار الصيغة والقضية بس. الأسباب والطلبات بتتساب فاضية للمحامي إلا لو طلب منك تكتبها.",
 };
 
 /** Field list for rendering/editing a confirmation card generically. */
@@ -260,6 +270,7 @@ export const OP_TITLE: Record<WriteTool, string> = {
   add_deadline: "ميعاد طعن",
   record_movement: "حركة في حساب الموكل",
   set_case_fee: "أتعاب القضية",
+  create_draft: "مسودة من صيغة",
 };
 
 export const OP_FIELDS: Record<WriteTool, FieldSpec[]> = {
@@ -384,6 +395,7 @@ export const OP_FIELDS: Record<WriteTool, FieldSpec[]> = {
     { key: "kind", label: "الأتعاب", type: { enum: FEE_KIND } },
     { key: "amount", label: "المبلغ", type: "money" },
   ],
+  create_draft: [], // drawn by DraftCard, not as fields
 };
 
 /** Tool specs for the provider (JSON Schema from zod). */

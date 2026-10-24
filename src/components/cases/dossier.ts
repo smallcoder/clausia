@@ -38,8 +38,8 @@ export const MEMO_DOC_TYPES = ["our_memo", "opponent_memo", "judgment"];
 /** the case's documents that are memos or judgments */
 export const memoDocs = (cf: CaseFile) => cf.documents.filter((d) => MEMO_DOC_TYPES.includes(d.doc_type));
 
-/** What each tab's number says. Suggested items count (they are on the tab, waiting for the lawyer). `gold`: something there waits for review. */
-export function tabCounts(cf: CaseFile, today: string): Record<TabKey, { text: string; gold: boolean }> {
+/** What each tab's number says (`drafts` = the case's drafts from the library, counted in «المذكرات والأحكام»). Suggested items count (they are on the tab, waiting for the lawyer). `gold`: something there waits for review. */
+export function tabCounts(cf: CaseFile, today: string, drafts = 0): Record<TabKey, { text: string; gold: boolean }> {
   const pend = (...tables: string[]) => cf.pending_suggestions.filter((p) => tables.includes(p.table));
   const args = [...cf.arguments, ...pend("case_arguments").map((p) => p.item as CaseFile["arguments"][number])];
   const reqs = cf.requests.length + pend("case_requests").length;
@@ -52,7 +52,7 @@ export function tabCounts(cf: CaseFile, today: string): Record<TabKey, { text: s
     sides: { text: `${reqs + ours} · ${theirs}`, gold: pend("case_requests", "case_arguments").length > 0 },
     facts: { text: n(cf.facts.length + pend("case_facts").length), gold: pend("case_facts", "case_parties").length > 0 },
     documents: { text: n(cf.documents.length), gold: false },
-    memos: { text: n(cf.judgments.length + pend("judgments").length + memoDocs(cf).length), gold: pend("judgments").length > 0 },
+    memos: { text: n(cf.judgments.length + pend("judgments").length + memoDocs(cf).length + drafts), gold: pend("judgments").length > 0 },
   };
 }
 

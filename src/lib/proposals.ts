@@ -8,6 +8,7 @@ import { deadlinesEnabled } from "@/lib/flags";
 import { normalizeForMatch } from "@/lib/quote-match";
 import type { Db } from "@/lib/supabase/server";
 import type { Json } from "@/lib/db/types";
+import type { DraftFill } from "@/lib/library/types";
 import { applyOp, type Provenance, type RefMap, type Undo, type UndoStep } from "@/lib/tools/apply";
 import { logConfirm } from "@/lib/undo";
 import { OP_TITLE, WRITE_TOOL_ARGS, isWriteTool, type WriteTool } from "@/lib/tools/registry";
@@ -46,7 +47,12 @@ export interface ProposalOp {
   resolved_from?: Record<string, ResolvedFrom>;
   /** a money card (PR 5): the client's cases to change the choice, the sentence saying why this case, and whether the date is today's by default */
   hint?: OpHint;
+  /** a draft card (PR 6): what the code filled from the case file, where each value came from, and what is still missing (src/lib/library) */
+  draft?: DraftPreview;
 }
+
+/** what a draft card shows before «أكّد» (the fill itself is worked out again when the lawyer confirms) */
+export interface DraftPreview { title: string; fill: DraftFill }
 
 export interface OpHint { cases: { id: string; label: string; name: string; remaining: number | null }[]; note: string | null; today: boolean; suggested?: boolean }
 
@@ -79,6 +85,7 @@ export interface DraftOp {
   source: OpSource;
   resolved_from?: Record<string, ResolvedFrom>;
   hint?: OpHint;
+  draft?: DraftPreview;
   /** the texts THIS op's quote must come from (default: the card's `sourceTexts`): a column cell is checked against its own paper */
   sourceTexts?: string[];
 }
@@ -112,6 +119,7 @@ export async function createProposal(
       status: "pending",
       ...(o.resolved_from && Object.keys(o.resolved_from).length ? { resolved_from: o.resolved_from } : {}),
       ...(o.hint ? { hint: o.hint } : {}),
+      ...(o.draft ? { draft: o.draft } : {}),
     };
   });
   const { data, error } = await db.from("proposals").insert({
