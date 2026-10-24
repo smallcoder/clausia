@@ -1,6 +1,6 @@
 "use client";
 /**
- * The chat panel (docs/design/ia: SBC*, SBF*, MChat*): the app's chat, always there. Desktop: attached to the sidebar (480 wide; the shell draws the glass
+ * The chat panel (docs/design/ia: SBC*, SBF*, MChat*): the app's chat, always there. Desktop: attached to the sidebar (560 wide, 480 beside the icon sidebar; the shell draws the glass
  * around both), with its own header (who this chat is about; the title opens the sessions list; the expand button makes it full screen). Phone: the whole
  * screen — a header with ≡ (the sidebar drawer), the context pill (opens the context picker) and, inside a case, a button for the page, and a small case strip
  * with «افتح» (it opens the page as a sheet). Data comes from the @chat slot (panel-data.ts) for the current URL.
@@ -36,7 +36,7 @@ export function ChatPanel({ data }: { data: PanelData }) {
   const sheetHref = (() => { const p = new URLSearchParams(params.toString()); p.set("sheet", "1"); return `${path}?${p.toString()}`; })();
 
   return (
-    <aside aria-label="محادثة Clausia" className={cx("flex min-w-0 flex-col max-xl:fixed max-xl:inset-0 xl:min-h-0", full ? "xl:flex-1" : "xl:w-chat xl:shrink-0")}>
+    <aside aria-label="محادثة Clausia" className={cx("flex min-w-0 flex-col max-xl:fixed max-xl:inset-0 xl:min-h-0", full ? "xl:flex-1" : "xl:w-chat xl:shrink-0 rail:w-chat-rail")}>
       <div className="flex min-h-0 flex-1 flex-col">
         {/* desktop header: who this chat is about; the title opens the sessions of THIS context; the expand button makes the chat full screen */}
         <SessionsMenu sessions={sessions} currentId={threadId} title={who} sub={sub} full={full} onFull={setFull} inCase={context.kind !== "general"} openLabel={clientId ? "افتح ملف الموكل" : "افتح ملف القضية"} />

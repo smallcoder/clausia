@@ -307,15 +307,16 @@
  * A width used in two or more places for the same job is named here; a one-off uses a spacing step or carries a ds-allow reason.
  */
 @theme {
-  --container-page: 1360px;        /* a page's own box: its content plus 40px side gutters (the page column beside the chat is never wider than about 1056) */
+  --container-page: 1360px;        /* a page's own box: its content plus 40px side gutters (the page column beside the chat is never wider than about 952) */
   --container-narrow: 960px;       /* the Home and Chat column: 912 of content plus 24px side gutters */
   --container-composer: 780px;     /* the docked composer on inner pages and over a chat */
   /* sidebar layout (docs/design/ia): one centered frame; on the end side (the right in RTL) ONE glass surface = the sidebar + the chat attached to it; the page on the other side */
   --container-frame: 1800px;       /* the whole frame, with 20px margins on a smaller screen */
-  --container-sidebar: 264px;      /* the sidebar (1441 and wider, and the phone's drawer is 320) */
+  --container-sidebar: 288px;      /* the sidebar (1441 and wider, and the phone's drawer is 320) */
   --container-rail: 72px;          /* the sidebar as icons (1280 to 1440) */
-  --container-chat: 480px;         /* the chat attached to the sidebar */
-  --container-messages: 760px;     /* the messages column, centered (the full-screen chat; the attached chat is narrower than this) */
+  --container-chat: 560px;         /* the chat attached to the sidebar (1441 and wider) */
+  --container-chat-rail: 480px;    /* the same chat beside the icon sidebar (1280 to 1440), so the page keeps its room */
+  --container-messages: 520px;     /* the messages column, centered (the attached chat's 560 less its 18px sides; the full-screen chat keeps the same column) */
   --container-bubble: 88%;         /* a chat bubble's widest share of the column, on mobile */
   --container-bubble-sm: 72%;      /* the same on desktop */
 }
@@ -338,6 +339,7 @@
   --spacing-control-lg: 42px;      /* glass round button in headers; the chat's case pill */
   --spacing-control-xl: 46px;      /* header round buttons on desktop, the sheet's save button, a composer's input row */
   --spacing-chip: 34px;            /* filter chip height on desktop */
+  --spacing-scrollbar: 6px;        /* the thin scrollbar (see «Scrollbars» below) */
   /* the «C» mark and its small round cousins */
   --spacing-mark-sm: 22px;         /* the mark beside a composer on mobile */
   --spacing-mark: 26px;            /* the mark in headings, the case header, a composer on desktop */
@@ -463,6 +465,27 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-even
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+/*
+ * Scrollbars: thin overlay style like macOS. About 6px wide, no track, a faint thumb that darkens a little on hover, visible only while scrolling:
+ * useScrollbars() (src/components/shell/useScrollbars.ts) puts .is-scrolling on the box that scrolls (on <html> for the page itself) and takes it off
+ * about 800ms after the last scroll. The thumb is the text token mixed into transparent, so it follows light and dark.
+ * Chrome / Safari use the ::-webkit-scrollbar parts; Firefox (the @supports not selector branch) uses scrollbar-width / scrollbar-color, which Chrome
+ * would otherwise prefer over the parts.
+ */
+:root {
+  --scroll-thumb: color-mix(in srgb, var(--text) 22%, transparent);
+  --scroll-thumb-hover: color-mix(in srgb, var(--text) 38%, transparent);
+}
+::-webkit-scrollbar { width: var(--spacing-scrollbar); height: var(--spacing-scrollbar); background: transparent; }
+::-webkit-scrollbar-track, ::-webkit-scrollbar-corner { background: transparent; }
+::-webkit-scrollbar-thumb { background: transparent; border-radius: var(--radius-sm); }
+.is-scrolling::-webkit-scrollbar-thumb { background: var(--scroll-thumb); }
+.is-scrolling::-webkit-scrollbar-thumb:hover { background: var(--scroll-thumb-hover); }
+@supports not selector(::-webkit-scrollbar) {
+  * { scrollbar-width: thin; scrollbar-color: transparent transparent; }
+  .is-scrolling { scrollbar-color: var(--scroll-thumb) transparent; }
 }
 
 /* hide scrollbars on horizontal segment bars */

@@ -150,17 +150,15 @@ try {
     }
   }
 
-  // ---- «سجّله» opens the existing recorder in place (only opened here: nothing is saved) ----
+  // ---- «سجّله» is a link to the agenda's «محتاجة قرار» tab (the decision is recorded there); only the link is checked: nothing is opened or saved ----
   {
     const [ctx, page] = await ctxOf(1920, 1080, false);
     await go(page, `/cases/${NEXT_CASE}?tab=hearings`);
-    const open = page.getByRole("button", { name: /القرار متسجلش/ }).first();
-    if (await open.count()) {
-      await open.click();
-      await page.waitForTimeout(600);
-      await shot(page, "hearings-record-1920-light");
-      console.log("«سجّله» opens the recorder: ok (nothing saved)");
-    } else console.log("no hearing without a decision on the next-hearing case: the recorder was not opened");
+    const link = page.getByRole("link", { name: /القرار متسجلش/ }).first();
+    if (await link.count()) {
+      const href = await link.getAttribute("href");
+      console.log(`«سجّله» links to ${href}: ${href === "/agenda?tab=decide" ? "ok" : "WRONG"}`);
+    } else console.log("no hearing without a decision on the next-hearing case: the link was not checked");
     await ctx.close();
   }
 

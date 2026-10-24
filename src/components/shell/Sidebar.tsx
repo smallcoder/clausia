@@ -3,7 +3,7 @@
  * The sidebar (docs/design/ia: SBC*, MDrawer*): logo · search · nav (الرئيسية الأجندة الموكلين المكتبة) · القضايا (each case opens to «ملف القضية»,
  * its sessions and «+ محادثة جديدة») · محادثات عامة · the bell and the account at the bottom.
  * One component, three looks, by CSS only:
- *   1441 and wider: 264px, part of the glass surface with the chat;
+ *   1441 and wider: 288px, part of the glass surface with the chat;
  *   1280 to 1440 (`rail:`): 72px, icons only (the cases are letter tiles; texts stay for screen readers);
  *   below 1280: a side drawer (≡ in the chat header), solid, over a dim layer.
  * Data comes from the layout (lib/sidebar.ts); the open session comes from the chat panel through the shell context.
@@ -155,16 +155,17 @@ export function Sidebar({ data, initials, displayName, officeName, email, alerts
             const on = onNav === href;
             const badge = href === AGENDA && alerts > 0 ? alerts : 0;
             return (
-              <li key={href}>
+              <li key={href} className="relative">
                 <Link href={navHref(href)} onClick={showPage} aria-current={on ? "page" : undefined} title={text}
-                  className={cx(row, "relative h-control px-3 text-base", railCenter, on ? "side-on font-semibold" : "font-medium")}>
+                  className={cx(row, "relative h-control px-3 text-base", railCenter, on ? "side-on font-semibold" : "font-medium", badge > 0 && "pe-12 rail:pe-0")}>
                   <Icon aria-hidden size={17} strokeWidth={1.8} className="shrink-0" />
                   <span className={cx("flex-1", label)}>{text}</span>
-                  {badge ? (
-                    <span aria-label={attention ?? undefined}
-                      className="font-num inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-gold-bg px-1.5 text-xs font-bold text-gold-on-ambient rail:absolute rail:end-1 rail:top-0.5 rail:h-4 rail:min-w-4 rail:px-1">{badge}</span>
-                  ) : null}
                 </Link>
+                {/* the count is its own link (a link cannot sit inside a link): it opens the agenda's «محتاجة قرار» tab */}
+                {badge ? (
+                  <Link href={DECIDE_HREF} onClick={showPage} aria-label={attention ?? undefined} title={attention ?? undefined}
+                    className="font-num absolute end-2.5 top-1/2 inline-flex h-5 min-w-5 -translate-y-1/2 items-center justify-center rounded-full bg-gold-bg px-1.5 text-xs font-bold text-gold-on-ambient rail:end-1 rail:top-0.5 rail:h-4 rail:min-w-4 rail:translate-y-0 rail:px-1">{badge}</Link>
+                ) : null}
               </li>
             );
           })}
@@ -177,7 +178,7 @@ export function Sidebar({ data, initials, displayName, officeName, email, alerts
             <Link href={`/?s=new&q=${encodeURIComponent("افتح قضية جديدة: ")}`} onClick={showPage} className="tap text-sm text-text-3 hover:text-text">+ جديدة</Link>
           </div>
 
-          {/* full list (264 and the drawer) */}
+          {/* full list (288 and the drawer) */}
           <ul className="flex flex-col gap-0.5 rail:hidden">
             {cases.map((c) => {
               const open = isOpen(c);

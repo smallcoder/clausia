@@ -5,9 +5,9 @@
  */
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
+import { DECIDE_HREF as HREF } from "@/components/agenda/url";
 import { two } from "@/components/shell/PageHero";
 
-const HREF = "/agenda?decide=1";
 const CARD = "rounded-xl border border-border-2 bg-card shadow-card transition hover:shadow-pop";
 const NUM = "font-num font-extralight leading-none tracking-[-0.05em]";
 
